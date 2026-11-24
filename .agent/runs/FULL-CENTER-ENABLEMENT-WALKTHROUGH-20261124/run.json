@@ -3,7 +3,7 @@
   "id": "FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124",
   "branch": "audit/full-center-enablement-walkthrough-20261124",
   "status": "active",
-  "baseline_sha": "49eaed0281f733d08e1f891324fa0d08cf03fa33",
+  "baseline_sha": "05762e9628c6b8c40045f66e5438c5a37d187441",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124.yaml",
@@ -106,7 +106,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Split the mixed candidate into P0, P1 and P4 commits, synchronize it with current origin/main 05762e9628c6b8c40045f66e5438c5a37d187441, then deploy and resume the full entry matrix.",
+  "next_exact_step": "Run synchronized exact-head targeted checks, deploy the exact candidate through the governed local.dev entry, bind runtime-version to that HEAD, and resume the full entry matrix.",
   "goal": ".agent/goals/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124.yaml",
   "record": "docs/ops/iterations/full_center_enablement_walkthrough_20261124.md"
 }

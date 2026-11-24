@@ -37,8 +37,19 @@ time.
 - Company: `1`
 - Principal: `wutao`
 - Role: `business_config_admin`
-- Source SHA: `49eaed0281f733d08e1f891324fa0d08cf03fa33`
+- Main base: `05762e9628c6b8c40045f66e5438c5a37d187441`
 - Expected catalog: 132 released pages, 46 released scenarios, 10 business centers
+
+## Mainline sync
+
+The initial mixed candidate at `f510eeb8f0344a725e5c800abe9cd6bea1ee9b25`
+was split into P0, P1 and P4 responsibility commits before synchronization.
+The governed sync replayed those commits onto current `origin/main`
+`05762e9628c6b8c40045f66e5438c5a37d187441`, producing candidate
+`ad5a07a5d44c91ebce4eee99a9e78b0968e38f7d` plus a metadata-only child
+commit. Recovery bundle:
+
+`/home/lidefend/workspace/sce-backend-odoo/.git/codex-recovery/branch-sync/audit-full-center-enablement-walkthrough-20261124-f510eeb8f0344a725e5c800abe9cd6bea1ee9b25.bundle`
 
 ## Execution
 
@@ -71,8 +82,17 @@ Target behavior:
 | P0 | `make verify.identity_resolver.landing.unit` | 2 tests PASS |
 | P1 | `make verify.role_surface.landing.contract.unit` | 33 tests PASS |
 | P4 planning | `make verify.frontend.dev.incremental.unit` | 237 tests PASS |
-| P1 runtime | `make verify.daily.permission_truth.capability.orm` | pending exact-main candidate |
+| P1 runtime | `verify.scene.company_route_scope_cache.orm` via `make ci.local.iteration` | 9 tests PASS |
+| Cross-layer | `make ci.local.iteration` | 12 affected targets PASS |
 | P4 matrix | `make verify.frontend.business_entry.matrix.incremental` | blocked until exact deployed identity |
+
+Original incremental receipt:
+
+`.runtime/frontend-dev-validation/executions/20261124T010836Z-3353955-611667263/receipt.json`
+
+The receipt binds `ad5a07a5d44c91ebce4eee99a9e78b0968e38f7d` plus the two
+metadata-document edits made after synchronization. Those edits do not alter
+the checked source or tool inputs.
 
 The existing P0 test file has two unrelated historical failures. They are not
 used as pass evidence and are not modified by this batch; the registered P0
