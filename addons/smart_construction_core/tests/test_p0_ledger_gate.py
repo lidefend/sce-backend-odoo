@@ -332,7 +332,7 @@ class TestCorePaymentAmountSemantics(BusinessTransactionCase):
                 "name": "T1-B Vendor",
                 "sc_account_name": "T1-B Vendor",
                 "sc_bank_name": "T1-B Bank",
-                "sc_bank_account": "6222000000000088",
+                "sc_bank_account": "SYNTHETIC-TEST-ACCOUNT",
             }
         )
         self.project = self._project("T1-B Project", self.company)
