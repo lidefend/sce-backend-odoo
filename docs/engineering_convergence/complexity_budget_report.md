@@ -81,8 +81,8 @@ Generated from repository source files. This report is informational during the 
 | 1657 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1654 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1652 | Python source | `scripts/release/release_publication.py` |
+| 1640 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1629 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
-| 1626 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1602 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1592 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
@@ -344,8 +344,8 @@ Generated from repository source files. This report is informational during the 
 | 1654 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1652 | split_plan_required | Python source | `scripts/release/release_publication.py` |
 | 1650 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
+| 1640 | split_plan_required | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1629 | split_plan_required | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
-| 1626 | split_plan_required | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1602 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1592 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |

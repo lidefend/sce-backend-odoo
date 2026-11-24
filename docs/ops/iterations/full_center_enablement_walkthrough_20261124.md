@@ -214,13 +214,16 @@ treating the remaining failures as one product or configuration gap:
 Targeted evidence:
 
 - `contract_shape_projection_test.ts`: PASS, 23 cases.
-- `business_entry_matrix_runtime_route.test.mjs`: PASS, 32 cases.
+- `business_entry_matrix_runtime_route.test.mjs`: PASS, 39 cases.
 - `test_api_data_list_param_boundaries.py`: PASS, 40 tests.
 - strict frontend typecheck: PASS.
-- `make ci.local.iteration`: PASS, 46 required targets, receipt
-  `.runtime/frontend-dev-validation/executions/20261124T055630Z-992657-640580091/receipt.json`.
+- `make ci.local.iteration`: PASS, 47 required targets, receipt
+  `.runtime/frontend-dev-validation/executions/20261124T061104Z-1095705-982890206/receipt.json`.
 - affected matrix:
   `.runtime/agent-runs/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124/post-diagnostics-r5/summary.json`
+- representative negative-authority matrix: PASS, 2 entries checked with zero
+  leaked navigation targets, 1 entry explicitly not applicable, 0 uncovered:
+  `.runtime/agent-runs/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124/negative-representative-r1/summary.json`
 
 The affected set now has three passing entry surfaces and zero console errors:
 
@@ -229,11 +232,17 @@ The affected set now has three passing entry surfaces and zero console errors:
   labels;
 - account journal: collection and detail passed.
 
-The matrix command still exits non-zero for one P4 coverage limitation, not a
-product failure: every eligible denied-role candidate with released navigation
-also carries `group_sc_cap_project_read`, so a legal disjoint negative candidate
-for the project-kanban entry cannot be derived from the current demo principals.
-No gate, ACL, or frontend assertion was relaxed to convert this into a pass.
+Negative authority is checked as a representative mechanism rather than as a
+mandatory one-off role per entry. Entries with a legal disjoint candidate are
+checked individually. An entry for which every released candidate intersects
+its declaration is recorded as
+`not_applicable_no_disjoint_candidate`; it is not represented as denied. The
+selection still fails closed when no entry exercised a real denied closure at
+all, or when any selected entry has no accounted outcome. In the affected set,
+the account-journal and data-permission entries exercised real denied closures
+with zero leakage, while project kanban remains explicitly inapplicable because
+all released candidates carry `group_sc_cap_project_read`. No gate, ACL, or
+frontend assertion was relaxed.
 
 ## Exclusions
 

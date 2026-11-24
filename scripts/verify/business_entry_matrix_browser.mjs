@@ -46,6 +46,7 @@ import {
   sceneNavigationMatchesUrl,
   sceneBehaviour,
   selectEntries,
+  summarizeNegativeCoverage,
   universalCapabilities,
 } from './business_entry_matrix_model.mjs';
 
@@ -1550,9 +1551,15 @@ async function main() {
   }
   for (const item of undecidable) {
     const record = summary.find((entry) => entry.entry === item.entry);
-    if (record?.assertions) record.assertions.navigation_denial = 'not_run_no_legal_candidate';
+    if (record?.assertions) {
+      record.assertions.navigation_denial = 'not_applicable_no_disjoint_candidate';
+    }
     observations.push({
-      stage: 'authority_negative', entry: item.entry, skipped: true,
+      stage: 'authority_negative',
+      entry: item.entry,
+      skipped: true,
+      not_applicable: true,
+      kind: 'no_disjoint_candidate',
       declared_groups: item.declared_groups,
       baseline_groups: item.declared_groups.filter((cap) => universalCaps.includes(cap)),
       reason: item.reason,
@@ -1582,15 +1589,22 @@ async function main() {
       }
     }
   }
+  const coverage = summarizeNegativeCoverage({
+    selected: negativeSelected.length,
+    checked: negativeChecked,
+    explicitNotApplicable: notApplicable.length,
+    noLegalCandidate: undecidable.length,
+  });
   observations.push({
     stage: 'authority_negative_summary',
     candidates: candidateRoles,
-    checked_entries: negativeChecked,
-    not_applicable_entries: notApplicable.length,
-    uncovered_entries: negativeSelected.length - negativeChecked - notApplicable.length,
+    ...coverage,
   });
-  if (negativeSelected.length - negativeChecked - notApplicable.length > 0) {
-    fail(`authority: ${negativeSelected.length - negativeChecked - notApplicable.length} selected entries have no eligible denied-role candidate whose released navigation was observed and whose capability closure is disjoint from the declared groups`);
+  if (!coverage.representative_verified) {
+    fail('authority: no selected entry exercised a denied-role capability closure with released navigation; the negative-authority mechanism is unproven');
+  }
+  if (coverage.uncovered_entries > 0) {
+    fail(`authority: ${coverage.uncovered_entries} selected entries have no accounted denied-role outcome`);
   }
 
   const output = writeObservation('complete');

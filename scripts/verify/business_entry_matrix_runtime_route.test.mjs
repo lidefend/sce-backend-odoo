@@ -18,6 +18,7 @@ import {
   runtimeRoleSceneTarget,
   sceneBehaviour,
   sceneNavigationMatchesUrl,
+  summarizeNegativeCoverage,
 } from './business_entry_matrix_model.mjs';
 
 let cases = 0;
@@ -193,6 +194,41 @@ check(negativePlan.byCandidate.size, 0, 'an inapplicable internal workspace open
 check(negativePlan.undecidable.length, 0, 'an explicitly inapplicable denial is not misreported as undecidable');
 check(negativePlan.notApplicable[0].kind, 'not_applicable_internal_workspace',
   'the workspace data-boundary responsibility is preserved explicitly');
+
+const representativeNegativeCoverage = summarizeNegativeCoverage({
+  selected: 3,
+  checked: 2,
+  explicitNotApplicable: 0,
+  noLegalCandidate: 1,
+});
+check(representativeNegativeCoverage.closed, true,
+  'one exercised denied closure plus an explicitly inapplicable entry closes representative coverage');
+check(representativeNegativeCoverage.representative_verified, true,
+  'representative coverage records that the negative mechanism actually ran');
+check(representativeNegativeCoverage.uncovered_entries, 0,
+  'a no-legal-candidate entry is accounted without being fabricated as denied');
+
+const unprovenNegativeCoverage = summarizeNegativeCoverage({
+  selected: 1,
+  checked: 0,
+  explicitNotApplicable: 0,
+  noLegalCandidate: 1,
+});
+check(unprovenNegativeCoverage.closed, false,
+  'inapplicable entries alone do not prove the negative-authority mechanism');
+check(unprovenNegativeCoverage.representative_verified, false,
+  'an unexecuted negative closure remains visibly unproven');
+
+const incompleteNegativeCoverage = summarizeNegativeCoverage({
+  selected: 3,
+  checked: 1,
+  explicitNotApplicable: 0,
+  noLegalCandidate: 1,
+});
+check(incompleteNegativeCoverage.uncovered_entries, 1,
+  'an unaccounted selected entry still fails closed');
+check(incompleteNegativeCoverage.closed, false,
+  'representative proof does not hide an unaccounted entry');
 
 const scenes = loadDeclaredSceneEntries('config/frontend/role_surface_exposure_declarations_v1.json');
 check(scenes.length, 1, 'the declared no-action delivery carrier is represented separately from action CSV rows');

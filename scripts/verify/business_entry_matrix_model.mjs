@@ -364,6 +364,27 @@ export function negativePlanByCandidate(entries, candidateOrder, states) {
   return { byCandidate, undecidable, notApplicable };
 }
 
+export function summarizeNegativeCoverage({
+  selected = 0,
+  checked = 0,
+  explicitNotApplicable = 0,
+  noLegalCandidate = 0,
+} = {}) {
+  const counts = [selected, checked, explicitNotApplicable, noLegalCandidate]
+    .map((value) => Math.max(0, Number(value) || 0));
+  const [selectedCount, checkedCount, explicitCount, noCandidateCount] = counts;
+  const accounted = checkedCount + explicitCount + noCandidateCount;
+  return {
+    selected: selectedCount,
+    checked: checkedCount,
+    explicit_not_applicable: explicitCount,
+    no_legal_candidate: noCandidateCount,
+    representative_verified: checkedCount > 0,
+    uncovered_entries: Math.max(0, selectedCount - accounted),
+    closed: checkedCount > 0 && selectedCount === accounted,
+  };
+}
+
 export function universalCapabilities(candidateOrder, states) {
   const closures = candidateOrder
     .map((role) => states.get(role))

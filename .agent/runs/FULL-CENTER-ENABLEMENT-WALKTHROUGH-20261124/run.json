@@ -155,8 +155,7 @@
     }
   },
   "blockers": [
-    "The affected project kanban, data permission and account journal surfaces now pass with zero console errors; the remaining matrix exit is a P4 negative-authority coverage gap because no eligible released denied-role candidate is disjoint from group_sc_cap_project_read",
-    "The previous 132-entry status counts are stale after the P0 relation-semantics, ACL-preserving label projection and tenant-route probe fixes; rerun only the deterministically affected set before recomputing the matrix"
+    "The previous 132-entry status counts are stale after the P0 relation-semantics, ACL-preserving label projection, tenant-route probe and representative negative-authority changes; rerun only the deterministically affected set before recomputing the matrix"
   ],
   "next_exact_step": "Publish the clean exact-head candidate for remote integration; recompute matrix coverage only for entries whose declared inputs changed.",
   "goal": ".agent/goals/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124.yaml",
