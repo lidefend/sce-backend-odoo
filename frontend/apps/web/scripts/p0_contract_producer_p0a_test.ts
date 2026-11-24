@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { decodeContractV2FieldDescriptor } from '../src/app/contracts/v2/fieldDescriptor';
 import { decodeContractCarrierCapabilities } from '../src/app/contracts/v2/carrierCapabilities';
 import { presentDeclaredBusinessValue } from '../src/app/presentation/businessValuePresentation';
-import { contractDefectFromError, contractGapError } from '../src/app/contract/contractGap';
+import {
+  consumerErrorDefect,
+  contractDefectFromError,
+  contractGapError,
+} from '../src/app/contract/contractGap';
 import { buildStatusError } from '../src/composables/useStatus';
 import {
   PageOrchestrationDecodeError,
@@ -209,6 +213,17 @@ assert.equal(decodeMismatch.contractDefect?.requiredDeclarationLayer,
 assert.match(decodeMismatch.contractDefect?.missing || '', /activity_ids/);
 assert.deepEqual(contractDefectFromError(decodeError), decodeMismatch.contractDefect);
 assert.equal(contractDefectFromError(new Error('ordinary request failure')), null);
+const consumerDefect = consumerErrorDefect(new TypeError("Cannot read properties of undefined (reading 'parentNode')"), {
+  stage: 'beforeUnmount hook',
+  consumer: 'ContractFormPage',
+  componentTrace: ['ScDialog', 'anonymous'],
+});
+assert.equal(consumerDefect.failureClass, 'consumer_error');
+assert.equal(consumerDefect.requiredDeclarationLayer, 'P0:frontend:ContractFormPage consumer');
+assert.equal(consumerDefect.consumerContext?.errorName, 'TypeError');
+assert.equal(consumerDefect.consumerContext?.stage, 'beforeUnmount hook');
+assert.deepEqual(consumerDefect.consumerContext?.componentTrace, ['ScDialog', 'anonymous']);
+assert.match(consumerDefect.missing, /^beforeUnmount hook: Cannot read properties/);
 
 const contextualRelation = decodeContractV2FieldDescriptor({
   ...paymentDetailCollection.descriptor,

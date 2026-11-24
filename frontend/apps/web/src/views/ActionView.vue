@@ -819,7 +819,12 @@ import CollectionFilterChip from '../components/product-list/CollectionFilterChi
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import DashboardPattern from '../components/product-page-patterns/DashboardPattern.vue';
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
-import { isContractGapError, type ContractDefectRef } from '../app/contract/contractGap';
+import {
+  consumerComponentTrace,
+  consumerErrorDefect,
+  contractDefectFromError,
+  type ContractDefectRef,
+} from '../app/contract/contractGap';
 import { getUserViewPreference, setUserViewPreference, type ListColumnPreference } from '../api/preferences';
 import { readStoredListPreference, projectStoredListPreference } from '../app/runtime/listPreferenceProjection';
 import { resolveListColumnPreferenceScope } from '../app/runtime/listPreferenceScope';
@@ -3416,33 +3421,13 @@ onBeforeUnmount(() => {
   }
 });
 
-onErrorCaptured((err) => {
+onErrorCaptured((err, instance, info) => {
   const message = err instanceof Error ? err.message : String(err || 'unknown render error');
-  if (isContractGapError(err)) {
-    renderErrorDefect.value = {
-      ...err.defect,
-      failureClass: err.defect.failureClass || 'contract_missing',
-    };
-  } else if (err instanceof Error && err.name === 'ContractV2DecodeError') {
-    const issues = Array.isArray((err as Error & { issues?: unknown[] }).issues)
-      ? (err as Error & { issues: Array<{ path?: unknown; message?: unknown }> }).issues
-      : [];
-    renderErrorDefect.value = {
-      kind: 'contract_defect',
-      failureClass: 'contract_mismatch',
-      missing: issues.length
-        ? issues.map((issue) => `${String(issue.path || '')}: ${String(issue.message || '')}`).join('; ')
-        : message,
-      requiredDeclarationLayer: 'P0:smart_core/frontend:contract_v2_schema',
-    };
-  } else {
-    renderErrorDefect.value = {
-      kind: 'contract_defect',
-      failureClass: 'consumer_error',
-      missing: message,
-      requiredDeclarationLayer: 'P0:frontend:ActionView consumer',
-    };
-  }
+  renderErrorDefect.value = contractDefectFromError(err) || consumerErrorDefect(err, {
+    stage: info,
+    consumer: 'ActionView',
+    componentTrace: consumerComponentTrace(instance),
+  });
   renderErrorMessage.value = `ActionView render error: ${message}`;
   logger.error('[ActionView] render failed', err);
   return false;
