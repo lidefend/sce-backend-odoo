@@ -1,0 +1,73 @@
+{
+  "schema_version": 2,
+  "id": "SCHEDULED-FULL-BASELINE-REMEDIATION-20261124",
+  "branch": "fix/scheduled-full-baseline-remediation-20261124",
+  "baseline_sha": "5e436b2a6cb8816da94c0b3d3d831279628adf3d",
+  "status": "active",
+  "goal": ".agent/goals/SCHEDULED-FULL-BASELINE-REMEDIATION-20261124.yaml",
+  "record": "docs/ops/iterations/scheduled_full_baseline_remediation_20261124.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124.yaml",
+    ".agent/goals/SCHEDULED-FULL-BASELINE-REMEDIATION-20261124.yaml",
+    ".agent/runs/SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124/run.json",
+    ".agent/runs/SCHEDULED-FULL-BASELINE-REMEDIATION-20261124/run.json",
+    ".github/workflows/backend_test_suite.yml",
+    "scripts/test/test.sh",
+    "scripts/test/test_dependency_baseline.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
+    "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
+    "addons/smart_construction_core/tests/test_settlement_fact_immutability_v1.py",
+    "demo_addons/smart_construction_demo/tests/test_payment_request_floorplan_fixture_ownership.py",
+    "docs/ops/iterations/scheduled_full_baseline_remediation_20261124.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing worktree-scoped local.test profile for focused reproduction plus exact-head backend_test_suite for full evidence"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration plus focused local.test.test module suites",
+      "reason": "Reproduce and close each affected module failure with nonzero targeted ORM tests before full-suite dispatch."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Validate the test and harness corrections against the current target base."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "Post-merge scheduled qualification is required after integration but cannot substitute for this PR's exact-head checks."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "No frontend product carrier changes; shared fixtures still consume the same backend identity."
+    }
+  },
+  "checks": {
+    "workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/backend_test_suite.yml"
+      ],
+      "kind": "offline"
+    },
+    "scheduled_contract": {
+      "target": "verify.ci.scheduled_gates",
+      "inputs": [
+        ".github/workflows/backend_test_suite.yml"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the focused fixes, publish the PR, and run the exact-head full backend suite.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

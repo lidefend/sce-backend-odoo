@@ -72,6 +72,7 @@ fi
 # shellcheck disable=SC2086
 compose ${COMPOSE_FILES} -f "${ROOT_DIR}/docker-compose.test-isolation.yml" run --no-deps ${RUN_RM} -T --interactive=false "${RUN_NAME[@]}" \
   -e PYTHONFAULTHANDLER=1 \
+  -e "SC_TEST_DB_NAME=${DB_NAME}" \
   "${RECEIPT_ARGS[@]}" "${PIP_CACHE_ARGS[@]}" "${PREPARATION_ARGS[@]}" \
   -v "${DOCS_MOUNT_HOST}:${DOCS_MOUNT_CONT}:ro" \
   -v "${CONFIG_MOUNT_HOST}:${CONFIG_MOUNT_CONT}:ro" \

@@ -171,6 +171,14 @@ class PreparationTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(bool(result.stdout), not bool(override))
 
+    def test_test_container_receives_exact_attempt_database_identity(self):
+        script = (Path(__file__).with_name('test.sh')).read_text()
+        self.assertIn('-e "SC_TEST_DB_NAME=${DB_NAME}"', script)
+        self.assertLess(
+            script.index('-e "SC_TEST_DB_NAME=${DB_NAME}"'),
+            script.index('--entrypoint bash odoo'),
+        )
+
 
 if __name__ == '__main__':
     unittest.main()

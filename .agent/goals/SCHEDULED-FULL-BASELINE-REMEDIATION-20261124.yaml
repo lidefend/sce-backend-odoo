@@ -1,0 +1,59 @@
+schema_version: 1
+
+goal:
+  id: SCHEDULED-FULL-BASELINE-REMEDIATION-20261124
+  title: Remediate defects exposed by the all-tests scheduled backend baseline
+  status: active
+  formal_product_layer: P4 test harness plus owner-layer test fixtures and assertions
+  layer_target: scheduled full backend suite
+  module:
+    - smart_construction_acceptance_fixture
+    - smart_core
+    - smart_construction_core
+    - smart_construction_demo
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Make the newly enabled all-tests backend suite self-contained and truthful by
+    fixing the test database identity handoff, missing scenario preconditions and
+    the two failing assertions it exposed.
+  why_here: >-
+    The failures are in test selection, attempt identity, fixture setup or test
+    assertions first exercised by the P4 full lane. No production workflow,
+    permission policy or business model semantics should change to satisfy them.
+  why_not_elsewhere:
+    - Do not weaken the all-tests selector.
+    - Do not skip the exposed tests or quarantine failures.
+    - Do not change ACL, Record Rules or production business behavior.
+    - Do not make every ordinary PR run the exhaustive scheduled suite.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124.yaml
+      - .agent/goals/SCHEDULED-FULL-BASELINE-REMEDIATION-20261124.yaml
+      - .agent/runs/SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124/run.json
+      - .agent/runs/SCHEDULED-FULL-BASELINE-REMEDIATION-20261124/run.json
+      - .github/workflows/backend_test_suite.yml
+      - scripts/test/test.sh
+      - scripts/test/test_dependency_baseline.py
+      - addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py
+      - addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py
+      - addons/smart_core/tests/test_odoo_native_alignment_boundaries.py
+      - addons/smart_construction_core/tests/test_settlement_fact_immutability_v1.py
+      - demo_addons/smart_construction_demo/tests/test_payment_request_floorplan_fixture_ownership.py
+      - docs/ops/iterations/scheduled_full_baseline_remediation_20261124.md
+    product_behavior: no production behavior change
+  acceptance:
+    - attempt database identity reaches tests as SC_TEST_DB_NAME
+    - fixture tests seed only their own isolated attempt
+    - demo ownership tests load required scenario facts inside the test transaction
+    - smart_core field-settings assertion reflects the current authoritative contract
+    - settlement concurrency assertion observes and explains both outcomes
+    - all four affected modules pass their complete test suites
+    - scheduled full selector remains unchanged
+  exclusions:
+    - production_code_change
+    - acl_or_record_rule_change
+    - database_migration
+    - test_skip_or_quarantine
+    - deployment
+  rollback: Revert this branch; no persistent data or deployed state changes.

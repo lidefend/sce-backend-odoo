@@ -4,10 +4,26 @@ from unittest.mock import patch
 from odoo.tests.common import TransactionCase, tagged
 
 from ..seed.steps import step_payment_request_floorplan_demo as fixture_step
+from ..tools.scenario_loader import load_scenario
 
 
 @tagged("post_install", "-at_install", "payment_request_fixture_ownership")
 class TestPaymentRequestFloorplanFixtureOwnership(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        if not cls.env.ref(
+            "smart_construction_demo.sc_demo_contract_in_069_payment",
+            raise_if_not_found=False,
+        ):
+            load_scenario(
+                cls.env,
+                "s69_payment_ledger_surface",
+                ensure_base=False,
+                apply_passwords=False,
+                commit=False,
+            )
+
     def _values(self, name):
         contract = self.env.ref("smart_construction_demo.sc_demo_contract_in_069_payment")
         return {
