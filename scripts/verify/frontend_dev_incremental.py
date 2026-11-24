@@ -637,6 +637,12 @@ RULES = (
         "verify.ci.scheduled_gates",
     )),
     Rule((
+        "scripts/ci/main_full_release_dispatch.py",
+        "scripts/ci/test_main_full_release_dispatch.py",
+    ), (
+        "verify.ci.scheduled_gates",
+    )),
+    Rule((
         "scripts/verify/frontend_static_release_audit.py",
     ), (
         "verify.ci.workflow.contract",

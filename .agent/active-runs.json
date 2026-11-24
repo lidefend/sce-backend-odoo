@@ -21,6 +21,7 @@
     "feature/fast-lane-01-dual-channel-20261123": ".agent/runs/FAST-LANE-01-IMPLEMENT/run.json",
     "feature/verification-lane-routing-20261124": ".agent/runs/VERIFICATION-LANE-ROUTING-20261124/run.json",
     "feature/remote-ci-precision-20261124": ".agent/runs/REMOTE-CI-PRECISION-20261124/run.json",
+    "fix/main-full-release-dispatch-20261124": ".agent/runs/MAIN-FULL-RELEASE-DISPATCH-20261124/run.json",
     "audit/BASELINE-EVIDENCE-01-20261123": ".agent/runs/BASELINE-EVIDENCE-01/run.json",
     "codex/backend-suite-reuse-authority": ".agent/runs/BACKEND-SUITE-REUSE-AUTHORITY/run.json",
     "codex/cap01b-capability-reconciliation-20261104": ".agent/runs/CAP01B-CAPABILITY-RECONCILIATION-20261104/run.json",

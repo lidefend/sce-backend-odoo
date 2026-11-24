@@ -228,9 +228,11 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
      的直接归属模块，未变化依赖消费者不重跑；ORM 执行 changed-test selectors，pure-Python
      只执行精确 changed files；production、helper、删除测试和 mixed 变更仍保留完整受影响模块覆盖。
    - **三层不得互相替代。** `local_targeted` 只证明当前 diff 的受影响面；`remote_integration`
-     绑定精确 PR HEAD 与当前 base，普通 PR 按风险选测，`ci:candidate`/owner dispatch 才执行 full
-     candidate；`scheduled_release` 只在 `main` 的同槽位 schedule 事件执行五个工作流和嵌套全模块
+     绑定精确 PR HEAD 与当前 base，普通 PR 按风险选测，PR `ci:candidate` 才执行 full
+     candidate；`scheduled_release` 在 `main` 的同槽位 schedule 事件执行五个工作流和嵌套全模块
      backend，聚合结果仅为 `candidate_build_eligible`，不授予 PR 合并或部署资格。
+     发版需要人工启动全量时使用 `make release.main_full EXPECTED_MAIN=<exact-sha>`；它触发同一
+     五工作流并等待全部成功，但记录为 `operator_full_audit`，不得冒充 `scheduled_mainline`。
    - **车道遥测只陈述事实。** 声明车道的真实耗时、成功率、降级率和失败归因落在
      `.git/codex/evidence/lane_telemetry/`，车道名与覆盖审计仪器
      `scripts/audit/verification_lane_coverage.py` 的 `LANES` 同源，不得新造。

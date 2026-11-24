@@ -1029,7 +1029,7 @@ verify.ci.execution_alignment.orders: guard.prod.forbid
 	done
 	@python3 -c 'import json; from pathlib import Path; from scripts.verify.test_baseline_contract import compare; root=Path(".runtime/ci-execution-alignment/orders"); print("[ci.execution_alignment.orders] PASS cases=" + str(compare([json.loads((root/(order+".json")).read_text()) for order in ("forward", "reverse", "random")])))'
 
-verify.ci.scheduled_gates: guard.prod.forbid verify.github_actions.security
+verify.ci.scheduled_gates: guard.prod.forbid verify.github_actions.security verify.ci.main_full_release.unit
 	@python3 -m py_compile scripts/verify/frontend_release_gate.py scripts/verify/test_frontend_release_gate.py scripts/verify/ci_artifact_host_write_guard.py scripts/verify/test_ci_artifact_host_write_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_gate.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_frontend_release_ci_guard.py
@@ -1199,6 +1199,37 @@ ci.backend_test_suite.dispatch: guard.prod.forbid
 	gh workflow run backend_test_suite.yml --ref "$$branch" -f "head_ref=$$branch"; \
 	echo "[ci.backend_test_suite.dispatch] dispatched full backend suite for exact_head=$$expected"; \
 	'
+
+MAIN_FULL_RELEASE_EXPECTED_MAIN ?= $(EXPECTED_MAIN)
+MAIN_FULL_RELEASE_MANIFEST ?= .runtime/main-full-release/$(MAIN_FULL_RELEASE_EXPECTED_MAIN).json
+MAIN_FULL_RELEASE_DISCOVERY_SECONDS ?= 180
+MAIN_FULL_RELEASE_WAIT_SECONDS ?= 21600
+MAIN_FULL_RELEASE_POLL_SECONDS ?= 10
+
+.PHONY: release.main_full release.main_full.dispatch release.main_full.verify verify.ci.main_full_release.unit
+release.main_full.dispatch: guard.prod.forbid
+	@test -n "$(MAIN_FULL_RELEASE_EXPECTED_MAIN)" || { echo "[DENY] release.main_full.dispatch: EXPECTED_MAIN is required"; exit 2; }
+	@python3 scripts/ci/main_full_release_dispatch.py dispatch \
+		--expected-main "$(MAIN_FULL_RELEASE_EXPECTED_MAIN)" \
+		--manifest "$(MAIN_FULL_RELEASE_MANIFEST)" \
+		--discovery-seconds "$(MAIN_FULL_RELEASE_DISCOVERY_SECONDS)" \
+		--poll-seconds "$(MAIN_FULL_RELEASE_POLL_SECONDS)"
+
+release.main_full.verify: guard.prod.forbid
+	@test -n "$(MAIN_FULL_RELEASE_EXPECTED_MAIN)" || { echo "[DENY] release.main_full.verify: EXPECTED_MAIN is required"; exit 2; }
+	@python3 scripts/ci/main_full_release_dispatch.py verify \
+		--expected-main "$(MAIN_FULL_RELEASE_EXPECTED_MAIN)" \
+		--manifest "$(MAIN_FULL_RELEASE_MANIFEST)" \
+		--wait-seconds "$(MAIN_FULL_RELEASE_WAIT_SECONDS)" \
+		--poll-seconds "$(MAIN_FULL_RELEASE_POLL_SECONDS)"
+
+release.main_full: guard.prod.forbid
+	@$(MAKE) --no-print-directory release.main_full.dispatch
+	@$(MAKE) --no-print-directory release.main_full.verify
+
+verify.ci.main_full_release.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ci/main_full_release_dispatch.py scripts/ci/test_main_full_release_dispatch.py
+	@python3 scripts/ci/test_main_full_release_dispatch.py
 
 .PHONY: ci.frontend_release_gate.dispatch
 ci.frontend_release_gate.dispatch: guard.prod.forbid

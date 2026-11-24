@@ -1,0 +1,65 @@
+schema_version: 1
+
+goal:
+  id: MAIN-FULL-RELEASE-DISPATCH-20261124
+  title: Governed manual full-release audit dispatch on main
+  status: active
+  formal_product_layer: P4 ops delivery tool
+  layer_target: exact-main manual full release audit dispatch and verification
+  module:
+    - make/ci.mk
+    - scripts/ci
+    - docs/ops
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Provide one governed Make entry that dispatches the five exact-main
+    workflow_dispatch full-audit workflows, binds every new run to the expected
+    main SHA, waits for completion and requires all five successful results.
+  why_here: >-
+    The missing capability is a release-delivery control-plane tool. Product
+    contracts, Odoo modules, frontend behavior and database state are excluded.
+  why_not_elsewhere:
+    - Do not add a second CI evidence ledger.
+    - Do not treat workflow_dispatch evidence as a scheduled event.
+    - Do not weaken the full professional, frontend, public or release conditions.
+    - Do not deploy or write product data.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/MAIN-FULL-RELEASE-DISPATCH-20261124.yaml
+      - .agent/runs/MAIN-FULL-RELEASE-DISPATCH-20261124/run.json
+      - .agent/runs/template/run.json
+      - .agent/context.yaml
+      - make/ci.mk
+      - scripts/ci/main_full_release_dispatch.py
+      - scripts/ci/test_main_full_release_dispatch.py
+      - scripts/ci/backend_impact_plan.py
+      - scripts/verify/test_coverage_registry.yaml
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - docs/ops/codex_execution_allowlist.md
+      - docs/ops/codex_workspace_execution_rules.md
+      - docs/ops/iteration_validation_responsibility_v1.md
+      - docs/ops/dual_lane_fast_iteration_v1.md
+      - docs/ops/validation_delivery_protocol.md
+      - docs/ops/iterations/main_full_release_dispatch_20261124.md
+      - docs/engineering_convergence/test_inventory.csv
+      - docs/engineering_convergence/test_inventory_summary.md
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/audit/test_coverage_registry/test_coverage_registry.json
+    product_behavior: no product behavior change
+  acceptance:
+    - the target refuses dirty worktrees or a mismatched remote main
+    - all five new workflow_dispatch runs bind to the exact expected main
+    - old runs are never adopted as the new dispatch result
+    - verification waits for all five runs and rejects failure or cancellation
+    - release_candidate_gate success remains the final aggregation proof
+    - operator dispatch is labelled operator_full_audit, not scheduled_mainline
+    - the five newly discovered mainline test groups are dispositioned without weakening the audit
+  exclusions:
+    - product_code_change
+    - database_or_fixture_write
+    - required_gate_removal
+    - deployment
+  rollback: Revert this branch; no product state or persistent data changes.
