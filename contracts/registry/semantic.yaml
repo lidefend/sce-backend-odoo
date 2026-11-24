@@ -72,6 +72,12 @@ native_widgets:
   analytic_distribution: {status: ready}
   many2many_binary: {status: ready}
   many2one_avatar_user: {status: ready}
+  account_type_selection:
+    status: fallback
+    reason_code: NATIVE_WIDGET_PLATFORM_COMPONENT_SUBSTITUTION
+  list_activity:
+    status: fallback
+    reason_code: NATIVE_WIDGET_PLATFORM_COMPONENT_SUBSTITUTION
   res_partner_many2one:
     status: fallback
     reason_code: NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK
@@ -129,6 +135,12 @@ derivation:
       when: {widgets: [float_time]}
     - semantic: status
       when: {widgets: [statusbar, badge]}
+    - semantic: choice
+      when: {widgets: [account_type_selection]}
+      reason: account_type_selection 只表达选择项，由平台远程选择组件承接，不执行 Odoo 嵌入 widget。
+    - semantic: activity_collection
+      when: {widgets: [list_activity]}
+      reason: list_activity 表达活动集合，由平台活动集合语义组件承接，不执行 Odoo 嵌入 widget。
     - semantic: boolean
       when: {field_types: [boolean]}
     - semantic: readable_value
@@ -201,6 +213,7 @@ semantics:
   relation_collection: {category: relation, component: sc.relation.many2many}
   tag_collection: {category: relation, component: sc.select.tags}
   detail_collection: {category: collection, component: sc.relation.table}
+  activity_collection: {category: collection, component: sc.relation.activity}
   detail_table: {category: collection, component: sc.table.data}
   hierarchical_collection: {category: collection, component: sc.tree.data}
   action: {category: behavioral, component: sc.button.action}

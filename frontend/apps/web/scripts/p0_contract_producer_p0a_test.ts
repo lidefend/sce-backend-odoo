@@ -143,6 +143,48 @@ assert.deepEqual(fallback.registryResolution.widget, {
   fallbackReasonCode: 'NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK',
 });
 
+const activityCollection = decodeContractV2FieldDescriptor({
+  schemaVersion: '1.0.0',
+  fieldCode: 'activity_ids',
+  label: '活动',
+  fieldType: 'one2many',
+  widgetType: 'list_activity',
+  componentKey: 'sc.relation.activity',
+  semanticType: 'activity_collection',
+  relation: 'mail.activity',
+  relationField: 'res_id',
+  relationEntry: {
+    model: 'mail.activity',
+    can_create: true,
+    can_open: false,
+    page_size: 20,
+  },
+});
+assert.deepEqual(activityCollection.registryResolution.widget, {
+  widgetType: 'list_activity',
+  widgetStatus: 'fallback',
+  fallbackReasonCode: 'NATIVE_WIDGET_PLATFORM_COMPONENT_SUBSTITUTION',
+});
+assert.equal(activityCollection.descriptor.componentKey, 'sc.relation.activity');
+assert.equal(activityCollection.descriptor.relationEntry?.page_size, 20);
+
+const accountTypeChoice = decodeContractV2FieldDescriptor({
+  schemaVersion: '1.0.0',
+  fieldCode: 'account_type',
+  label: '类型',
+  fieldType: 'selection',
+  widgetType: 'account_type_selection',
+  componentKey: 'sc.select.remote',
+  semanticType: 'choice',
+  selection: [['asset_cash', '银行和现金']],
+});
+assert.deepEqual(accountTypeChoice.registryResolution.widget, {
+  widgetType: 'account_type_selection',
+  widgetStatus: 'fallback',
+  fallbackReasonCode: 'NATIVE_WIDGET_PLATFORM_COMPONENT_SUBSTITUTION',
+});
+assert.equal(accountTypeChoice.descriptor.componentKey, 'sc.select.remote');
+
 assert.throws(
   () => decodeContractV2FieldDescriptor({ ...readyMoney, widgetType: 'domain' }),
   /FIELD_DESCRIPTOR_WIDGET_UNSUPPORTED/,

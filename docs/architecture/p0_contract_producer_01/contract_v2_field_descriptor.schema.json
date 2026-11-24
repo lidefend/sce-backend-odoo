@@ -50,6 +50,7 @@
     },
     "widgetType": {
       "enum": [
+        "account_type_selection",
         "input",
         "select",
         "date",
@@ -92,6 +93,7 @@
         "analytic_distribution",
         "many2many_binary",
         "many2one_avatar_user",
+        "list_activity",
         "res_partner_many2one",
         "field_partner_autocomplete",
         "domain",
@@ -107,6 +109,7 @@
     },
     "semanticType": {
       "enum": [
+        "activity_collection",
         "binary",
         "boolean",
         "challenge_status",

@@ -25,6 +25,8 @@ DERIVATION_RULES = (
     {"semantic": 'percentage', "widgets": ('percentage', 'percentpie',)},
     {"semantic": 'duration', "widgets": ('float_time',)},
     {"semantic": 'status', "widgets": ('statusbar', 'badge',)},
+    {"semantic": 'choice', "widgets": ('account_type_selection',), "reason": 'account_type_selection 只表达选择项，由平台远程选择组件承接，不执行 Odoo 嵌入 widget。'},
+    {"semantic": 'activity_collection', "widgets": ('list_activity',), "reason": 'list_activity 表达活动集合，由平台活动集合语义组件承接，不执行 Odoo 嵌入 widget。'},
     {"semantic": 'boolean', "field_types": ('boolean',)},
     {"semantic": 'readable_value', "widgets": ('account-tax-totals-field', 'payment', 'statinfo',), "reason": '会计只读摘要/统计载体（tax_totals、支付挂件、statinfo）是可读展示，不是可编辑的二进制或数字控件。'},
     {"semantic": 'relation', "field_types": ('many2one',)},
@@ -53,6 +55,7 @@ DERIVATION_RULES = (
 # semantic -> the component key the frontend renders.
 SEMANTIC_COMPONENTS = {
     'action': 'sc.button.action',
+    'activity_collection': 'sc.relation.activity',
     'binary': 'sc.input.binary',
     'boolean': 'sc.input.boolean',
     'challenge_status': 'sc.auth.challenge_status',
@@ -85,6 +88,7 @@ SEMANTIC_COMPONENTS = {
 # explicit native View Widget token -> declared support status.
 NATIVE_WIDGET_STATUS = {
     'account-tax-totals-field': {'status': 'ready', 'reasonCode': ''},
+    'account_type_selection': {'status': 'fallback', 'reasonCode': 'NATIVE_WIDGET_PLATFORM_COMPONENT_SUBSTITUTION'},
     'analytic_distribution': {'status': 'ready', 'reasonCode': ''},
     'badge': {'status': 'ready', 'reasonCode': ''},
     'binary': {'status': 'ready', 'reasonCode': ''},
@@ -106,6 +110,7 @@ NATIVE_WIDGET_STATUS = {
     'image': {'status': 'fallback', 'reasonCode': 'NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK'},
     'input': {'status': 'ready', 'reasonCode': ''},
     'json': {'status': 'ready', 'reasonCode': ''},
+    'list_activity': {'status': 'fallback', 'reasonCode': 'NATIVE_WIDGET_PLATFORM_COMPONENT_SUBSTITUTION'},
     'many2many': {'status': 'ready', 'reasonCode': ''},
     'many2many_binary': {'status': 'ready', 'reasonCode': ''},
     'many2many_tags': {'status': 'ready', 'reasonCode': ''},
@@ -172,6 +177,7 @@ COMPONENT_REGISTRATIONS = {
     'sc.insight.summary': {'kind': 'node', 'version': '1.0.0'},
     'sc.navigation.anchor': {'kind': 'node', 'version': '1.0.0'},
     'sc.payment.settlement_detail_collection': {'kind': 'field', 'version': '1.0'},
+    'sc.relation.activity': {'kind': 'field', 'version': '1.0'},
     'sc.relation.many2many': {'kind': 'field', 'version': '1.0'},
     'sc.relation.many2one': {'kind': 'field', 'version': '1.0'},
     'sc.relation.table': {'kind': 'field', 'version': '1.0'},

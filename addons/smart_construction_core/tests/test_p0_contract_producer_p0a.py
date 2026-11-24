@@ -286,6 +286,74 @@ class TestP0ContractProducerP0A(TransactionCase):
             [16, int(self.env.company.currency_id.decimal_places or 2)],
         )
 
+    def test_strict_attachment_descriptor_gets_a_platform_owned_role(self):
+        descriptor = _strict_field_descriptor({
+            "fieldCode": "attachment_ids",
+            "label": "附件",
+            "fieldDescriptor": {
+                "schemaVersion": "1.0.0",
+                "name": "attachment_ids",
+                "type": "many2many",
+                "relation": "ir.attachment",
+            },
+            "componentConfig": {
+                "fieldType": "many2many",
+                "nativeWidget": "many2many_binary",
+                "relation": "ir.attachment",
+            },
+        }, model_name="sc.labor.usage")
+        self.assertIsNotNone(descriptor)
+        self.assertEqual(
+            descriptor["attachmentRole"],
+            "attachment:sc.labor.usage:attachment_ids",
+        )
+
+    def test_strict_embedded_native_tokens_project_platform_capabilities(self):
+        activity = _strict_field_descriptor({
+            "fieldCode": "activity_ids",
+            "label": "活动",
+            "fieldDescriptor": {
+                "schemaVersion": "1.0.0",
+                "name": "activity_ids",
+                "type": "one2many",
+                "relation": "mail.activity",
+                "relationField": "res_id",
+            },
+            "componentConfig": {
+                "fieldType": "one2many",
+                "nativeWidget": "list_activity",
+                "relation": "mail.activity",
+                "relationField": "res_id",
+                "relationEntry": {
+                    "model": "mail.activity",
+                    "can_create": True,
+                    "page_size": 20,
+                },
+            },
+        }, model_name="res.users")
+        self.assertIsNotNone(activity)
+        self.assertEqual(activity["semanticType"], "activity_collection")
+        self.assertEqual(activity["componentKey"], "sc.relation.activity")
+        self.assertEqual(activity["relationEntry"]["page_size"], 20)
+
+        account_type = _strict_field_descriptor({
+            "fieldCode": "account_type",
+            "label": "类型",
+            "fieldDescriptor": {
+                "schemaVersion": "1.0.0",
+                "name": "account_type",
+                "type": "selection",
+            },
+            "componentConfig": {
+                "fieldType": "selection",
+                "nativeWidget": "account_type_selection",
+                "selection": [["asset_cash", "银行和现金"]],
+            },
+        }, model_name="account.account")
+        self.assertIsNotNone(account_type)
+        self.assertEqual(account_type["semanticType"], "choice")
+        self.assertEqual(account_type["componentKey"], "sc.select.remote")
+
     def test_strict_monetary_descriptor_keeps_currency_binding_without_inventing_precision(self):
         contract = {
             "pageInfo": {"model": "project.project"},
