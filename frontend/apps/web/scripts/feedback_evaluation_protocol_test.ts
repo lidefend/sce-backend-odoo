@@ -45,6 +45,7 @@ function snapshot() {
   const source = {
     containerId: 'source',
     type: 'field',
+    semanticType: 'text',
     name: 'note',
     nativeLocator: '/form[1]/note[1]',
     occurrenceIndex: 1,
@@ -243,6 +244,7 @@ function relationSnapshot() {
   const source = {
     containerId: 'refund-source',
     type: 'field',
+    semanticType: 'text',
     name: 'processing_advisory',
     nativeLocator: '/form[1]/sheet[1]/div[1]/field[1]',
     occurrenceIndex: 1,

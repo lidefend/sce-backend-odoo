@@ -1,0 +1,40 @@
+schema_version: 1
+
+goal:
+  id: P0-FEEDBACK-FIELD-NODE-SEMANTIC-FILTER-20261126
+  title: "Keep field semantics out of draft-feedback node discovery"
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: Frontend contract consumption for draft-feedback host discovery
+  module:
+    - frontend
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Prevent the draft-feedback host scanner from interpreting valid field
+    semantics such as ``text`` as node semantics, while retaining fail-closed
+    resolution for actual feedback hosts.
+  why_here:
+    - The backend project Form contract is valid and carries field semantic
+      identities on field nodes.
+    - The defect is caused solely by the frontend feedback consumer invoking a
+      node-semantic resolver before establishing that a node declares feedback
+      evaluation behavior.
+  why_not_elsewhere:
+    - Removing field semantics from the project Form would corrupt the
+      authoritative field contract.
+    - Adding a project-model or project-field special case in the frontend would
+      violate the contract-driven product boundary.
+  blast_radius:
+    - Draft-feedback host discovery on project and other business Forms.
+    - Feedback protocol regression coverage.
+    - Real projects.ledger list-to-Form browser acceptance.
+  acceptance:
+    - A field node with semanticType=text is ignored by feedback-host discovery.
+    - A valid feedback_message host continues to resolve and evaluate.
+    - No ContractGapError is emitted for field semantics.
+    - The wutao projects.ledger row-to-Form journey completes without console or
+      page errors.
+  exclusions:
+    - No backend contract, project model, view, permission or business-data change.
+    - No database migration, fixture reset or deployment.
+  rollback: Revert this branch; runtime and business data remain unchanged.
