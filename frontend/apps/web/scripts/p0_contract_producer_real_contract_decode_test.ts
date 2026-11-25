@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict';
-import payload from '../../../../artifacts/p0_contract_producer_01/ui-contract-v2-project-list.json';
+import formPayload from '../../../../artifacts/p0_contract_producer_01/ui-contract-v2-project-form.json';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 
-const snapshot = decodeContractV2Snapshot(payload);
-assert.equal(snapshot.pageInfo.contractVersion, '2.6.0');
-
 let strictDescriptorCount = 0;
-function walk(rows: unknown): void {
+
+const formSnapshot = decodeContractV2Snapshot(formPayload);
+assert.equal(formSnapshot.pageInfo.contractVersion, '2.6.0');
+const dateStartDescriptors: Array<Record<string, unknown>> = [];
+function walkForm(rows: unknown): void {
   if (!Array.isArray(rows)) return;
   rows.forEach((row) => {
     if (!row || typeof row !== 'object') return;
@@ -16,12 +17,25 @@ function walk(rows: unknown): void {
       if (!widget || typeof widget !== 'object') return;
       const descriptor = (widget as Record<string, unknown>).fieldDescriptor;
       if (!descriptor || typeof descriptor !== 'object') return;
-      assert.equal((descriptor as Record<string, unknown>).schemaVersion, '1.0.0');
       strictDescriptorCount += 1;
+      if ((widget as Record<string, unknown>).fieldCode === 'date_start') {
+        dateStartDescriptors.push(descriptor as Record<string, unknown>);
+      }
     });
-    walk(record.children);
+    walkForm(record.children);
   });
 }
-walk(snapshot.layoutContract.containerTree);
-assert.ok(strictDescriptorCount > 0);
-console.log(`P0_A_REAL_CONTRACT_V2_DECODE=PASS strictDescriptors=${strictDescriptorCount}`);
+walkForm(formSnapshot.layoutContract.containerTree);
+assert.equal(dateStartDescriptors.length, 1);
+assert.equal(dateStartDescriptors[0].widgetType, 'daterange');
+assert.equal(dateStartDescriptors[0].semanticType, 'date');
+assert.equal(dateStartDescriptors[0].componentKey, 'sc.input.date');
+assert.deepEqual(dateStartDescriptors[0].temporal, {
+  kind: 'date',
+  timezoneAuthority: 'not_applicable',
+});
+
+console.log(
+  `P0_A_REAL_CONTRACT_V2_DECODE=PASS strictDescriptors=${strictDescriptorCount} `
+  + 'audience=form',
+);

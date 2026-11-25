@@ -342,6 +342,7 @@ verify.unified_page_contract.v2.guard_inventory: guard.prod.forbid
 .PHONY: verify.unified_page_contract.v2.assembler
 verify.unified_page_contract.v2.assembler: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_assembler.py addons/smart_construction_core/core_extension_project_layout.py scripts/verify/unified_page_contract_v2_assembler_guard.py
+	@python3 -m unittest scripts.verify.test_unified_page_contract_v2_assembler_guard
 	@python3 scripts/verify/unified_page_contract_v2_assembler_guard.py --fixtures docs/architecture/unified_page_contract_v2/fixtures --snapshot docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v2.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json --schema docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json
 
 .PHONY: verify.unified_page_contract.v2.status

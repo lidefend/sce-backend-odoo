@@ -105,15 +105,26 @@ def _matches(rule: dict, widget: str, field_type: str) -> bool:
     return True
 
 
-def derive_semantic(field: Any = None, widget_type: str = "") -> str:
-    """First ordered rule whose conditions all hold, else the declared default."""
+def derive_semantic_match(field: Any = None, widget_type: str = "") -> tuple[str, bool]:
+    """Return the resolved semantic and whether an ordered rule matched it.
+
+    Callers that combine native presentation facts with canonical field facts
+    need to distinguish an explicit widget rule from the generic fallback.
+    Returning only the semantic string makes those two cases indistinguishable.
+    """
     widget = _text(widget_type).lower()
     field_type = field_type_of(field)
     for rule in DERIVATION_RULES:
         semantic = _text(rule.get("semantic"))
         if semantic and _matches(rule, widget, field_type):
-            return semantic
-    return FALLBACK_SEMANTIC
+            return semantic, True
+    return FALLBACK_SEMANTIC, False
+
+
+def derive_semantic(field: Any = None, widget_type: str = "") -> str:
+    """First ordered rule whose conditions all hold, else the declared default."""
+    semantic, _matched = derive_semantic_match(field, widget_type)
+    return semantic
 
 
 def semantic_widget_type(native_widget: str = "", canonical_widget_type: str = "") -> str:
@@ -151,7 +162,7 @@ def resolve_native_widget(native_widget: str = "") -> dict[str, str]:
     }
 
 
-def resolve_native_view_widget(widget_name: str = "") -> dict[str, str]:
+def resolve_native_view_widget(widget_name: str = "") -> dict[str, Any]:
     """Resolve one embedded Form widget to its declared node component."""
     normalized = _text(widget_name).lower()
     entry = NATIVE_VIEW_WIDGET_COMPONENTS.get(normalized) or NATIVE_VIEW_WIDGET_DEFAULT
@@ -160,6 +171,7 @@ def resolve_native_view_widget(widget_name: str = "") -> dict[str, str]:
         "status": _text(entry.get("status")).lower(),
         "reasonCode": _text(entry.get("reasonCode")),
         "payloadRequired": entry.get("payloadRequired") is True,
+        "payloadSchema": _text(entry.get("payloadSchema")),
     }
 
 

@@ -863,6 +863,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets([
                 "contracts/registry/component.yaml",
                 "contracts/registry/registry.schema.json",
+                "contracts/registry/semantic.yaml",
             ]),
             [
                 "verify.frontend.professional_component_registry.unit",
@@ -934,6 +935,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]),
             [
                 "verify.p0_contract_producer.p0a.backend_unit",
+                "verify.p0_contract_producer.p0a.descriptor_conformance",
                 "verify.p0_contract_producer.p0a.money",
                 "verify.p0_contract_producer.p0a.unit",
                 "verify.p0_contract_producer.p0c.orm",
@@ -1796,6 +1798,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
 
         self.assertEqual(
             select_targets(["scripts/verify/unified_page_contract_v2_assembler_guard.py"]),
+            ["verify.unified_page_contract.v2.assembler"],
+        )
+        self.assertEqual(
+            select_targets([
+                "scripts/verify/test_unified_page_contract_v2_assembler_guard.py"
+            ]),
             ["verify.unified_page_contract.v2.assembler"],
         )
         self.assertIn(

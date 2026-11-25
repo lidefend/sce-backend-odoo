@@ -143,6 +143,61 @@ async function validateContractV2Matrix(page, token) {
   };
 }
 
+async function captureProjectLedgerForm(page) {
+  const formResponsePromise = page.waitForResponse((response) => {
+    if (!response.url().includes('/api/v1/intent')) return false;
+    try {
+      const payload = JSON.parse(response.request().postData() || '{}');
+      const params = payload.params || {};
+      return (
+        payload.intent === 'ui.contract.v2'
+        && params.op === 'action_open'
+        && Number(params.record_id) > 0
+        && String(params.view_type || '') === 'form'
+      );
+    } catch {
+      return false;
+    }
+  }, { timeout: 30000 });
+  await page.goto(`${BASE_URL}/s/projects.ledger`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 30000,
+  });
+  const row = page.locator('button[data-semantic-cell-kind="primary"]:visible').first();
+  await row.waitFor({ state: 'visible', timeout: 30000 });
+  await row.click();
+  const response = await formResponsePromise;
+  const body = await response.json();
+  if (!response.ok() || body?.ok !== true || !body?.data) {
+    throw new Error(`project ledger form contract failed: ${JSON.stringify({
+      status: response.status(),
+      ok: body?.ok,
+      code: body?.error?.code || '',
+    })}`);
+  }
+  return body.data;
+}
+
+function assertProjectLedgerRowNavigation(contract) {
+  const rules = contract?.actionContract?.actionRuleList || [];
+  const rowRule = rules.find((rule) => (
+    rule?.sourceWidgetId === 'page.row'
+    && rule?.actionKey === 'open_form'
+  ));
+  if (!rowRule) {
+    throw new Error('project ledger list contract is missing the open_form row rule');
+  }
+  const recordEntry = rowRule.target?.record_entry || {};
+  if (
+    recordEntry.model !== 'project.project'
+    || recordEntry.record_id !== '${id}'
+    || recordEntry.entry_intent !== 'open'
+    || typeof recordEntry.model_write_authority !== 'boolean'
+  ) {
+    throw new Error(`project ledger row record_entry is incomplete: ${JSON.stringify(recordEntry)}`);
+  }
+}
+
 async function renderViewport(browser, viewport) {
   const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
   const page = await context.newPage();
@@ -178,15 +233,32 @@ async function renderViewport(browser, viewport) {
   const uiPageErrors = [...pageErrors];
   const matrix = await validateCompatMatrix(page, token);
   const contractV2Matrix = await validateContractV2Matrix(page, token);
+  assertProjectLedgerRowNavigation(contractV2Matrix.current_26.body?.data);
+  const projectLedgerForm = viewport.name === 'desktop'
+    ? await captureProjectLedgerForm(page)
+    : null;
   if (viewport.name === 'desktop') {
     fs.writeFileSync(
       path.join(ARTIFACT_DIR, 'ui-contract-v2-project-list.json'),
       `${JSON.stringify(contractV2Matrix.current_26.body.data, null, 2)}\n`,
       'utf8',
     );
+    fs.writeFileSync(
+      path.join(ARTIFACT_DIR, 'ui-contract-v2-project-form.json'),
+      `${JSON.stringify(projectLedgerForm, null, 2)}\n`,
+      'utf8',
+    );
   }
   await context.close();
-  return { viewport, result, matrix, contractV2Matrix, consoleErrors: uiConsoleErrors, pageErrors: uiPageErrors };
+  return {
+    viewport,
+    result,
+    matrix,
+    contractV2Matrix,
+    projectLedgerForm,
+    consoleErrors: uiConsoleErrors,
+    pageErrors: uiPageErrors,
+  };
 }
 
 function assertCurrentProjection(label, payload) {
@@ -355,6 +427,10 @@ async function main() {
             negotiation_version: value.body?.meta?.contract_negotiation?.contractVersion,
           },
         ])),
+        project_ledger_form: run.projectLedgerForm ? {
+          action_rules: run.projectLedgerForm.actionContract?.actionRuleList?.length || 0,
+          layout_contract_present: Boolean(run.projectLedgerForm.layoutContract),
+        } : null,
         action_carrier: (() => {
           const orchestration = run.matrix.current_page_block_action.body?.data?.page_orchestration;
           const schema = orchestration?.action_schema;

@@ -142,10 +142,10 @@ NATIVE_WIDGET_STATUS = {
 
 # Embedded Form <widget name="..."/> nodes -> node component identity.
 NATIVE_VIEW_WIDGET_COMPONENTS = {
-    'sc_insight_banner': {'component': 'sc.insight.summary', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True},
-    'sc_next_actions': {'component': 'sc.action.list', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True},
-    'sc_stage_requirements': {'component': 'sc.action.list', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True},
-    'web_ribbon': {'component': 'sc.display.ribbon', 'status': 'ready', 'reasonCode': '', 'payloadRequired': False},
+    'sc_insight_banner': {'component': 'sc.insight.summary', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True, 'payloadSchema': 'insight_summary.v1'},
+    'sc_next_actions': {'component': 'sc.action.list', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True, 'payloadSchema': 'action_list.v1'},
+    'sc_stage_requirements': {'component': 'sc.action.list', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True, 'payloadSchema': 'action_list.v1'},
+    'web_ribbon': {'component': 'sc.display.ribbon', 'status': 'ready', 'reasonCode': '', 'payloadRequired': False, 'payloadSchema': ''},
 }
 NATIVE_VIEW_WIDGET_DEFAULT = {
     'component': 'sc.unsupported.native_node',

@@ -118,6 +118,7 @@ class NodeRegistryTests(unittest.TestCase):
                 "status": "ready",
                 "reasonCode": "",
                 "payloadRequired": False,
+                "payloadSchema": "",
             },
             data["NATIVE_VIEW_WIDGET_COMPONENTS"]["web_ribbon"],
         )
@@ -138,6 +139,7 @@ class NodeRegistryTests(unittest.TestCase):
                 "status": "ready",
                 "reasonCode": "",
                 "payloadRequired": False,
+                "payloadSchema": "",
             },
             resolver.resolve_native_view_widget("web_ribbon"),
         )
@@ -147,6 +149,7 @@ class NodeRegistryTests(unittest.TestCase):
                 "status": "ready",
                 "reasonCode": "",
                 "payloadRequired": True,
+                "payloadSchema": "action_list.v1",
             },
             resolver.resolve_native_view_widget("sc_stage_requirements"),
         )
@@ -158,6 +161,15 @@ class NodeRegistryTests(unittest.TestCase):
         self.semantic["native_view_widget_default"]["status"] = "unsupported"
         self.semantic["native_view_widgets"]["web_ribbon"]["component"] = "sc.input.text"
         with self.assertRaisesRegex(SystemExit, "must reference a node component"):
+            self.render()
+
+    def test_native_view_widget_payload_schema_must_match_payload_requirement(self):
+        self.semantic["native_view_widgets"]["sc_insight_banner"].pop("payload_schema")
+        with self.assertRaisesRegex(SystemExit, "payload_schema exactly when payload_required"):
+            self.render()
+        self.semantic = generator.load(ROOT / generator.SEMANTIC_REL)
+        self.semantic["native_view_widgets"]["web_ribbon"]["payload_schema"] = "unexpected.v1"
+        with self.assertRaisesRegex(SystemExit, "payload_schema exactly when payload_required"):
             self.render()
 
     def test_requiring_an_undeclared_capability_is_rejected(self):
