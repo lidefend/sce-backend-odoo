@@ -170,7 +170,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the reviewed demo V2.7 migration and records, publish the exact clean HEAD, rerun the four required checks, then close the backend iteration chain.",
+  "next_exact_step": "Record the exact-HEAD GitHub API 502 recovery, publish the new metadata candidate through the governed PR lane, rerun the four required checks, then close the backend iteration chain on the new HEAD.",
   "id": "VERIFY-CORRECTNESS-01",
   "branch": "fix/verify-correctness-escape-01-20261125",
   "status": "verification_pending",

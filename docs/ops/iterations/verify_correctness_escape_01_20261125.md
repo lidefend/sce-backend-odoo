@@ -32,7 +32,8 @@ by #996, #997 and #998 and moves cheap registry/plan checks ahead of ORM work.
 | V2.7 bundle classes | registered disposable ORM entry | PASS, 16 tests |
 | V2.7 industry classes | registered disposable ORM entry | PASS, 351 tests |
 | Freeze preparation | `make ci.delivery.freeze.prepare` | PASS; generated evidence current |
-| Remote PR integration | Four exact-head required checks | pending, must run on the final synchronized HEAD |
+| Remote PR integration | Four exact-head required checks | pending final metadata recovery HEAD; `91e1a30b2` had three success checks and a transient merge-policy API failure |
+| Backend responsibility lanes | exact-head close receipt | PASS on `91e1a30b2` for product, demo and acceptance; final HEAD rerun required |
 
 ## Change inputs
 
@@ -125,6 +126,15 @@ module's own guard rejects the disposable `sc_test` database and requires an
 authorized demo environment. The exact-head remote demo lane is the owning
 proof.
 
+On exact HEAD `91e1a30b2`, `public_guard`, `frontend_release_gate` and
+`professional_quality_gate` passed. The `merge_policy_gate` waiting job failed
+with GitHub API `HTTP 502` before it could read authoritative dependency runs;
+no repository assertion failed. The close entry then passed product, demo and
+acceptance, proving the demo V2.7 migration. Repository publication rules do not
+provide a direct workflow-rerun Make entry, so the recovery fact is committed as
+new metadata and the new exact HEAD must rerun all four required checks and the
+backend close.
+
 ## Historical escape replay
 
 | Original change | Replayed paths | Required newly selected target | Result |
@@ -209,8 +219,8 @@ legacy merge-preparation entry are outside this batch.
 
 ## Next exact step
 
-Commit the reviewed demo V2.7 migration and records, publish the exact clean
-HEAD through the governed PR lane, rerun the four required checks against main
-`487a3d8497cd89841e1954d164e0e11d79742d81`, and close the backend iteration
-chain. No persistent database, deployment or user-acceptance state has been
-mutated.
+Record the exact-HEAD GitHub API 502 recovery, publish the new metadata
+candidate through the governed PR lane, rerun the four required checks against
+main `487a3d8497cd89841e1954d164e0e11d79742d81`, and close the backend iteration
+chain on the new HEAD. No persistent database, deployment or user-acceptance
+state has been mutated.
