@@ -315,6 +315,7 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
         result = UiContractV2Handler(
             self.env, su_env=self.env["ir.model"].sudo().env
         ).handle({
+            "accepted_contract_versions": ["2.7.x"],
             "op": "model", "model": action.res_model, "action_id": action.id,
             "view_id": self.view_ref_id(view_id),
             "view_type": "form", "render_profile": "create",
@@ -1349,6 +1350,7 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
         from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
         action = self.ref(action_key)
         result = UiContractV2Handler(env, su_env=env["ir.model"].sudo().env).handle({
+            "accepted_contract_versions": ["2.7.x"],
             "op": "model", "model": action.res_model, "action_id": action.id,
             "view_id": self.view_ref_id(view_key), "view_type": "form",
             "render_profile": "create",

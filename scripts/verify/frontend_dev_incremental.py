@@ -1698,6 +1698,7 @@ RULES = (
     )),
     Rule((
         "addons/smart_construction_core/security/sc_role_entry_groups.xml",
+        "addons/smart_construction_core/security/sc_discover_entry_groups.xml",
         "addons/smart_construction_core/security/sc_entry_groups.xml",
         "addons/smart_construction_core/security/sc_role_groups.xml",
         "addons/smart_construction_core/tests/test_business_category_entry_policy.py",

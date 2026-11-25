@@ -119,3 +119,147 @@ Source result:
 
 Not run. No persistent or isolated test database was upgraded because the
 module replay plan above has not received a separate migration confirmation.
+
+## Takeover continuation
+
+Candidate: `fix/p1-role-capability-authority-20261126` at
+`169531b07224db6913c5655e02c067a50d7632cc`, plus explicit uncommitted changes.
+P1 owns the six new ORM regression methods. P4 changes only repair run target
+registration, deleted-security-file test routing, and coverage bookkeeping.
+The deleted `sc_discover_entry_groups.xml` now selects the same guards as its
+replacement. Full-scope ORM assertions compare exact capability membership;
+missing capability declarations cannot pass vacuously.
+
+Evidence is under `.runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/`:
+
+- `takeover-role-guard.log`: passed, 12 tests.
+- `takeover-planner-unit.log`: passed, 245 tests.
+- `takeover-resume.json`: run resolved; no scope escape.
+- `takeover-iteration.log`: failed before runtime execution on the deleted path;
+  routing has since been repaired and the final plan has no unmapped paths.
+- `takeover-coverage-final.log`: 19 tool tests pass; audit still fails on two
+  pre-existing unregistered groups, `p0_contract_descriptor_conformance_evidence`
+  and `workflow_contract_platform`. This task registers only its own new group.
+- `takeover-offline.log`: affected offline consumer checks; use the command exit
+  status and original per-target results, not this narrative, as evidence.
+- Python syntax and `git diff --check` pass. Static changed-test discovery selects
+  9 core classes (including `TestRoleCapabilityAuthority`) and 3 bundle classes;
+  discovery is not ORM execution.
+- `local.test.prepare` passed identity validation without runtime writes.
+- ORM, remote integration, deployed behavior and user acceptance remain not run.
+  Full core module coverage remains deferred to exact-head remote CI.
+
+### Proposed isolated execution for owner confirmation
+
+Migration/install is needed only to validate loaded Odoo relations; source tests
+cannot prove installed permissions. Proposed first execution:
+
+```sh
+make local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestRoleCapabilityAuthority LOCAL_TEST_REUSE_DATABASE=0
+```
+
+Target: existing project `sc-local-test-6b0769da09e2`, database role
+`sc_test_odoo`, runner-allocated unique `sc_test_6b0769da09e2_<attempt-digest>`.
+The exact attempt name is allocated by the registered runner and must be retained
+in its receipt. Module: `smart_construction_core` version `17.0.0.187` from this
+candidate; runner and source hashes are recorded in `takeover-candidate.json`.
+This explicit template-free diagnostic preserves all existing templates and
+persistent databases. Expected writes are fresh module/dependency installation,
+14 scope capabilities plus full composition, and test transactions; this does
+not rehearse upgrading existing user data or authorize `sc_dev_demo` changes.
+
+Preflight/dry-run is the completed read-only `local.test.prepare`, static XML
+closure validation and class selection. There is no claim of a database dry-run.
+Before execution recheck source hashes and profile identity. Postconditions are
+all six tests actually executed, zero failures, exact 14 capability memberships,
+unchanged role-entry closures, correct identity codes and all 68 menu bindings;
+verify unchanged source/profile and transient-carrier cleanup in the receipt.
+
+Backup/recovery: this attempt is newly allocated synthetic data, so there is no
+existing database content to back up. Preserve existing template and persistent
+volumes. Test transactions roll back, the runner cleans its transient application
+carrier, and failed attempt data is isolated and not promoted. Do not perform
+manual/global database or volume cleanup; inspect the receipt on failure.
+Subsequent affected ORM families and any actual upgrade rehearsal require their
+own exact target/source authority; this focused run cannot establish upgrade or
+full-module acceptance.
+
+Status remains `verification_pending`. No remote mutation or database migration
+has occurred. Local source rollback is limited to the listed takeover diff;
+code rollback must never be represented as database restoration.
+
+## Disposable test authorization
+
+On 2026-11-26 the owner explicitly instructed: “一次性测试 可以直接执行”.
+This supersedes the earlier confirmation requirement for disposable isolated
+tests in this task. Governed local.test execution is authorized; persistent
+database migration remains excluded. The pending migration-approval blocker
+is removed. P1 scope and three-lane verification responsibilities are unchanged.
+
+## Rule synchronization and first ORM result
+
+The owner's follow-up explicitly requested recording the rule change. `AGENTS.md`,
+`.agent/context.yaml` and the execution allowlist now permit governed disposable
+synthetic tests without per-attempt confirmation, including required installation,
+upgrade, fixtures and template preparation. Persistent/real-data migration rules
+remain in force. Earlier confirmation requests in this record are historical and
+superseded for disposable tests.
+
+The focused ORM execution passed all 6 methods with 0 failures/errors. Receipt:
+`.runtime/test-baseline/1795637553697716498/receipt.json`; original log beside it.
+Database: `sc_test_6b0769da09e2_f8fd05c4fb07`. This is fresh-install evidence,
+not a persistent-database upgrade rehearsal or full module baseline. Rule-file
+edits were applied after the receipt completed to preserve its source identity.
+
+Changed-test attempt `.runtime/test-baseline/1795637702907636352/receipt.json`
+failed in the bundle negative principal setup: unlinking an implying capability
+left its materialized entry membership. Classified as `validation_tool_defect`.
+The test now resets exact data-only groups and asserts both entry capability
+and carrier are absent before checking denial. The denial assertion is retained.
+
+Core changed-test receipt `.runtime/test-baseline/1795637906529464675/receipt.json`
+reports 150 executed, 13 failures and 1 error. Affected contract test callers
+omitted mandatory accepted-version negotiation, returning
+`CONTRACT_VERSION_UNSUPPORTED` before their business assertions. Added explicit
+`accepted_contract_versions: ["2.7.x"]` to these callers without weakening the
+contract gate or original assertions. Bundle rerun passed 5 methods in receipt
+`.runtime/test-baseline/1795637880079058733/receipt.json`.
+
+## Authorized ORM verification result
+
+Final `make verify.changed_tests.orm`: PASS. Core executed 150 methods in nine
+classes, zero failures/errors, receipt
+`.runtime/test-baseline/1795638216346755241/receipt.json`. Bundle's unchanged
+five-method receipt was validated and reused by the governed selector from
+`.runtime/test-baseline/1795637880079058733/receipt.json`. All 155 selected methods
+are covered; the six new authority methods are included in the core result.
+
+The two customer-form callers also needed explicit `client_type` and client
+capabilities; both now declare them, with an explicit successful-envelope
+assertion before inspecting form structure. Original business assertions remain.
+Failed attempts are retained, including
+`.runtime/test-baseline/1795638123580470653/receipt.json`.
+
+Rule YAML parsing, disposable-authorization assertions and `git diff --check`
+pass. Required full module coverage remains remote; existing coverage-registry
+omissions and remaining local iteration checks are not claimed passed. Changes
+remain uncommitted; no PR, merge, persistent-data migration or deployment occurred.
+
+## Local iteration closure
+
+The two existing coverage omissions are now dispositioned using their real owning
+entries, without claiming standalone gate wiring or execution. Coverage audit
+passes (19 tool tests). `make ci.local.iteration` passed all 18 selected targets;
+receipt `.runtime/frontend-dev-validation/executions/20261125T203144Z-2554244-644322999/receipt.json`.
+Additional runtime evidence includes 84 permission-truth methods, 2 real extension
+lifecycle methods, payment isolation and 11 workspace-authority methods. Full
+module coverage remains deferred to remote integration. No persistent migration
+or deployment was performed. Next: generated evidence, clean commit, independent
+review and exact-head remote checks.
+
+`make ci.delivery.freeze.prepare` passed; generated complexity reports were
+reviewed and only reflect the owned test/registry changes. Log:
+`.runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/freeze-prepare.log`.
+Remote main was read back at the unchanged baseline
+`487a3d8497cd89841e1954d164e0e11d79742d81`. Independent review and exact-head PR
+CI remain pending; author self-check is not independent review.

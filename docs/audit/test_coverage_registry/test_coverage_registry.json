@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 231,
+    "odoo_tags": 232,
     "gated": 5,
     "on_demand": 89,
-    "unwired": 137,
-    "odoo_tag_declarations": 468,
+    "unwired": 138,
+    "odoo_tag_declarations": 469,
     "gated_declarations": 107,
-    "uncovered_declarations": 361,
+    "uncovered_declarations": 362,
     "ci_unit_scripts": 24,
     "ci_unit_scripts_wired": 24,
     "ci_unit_scripts_unwired": 0
@@ -1784,7 +1784,8 @@
       "owner": "construction-product",
       "evidence": [
         "scripts/verify/p0_contract_producer_descriptor_evidence.py :: p0_contract_descriptor_conformance_evidence"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "p0_contract_producer_p0a",
@@ -2431,6 +2432,18 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "role_capability_authority",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_role_capability_authority_orm.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [],
+      "disposition": "class-selected"
     },
     {
       "group": "role_regression_minimal",
@@ -3153,7 +3166,8 @@
         "addons/smart_core/tests/test_workflow_contract_platform.py"
       ],
       "owner": "platform-team",
-      "evidence": []
+      "evidence": [],
+      "disposition": "class-selected"
     },
     {
       "group": "workspace_processing_feedback",
