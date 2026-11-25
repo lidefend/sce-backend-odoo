@@ -22,6 +22,8 @@
     "scripts/ci/test_ci_path_ownership.py",
     "scripts/ci/test_ci_risk_classifier.py",
     "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ops/github_published_branch_sync.py",
+    "scripts/ops/test_github_published_branch_sync.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_branch_governance_consistency_guard.py",
     "scripts/verify/test_coverage_registry.yaml",
@@ -76,11 +78,20 @@
         "scripts/ci/ci_risk_classifier.py",
         "scripts/ci/test_ci_risk_classifier.py",
         "scripts/ci/test_ci_risk_workflow_contract.py",
-    "scripts/ops/github_published_branch_sync.py",
-    "scripts/ops/test_github_published_branch_sync.py",
         "make/ci.mk",
         "make/frontend.mk",
         "config/ci/path_ownership_v1.json"
+      ],
+      "kind": "offline"
+    },
+    "published_sync": {
+      "target": "verify.workspace.branch.sync-github.unit",
+      "inputs": [
+        "scripts/ops/github_published_branch_sync.py",
+        "scripts/ops/gitee_published_branch_sync.py",
+        "scripts/ops/test_github_published_branch_sync.py",
+        "scripts/ops/test_gitee_published_branch_sync.py",
+        "scripts/ops/generated_evidence_paths.py"
       ],
       "kind": "offline"
     },
