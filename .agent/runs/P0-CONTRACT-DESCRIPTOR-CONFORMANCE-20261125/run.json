@@ -1,0 +1,93 @@
+{
+  "schema_version": 2,
+  "id": "P0-CONTRACT-DESCRIPTOR-CONFORMANCE-20261125",
+  "branch": "fix/p0-contract-descriptor-conformance-20261125",
+  "status": "active",
+  "baseline_sha": "032990188abea05a5d2ab81313136c431e5f89b3",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P0-CONTRACT-DESCRIPTOR-CONFORMANCE-20261125.yaml",
+    ".agent/runs/P0-CONTRACT-DESCRIPTOR-CONFORMANCE-20261125/run.json",
+    "docs/ops/iterations/p0_contract_descriptor_conformance_20261125.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    "addons/smart_core/core/contract_runtime/native_widget_contract.py",
+    "addons/smart_core/core/contract_runtime/semantic_resolver.py",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_native_widget_contract_bridge.py",
+    "addons/smart_core/tests/test_contract_runtime_semantic_resolver.py",
+    "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
+    "make/frontend.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/p0_contract_producer_descriptor_evidence.py",
+    "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
+    "frontend/apps/web/scripts/p0_contract_producer_browser_acceptance.cjs",
+    "frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make targets plus read-only local.dev browser diagnosis"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Validate producer, frontend decoder and affected contract test families."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The change alters shared Contract V2 production consumed by all form pages."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "This is an incremental P0 correction, not release qualification."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "The decoder fixture must consume the producer output from the same candidate."
+    }
+  },
+  "checks": {
+    "producer_backend": {
+      "target": "verify.p0_contract_producer.p0a.backend_unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/contract_runtime/semantic_resolver.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py"
+      ]
+    },
+    "consumer_contract": {
+      "target": "verify.p0_contract_producer.p0a.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
+        "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts"
+      ]
+    },
+    "real_project_form_decode": {
+      "target": "verify.p0_contract_producer.p0a.descriptor_conformance",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/p0_contract_producer_descriptor_evidence.py",
+        "frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the validated P0 contract bridge and publish the exact-head PR.",
+  "goal": ".agent/goals/P0-CONTRACT-DESCRIPTOR-CONFORMANCE-20261125.yaml",
+  "record": "docs/ops/iterations/p0_contract_descriptor_conformance_20261125.md"
+}

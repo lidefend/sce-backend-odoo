@@ -78,6 +78,34 @@ const fallback = decodeContractV2FieldDescriptor({
   semanticType: 'boolean',
 });
 
+const nativeDateRange = decodeContractV2FieldDescriptor({
+  schemaVersion: '1.0.0',
+  fieldCode: 'date_start',
+  label: '项目周期',
+  fieldType: 'date',
+  widgetType: 'daterange',
+  componentKey: 'sc.input.date',
+  semanticType: 'date',
+  widgetOptions: { end_date_field: 'date', always_range: '1' },
+  temporal: { kind: 'date', timezoneAuthority: 'not_applicable' },
+});
+assert.equal(nativeDateRange.descriptor.widgetType, 'daterange');
+assert.deepEqual(nativeDateRange.descriptor.widgetOptions, {
+  end_date_field: 'date',
+  always_range: '1',
+});
+assert.equal(nativeDateRange.descriptor.semanticType, 'date');
+assert.equal(nativeDateRange.descriptor.componentKey, 'sc.input.date');
+assert.throws(
+  () => decodeContractV2FieldDescriptor({
+    ...nativeDateRange.descriptor,
+    componentKey: 'sc.display.text',
+    semanticType: 'readable_value',
+  }),
+  /FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED/,
+  'a date field cannot be downgraded to a generic readable value',
+);
+
 const carrierCapabilities = decodeContractCarrierCapabilities({
   negotiationVersion: '1.0.0',
   status: 'current',

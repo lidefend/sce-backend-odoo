@@ -14,6 +14,10 @@ from .native_relation_domain import compile_relation_domain
 from .native_action_contract import build_native_action_contract
 from .native_view_occurrence import build_native_occurrence_identity
 from .native_widget_profile import resolve_widget_contract, widget_source_and_value
+from .contract_runtime.native_widget_contract import (
+    project_native_embedded_widget_contract as _project_native_embedded_widget_contract,
+    project_native_field_widget_contract as _project_native_field_widget_contract,
+)
 from .native_modifier_comparison import compare_python_modifier
 from .native_modifier_context import evaluate_context_modifier, native_modifier_values, native_field_value
 
@@ -29,11 +33,8 @@ from .action_semantics_vocabulary import (
 from .contract_lifecycle import payload_sha256, seal_unified_page_contract
 from .contract_runtime.semantic_resolver import (
     annotate_projected_semantics as _annotate_projected_semantics,
-    component_key as _resolve_component_key,
     component_key_for_semantic as _component_key_for_semantic,
     legacy_component_key as _legacy_component_key,
-    resolve_native_view_widget as _resolve_native_view_widget,
-    semantic_of as _field_semantic_of,
     semantic_widget_type as _semantic_widget_type,
 )
 from .contract_runtime.semantic_resolver import FALLBACK_SEMANTIC as _DISPLAY_SEMANTIC
@@ -1238,37 +1239,16 @@ def _strict_field_descriptor(
     # ``legacy.widget`` may be a compatibility default such as ``char`` or
     # ``float``. Only the occurrence-level nativeWidget marker is authoritative;
     # otherwise project the field type to a token in native_widgets.
-    widget_type = _text(config.get("nativeWidget"))
-    if not widget_type:
-        widget_type = {
-            "char": "input",
-            "text": "textarea",
-            "html": "html",
-            "integer": "number",
-            "float": "number",
-            "monetary": "monetary",
-            "boolean": "boolean",
-            "date": "date",
-            "datetime": "datetime",
-            "selection": "select",
-            "many2one": "many2one",
-            "one2many": "one2many",
-            "many2many": "many2many",
-            "binary": "binary",
-            "json": "json",
-            "many2one_reference": "many2one",
-            "reference": "many2one",
-        }.get(field_type, _text(widget.get("widgetType")))
-    semantic_type = _text(
-        config.get("semanticType")
-        or legacy.get("semantic")
-        or _field_semantic_of(widget_type, legacy)
-        or _DISPLAY_SEMANTIC
+    projection = _project_native_field_widget_contract(
+        field_type=field_type,
+        native_widget_type=_text(config.get("nativeWidget")),
+        fallback_widget_type=_text(widget.get("widgetType")),
+        declared_semantic=_text(config.get("semanticType") or legacy.get("semantic")),
+        legacy_descriptor=legacy,
     )
-    component_key = _component_key_for_semantic(semantic_type) or _resolve_component_key(
-        widget_type,
-        legacy,
-    )
+    widget_type = projection["widgetType"]
+    semantic_type = projection["semanticType"]
+    component_key = projection["componentKey"]
     descriptor = {
         "schemaVersion": "1.0.0",
         "fieldCode": _text(widget.get("fieldCode") or legacy.get("name")),
@@ -1591,8 +1571,8 @@ def _project_native_view_widget_payloads(contract: dict[str, Any], env: Any) -> 
                 status["disabled"] = False
                 status.pop("reasonCode", None)
             continue
-        unsupported = _resolve_native_view_widget("")
-        node["componentKey"] = unsupported["component"]
+        unsupported = _project_native_embedded_widget_contract("")
+        node["componentKey"] = unsupported["componentKey"]
         config.update({
             "widgetStatus": "unsupported",
             "reasonCode": "NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE",
@@ -1600,8 +1580,8 @@ def _project_native_view_widget_payloads(contract: dict[str, Any], env: Any) -> 
         for key in ("payloadSchema", "payload", "payloadSourceAuthority"):
             config.pop(key, None)
         node["componentConfig"] = config
-        registry[unsupported["component"]] = _component_registry_of({unsupported["component"]})[
-            unsupported["component"]
+        registry[unsupported["componentKey"]] = _component_registry_of({unsupported["componentKey"]})[
+            unsupported["componentKey"]
         ]
         if status is not None:
             status["disabled"] = True
@@ -3289,18 +3269,18 @@ def _normalize_native_layout_nodes(
             widget_name = native_widget_name or projected_widget_name
             native_locator = _text(node.get("nativeLocator"))
             occurrence_index = _positive_int(node.get("occurrenceIndex"), 0)
-            resolution = _resolve_native_view_widget(widget_name)
+            resolution = _project_native_embedded_widget_contract(widget_name)
             identity_complete = bool(native_locator and occurrence_index)
             supported = (
                 identity_complete
-                and resolution.get("status") == "ready"
-                and bool(resolution.get("component"))
+                and resolution.get("widgetStatus") == "ready"
+                and bool(resolution.get("componentKey"))
             )
             projected_widget_status = "ready" if supported else "unsupported"
             component_key = (
-                resolution.get("component")
+                resolution.get("componentKey")
                 if supported
-                else _resolve_native_view_widget("")["component"]
+                else _project_native_embedded_widget_contract("")["componentKey"]
             )
             unsupported_reason = (
                 ""

@@ -102,6 +102,20 @@ class ComponentKeyBaselineTest(unittest.TestCase):
         self.assertEqual(resolver.component_key("STATUSBAR", {"type": "selection"}), "sc.display.status")
         self.assertEqual(resolver.component_key("Input", {"type": "char"}), "sc.input.text")
 
+    def test_derivation_match_distinguishes_explicit_rules_from_the_default(self) -> None:
+        self.assertEqual(
+            resolver.derive_semantic_match({"type": "date"}, "daterange"),
+            (resolver.FALLBACK_SEMANTIC, False),
+        )
+        self.assertEqual(
+            resolver.derive_semantic_match({"type": "date"}, "date"),
+            ("date", True),
+        )
+        self.assertEqual(
+            resolver.derive_semantic_match({"type": "one2many"}, "list_activity"),
+            ("activity_collection", True),
+        )
+
 
 class ResolutionSourceTest(unittest.TestCase):
     def test_declared_semantic_wins(self) -> None:

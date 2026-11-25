@@ -1,0 +1,37 @@
+schema_version: 1
+
+goal:
+  id: P0-CONTRACT-DESCRIPTOR-CONFORMANCE-20261125
+  title: Lock strict field descriptor production to frontend contract consumption
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: smart_core strict field descriptor production and Contract V2 decoding
+  module:
+    - smart_core
+    - frontend
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Preserve native Odoo widget expressions while deriving contract semantics
+    from the canonical field facts, and prove that the complete emitted project
+    ledger form contract decodes with the production frontend decoder.
+  why_here:
+    - The defective descriptor is produced by the generic smart_core assembler.
+    - The strict Contract V2 schema is a P0 consumer boundary.
+  why_not_elsewhere:
+    - The P1 project view already declares the native daterange expression correctly.
+    - The frontend must not guess or repair a missing or inconsistent semantic.
+  blast_radius:
+    - Strict field descriptors for all form pages using native widget tokens.
+    - Project ledger list-to-form navigation contract.
+    - P0 contract producer regression coverage.
+  acceptance:
+    - Native widgetType and raw native expression remain present in the contract.
+    - Date and datetime descriptors use their canonical semantic and temporal meaning.
+    - The full project ledger form contract decodes without ContractGapError.
+    - A matrix test covers native widget semantic derivation beyond daterange.
+    - List row actions still publish complete record_entry targets.
+  exclusions:
+    - No P1 project view redesign.
+    - No frontend fallback or model special case.
+    - No database, fixture, deployment or production-data change.
+  rollback: Revert this branch; the prior contract remains unchanged until deployment.

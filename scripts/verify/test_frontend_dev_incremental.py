@@ -934,6 +934,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]),
             [
                 "verify.p0_contract_producer.p0a.backend_unit",
+                "verify.p0_contract_producer.p0a.descriptor_conformance",
                 "verify.p0_contract_producer.p0a.money",
                 "verify.p0_contract_producer.p0a.unit",
                 "verify.p0_contract_producer.p0c.orm",

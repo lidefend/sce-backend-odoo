@@ -242,6 +242,127 @@ class TestP0ContractProducerP0A(TransactionCase):
         self.assertEqual(numeric["widgetType"], "number")
         self.assertEqual(numeric["semanticType"], "number")
 
+    def test_strict_descriptor_separates_native_expression_from_contract_semantics(self):
+        """Native widget tokens remain presentation facts; contract meaning is canonical.
+
+        This matrix is intentionally broader than the reported daterange case:
+        explicit native rules keep their declared meaning, while recognizable
+        presentation variants fall back to the canonical field-type/control
+        semantics instead of the generic readable-value default.
+        """
+        cases = (
+            {
+                "fieldCode": "date_start",
+                "label": "项目周期",
+                "fieldType": "date",
+                "nativeWidget": "daterange",
+                "semanticType": "date",
+                "componentKey": "sc.input.date",
+                "widgetOptions": {"end_date_field": "date", "always_range": "1"},
+            },
+            {
+                "fieldCode": "display_date",
+                "label": "日期展示",
+                "fieldType": "date",
+                "nativeWidget": "display",
+                "semanticType": "date",
+                "componentKey": "sc.input.date",
+            },
+            {
+                "fieldCode": "planned_at",
+                "label": "计划时间",
+                "fieldType": "datetime",
+                "nativeWidget": "display",
+                "semanticType": "datetime",
+                "componentKey": "sc.input.datetime",
+            },
+            {
+                "fieldCode": "phone",
+                "label": "电话",
+                "fieldType": "char",
+                "nativeWidget": "phone",
+                "semanticType": "text",
+                "componentKey": "sc.input.text",
+            },
+            {
+                "fieldCode": "state",
+                "label": "状态",
+                "fieldType": "selection",
+                "nativeWidget": "statusbar",
+                "semanticType": "status",
+                "componentKey": "sc.display.status",
+            },
+            {
+                "fieldCode": "activity_ids",
+                "label": "活动",
+                "fieldType": "one2many",
+                "nativeWidget": "list_activity",
+                "semanticType": "activity_collection",
+                "componentKey": "sc.relation.activity",
+                "relation": "mail.activity",
+            },
+            {
+                "fieldCode": "tag_ids",
+                "label": "标签",
+                "fieldType": "many2many",
+                "nativeWidget": "many2many_tags",
+                "semanticType": "tag_collection",
+                "componentKey": "sc.select.tags",
+                "relation": "res.partner.category",
+            },
+            {
+                "fieldCode": "owner_id",
+                "label": "负责人",
+                "fieldType": "many2one",
+                "nativeWidget": "many2one_avatar_user",
+                "semanticType": "relation",
+                "componentKey": "sc.relation.many2one",
+                "relation": "res.users",
+            },
+        )
+        for case in cases:
+            with self.subTest(field=case["fieldCode"], widget=case["nativeWidget"]):
+                descriptor = _strict_field_descriptor({
+                    "fieldCode": case["fieldCode"],
+                    "label": case["label"],
+                    "fieldDescriptor": {
+                        "schemaVersion": "1.0.0",
+                        "name": case["fieldCode"],
+                        "type": case["fieldType"],
+                    },
+                    "componentConfig": {
+                        "fieldType": case["fieldType"],
+                        "nativeWidget": case["nativeWidget"],
+                        **(
+                            {"relation": case["relation"]}
+                            if "relation" in case
+                            else {}
+                        ),
+                        **(
+                            {"widgetOptions": case["widgetOptions"]}
+                            if "widgetOptions" in case
+                            else {}
+                        ),
+                    },
+                })
+                self.assertIsNotNone(descriptor)
+                self.assertEqual(descriptor["widgetType"], case["nativeWidget"])
+                self.assertEqual(descriptor["fieldType"], case["fieldType"])
+                self.assertEqual(descriptor["semanticType"], case["semanticType"])
+                self.assertEqual(descriptor["componentKey"], case["componentKey"])
+                if case["fieldType"] == "date":
+                    self.assertEqual(
+                        descriptor["temporal"],
+                        {"kind": "date", "timezoneAuthority": "not_applicable"},
+                    )
+                if case["fieldType"] == "datetime":
+                    self.assertEqual(
+                        descriptor["temporal"],
+                        {"kind": "datetime", "timezoneAuthority": "user"},
+                    )
+                if "widgetOptions" in case:
+                    self.assertEqual(descriptor["widgetOptions"], case["widgetOptions"])
+
     def test_strict_monetary_descriptor_uses_authoritative_currency_precision(self):
         project = self.env["project.project"].create({
             "name": "Strict monetary descriptor",
@@ -421,3 +542,99 @@ class TestP0ContractProducerMoneyEvidence(TransactionCase):
             json.dumps(orchestration, ensure_ascii=False, sort_keys=True).encode("utf-8")
         ).decode("ascii")
         print(f"P0A_REAL_ORM_MONEY_CONTRACT_B64={encoded}", flush=True)
+
+
+@tagged("post_install", "-at_install", "p0_contract_descriptor_conformance_evidence")
+class TestP0ContractDescriptorConformanceEvidence(TransactionCase):
+    def test_emit_real_project_ledger_form_contract(self):
+        from odoo.tools import date_utils
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+
+        action = self.env.ref("smart_construction_core.action_sc_project_list")
+        menu = self.env.ref("smart_construction_core.menu_sc_project_project")
+        project = self.env["project.project"].create({
+            "name": "P0 descriptor conformance",
+            "company_id": self.env.company.id,
+        })
+        common = {
+            "client_type": "web_pc",
+            "accepted_contract_versions": [
+                "2.0.x", "2.1.x", "2.2.x", "2.3.x", "2.4.x", "2.5.x", "2.6.x",
+            ],
+            "client_contract_capabilities": [
+                "container_tree.v2",
+                "data_source.v2",
+                "action_rule.v2",
+                "relation_entry.v2",
+                "status_contract.v2",
+                "page_block_data.v1",
+            ],
+            "action_id": action.id,
+            "menu_id": menu.id,
+            "scene_key": "projects.ledger",
+            "delivery_profile": "full",
+        }
+        handler = UiContractV2Handler(
+            self.env,
+            su_env=self.env["ir.model"].sudo().env,
+        )
+        form_result = handler.handle({
+            "op": "action_open",
+            "model": "project.project",
+            "view_type": "form",
+            "record_id": project.id,
+            "render_profile": "edit",
+            "contract_surface": "user",
+            "source_mode": "governance_pipeline",
+            **common,
+        })
+        form_result = (
+            form_result.to_legacy_dict()
+            if hasattr(form_result, "to_legacy_dict")
+            else form_result
+        )
+        self.assertTrue(form_result.get("ok", True), form_result.get("error"))
+        form_contract = form_result["data"]
+
+        date_start = None
+
+        def walk(nodes):
+            nonlocal date_start
+            for node in nodes:
+                if not isinstance(node, dict):
+                    continue
+                if node.get("fieldCode") == "date_start":
+                    date_start = node
+                    return
+                for widget in node.get("widgetList") or []:
+                    if (
+                        isinstance(widget, dict)
+                        and widget.get("fieldCode") == "date_start"
+                    ):
+                        date_start = widget
+                        return
+                walk(node.get("children") or [])
+
+        walk(form_contract["layoutContract"]["containerTree"])
+        self.assertIsNotNone(date_start)
+        descriptor = date_start["fieldDescriptor"]
+        self.assertEqual(descriptor["fieldType"], "date")
+        self.assertEqual(descriptor["widgetType"], "daterange")
+        self.assertEqual(descriptor["semanticType"], "date")
+        self.assertEqual(descriptor["componentKey"], "sc.input.date")
+        self.assertEqual(
+            descriptor["temporal"],
+            {"kind": "date", "timezoneAuthority": "not_applicable"},
+        )
+        encoded = base64.b64encode(
+            json.dumps(
+                {
+                    "form": form_contract,
+                    "project_id": project.id,
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+                default=date_utils.json_default,
+            ).encode("utf-8")
+        ).decode("ascii")
+        print(f"P0_CONTRACT_DESCRIPTOR_EVIDENCE_B64={encoded}", flush=True)
