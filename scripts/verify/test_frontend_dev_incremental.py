@@ -4025,6 +4025,98 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.assertEqual(1, result["testCount"])
         self.assertEqual("unittest-summary", result["testSummarySource"])
 
+    def _run_node_tap(self, source):
+        self.root.joinpath("tap.test.mjs").write_text(
+            "import test from 'node:test';\n" + source, encoding="utf-8",
+        )
+        self.root.joinpath("Makefile").write_text(
+            "verify.tap.unit:\n\t@node --test --test-reporter=tap tap.test.mjs\n",
+            encoding="utf-8",
+        )
+        return incremental._run_make_target(
+            "verify.tap.unit", self.root, self.root / "tap.log",
+        )
+
+    def test_real_node_tap_all_skipped_is_rejected(self):
+        result = self._run_node_tap(
+            "test('not executed', {skip: true}, () => { throw Error('must not run'); });\n"
+        )
+        self.assertEqual(0, result["returncode"])
+        self.assertEqual("failed", result["status"])
+        self.assertEqual(1, result["testCollectedCount"])
+        self.assertEqual(1, result["testSkippedCount"])
+        self.assertEqual(0, result["testPassedCount"])
+        self.assertEqual(0, result["testCount"])
+
+    def test_real_node_tap_success_and_todo_are_separate(self):
+        result = self._run_node_tap(
+            "test('executed', () => {});\n"
+            "test('todo', {todo: true}, () => {});\n"
+            "test('skipped', {skip: true}, () => {});\n"
+        )
+        self.assertEqual("passed", result["status"])
+        self.assertEqual(3, result["testCollectedCount"])
+        self.assertEqual(1, result["testCount"])
+        self.assertEqual(1, result["testTodoCount"])
+        self.assertEqual(1, result["testSkippedCount"])
+
+    def test_real_node_tap_failure_is_not_success(self):
+        for source, counter in (
+            ("test('failure', () => { throw Error('expected'); });\n", "testFailedCount"),
+        ):
+            with self.subTest(counter=counter):
+                result = self._run_node_tap(source)
+                self.assertEqual("failed", result["status"])
+                self.assertEqual("failed", result["testSummaryStatus"])
+                self.assertEqual(1, result[counter])
+
+    def test_tap_cancelled_and_todo_counters_never_count_as_execution(self):
+        for cancelled, todo, status in ((1, 0, "failed"), (0, 1, "ok")):
+            with self.subTest(cancelled=cancelled, todo=todo):
+                output = (
+                    "TAP version 13\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 0\n"
+                    f"# cancelled {cancelled}\n# skipped 0\n# todo {todo}\n# duration_ms 1.0\n"
+                )
+                metrics = incremental.test_execution_metrics(output)
+                self.assertEqual(status, metrics["testSummaryStatus"])
+                self.assertEqual(cancelled, metrics["testCancelledCount"])
+                self.assertEqual(todo, metrics["testTodoCount"])
+                self.assertEqual(0, metrics["testCount"])
+                self.assertEqual("none", metrics["testExecutionEvidence"])
+
+    def test_incomplete_tap_does_not_inherit_previous_success(self):
+        for output in (
+            "# tests 5\n",
+            "Ran 2 tests in 0.001s\nOK\n# tests 5\n",
+            "# tests 5\n# suites 0\n# pass 5\n# fail 0\n",
+            "# tests 5\n# suites 0\n# pass 1\n# fail 0\n"
+            "# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1.0\n",
+        ):
+            with self.subTest(output=output):
+                metrics = incremental.test_execution_metrics(output)
+                self.assertEqual("unknown", metrics["testSummaryStatus"])
+                self.assertEqual("none", metrics["testExecutionEvidence"])
+                self.assertEqual(0, metrics["testCount"])
+        self.root.joinpath("Makefile").write_text(
+            "verify.partial.unit:\n\t@printf '# tests 5\\n'\n", encoding="utf-8",
+        )
+        result = incremental._run_make_target(
+            "verify.partial.unit", self.root, self.root / "partial.log",
+        )
+        self.assertEqual(0, result["returncode"])
+        self.assertEqual("failed", result["status"])
+
+    def test_existing_frontend_make_producer_has_attributable_execution(self):
+        result = incremental._run_make_target(
+            "verify.frontend.action_view_route_lease_race.unit",
+            ROOT, self.root / "native-frontend.log",
+        )
+        self.assertEqual(0, result["returncode"])
+        self.assertEqual("passed", result["status"])
+        self.assertEqual("tap-summary", result["testSummarySource"])
+        self.assertEqual(1, result["testPassedCount"])
+        self.assertEqual(1, result["testCount"])
+
     def test_final_aggregate_summary_supersedes_inner_runner_summaries(self) -> None:
         metrics = incremental.test_execution_metrics(
             "Ran 1 test in 0.001s\n\nOK\n"

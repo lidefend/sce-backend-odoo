@@ -1525,17 +1525,17 @@ verify.frontend.release.unit: verify.frontend.localized_display.unit verify.fron
 
 .PHONY: verify.frontend.contract_render_profile.unit
 verify.frontend.contract_render_profile.unit: guard.prod.forbid
-	@node scripts/verify/frontend_contract_render_profile.test.mjs
+	@node --test --test-reporter=tap scripts/verify/frontend_contract_render_profile.test.mjs
 
 .PHONY: verify.frontend.navigation_initialization_race.unit
 verify.frontend.navigation_initialization_race.unit: guard.prod.forbid
 	@mkdir -p .runtime/ci-execution-alignment
 	@frontend/apps/web/node_modules/.bin/esbuild scripts/verify/frontend_navigation_initialization_race.test.mjs --bundle --platform=node --format=esm --outfile=.runtime/ci-execution-alignment/navigation-initialization-test.mjs >/dev/null
-	@node .runtime/ci-execution-alignment/navigation-initialization-test.mjs
+	@node --test --test-reporter=tap .runtime/ci-execution-alignment/navigation-initialization-test.mjs
 
 .PHONY: verify.frontend.action_view_route_lease_race.unit
 verify.frontend.action_view_route_lease_race.unit: guard.prod.forbid
-	@node scripts/verify/frontend_action_view_route_lease_race.test.mjs
+	@node --test --test-reporter=tap scripts/verify/frontend_action_view_route_lease_race.test.mjs
 
 .PHONY: verify.frontend.navigation_initialization_race.browser
 verify.frontend.navigation_initialization_race.browser: guard.prod.forbid

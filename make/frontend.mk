@@ -155,7 +155,7 @@ verify.frontend.intent_request_identity.unit: guard.prod.forbid
 
 verify.frontend.intent_request_coalescing.unit: guard.prod.forbid verify.frontend.workspace_scenario_lifecycle.unit
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/intent_request_coalescing_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/intent-request-coalescing-test.mjs >/dev/null
-	@node /tmp/intent-request-coalescing-test.mjs
+	@node --test --test-reporter=tap /tmp/intent-request-coalescing-test.mjs
 
 .PHONY: verify.frontend.session_persistence.snapshot.unit verify.frontend.session_persistence.scheduler.unit verify.frontend.session_persistence.failure.unit verify.frontend.session_persistence.recovery.unit verify.frontend.workspace_scenario_lifecycle.unit verify.navigation.publication_consumers.unit
 verify.frontend.session_persistence.snapshot.unit: guard.prod.forbid
@@ -172,9 +172,9 @@ verify.frontend.session_persistence.failure.unit: guard.prod.forbid verify.front
 
 verify.frontend.session_persistence.recovery.unit: guard.prod.forbid verify.frontend.session_persistence.failure.unit
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/session_persistence_recovery_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/session-persistence-recovery-test.mjs >/dev/null
-	@node /tmp/session-persistence-recovery-test.mjs
+	@node --test --test-reporter=tap /tmp/session-persistence-recovery-test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/session_persistence_performance_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/session-persistence-performance-test.mjs >/dev/null
-	@R12_B_PERFORMANCE_OUTPUT=$(ROOT_DIR)/.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12-b-performance-latest.json node /tmp/session-persistence-performance-test.mjs
+	@R12_B_PERFORMANCE_OUTPUT=$(ROOT_DIR)/.runtime/agent-runs/SCENARIO-FORM-PERFORMANCE-20261114/r12-b-performance-latest.json node --test --test-reporter=tap /tmp/session-persistence-performance-test.mjs
 
 verify.frontend.workspace_scenario_lifecycle.unit: guard.prod.forbid verify.navigation.publication_consumers.unit verify.frontend.session_persistence.recovery.unit
 	@mkdir -p .runtime/nav01
@@ -259,12 +259,12 @@ verify.frontend.navigation_shell.unit: guard.prod.forbid verify.frontend.scene_e
 .PHONY: verify.frontend.scene_shell_contract.unit
 verify.frontend.scene_shell_contract.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/scene_shell_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/scene-shell-contract-test.mjs >/dev/null
-	@node /tmp/scene-shell-contract-test.mjs
+	@node --test --test-reporter=tap /tmp/scene-shell-contract-test.mjs
 
 .PHONY: verify.frontend.button_navigation_authority.unit
 verify.frontend.button_navigation_authority.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/button_navigation_authority_test.ts --bundle --platform=node --format=esm --outfile=/tmp/button-navigation-authority-test.mjs >/dev/null
-	@node /tmp/button-navigation-authority-test.mjs
+	@node --test --test-reporter=tap /tmp/button-navigation-authority-test.mjs
 
 .PHONY: verify.frontend.record_form_return.unit
 verify.frontend.record_form_return.unit: guard.prod.forbid
@@ -289,12 +289,12 @@ verify.frontend.chart_dataset.unit: guard.prod.forbid
 .PHONY: verify.frontend.boq_line_patch.unit
 verify.frontend.boq_line_patch.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/boq_line_patch_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/boq-line-patch-model-test.mjs >/dev/null
-	@node /tmp/boq-line-patch-model-test.mjs
+	@node --test --test-reporter=tap /tmp/boq-line-patch-model-test.mjs
 
 .PHONY: verify.frontend.overview_rich_text.unit
 verify.frontend.overview_rich_text.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/overview_rich_text_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/overview-rich-text-model-test.mjs >/dev/null
-	@node /tmp/overview-rich-text-model-test.mjs
+	@node --test --test-reporter=tap /tmp/overview-rich-text-model-test.mjs
 
 .PHONY: verify.frontend.product_page_header.unit verify.frontend.collection_action_toolbar.unit verify.frontend.collection_aggregate_footer.unit verify.frontend.collection_group_header.unit verify.frontend.collection_summary_strip.unit verify.frontend.collection_mobile_record_row.unit verify.frontend.collection_kanban_record_card.unit verify.frontend.collection_navigation_controls.unit verify.frontend.collection_row_action_identity.unit verify.frontend.collection_row_cell.unit verify.frontend.collection_selection_control.unit
 verify.frontend.product_page_header.unit: guard.prod.forbid verify.frontend.playwright_vendor_coupling.guard
@@ -345,7 +345,7 @@ verify.frontend.collection_navigation_controls.unit: guard.prod.forbid
 
 verify.frontend.collection_row_action_identity.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/collection_row_action_identity_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/collection-row-action-identity-test.mjs >/dev/null
-	@node /tmp/collection-row-action-identity-test.mjs
+	@node --test --test-reporter=tap /tmp/collection-row-action-identity-test.mjs
 
 verify.frontend.collection_row_cell.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_collection_row_cell_guard.py
@@ -397,7 +397,7 @@ verify.frontend.professional_component_registry.unit: guard.prod.forbid
 .PHONY: verify.frontend.native_widget_provenance.unit
 verify.frontend.native_widget_provenance.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_widget_provenance_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-widget-provenance-test.mjs >/dev/null
-	@node /tmp/native-widget-provenance-test.mjs
+	@node --test --test-reporter=tap /tmp/native-widget-provenance-test.mjs
 
 # 列表投影的契约就绪语义：契约未到达不投射、未声明的 batch_policy 不视为缺口，
 # 已声明但不完整的 batch_policy 仍然 fail-closed。
@@ -461,7 +461,7 @@ verify.frontend.professional_detail_collection.unit: guard.prod.forbid
 .PHONY: verify.frontend.payment_settlement_introduce.amount.unit
 verify.frontend.payment_settlement_introduce.amount.unit: guard.prod.forbid
 	@node --check frontend/apps/web/scripts/payment_settlement_introduce_dialog_amount_test.mjs
-	@node frontend/apps/web/scripts/payment_settlement_introduce_dialog_amount_test.mjs
+	@node --test --test-reporter=tap frontend/apps/web/scripts/payment_settlement_introduce_dialog_amount_test.mjs
 
 .PHONY: verify.frontend.professional_workflow.unit
 verify.frontend.professional_workflow.unit: guard.prod.forbid
@@ -713,7 +713,7 @@ verify.frontend.contract_form_collaboration_authority.unit: guard.prod.forbid
 .PHONY: verify.frontend.form_structure_surface_contract.unit
 verify.frontend.form_structure_surface_contract.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/form_structure_surface_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/form-structure-surface-contract-test.mjs >/dev/null
-	@node /tmp/form-structure-surface-contract-test.mjs
+	@node --test --test-reporter=tap /tmp/form-structure-surface-contract-test.mjs
 
 .PHONY: verify.frontend.contract_v2_render_authority.unit
 verify.frontend.contract_v2_render_authority.unit: guard.prod.forbid
@@ -795,16 +795,16 @@ verify.frontend.native_text_presentation.unit: guard.prod.forbid
 
 verify.frontend.native_child_sequence.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_child_sequence_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-child-sequence-test.mjs >/dev/null
-	@node /tmp/native-child-sequence-test.mjs
-	@node frontend/apps/web/scripts/native_tab_text_component_test.mjs
+	@node --test --test-reporter=tap /tmp/native-child-sequence-test.mjs
+	@node --test --test-reporter=tap frontend/apps/web/scripts/native_tab_text_component_test.mjs
 
 verify.frontend.submission_readiness_notice_contract.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/submission_readiness_notice_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/submission-readiness-notice-contract-test.mjs >/dev/null
-	@node /tmp/submission-readiness-notice-contract-test.mjs
+	@node --test --test-reporter=tap /tmp/submission-readiness-notice-contract-test.mjs
 
 verify.frontend.action_view_context_policy.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/action_view_context_policy_test.ts --bundle --platform=node --format=esm --outfile=/tmp/action-view-context-policy-test.mjs >/dev/null
-	@node /tmp/action-view-context-policy-test.mjs
+	@node --test --test-reporter=tap /tmp/action-view-context-policy-test.mjs
 
 verify.frontend.native_form_action_presentation.browser: guard.prod.forbid
 	@node scripts/verify/frontend_native_form_action_presentation_browser.mjs
@@ -837,7 +837,7 @@ verify.frontend.dev_acceptance_remediation.unit: guard.prod.forbid
 .PHONY: verify.frontend.action_view_selection_feedback.unit
 verify.frontend.action_view_selection_feedback.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/action_view_selection_feedback_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/action-view-selection-feedback-test.mjs >/dev/null
-	@node /tmp/action-view-selection-feedback-test.mjs
+	@node --test --test-reporter=tap /tmp/action-view-selection-feedback-test.mjs
 
 .PHONY: verify.frontend.startup_performance.unit
 verify.frontend.startup_performance.unit: guard.prod.forbid
@@ -868,7 +868,7 @@ verify.frontend.contract_fidelity.plan.unit: guard.prod.forbid verify.p0_contrac
 .PHONY: verify.p0_contract_producer.design.unit
 verify.p0_contract_producer.design.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_contract_producer_design_decoder_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/p0-contract-producer-design-decoder-test.mjs >/dev/null
-	@node /tmp/p0-contract-producer-design-decoder-test.mjs
+	@node --test --test-reporter=tap /tmp/p0-contract-producer-design-decoder-test.mjs
 
 .PHONY: verify.p0_contract_producer.p0a.unit
 verify.p0_contract_producer.p0a.unit: guard.prod.forbid verify.p0_contract_producer.design.unit verify.p0_contract_producer.p0a.backend_unit
@@ -945,7 +945,7 @@ verify.p0_contract_producer.p0c.unit: guard.prod.forbid
 .PHONY: verify.p0_c_fix01.action_id.unit
 verify.p0_c_fix01.action_id.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_c_fix01_action_id_chain_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/p0-c-fix01-action-id-chain-test.mjs >/dev/null
-	@node /tmp/p0-c-fix01-action-id-chain-test.mjs
+	@node --test --test-reporter=tap /tmp/p0-c-fix01-action-id-chain-test.mjs
 
 verify.frontend.quick.gate: verify.frontend.contract_fidelity.plan.unit verify.p0_contract_producer.p0a.unit
 verify.frontend.pr.unit: verify.frontend.contract_fidelity.plan.unit verify.p0_contract_producer.p0a.unit verify.p0_contract_producer.p0c.unit
@@ -981,10 +981,10 @@ verify.frontend.industry_agnostic.guard: guard.prod.forbid verify.frontend.indus
 
 verify.frontend.localized_display.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild scripts/verify/frontend_localized_display_contract_test.ts --bundle --platform=node --format=esm --define:import.meta.url='"file://$(CURDIR)/scripts/verify/frontend_localized_display_contract_test.ts"' --outfile=/tmp/frontend-localized-display-contract-test.mjs >/dev/null
-	@node /tmp/frontend-localized-display-contract-test.mjs
+	@node --test --test-reporter=tap /tmp/frontend-localized-display-contract-test.mjs
 
 verify.frontend.list_optional_columns.unit: guard.prod.forbid
-	@node --experimental-strip-types scripts/verify/frontend_list_optional_columns_contract_test.ts
+	@node --test --test-reporter=tap --experimental-strip-types scripts/verify/frontend_list_optional_columns_contract_test.ts
 
 verify.frontend.collection_view_semantics.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_native_modifier.py
@@ -1042,7 +1042,7 @@ verify.frontend.runtime_environment.unit: guard.prod.forbid
 verify.frontend.detail_form_productization.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_detail_form_productization_guard.py
 verify.frontend.workspace_layout_contract.unit: guard.prod.forbid
-	@node --experimental-strip-types scripts/verify/frontend_workspace_layout_contract_compatibility_test.ts
+	@node --test --test-reporter=tap --experimental-strip-types scripts/verify/frontend_workspace_layout_contract_compatibility_test.ts
 
 verify.frontend.workspace_content_alignment.guard: guard.prod.forbid verify.frontend.workspace_layout_contract.unit verify.frontend.form_canvas_layout.guard
 	@python3 scripts/verify/frontend_workspace_content_alignment_guard.py
@@ -1417,7 +1417,7 @@ verify.frontend.contract_field_occurrence_identity.unit: guard.prod.forbid
 .PHONY: verify.frontend.contract_error_business_ownership.unit
 verify.frontend.contract_error_business_ownership.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_error_business_ownership_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/contract-error-business-ownership-test.mjs >/dev/null
-	@node /tmp/contract-error-business-ownership-test.mjs
+	@node --test --test-reporter=tap /tmp/contract-error-business-ownership-test.mjs
 
 .PHONY: verify.frontend.contract_form_save_failure_recovery.unit
 verify.frontend.contract_form_save_failure_recovery.unit: guard.prod.forbid
@@ -1427,12 +1427,12 @@ verify.frontend.contract_form_save_failure_recovery.unit: guard.prod.forbid
 .PHONY: verify.frontend.contract_form_dirty_semantics.unit
 verify.frontend.contract_form_dirty_semantics.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/contract_form_dirty_semantics_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=/tmp/contract-form-dirty-semantics-test.mjs >/dev/null
-	@node /tmp/contract-form-dirty-semantics-test.mjs
+	@node --test --test-reporter=tap /tmp/contract-form-dirty-semantics-test.mjs
 
 .PHONY: verify.frontend.standard_form_composition.unit
 verify.frontend.standard_form_composition.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/standard_form_composition_adoption_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/standard-form-composition-adoption-test.mjs >/dev/null
-	@node /tmp/standard-form-composition-adoption-test.mjs
+	@node --test --test-reporter=tap /tmp/standard-form-composition-adoption-test.mjs
 
 .PHONY: verify.frontend.adopted_form_engine_decision.unit
 verify.frontend.adopted_form_engine_decision.unit: guard.prod.forbid
@@ -1463,16 +1463,16 @@ verify.frontend.adopted_form_validation_identity.unit: guard.prod.forbid
 .PHONY: verify.frontend.j13_required_value_semantics.unit
 verify.frontend.j13_required_value_semantics.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/j13_required_value_semantics_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/j13-required-value-semantics-test.mjs >/dev/null
-	@node /tmp/j13-required-value-semantics-test.mjs
+	@node --test --test-reporter=tap /tmp/j13-required-value-semantics-test.mjs
 
 .PHONY: verify.frontend.native_section_navigation.unit verify.frontend.native_collaboration_presentation.unit
 verify.frontend.native_section_navigation.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_section_navigation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-section-navigation-test.mjs >/dev/null
-	@node /tmp/native-section-navigation-test.mjs
+	@node --test --test-reporter=tap /tmp/native-section-navigation-test.mjs
 
 verify.frontend.native_collaboration_presentation.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_collaboration_presentation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-collaboration-presentation-test.mjs >/dev/null
-	@node /tmp/native-collaboration-presentation-test.mjs
+	@node --test --test-reporter=tap /tmp/native-collaboration-presentation-test.mjs
 
 .PHONY: verify.form_structure_authority_unification.unit
 verify.form_structure_authority_unification.unit: guard.prod.forbid
@@ -1481,7 +1481,7 @@ verify.form_structure_authority_unification.unit: guard.prod.forbid
 .PHONY: verify.frontend.cross_model_action_navigation.unit
 verify.frontend.cross_model_action_navigation.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/cross_model_action_navigation_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/cross-model-action-navigation-test.mjs >/dev/null
-	@node /tmp/cross-model-action-navigation-test.mjs
+	@node --test --test-reporter=tap /tmp/cross-model-action-navigation-test.mjs
 
 .PHONY: verify.frontend.playwright_vendor_coupling.guard
 verify.frontend.playwright_vendor_coupling.guard: guard.prod.forbid
@@ -1564,7 +1564,7 @@ verify.frontend.workspace_composition.unit: guard.prod.forbid
 .PHONY: verify.frontend.activation_form_engine.unit
 verify.frontend.activation_form_engine.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/activation_form_engine_test.ts --bundle --platform=node --format=esm --loader:.css=empty --resolve-extensions=.tsx,.ts,.jsx,.js,.css,.json,.mjs --alias:vue=./frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --alias:tdesign-vue-next=$(ROOT_DIR)/frontend/packages/ui/node_modules/tdesign-vue-next --outfile=/tmp/activation-form-engine-test.mjs >/dev/null
-	@node /tmp/activation-form-engine-test.mjs
+	@node --test --test-reporter=tap /tmp/activation-form-engine-test.mjs
 
 .PHONY: verify.frontend.public_auth_bootstrap.unit
 verify.frontend.public_auth_bootstrap.unit: guard.prod.forbid

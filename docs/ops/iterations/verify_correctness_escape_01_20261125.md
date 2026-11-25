@@ -249,3 +249,45 @@ consumer checks plus source/diff identity. Existing product/demo/acceptance runs
 remain historical exact-head evidence; new PR integration is pending. Scheduled
 release, deployment and persistent database writes remain excluded. Rollback is
 the bounded follow-up commit; the previous candidate remains recoverable.
+
+## REQUEST_CHANGES remediation: TAP and existing frontend producers
+
+The independent review at `f12d636827ab7bd6a3300c43ab11a5b1374959fe`
+identified two remaining defects. TAP is now parsed separately from generic
+success markers: tests/suites/pass/fail/cancelled/skipped/todo and the terminal
+duration must all be present once, and outcome counters must reconcile. Actual
+execution excludes skipped, todo and cancelled tests. Failure/cancellation,
+all-skipped/all-todo, inconsistent counters and incomplete summaries cannot pass.
+A trailing incomplete TAP count cannot inherit an earlier unittest success.
+
+The two named producers retain their original assertions inside actual Node test
+cases. Their Make entries explicitly select TAP. A bounded inventory of other
+standalone frontend test producers found 28 additional targets with bare or
+nonstandard summaries. Their existing assertion scripts now execute under the
+Node TAP runner through the same Make entries; compiler and syntax-check commands
+remain unchanged. No fabricated count or acceptance of bare PASS was introduced.
+
+Verification: 267 executor unit tests passed, including real Node all-skipped,
+positive/mixed-todo and failure cases, incomplete/cancelled-counter regressions,
+and a real repository frontend Make target through the executor. Both named
+producers plus the 28 inventoried targets passed through the executor with
+nonzero attributable results. Original per-target logs and reconciliation are in
+`.runtime/agent-runs/VERIFY-CORRECTNESS-01/review-producer-reconciled-results.json`;
+unit log is `review-tap-verified.log` in the same directory. Initial wiring attempts
+and failures are retained separately; only the final per-target results are used.
+
+P4 owns the parser, tests and Make reporting changes. There is no production
+frontend/ORM change. Local validation is limited to these producers and affected
+executor/workflow/registry checks; exact-head remote CI and independent re-review
+are still required. No full local ORM or browser matrix is introduced. The reviewer
+identified two coverage-registry collisions with #1006; reconcile them against the
+actual registered entrypoints after #1003 integrates and #1006 is governably synced.
+Do not merge either old REQUEST_CHANGES candidate on green CI alone.
+
+The additional activation-form producer exposed a pre-existing whitespace-sensitive
+fixture: both the original direct Node command and the TAP command found zero
+rules because the shipped template now places attributes on separate lines.
+Its regex now accepts whitespace while retaining exactly three required rules and
+all behavioral assertions. Both novalidate assertions likewise accept whitespace.
+The final activation producer passed, completing 30/30 reconciled target results.
+The failed original/direct and first adapted runs are retained as diagnostic logs.

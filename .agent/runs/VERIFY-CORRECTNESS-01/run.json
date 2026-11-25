@@ -32,17 +32,21 @@
     "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
     "addons/smart_construction_core/tests/test_user_feedback_business_views.py",
     "addons/smart_core/tests/test_native_occurrence_contract_integration.py",
+    "addons/smart_core/tests/test_native_view_parser_surfaces.py",
     "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
     "addons/smart_core/tests/test_user_view_preference_runtime_orm.py",
-    "addons/smart_core/tests/test_native_view_parser_surfaces.py",
     "config/ci/path_ownership_v1.json",
+    "demo_addons/smart_construction_demo/tests/test_startup_metadata_performance.py",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/verify_correctness_escape_01_20261125.md",
-    "demo_addons/smart_construction_demo/tests/test_startup_metadata_performance.py",
+    "frontend/apps/web/scripts/action_view_selection_feedback_test.ts",
+    "frontend/apps/web/scripts/activation_form_engine_test.ts",
     "make/ci.mk",
     "make/contract.mk",
+    "make/frontend.mk",
+    "make/runtime_ops.mk",
     "scripts/ci/backend_impact_plan.py",
     "scripts/ci/ci_risk_classifier.py",
     "scripts/ci/self_hosted_runner_cleanup.sh",
@@ -53,6 +57,7 @@
     "scripts/dev/run_changed_odoo_tests.py",
     "scripts/ops/github_published_branch_sync.py",
     "scripts/ops/test_github_published_branch_sync.py",
+    "scripts/verify/frontend_action_view_route_lease_race.test.mjs",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_branch_governance_consistency_guard.py",
     "scripts/verify/test_coverage_registry.yaml",
@@ -92,10 +97,14 @@
     "frontend_incremental": {
       "target": "verify.frontend.dev.incremental.unit",
       "inputs": [
-        "scripts/verify/frontend_dev_incremental.py",
-        "scripts/verify/test_frontend_dev_incremental.py",
+        "frontend/apps/web/scripts/action_view_selection_feedback_test.ts",
+        "frontend/apps/web/src/app/actionViewRouteLeaseCore.js",
+        "make/frontend.mk",
+        "make/runtime_ops.mk",
         "scripts/ops/incremental_execution.py",
-        "make/frontend.mk"
+        "scripts/verify/frontend_action_view_route_lease_race.test.mjs",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ],
       "kind": "offline"
     },
@@ -169,8 +178,10 @@
       "kind": "offline"
     }
   },
-  "blockers": [],
-  "next_exact_step": "Publish the bounded unknown-test-summary correction to PR #1003; verify new exact-head required CI and reconcile backend close evidence without claiming previous-head checks as current.",
+  "blockers": [
+    "Independent re-review required for the TAP and producer corrections; previous candidate REQUEST_CHANGES remains in force."
+  ],
+  "next_exact_step": "Validate TAP final counters and both real frontend producer targets, publish the bounded review corrections to #1003, then obtain exact-head CI and independent re-review before merge. Product #1006 remains separate until CI integration and governed synchronization.",
   "id": "VERIFY-CORRECTNESS-01",
   "branch": "fix/verify-correctness-escape-01-20261125",
   "status": "verification_pending",
@@ -178,6 +189,9 @@
   "record": "docs/ops/iterations/verify_correctness_escape_01_20261125.md",
   "evidence": {
     "unknown_summary_unit": ".runtime/agent-runs/VERIFY-CORRECTNESS-01/unknown-summary-unit.log",
-    "prior_exact_head_backend_close": ".runtime/backend-iteration/c68acbc2aefc4f03760f0c0e02dc6b043f1807a2.json"
+    "prior_exact_head_backend_close": ".runtime/backend-iteration/c68acbc2aefc4f03760f0c0e02dc6b043f1807a2.json",
+    "tap_review_unit": ".runtime/agent-runs/VERIFY-CORRECTNESS-01/review-tap-verified.log",
+    "producer_review_results": ".runtime/agent-runs/VERIFY-CORRECTNESS-01/review-producer-reconciled-results.json",
+    "review_targeted": ".runtime/agent-runs/VERIFY-CORRECTNESS-01/review-final-targeted.log"
   }
 }

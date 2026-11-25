@@ -4230,8 +4230,51 @@ GENERIC_TEST_SUMMARY_PATTERNS = (
         r"\b(?:cases|checks|assertions|count|scenarios|tests)=(\d+)\b.*$"
     ),
     re.compile(r"(?im)^\s*(\d+)\s+(?:cases|checks|assertions|tests?)\s+passed\b.*$"),
-    re.compile(r"(?im)^# tests (\d+)\s*$"),
 )
+
+
+
+TAP_TESTS_PATTERN = re.compile(r"(?m)^# tests (\d+)[ \t]*$")
+
+
+def tap_execution_metrics(output: str, summary: re.Match) -> dict:
+    """Require Node TAP's complete terminal counters; a plan/count is not success."""
+    tail = output[summary.start():]
+    counters = {}
+    for key in ("tests", "suites", "pass", "fail", "cancelled", "skipped", "todo"):
+        values = re.findall(rf"(?m)^# {key} (\d+)[ \t]*$", tail)
+        if len(values) == 1:
+            counters[key] = int(values[0])
+    duration = re.findall(r"(?m)^# duration_ms (\d+(?:\.\d+)?)[ \t]*$", tail)
+    complete = len(counters) == 7 and len(duration) == 1
+    collected = int(summary.group(1))
+    consistent = complete and sum(
+        counters[key] for key in ("pass", "fail", "cancelled", "skipped", "todo")
+    ) == collected
+    status = "unknown"
+    if consistent:
+        status = "failed" if counters["fail"] or counters["cancelled"] else "ok"
+    if re.search(r"(?m)^Bail out!", output):
+        status = "failed"
+    passed = counters.get("pass", 0)
+    failed = counters.get("fail", 0)
+    skipped = counters.get("skipped", 0)
+    executed = passed + failed if consistent else 0
+    return {
+        "testCount": executed,
+        "testCollectedCount": collected,
+        "testPassedCount": passed,
+        "testFailedCount": failed,
+        "testSkippedCount": skipped,
+        "testTodoCount": counters.get("todo", 0),
+        "testCancelledCount": counters.get("cancelled", 0),
+        "testCountObservations": 1,
+        "testSummaryStatus": status,
+        "testSummarySource": "tap-summary",
+        "explicitZeroTestEvidence": collected == 0,
+        "allTestsSkippedEvidence": collected > 0 and skipped == collected,
+        "testExecutionEvidence": "tap-summary" if consistent and executed > 0 else "none",
+    }
 
 
 def test_execution_metrics(output: str) -> dict:
@@ -4245,6 +4288,12 @@ def test_execution_metrics(output: str) -> dict:
         )
     unittest_candidate = unittest_summaries[-1] if unittest_summaries else None
     generic_candidate = max(generic_candidates) if generic_candidates else None
+    tap_summaries = list(TAP_TESTS_PATTERN.finditer(output))
+    if tap_summaries and tap_summaries[-1].start() > max(
+        unittest_candidate.start() if unittest_candidate else -1,
+        generic_candidate[0] if generic_candidate else -1,
+    ):
+        return tap_execution_metrics(output, tap_summaries[-1])
     if unittest_candidate is not None and (
         generic_candidate is None or unittest_candidate.start() > generic_candidate[0]
     ):
