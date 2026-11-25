@@ -170,10 +170,14 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Record the exact-HEAD GitHub API 502 recovery, publish the new metadata candidate through the governed PR lane, rerun the four required checks, then close the backend iteration chain on the new HEAD.",
+  "next_exact_step": "Publish the bounded unknown-test-summary correction to PR #1003; verify new exact-head required CI and reconcile backend close evidence without claiming previous-head checks as current.",
   "id": "VERIFY-CORRECTNESS-01",
   "branch": "fix/verify-correctness-escape-01-20261125",
   "status": "verification_pending",
   "goal": ".agent/goals/VERIFY-CORRECTNESS-01.yaml",
-  "record": "docs/ops/iterations/verify_correctness_escape_01_20261125.md"
+  "record": "docs/ops/iterations/verify_correctness_escape_01_20261125.md",
+  "evidence": {
+    "unknown_summary_unit": ".runtime/agent-runs/VERIFY-CORRECTNESS-01/unknown-summary-unit.log",
+    "prior_exact_head_backend_close": ".runtime/backend-iteration/c68acbc2aefc4f03760f0c0e02dc6b043f1807a2.json"
+  }
 }

@@ -3971,6 +3971,24 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.assertEqual("none", result["testExecutionEvidence"])
         self.assertIn("zero executed tests", result["statusReason"])
 
+    def test_incomplete_test_summary_fails_even_when_make_exits_zero(self) -> None:
+        self.root.joinpath("Makefile").write_text(
+            self.root.joinpath("Makefile").read_text(encoding="utf-8")
+            + "verify.incomplete.unit:\n"
+            "\t@printf 'Ran 5 tests in 0.001s\\n'\n",
+            encoding="utf-8",
+        )
+        result = incremental._run_make_target(
+            "verify.incomplete.unit",
+            self.root,
+            self.root / "incomplete-unit.log",
+        )
+        self.assertEqual(0, result["returncode"])
+        self.assertEqual(5, result["testCount"])
+        self.assertEqual("unknown", result["testSummaryStatus"])
+        self.assertEqual("failed", result["status"])
+        self.assertIn("no successful final runner summary", result["statusReason"])
+
     def test_nonzero_final_test_summary_passes(self) -> None:
         self.root.joinpath("Makefile").write_text(
             self.root.joinpath("Makefile").read_text(encoding="utf-8")

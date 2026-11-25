@@ -224,3 +224,28 @@ candidate through the governed PR lane, rerun the four required checks against
 main `487a3d8497cd89841e1954d164e0e11d79742d81`, and close the backend iteration
 chain on the new HEAD. No persistent database, deployment or user-acceptance
 state has been mutated.
+
+## Sole-executor closeout on 2026-11-26
+
+The owner assigned sole execution and requested closure of the CI line. Readback
+confirmed all four required PR #1003 checks passed on
+`c68acbc2aefc4f03760f0c0e02dc6b043f1807a2`, base
+`487a3d8497cd89841e1954d164e0e11d79742d81`. The matching backend close receipt
+also passed: product reused professional CI; demo run 45690039143 and acceptance
+run 45690103242 were independently read back as successful at that exact HEAD.
+These results supersede the historical pending narrative above for that candidate.
+
+Closeout inspection then reproduced a remaining false pass: a zero-exit Make
+test emitting only `Ran 5 tests in ...` received an unknown summary status but
+was still accepted. P4 now requires a successful final summary as well as a
+positive execution count. The new real-Make regression failed before the fix;
+all 261 executor unit tests passed after it. Original log:
+`.runtime/agent-runs/VERIFY-CORRECTNESS-01/unknown-summary-unit.log`.
+
+This delta changes only the verification executor, its regression and this run's
+bookkeeping. No product code, ORM test, runtime profile, workflow or scan rule
+changes. Local responsibility is the affected executor and workflow/registry
+consumer checks plus source/diff identity. Existing product/demo/acceptance runs
+remain historical exact-head evidence; new PR integration is pending. Scheduled
+release, deployment and persistent database writes remain excluded. Rollback is
+the bounded follow-up commit; the previous candidate remains recoverable.

@@ -4356,7 +4356,7 @@ def _run_make_target(target: str, root: Path, log_path: Path) -> dict:
         no_test_execution = (
             execution_kind == "test"
             and (
-                metrics["testSummaryStatus"] == "failed"
+                metrics["testSummaryStatus"] != "ok"
                 or metrics["explicitZeroTestEvidence"]
                 or metrics["allTestsSkippedEvidence"]
                 or metrics["testCount"] <= 0
@@ -4372,6 +4372,8 @@ def _run_make_target(target: str, root: Path, log_path: Path) -> dict:
                 if metrics["explicitZeroTestEvidence"]
                 else "test target skipped every collected test"
                 if metrics["allTestsSkippedEvidence"]
+                else "test target has no successful final runner summary"
+                if metrics["testCount"] > 0 and metrics["testSummaryStatus"] != "ok"
                 else "test target reported zero executed tests"
             )
         else:
