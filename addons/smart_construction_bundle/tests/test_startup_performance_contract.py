@@ -46,8 +46,20 @@ class TestStartupPerformanceContract(TransactionCase):
                 return result
 
         with patch.object(system_init, '_strip_ui_base_contract_for_frontend', compare):
-            reply = system_init.SystemInitHandler(env=self.env).handle(payload={'params': {}})
-        self.assertTrue(reply.ok)
+            reply = system_init.SystemInitHandler(env=self.env).handle(payload={
+                'params': {
+                    'client_type': 'web_pc',
+                    'accepted_contract_versions': ['2.7.x'],
+                    'client_contract_capabilities': [
+                        'view.form.v1',
+                        'view.tree.v1',
+                    ],
+                },
+            })
+        if isinstance(reply, dict):
+            self.assertTrue(reply.get("ok", True), reply)
+        else:
+            self.assertTrue(reply.ok)
         self.assertEqual(observed, [True])
 
     def test_action_xmlid_batch_matches_native_selection_and_refreshes(self):

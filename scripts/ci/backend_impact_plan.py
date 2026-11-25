@@ -61,6 +61,10 @@ CONTROL_PLANE = {
     'scripts/ops/quick_input_scope.py': 'verify.quick.input_scope.unit',
     'scripts/ops/git_safe_push.sh': 'verify.pr.push.unit',
     'scripts/verify/test_pr_publish_preflight.py': 'verify.pr.push.unit',
+    'scripts/verify/branch_governance_consistency_guard.py':
+        'verify.branch.governance.consistency',
+    'scripts/verify/test_branch_governance_consistency_guard.py':
+        'verify.branch.governance.consistency',
     'scripts/ops/integration_cycle.py': 'verify.integration.cycle.unit',
     'scripts/ops/test_integration_cycle.py': 'verify.integration.cycle.unit',
     'scripts/ops/archive_worktree_delivery_evidence.py': 'verify.workspace.worktree.guard',
@@ -70,7 +74,10 @@ CONTROL_PLANE = {
 }
 CONTROL_PLANE_EXTRA = {
     'make/ci.mk': ('verify.baseline.iteration.execution.policy',),
-    'make/codex.mk': ('verify.pr.push.unit',),
+    'make/codex.mk': (
+        'verify.branch.governance.consistency',
+        'verify.pr.push.unit',
+    ),
     '.github/workflows/professional_quality_gate.yml': (
         'verify.github_actions.security',
     ),
@@ -81,12 +88,42 @@ CONTROL_PLANE_EXTRA = {
         'verify.ci.workflow.contract',
     ),
 }
+REGISTRY_AUDIT_TARGET = 'verify.test.coverage.registry'
+REGISTRY_AUDIT_SELECTOR_PATHS = {
+    '.github/workflows/professional_quality_gate.yml',
+    'make/ci.mk',
+    'make/contract.mk',
+    'make/frontend.mk',
+    'scripts/ci/backend_impact_plan.py',
+    'scripts/ci/ci_risk_classifier.py',
+    'scripts/verify/frontend_dev_incremental.py',
+    'scripts/verify/test_coverage_registry.yaml',
+    'scripts/verify/test_coverage_registry_audit.py',
+    'scripts/verify/test_test_coverage_registry_audit.py',
+}
 
 
 def control_plane_targets(path: str) -> set[str]:
     targets = {CONTROL_PLANE[path]} if path in CONTROL_PLANE else set()
     targets.update(CONTROL_PLANE_EXTRA.get(path, ()))
     return targets
+
+
+def registry_audit_required(path: str) -> bool:
+    """A declared tag, test import or selector change needs registry audit."""
+    if path in REGISTRY_AUDIT_SELECTOR_PATHS:
+        return True
+    parts = path.split('/')
+    if len(parts) < 4 or parts[0] not in ROOTS:
+        return False
+    relative = '/'.join(parts[2:])
+    if relative == 'tests/__init__.py':
+        return True
+    return (
+        relative.startswith('tests/')
+        and relative.endswith('.py')
+        and relative.rsplit('/', 1)[-1].startswith('test_')
+    )
 
 
 def classify_import_top(top: str, local_modules: set[str]) -> str:
@@ -400,6 +437,8 @@ def select(paths: list[str], before: dict, after: dict, *, full: bool = False) -
         parts = path.split('/')
         if path.startswith('/') or '..' in parts:
             raise ValueError('invalid changed path')
+        if registry_audit_required(path):
+            tool_checks.add(REGISTRY_AUDIT_TARGET)
         # A test-only fixture changes the reading test, not its module's product
         # code. Keep product dependency propagation for actual module changes.
         test_readers.update(file_consumers.get(path, set()))

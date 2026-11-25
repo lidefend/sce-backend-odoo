@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import tempfile
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest import mock
 
@@ -183,6 +185,46 @@ class RunChangedOdooTestsTest(unittest.TestCase):
             self.assertEqual(
                 execute.call_args.args[0],
                 ["git", "merge-base", "--is-ancestor", "a" * 40, "d" * 40],
+            )
+
+    def test_aggregate_summary_reports_reused_and_executed_test_counts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            head = mock.Mock(stdout="a" * 40 + "\n", returncode=0)
+            executed = mock.Mock(returncode=0)
+            stdout = io.StringIO()
+            with mock.patch.object(
+                runner,
+                "test_surface_fingerprint",
+                return_value="b" * 64,
+            ), mock.patch.object(
+                runner,
+                "reusable_receipt",
+                side_effect=[
+                    ".runtime/test-baseline/reused/receipt.json",
+                    "",
+                    ".runtime/test-baseline/executed/receipt.json",
+                ],
+            ), mock.patch.object(
+                runner,
+                "receipt_count",
+                side_effect=[5, 7],
+            ), mock.patch.object(
+                runner.subprocess,
+                "run",
+                side_effect=[head, executed],
+            ), redirect_stdout(stdout):
+                code = runner.run(
+                    root,
+                    {
+                        "smart_core": ["/smart_core:TestOne"],
+                        "smart_construction_core": ["/smart_construction_core:TestTwo"],
+                    },
+                )
+            self.assertEqual(0, code)
+            self.assertIn(
+                "[changed-tests] PASS tests=12 modules=2 reused=1 executed=1",
+                stdout.getvalue(),
             )
 
 

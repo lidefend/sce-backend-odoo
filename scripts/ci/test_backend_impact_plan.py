@@ -46,8 +46,37 @@ class ImpactSelectionTest(unittest.TestCase):
             with self.subTest(path=path):
                 plan = planner.select([path], self.graph, self.graph)
                 self.assertEqual([], plan['modules'])
-                self.assertEqual(sorted(planner.control_plane_targets(path)), plan['tool_checks'])
+                expected = set(planner.control_plane_targets(path))
+                if planner.registry_audit_required(path):
+                    expected.add('verify.test.coverage.registry')
+                self.assertEqual(sorted(expected), plan['tool_checks'])
                 self.assertEqual('NOT_APPLICABLE', plan['scope_status'])
+
+    def test_merge_entry_change_selects_branch_governance(self):
+        plan = planner.select(['make/codex.mk'], self.graph, self.graph)
+        self.assertIn(
+            'verify.branch.governance.consistency',
+            plan['tool_checks'],
+        )
+        self.assertIn('verify.pr.push.unit', plan['tool_checks'])
+
+    def test_test_declarations_and_selectors_select_registry_audit(self):
+        for path in (
+            'addons/smart_core/tests/test_workflow_contract_platform.py',
+            'addons/smart_core/tests/__init__.py',
+            'scripts/verify/test_coverage_registry.yaml',
+            'scripts/ci/backend_impact_plan.py',
+        ):
+            with self.subTest(path=path):
+                plan = planner.select([path], self.graph, self.graph)
+                self.assertIn('verify.test.coverage.registry', plan['tool_checks'])
+
+    def test_parser_change_keeps_nonzero_smart_core_module_scope(self):
+        path = 'addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py'
+        graph = {**self.graph, 'smart_core': module()}
+        plan = planner.select([path], graph, graph)
+        self.assertIn('smart_core', plan['modules'])
+        self.assertEqual('required', plan['scope_status'])
 
     def test_delivery_evidence_tools_and_tests_reach_their_remote_owners(self):
         paths = ['scripts/ops/integration_cycle.py', 'scripts/ops/test_integration_cycle.py',

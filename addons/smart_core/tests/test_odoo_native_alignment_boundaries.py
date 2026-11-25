@@ -1788,6 +1788,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             "action_id": action.id,
             "render_profile": "edit",
             "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
             "client_contract_capabilities": [
                 "form.feedback.message.v1",
                 "form.feedback.draft.v1",

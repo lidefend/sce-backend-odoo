@@ -34,6 +34,8 @@ class TestUserFeedbackBusinessViews(BusinessTransactionCase):
         result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
             "op": "model", "model": "res.partner", "action_id": menu.action.id,
             "menu_id": menu.id, "view_type": "form", "render_profile": "create",
+            "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": ["view.form.v1", "view.tree.v1"],
         })
         envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
         self.assertTrue(envelope.get("ok", True), envelope.get("error"))
@@ -79,6 +81,8 @@ class TestUserFeedbackBusinessViews(BusinessTransactionCase):
             result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
                 "op": "model", "model": "res.partner", "action_id": menu.action.id,
                 "menu_id": menu.id, "record_id": partner.id, "view_type": "form", "render_profile": profile,
+                "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"],
+                "client_contract_capabilities": ["view.form.v1", "view.tree.v1"],
             })
             data = (result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result)["data"]
             self.assertEqual(data["formStructureContract"]["structureAuthority"], "container_tree")
@@ -2783,7 +2787,7 @@ class TestFormalFormLowcode(BusinessTransactionCase):
             result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
                 "op": "model", "model": action.res_model, "action_id": action.id,
                 "view_id": 0, "view_type": "form", "render_profile": "create",
-                "client_type": "web_pc", "client_contract_capabilities": [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, "view.form.v1", "view.tree.v1"], **extra,
+                "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"], "client_contract_capabilities": [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, "view.form.v1", "view.tree.v1"], **extra,
             })
             result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
             self.assertTrue(result.get("ok", True), result)

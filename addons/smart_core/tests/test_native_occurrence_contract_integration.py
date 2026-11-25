@@ -218,9 +218,8 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
         raw = "[('is_company', '=', True)]"
         context = "{'default_is_company': True}"
         self.assertEqual(widget["fieldDescriptor"]["domain"], raw)
-        self.assertEqual(widget["fieldDescriptor"]["domain_expression"]["raw"], raw)
         self.assertEqual(widget["fieldDescriptor"]["context"], context)
-        self.assertEqual(widget["fieldDescriptor"]["widget_options"], {"no_create": True})
+        self.assertEqual(widget["fieldDescriptor"]["widgetOptions"], {"no_create": True})
 
     def test_form_embedded_widget_contract_preserves_identity_options_and_support(self):
         contract = self._contract("form")
@@ -231,10 +230,10 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
             if node.get("type") == "widget"
         ]
 
-        self.assertEqual([node["componentKey"] for node in widgets], [
-            "sc.display.ribbon",
-            "sc.display.ribbon",
-            "sc.unsupported.native_node",
+        self.assertEqual([node["semanticType"] for node in widgets], [
+            "display_ribbon",
+            "display_ribbon",
+            "unsupported_native_node",
         ])
         self.assertEqual([node["nativeIdentity"]["kind"] for node in widgets], ["widget", "widget", "widget"])
         self.assertEqual(len({node["nativeIdentity"]["occurrenceKey"] for node in widgets[:2]}), 2)

@@ -40,6 +40,16 @@ def _without_updated_at(value):
 
 @tagged('post_install', '-at_install', 'sc_gate')
 class TestStartupMetadataPerformance(TransactionCase):
+    def _assert_ok(self, response):
+        if isinstance(response, dict):
+            ok = response.get("ok") is True
+            data = response.get("data") or {}
+        else:
+            ok = response.ok
+            data = response.data
+        self.assertTrue(ok, response)
+        return data
+
     def _assert_payload_matches(self, previous_data, current_data):
         previous_scrubbed, previous_stamps = _without_updated_at(previous_data)
         current_scrubbed, current_stamps = _without_updated_at(current_data)
@@ -53,9 +63,15 @@ class TestStartupMetadataPerformance(TransactionCase):
         finance = self.env.ref('smart_construction_demo.user_demo_role_finance')
         actor = self.env(user=finance.id, context={'allowed_company_ids': [finance.company_id.id], 'lang': 'zh_CN'})
         self.assertFalse(actor.su)
-        params = {'scene': 'web', 'scene_ready_mode': 'registry', 'with_preload': False, 'with': ['workspace_home']}
+        params = {
+            'scene': 'web', 'scene_ready_mode': 'registry',
+            'with_preload': False, 'with': ['workspace_home'],
+            'client_type': 'web_pc',
+            'accepted_contract_versions': ['2.7.x'],
+            'client_contract_capabilities': ['view.form.v1', 'view.tree.v1'],
+        }
         warm = system_init.SystemInitHandler(env=actor).handle(payload={'params': params})
-        self.assertTrue(warm.ok)
+        self._assert_ok(warm)
         with patch.object(MenuService, '_action_xmlids_from_facts', return_value={}):
             before = self.env.cr.sql_log_count
             previous = system_init.SystemInitHandler(env=actor).handle(payload={'params': params})
@@ -63,26 +79,32 @@ class TestStartupMetadataPerformance(TransactionCase):
         before = self.env.cr.sql_log_count
         current = system_init.SystemInitHandler(env=actor).handle(payload={'params': params})
         current_queries = self.env.cr.sql_log_count - before
-        self.assertTrue(previous.ok)
-        self.assertTrue(current.ok)
-        self._assert_payload_matches(previous.data, current.data)
+        previous_data = self._assert_ok(previous)
+        current_data = self._assert_ok(current)
+        self._assert_payload_matches(previous_data, current_data)
         self.assertLess(current_queries, previous_queries)
 
     def test_registry_startup_path_batch_preserves_response_and_reduces_sql(self):
         finance = self.env.ref('smart_construction_demo.user_demo_role_finance')
         actor = self.env(user=finance.id, context={'allowed_company_ids': [finance.company_id.id], 'lang': 'zh_CN'})
         self.assertFalse(actor.su)
-        params = {'scene': 'web', 'scene_ready_mode': 'registry', 'with_preload': False, 'with': ['workspace_home']}
-        self.assertTrue(system_init.SystemInitHandler(env=actor).handle(payload={'params': params}).ok)
+        params = {
+            'scene': 'web', 'scene_ready_mode': 'registry',
+            'with_preload': False, 'with': ['workspace_home'],
+            'client_type': 'web_pc',
+            'accepted_contract_versions': ['2.7.x'],
+            'client_contract_capabilities': ['view.form.v1', 'view.tree.v1'],
+        }
+        self._assert_ok(system_init.SystemInitHandler(env=actor).handle(payload={'params': params}))
         with patch.object(MenuService, '_native_visible_menu_paths', return_value={}):
             before = self.env.cr.sql_log_count
             previous = system_init.SystemInitHandler(env=actor).handle(payload={'params': params})
             previous_queries = self.env.cr.sql_log_count - before
         before = self.env.cr.sql_log_count
         current = system_init.SystemInitHandler(env=actor).handle(payload={'params': params})
-        self.assertTrue(previous.ok)
-        self.assertTrue(current.ok)
-        self._assert_payload_matches(previous.data, current.data)
+        previous_data = self._assert_ok(previous)
+        current_data = self._assert_ok(current)
+        self._assert_payload_matches(previous_data, current_data)
         self.assertLess(self.env.cr.sql_log_count - before, previous_queries)
 
     def test_registry_startup_scene_batch_preserves_response_and_reduces_sql(self):
@@ -90,15 +112,21 @@ class TestStartupMetadataPerformance(TransactionCase):
         finance = self.env.ref('smart_construction_demo.user_demo_role_finance')
         actor = self.env(user=finance.id, context={'allowed_company_ids': [finance.company_id.id], 'lang': 'zh_CN'})
         self.assertFalse(actor.su)
-        params = {'scene': 'web', 'scene_ready_mode': 'registry', 'with_preload': False, 'with': ['workspace_home']}
-        self.assertTrue(system_init.SystemInitHandler(env=actor).handle(payload={'params': params}).ok)
+        params = {
+            'scene': 'web', 'scene_ready_mode': 'registry',
+            'with_preload': False, 'with': ['workspace_home'],
+            'client_type': 'web_pc',
+            'accepted_contract_versions': ['2.7.x'],
+            'client_contract_capabilities': ['view.form.v1', 'view.tree.v1'],
+        }
+        self._assert_ok(system_init.SystemInitHandler(env=actor).handle(payload={'params': params}))
         with patch.object(scene_normalizer, '_resolve_xmlids_batch', return_value={}):
             before = self.env.cr.sql_log_count
             previous = system_init.SystemInitHandler(env=actor).handle(payload={'params': params})
             previous_queries = self.env.cr.sql_log_count - before
         before = self.env.cr.sql_log_count
         current = system_init.SystemInitHandler(env=actor).handle(payload={'params': params})
-        self.assertTrue(previous.ok)
-        self.assertTrue(current.ok)
-        self._assert_payload_matches(previous.data, current.data)
+        previous_data = self._assert_ok(previous)
+        current_data = self._assert_ok(current)
+        self._assert_payload_matches(previous_data, current_data)
         self.assertLess(self.env.cr.sql_log_count - before, previous_queries)

@@ -1,0 +1,36 @@
+schema_version: 1
+goal:
+  id: VERIFY-CORRECTNESS-01
+  title: Close false-pass and escaped scheduled verification dependencies
+  status: active
+  formal_product_layer: P4
+  objective: >-
+    Preserve the three-layer validation model and backend/frontend channels while
+    making target selection complete and receipt reuse trustworthy. Deliver
+    VERIFY-CORRECTNESS-01 and VERIFY-ESCAPE-02 together: additive contract
+    diagnostics, dependency-aware shared-contract handoff, non-zero test proof,
+    and the missing #996/#997/#998 regression dependencies.
+  batches:
+    - id: VERIFY-CORRECTNESS-01
+      outcome: >-
+        A frontend contract diagnostic no longer suppresses standard checks, and
+        cross-channel receipt reuse invalidates targets affected since the source
+        head. Test targets without executed tests cannot pass.
+    - id: VERIFY-ESCAPE-02
+      outcome: >-
+        Merge-entry changes select branch-governance regression, declared test
+        groups and test imports select registry audit, parser changes select the
+        standalone parser and consumer tests, and cheap registry/plan checks run
+        before expensive ORM work.
+  acceptance_criteria:
+    - Replaying the #996 test declaration selects verify.test.coverage.registry.
+    - Replaying the #997 make/codex.mk change selects verify.branch.governance.consistency and its merge stub passes.
+    - Replaying the #998 parser change selects the standalone parser test and contract consumer test.
+    - A mixed frontend runtime/contract-diagnostic change keeps standard lint, strict typecheck, unit tests and static checks selected.
+    - A backend receipt from HEAD A cannot hand a shared target to HEAD B when B changes that target's inputs.
+    - A test target that exits zero after collecting zero tests is recorded as failed, never passed.
+  exclusions:
+    - P0-P3 product semantics and contracts
+    - databases, runtime profiles, deployment and user acceptance
+    - checkpoint/fingerprint redesign beyond the shared reuse predicate needed here
+    - workflow orchestration and retirement of pr.merge.prep

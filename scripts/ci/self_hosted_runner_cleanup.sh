@@ -8,6 +8,8 @@ runner_temp="${RUNNER_TEMP:-}"
 run_id="${GITHUB_RUN_ID:-}"
 run_attempt="${GITHUB_RUN_ATTEMPT:-}"
 frontend_mode="${FRONTEND_MODE:-}"
+contract_diagnostic_required="${CONTRACT_DIAGNOSTIC_REQUIRED:-false}"
+payment_request_diagnostic="${PAYMENT_REQUEST_DIAGNOSTIC:-0}"
 allow_docker_cleanup=1
 shard_index="${SHARD_INDEX:-}"
 suite_name="${SUITE_NAME:-}"
@@ -47,7 +49,9 @@ if [[ ! -d "$resolved_runner_temp" || "$(basename "$resolved_runner_temp")" != "
 fi
 
 if [[ "$project" == sc-fe-release-* ]]; then
-  if [[ "$frontend_mode" == "full" || "$frontend_mode" == "contract_diagnostic" ]]; then
+  if [[ "$frontend_mode" == "full" \
+    || "$contract_diagnostic_required" == "true" \
+    || "$payment_request_diagnostic" == "1" ]]; then
     source "$root_dir/scripts/common/frontend_release_ci_identity.sh"
     verify_frozen_frontend_release_ci_identity "$root_dir"
     validate_frozen_frontend_release_ci_resources "$root_dir" optional

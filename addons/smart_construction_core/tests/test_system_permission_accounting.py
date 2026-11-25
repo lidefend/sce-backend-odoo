@@ -402,7 +402,8 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
             'op': 'model', 'model': record._name,
             **({'view_id': self.env.ref('account.view_move_form').id} if record._name == 'account.move' else {}),
             'view_type': 'form', 'render_profile': 'edit', 'record_id': record.id,
-            'client_type': 'web_pc', 'client_contract_capabilities': [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, 'view.form.v1', 'view.tree.v1'],
+            'client_type': 'web_pc', 'accepted_contract_versions': ['2.7.x'],
+            'client_contract_capabilities': [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, 'view.form.v1', 'view.tree.v1'],
         })
         result = result.to_legacy_dict() if hasattr(result, 'to_legacy_dict') else result
         self.assertTrue(result.get('ok', True), result)
@@ -420,7 +421,8 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
         result = UiContractV2Handler(record.env, su_env=self.env).handle({
             'op': 'model', 'model': 'account.move', 'view_id': self.env.ref('account.view_move_form').id,
             'view_type': 'form', 'render_profile': 'edit', 'record_id': record.id,
-            'client_type': 'web_pc', 'client_contract_capabilities': [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, 'view.form.v1', 'view.tree.v1'],
+            'client_type': 'web_pc', 'accepted_contract_versions': ['2.7.x'],
+            'client_contract_capabilities': [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, 'view.form.v1', 'view.tree.v1'],
         })
         result = result.to_legacy_dict() if hasattr(result, 'to_legacy_dict') else result
         self.assertTrue(result.get('ok', True), result)
@@ -435,7 +437,8 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
             result = UiContractV2Handler(actor_record.env, su_env=self.env).handle({
                 'op': 'model', 'model': 'account.move', 'view_id': self.env.ref('account.view_move_form').id,
                 'view_type': 'form', 'render_profile': 'edit', 'record_id': record.id,
-                'client_type': 'web_pc', 'client_contract_capabilities': [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, 'view.form.v1', 'view.tree.v1'],
+                'client_type': 'web_pc', 'accepted_contract_versions': ['2.7.x'],
+                'client_contract_capabilities': [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, 'view.form.v1', 'view.tree.v1'],
             })
             result = result.to_legacy_dict() if hasattr(result, 'to_legacy_dict') else result
             self.assertTrue(result.get('ok', True), result)

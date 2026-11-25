@@ -864,6 +864,14 @@ entries:
   gate: 'scripts/verify/p0_contract_producer_money_evidence.py :: p0_contract_producer_p0a_money_evidence'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: p0_contract_descriptor_conformance_evidence
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.p0_contract_producer.p0a.descriptor_conformance :: p0_contract_descriptor_conformance_evidence'
+  reason: 'Added by PR #1002 and executed through the form contract evidence target. The target runs
+    the exact smart_construction_core class with non-zero ORM receipt enforcement before its decoder test.'
 - group: p0_contract_producer_p0c
   kind: odoo_tag
   status: on-demand
@@ -1823,6 +1831,14 @@ entries:
   gate: 'make:verify.workflow_contract.backend :: /TestWorkflowContractBackend (class selection)'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: workflow_contract_platform
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.workflow_contract.platform.orm :: /smart_core:TestWorkflowContractPlatform'
+  reason: 'Added by #996 and executed by the dedicated smart_core test-class entry; the ordinary
+    module suite remains additive, while test-file and selector changes now require the registry audit.'
 - group: workspace_processing_feedback
   kind: odoo_tag
   status: on-demand

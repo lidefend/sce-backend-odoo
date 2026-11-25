@@ -726,6 +726,12 @@ verify.workflow_contract.backend: guard.prod.forbid audit.workflow_state.invento
 	@DOCS_MOUNT_HOST=./docs DOCS_MOUNT_CONT=/mnt/docs ADDONS_EXTERNAL_MOUNT=/mnt/addons_external/oca_server_ux DB_NAME="$${DB_NAME:-$(WORKFLOW_CONTRACT_DB_NAME)}" MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestWorkflowContractBackend' bash scripts/test/test_safe.sh
 	@DOCS_MOUNT_HOST=./docs DOCS_MOUNT_CONT=/mnt/docs ADDONS_EXTERNAL_MOUNT=/mnt/addons_external/oca_server_ux DB_NAME="$${DB_NAME:-$(WORKFLOW_CONTRACT_DB_NAME)}" MODULE=smart_construction_core TEST_TAGS='/smart_construction_core:TestUserFeedbackBusinessViews.test_deduction_registration_action_creates_deduction_bill_lines' bash scripts/test/test_safe.sh
 
+.PHONY: verify.workflow_contract.platform.orm
+verify.workflow_contract.platform.orm: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_core \
+	  $(MAKE) --no-print-directory local.test.test \
+	  MODULE=smart_core TEST_TAGS=/smart_core:TestWorkflowContractPlatform
+
 .PHONY: verify.workflow_contract.browser.syntax
 verify.workflow_contract.browser.syntax: guard.prod.forbid
 	@node --check scripts/verify/workflow_evidence_gate_browser_acceptance.js
@@ -998,10 +1004,14 @@ verify.change_impact.acceptance: guard.prod.forbid verify.change_impact.plan.uni
 # scope as a pass). Kept separate from verify.ci.scheduled_gates so the required
 # professional_quality_gate lane enforces it without pulling in the heavy
 # github-actions security sweep.
-.PHONY: verify.ci.path_ownership.unit verify.ci.workflow.contract
+.PHONY: verify.ci.path_ownership.unit verify.ci.backend_impact_plan.unit verify.ci.workflow.contract
 verify.ci.path_ownership.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ci/ci_path_ownership.py scripts/ci/test_ci_path_ownership.py scripts/ci/ci_risk_classifier.py scripts/ci/backend_impact_plan.py
 	@PYTHONPATH=scripts/ci python3 -m unittest scripts.ci.test_ci_path_ownership
+
+verify.ci.backend_impact_plan.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ci/backend_impact_plan.py scripts/ci/test_backend_impact_plan.py
+	@PYTHONPATH=scripts/ci python3 scripts/ci/test_backend_impact_plan.py
 
 verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit verify.ci.path_ownership.unit verify.test.dependency_baseline.unit
 	@python3 scripts/ci/test_contract_only_scope.py

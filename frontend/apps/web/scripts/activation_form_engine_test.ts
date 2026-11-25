@@ -56,7 +56,7 @@ const renderer = createRenderer<HostNode, HostNode>({
 
 
 const source = fs.readFileSync('frontend/apps/web/src/views/AccountActivationView.vue', 'utf8');
-const ruleExpressions = [...source.matchAll(/<ScFormItem name="([^"]+)"[\s\S]*?:rules="([^"]+)"/g)];
+const ruleExpressions = [...source.matchAll(/<ScFormItem\s+name="([^"]+)"[\s\S]*?:rules="([^"]+)"/g)];
 assert.equal(ruleExpressions.length, 3);
 const pageText = (_key: string, fallback: string) => fallback;
 let checks = 0;
@@ -97,5 +97,6 @@ for (const [name, action] of [['onCodeValidated', 'startActivation'], ['onPasswo
   handler({ validateResult: true }, busy, () => { calls++; });
   assert.equal(calls, 1); checks++;
 }
-assert.ok(source.includes('key="code" novalidate') && source.includes('key="password" novalidate'));
+assert.match(source, /key="code"\s+novalidate/);
+assert.match(source, /key="password"\s+novalidate/);
 console.log(`[activation-form-engine] PASS ${checks} behavior cases`);

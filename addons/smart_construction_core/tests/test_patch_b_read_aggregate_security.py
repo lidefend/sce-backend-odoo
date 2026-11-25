@@ -754,7 +754,10 @@ class TestPatchBReadAggregateSecurity(TransactionCase):
         self.assertNotIn(self.project_b1.name, serialized)
 
         dashboard = DashboardCompanyEnterHandler(user_env, payload={}).handle(
-            {},
+            {
+                "client_type": "web_pc",
+                "accepted_contract_versions": ["2.7.x"],
+            },
             {},
         )
         self.assertTrue(dashboard.get("ok"), dashboard)
@@ -769,6 +772,8 @@ class TestPatchBReadAggregateSecurity(TransactionCase):
                 "user_id": self.user_b1.id,
                 "domain": [],
                 "context": {"allowed_company_ids": [self.company_b.id]},
+                "client_type": "web_pc",
+                "accepted_contract_versions": ["2.7.x"],
             },
             {"allowed_company_ids": [self.company_b.id]},
         )

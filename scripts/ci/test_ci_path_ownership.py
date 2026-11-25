@@ -389,6 +389,10 @@ class FiveCiScenarioTest(unittest.TestCase):
         self.assertIn("verify.baseline.iteration.execution.policy", frontend_plan["tool_checks"])
         self.assertNotIn("verify.pr.push.unit", frontend_plan["tool_checks"])
         self.assertIn("verify.pr.push.unit", codex_plan["tool_checks"])
+        self.assertIn(
+            "verify.branch.governance.consistency",
+            codex_plan["tool_checks"],
+        )
         self.assertNotIn("verify.frontend.dev.incremental.unit", codex_plan["tool_checks"])
 
     def test_agent_registration_is_fast_but_governance_is_control_plane_high_risk(self):
