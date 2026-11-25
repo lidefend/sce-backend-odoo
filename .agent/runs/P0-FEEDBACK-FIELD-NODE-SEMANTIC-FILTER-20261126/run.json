@@ -1,0 +1,77 @@
+{
+  "schema_version": 2,
+  "id": "P0-FEEDBACK-FIELD-NODE-SEMANTIC-FILTER-20261126",
+  "branch": "fix/feedback-node-semantic-filter-20261126",
+  "status": "verification_pending",
+  "baseline_sha": "fe1573b21c15c67d388eb7e1064561b41334b5c2",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P0-FEEDBACK-FIELD-NODE-SEMANTIC-FILTER-20261126.yaml",
+    ".agent/runs/P0-FEEDBACK-FIELD-NODE-SEMANTIC-FILTER-20261126/run.json",
+    "frontend/apps/web/src/pages/contractForm/useDraftFeedbackEvaluation.ts",
+    "frontend/apps/web/scripts/feedback_evaluation_protocol_test.ts",
+    "docs/ops/iterations/p0_feedback_field_node_semantic_filter_20261126.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository-local governed Make targets plus the registered sc-local-dev/sc_dev_demo browser runtime"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Validate field/node semantic separation and the real projects.ledger row-to-Form journey."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The change alters a shared frontend contract consumer used by business Forms."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "This is an incremental P0 correction, not release qualification."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "The browser journey consumes the authoritative project Form contract from the same governed runtime."
+    }
+  },
+  "checks": {
+    "feedback_semantic_filter": {
+      "target": "verify.frontend.feedback_evaluation.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/useDraftFeedbackEvaluation.ts",
+        "frontend/apps/web/scripts/feedback_evaluation_protocol_test.ts",
+        "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "frontend/apps/web/src/app/contracts/onchangeFeedbackEvaluation.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "project_ledger_user_path": {
+      "target": "verify.p0_contract_producer.p0a.browser",
+      "kind": "runtime",
+      "readback": {
+        "artifact": "artifacts/p0_contract_producer_01/p0a_browser_acceptance.json"
+      },
+      "inputs": [
+        "frontend/apps/web/scripts/p0_contract_producer_browser_acceptance.cjs",
+        "frontend/apps/web/src/pages/contractForm/useDraftFeedbackEvaluation.ts",
+        "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "make/frontend.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish the clean branch and verify the four required checks on its exact PR HEAD.",
+  "goal": ".agent/goals/P0-FEEDBACK-FIELD-NODE-SEMANTIC-FILTER-20261126.yaml",
+  "record": "docs/ops/iterations/p0_feedback_field_node_semantic_filter_20261126.md"
+}
