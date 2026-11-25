@@ -1,0 +1,198 @@
+{
+  "schema_version": 2,
+  "baseline_sha": "487a3d8497cd89841e1954d164e0e11d79742d81",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/VERIFY-CORRECTNESS-01.yaml",
+    ".agent/runs/VERIFY-CORRECTNESS-01/run.json",
+    ".github/workflows/frontend_release_gate.yml",
+    ".github/workflows/professional_quality_gate.yml",
+    "addons/smart_construction_bundle/tests/test_missing_record_contract.py",
+    "addons/smart_construction_bundle/tests/test_startup_performance_contract.py",
+    "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_contract_execution_component_profile.py",
+    "addons/smart_construction_core/tests/test_contract_handling_page_policy.py",
+    "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_data_permission_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_invoice_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_light_forms_configuration_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_patch_b_read_aggregate_security.py",
+    "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_policy_document_capability.py",
+    "addons/smart_construction_core/tests/test_product_reports.py",
+    "addons/smart_construction_core/tests/test_project_initiation_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_project_structure_component_profile.py",
+    "addons/smart_construction_core/tests/test_receipt_income_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+    "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_tax_filing_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_user_feedback_business_views.py",
+    "addons/smart_core/tests/test_native_occurrence_contract_integration.py",
+    "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+    "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
+    "addons/smart_core/tests/test_user_view_preference_runtime_orm.py",
+    "config/ci/path_ownership_v1.json",
+    "demo_addons/smart_construction_demo/tests/test_startup_metadata_performance.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/verify_correctness_escape_01_20261125.md",
+    "frontend/apps/web/scripts/action_view_selection_feedback_test.ts",
+    "frontend/apps/web/scripts/activation_form_engine_test.ts",
+    "make/ci.mk",
+    "make/contract.mk",
+    "make/frontend.mk",
+    "make/runtime_ops.mk",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/self_hosted_runner_cleanup.sh",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/test_ci_path_ownership.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/dev/run_changed_odoo_tests.py",
+    "scripts/ops/github_published_branch_sync.py",
+    "scripts/ops/test_github_published_branch_sync.py",
+    "scripts/verify/frontend_action_view_route_lease_race.test.mjs",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_branch_governance_consistency_guard.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_run_changed_odoo_tests.py",
+    "scripts/verify/test_test_coverage_registry_audit.py",
+    "scripts/ci/personal_data_false_positives.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools for registered offline checks; disposable sc-local-test/sc_test receipts are recorded separately; no persistent database, service, credential or remote write"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "P4 validation-control changes require their own static, workflow-contract and non-zero regression checks."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Workflow corrections become effective only on the exact candidate and must pass all four protected checks against the current target base."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or governed full audit",
+      "reason": "This implementation prepares a candidate; it does not claim a scheduled mainline or release qualification result."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "A shared target may be carried only when source ancestry, selected inputs, verifier authority, logs and environment identity remain valid."
+    }
+  },
+  "checks": {
+    "frontend_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/action_view_selection_feedback_test.ts",
+        "frontend/apps/web/src/app/actionViewRouteLeaseCore.js",
+        "make/frontend.mk",
+        "make/runtime_ops.mk",
+        "scripts/ops/incremental_execution.py",
+        "scripts/verify/frontend_action_view_route_lease_race.test.mjs",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/frontend_release_gate.yml",
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "make/ci.mk",
+        "make/frontend.mk",
+        "config/ci/path_ownership_v1.json"
+      ],
+      "kind": "offline"
+    },
+    "published_sync": {
+      "target": "verify.workspace.branch.sync-github.unit",
+      "inputs": [
+        "scripts/ops/github_published_branch_sync.py",
+        "scripts/ops/gitee_published_branch_sync.py",
+        "scripts/ops/test_github_published_branch_sync.py",
+        "scripts/ops/test_gitee_published_branch_sync.py",
+        "scripts/ops/generated_evidence_paths.py"
+      ],
+      "kind": "offline"
+    },
+    "coverage_registry": {
+      "target": "verify.test.coverage.registry",
+      "inputs": [
+        "scripts/verify/test_coverage_registry.yaml",
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/verify/test_test_coverage_registry_audit.py",
+        "addons/smart_core/tests/test_workflow_contract_platform.py",
+        "addons/smart_core/tests/__init__.py",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json"
+      ],
+      "kind": "offline"
+    },
+    "branch_governance": {
+      "target": "verify.branch.governance.consistency",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/verify/branch_governance_consistency_guard.py",
+        "scripts/verify/test_branch_governance_consistency_guard.py",
+        "scripts/ops/local_quick_evidence.py",
+        "scripts/verify/test_local_quick_evidence.py"
+      ],
+      "kind": "offline"
+    },
+    "native_parser": {
+      "target": "verify.native_advisory.unit",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+        "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "make/contract.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_consumer": {
+      "target": "verify.unified_page_contract.v2.runtime",
+      "inputs": [
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "Independent re-review required for the TAP and producer corrections; previous candidate REQUEST_CHANGES remains in force."
+  ],
+  "next_exact_step": "Validate TAP final counters and both real frontend producer targets, publish the bounded review corrections to #1003, then obtain exact-head CI and independent re-review before merge. Product #1006 remains separate until CI integration and governed synchronization.",
+  "id": "VERIFY-CORRECTNESS-01",
+  "branch": "fix/verify-correctness-escape-01-20261125",
+  "status": "verification_pending",
+  "goal": ".agent/goals/VERIFY-CORRECTNESS-01.yaml",
+  "record": "docs/ops/iterations/verify_correctness_escape_01_20261125.md",
+  "evidence": {
+    "unknown_summary_unit": ".runtime/agent-runs/VERIFY-CORRECTNESS-01/unknown-summary-unit.log",
+    "prior_exact_head_backend_close": ".runtime/backend-iteration/c68acbc2aefc4f03760f0c0e02dc6b043f1807a2.json",
+    "tap_review_unit": ".runtime/agent-runs/VERIFY-CORRECTNESS-01/review-tap-verified.log",
+    "producer_review_results": ".runtime/agent-runs/VERIFY-CORRECTNESS-01/review-producer-reconciled-results.json",
+    "review_targeted": ".runtime/agent-runs/VERIFY-CORRECTNESS-01/review-final-targeted.log"
+  }
+}

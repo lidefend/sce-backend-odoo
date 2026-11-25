@@ -164,6 +164,7 @@ class TestContractExecutionComponentProfile(TransactionCase):
                         "action_id": action.id,
                         "menu_id": menu.id,
                         "client_type": "web_pc",
+                        "accepted_contract_versions": ["2.7.x"],
                     }
                 )
                 envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result

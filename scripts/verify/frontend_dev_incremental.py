@@ -110,6 +110,34 @@ IMPLICIT_OFFLINE_TARGET_SUFFIXES = (
     ".policy",
     ".unit",
 )
+REGISTRY_AUDIT_TARGET = "verify.test.coverage.registry"
+REGISTRY_AUDIT_SELECTOR_PATHS = {
+    ".github/workflows/professional_quality_gate.yml",
+    "make/ci.mk",
+    "make/contract.mk",
+    "make/frontend.mk",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/test_coverage_registry_audit.py",
+    "scripts/verify/test_test_coverage_registry_audit.py",
+}
+TEST_TARGET_SUFFIXES = (
+    ".extension_module_baseline",
+    ".module_baseline",
+    ".orm",
+    ".test",
+    ".tests",
+    ".unit",
+)
+HOST_STANDALONE_TEST_FILES = {
+    "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+}
+REUSE_ENVIRONMENT_IDENTITY_FIELDS = (
+    "environmentIdentitySha256",
+    "environmentReadbackSha256",
+)
 TARGET_LAYER_ORDER = ("frontend", "backend", "contract", "docs", "governance")
 
 
@@ -446,7 +474,6 @@ RULES = (
     )),
     Rule((
         "addons/smart_core/utils/native_field_descriptor.py",
-        "addons/smart_core/tests/test_native_view_parser_surfaces.py",
     ), (
         "verify.frontend.collection_view_semantics.unit",
         "verify.semantic.registry.lint",
@@ -676,7 +703,14 @@ RULES = (
     Rule((
         "make/codex.mk",
     ), (
+        "verify.branch.governance.consistency",
         "verify.ci.path_ownership.unit",
+    )),
+    Rule((
+        "scripts/verify/branch_governance_consistency_guard.py",
+        "scripts/verify/test_branch_governance_consistency_guard.py",
+    ), (
+        "verify.branch.governance.consistency",
     )),
     # Lint/typecheck configuration is part of the executable validation
     # contract. Changing a source root or supported extension must rerun both
@@ -768,9 +802,11 @@ RULES = (
         "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
         "scripts/verify/test_native_widget_provenance.py",
     ), (
+        "verify.native_advisory.unit",
         "verify.native_widget.provenance.unit",
         "verify.semantic.registry.lint",
         "verify.unified_page_contract.v2.assembler",
+        "verify.unified_page_contract.v2.runtime",
     )),
     Rule((
         "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
@@ -2307,6 +2343,13 @@ RULES = (
         "verify.unified_page_contract.v2.runtime",
     )),
     Rule((
+        "addons/smart_core/core/workflow_contract_injection.py",
+        "addons/smart_core/models/workflow_contract.py",
+        "addons/smart_core/tests/test_workflow_contract_platform.py",
+    ), (
+        "verify.workflow_contract.platform.orm",
+    )),
+    Rule((
         "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
         "frontend/apps/web/scripts/approval_contract_closure_test.ts",
         "frontend/apps/web/src/api/executeButton.ts",
@@ -2992,6 +3035,8 @@ def shared_contract_targets_for_paths(paths: list[str]) -> set[str]:
 
 def channel_target_class(target: str) -> str:
     """Classify one target as backend, frontend or shared contract/governance."""
+    if target == REGISTRY_AUDIT_TARGET:
+        return CHANNEL_BACKEND
     lowered = target.lower()
     layers = target_layers([target])
     if (
@@ -3145,6 +3190,24 @@ def remote_scope_projection(paths: list[str]) -> dict:
     }
 
 
+def is_registry_audit_input(path: str) -> bool:
+    """Return whether a path can change declared test coverage or its selector."""
+    normalized = path.replace("\\", "/")
+    if normalized in REGISTRY_AUDIT_SELECTOR_PATHS:
+        return True
+    parts = normalized.split("/")
+    if len(parts) < 4 or parts[0] not in ("addons", "demo_addons"):
+        return False
+    relative = "/".join(parts[2:])
+    if relative == "tests/__init__.py":
+        return True
+    return (
+        relative.startswith("tests/")
+        and relative.endswith(".py")
+        and Path(relative).name.startswith("test_")
+    )
+
+
 def select_targets(paths: list[str]) -> list[str]:
     selected: set[str] = set()
     for path in paths:
@@ -3186,6 +3249,8 @@ def select_iteration_targets(paths: list[str]) -> list[str]:
     retains the owning-module baseline.
     """
     selected = set(select_targets(paths))
+    if any(is_registry_audit_input(path) for path in paths):
+        selected.add(REGISTRY_AUDIT_TARGET)
     if any(
         path.replace("\\", "/").startswith(VERIFICATION_SURFACE_PREFIXES)
         for path in paths
@@ -3196,6 +3261,8 @@ def select_iteration_targets(paths: list[str]) -> list[str]:
     production_modules: set[str] = set()
     for path in paths:
         normalized = path.replace("\\", "/")
+        if normalized in HOST_STANDALONE_TEST_FILES:
+            continue
         match = re.match(r"addons/([a-z][a-z0-9_]*)/(.+)$", normalized)
         if not match:
             continue
@@ -3349,9 +3416,40 @@ def _receipt_identity_resumable(
         )
         or receipt_identity.get("authoritySha256")
         != current_identity.get("authoritySha256")
+        or any(
+            receipt_identity.get(field) != current_identity.get(field)
+            for field in REUSE_ENVIRONMENT_IDENTITY_FIELDS
+        )
     ):
         return False
     return True
+
+
+def invalidated_targets_since_receipt(
+    root: Path,
+    receipt_head: str,
+    receipt_identity: dict,
+    current_identity: dict,
+) -> set[str]:
+    """Return targets whose inputs changed after a reusable source receipt.
+
+    HEAD and cleanliness are provenance. An advanced HEAD is reusable only when
+    no path since that source selects the requested target. Equivalent committed
+    and dirty runtime bytes keep the same identity and require no path replay.
+    """
+    same_runtime_identity = (
+        receipt_identity.get("runtimeTreeSha256")
+        == current_identity.get("runtimeTreeSha256")
+        and receipt_identity.get("authoritySha256")
+        == current_identity.get("authoritySha256")
+        and all(
+            receipt_identity.get(field) == current_identity.get(field)
+            for field in REUSE_ENVIRONMENT_IDENTITY_FIELDS
+        )
+    )
+    if receipt_head == current_identity.get("head") or same_runtime_identity:
+        return set()
+    return set(select_iteration_targets(_paths_since(root, receipt_head)))
 
 
 def resumable_receipt_results(
@@ -3371,8 +3469,9 @@ def resumable_receipt_results(
     an ancestor, the verifier authority is unchanged, and the requested target
     was actually executed. For an unchanged HEAD, the complete current runtime
     tree must also match, so a dirty candidate can resume but changed runtime
-    bytes cannot reuse an older result. For an advanced HEAD, the caller removes
-    targets selected by commits or dirty paths since that head.
+    bytes cannot reuse an older result. For an advanced HEAD, targets selected by
+    commits or dirty paths since that head are removed here so every caller,
+    including shared-contract handoff, applies the same invalidation predicate.
     """
     execution_root = root / ".runtime/frontend-dev-validation/executions"
     if not execution_root.is_dir():
@@ -3443,6 +3542,17 @@ def resumable_receipt_results(
                 carried["reusedFrom"] = _json_path(receipt_path, root)
                 carried["reuseReason"] = "verified passed target from prior execution"
                 results[target] = carried
+            invalidated = invalidated_targets_since_receipt(
+                root,
+                head,
+                receipt_identity,
+                current_identity,
+            )
+            results = {
+                target: row
+                for target, row in results.items()
+                if target not in invalidated
+            }
             if results:
                 complete_pass = (
                     receipt.get("status") == "passed"
@@ -4002,6 +4112,11 @@ def write_state(
     executed_results = [
         row for row in target_results if not row.get("reusedFrom")
     ]
+    test_count = sum(
+        row.get("testCount")
+        for row in target_results
+        if type(row.get("testCount")) is int
+    )
     payload = {
         "schemaVersion": 1,
         "mode": "development_incremental",
@@ -4017,6 +4132,13 @@ def write_state(
         "testsRun": bool(executed_results),
         "checksExecuted": len(executed_results),
         "checksReused": len(target_results) - len(executed_results),
+        "testTargetCount": sum(
+            row.get("executionKind") == "test" for row in executed_results
+        ),
+        "staticCheckCount": sum(
+            row.get("executionKind") == "static" for row in executed_results
+        ),
+        "testCount": test_count,
         "verificationPassed": status == "passed",
         "candidateEvidence": False,
         "heavyValidationIncluded": False,
@@ -4084,8 +4206,157 @@ def environment_blockers(root: Path, targets: list[str]) -> list[str]:
     return missing
 
 
+def target_execution_kind(target: str) -> str:
+    """Classify the repository-level proof a Make target is expected to emit."""
+    lowered = target.lower()
+    if (
+        lowered.startswith("verify.changed_tests")
+        or lowered.endswith(TEST_TARGET_SUFFIXES)
+    ):
+        return "test"
+    if (
+        lowered.endswith(
+            (
+                ".assembler",
+                ".contract",
+                ".coverage",
+                ".guard",
+                ".lane_coverage",
+                ".policy",
+                ".registry",
+                ".static",
+            )
+        )
+        or ".lint" in lowered
+        or ".typecheck" in lowered
+    ):
+        return "static"
+    return "command"
+
+
+UNITTEST_SUMMARY_PATTERN = re.compile(r"(?im)^Ran (\d+) tests? in [^\n]*$")
+UNITTEST_FAILURE_PATTERN = re.compile(r"(?im)^FAILED\b")
+UNITTEST_SUCCESS_PATTERN = re.compile(r"(?im)^OK\b")
+UNITTEST_SKIP_PATTERN = re.compile(r"\bskipped=(\d+)\b", re.IGNORECASE)
+GENERIC_TEST_SUMMARY_PATTERNS = (
+    re.compile(
+        r"(?im)^.*\b(?:PASS|PASSED|OK)\b.*"
+        r"\b(?:cases|checks|assertions|count|scenarios|tests)=(\d+)\b.*$"
+    ),
+    re.compile(r"(?im)^\s*(\d+)\s+(?:cases|checks|assertions|tests?)\s+passed\b.*$"),
+)
+
+
+
+TAP_TESTS_PATTERN = re.compile(r"(?m)^# tests (\d+)[ \t]*$")
+
+
+def tap_execution_metrics(output: str, summary: re.Match) -> dict:
+    """Require Node TAP's complete terminal counters; a plan/count is not success."""
+    tail = output[summary.start():]
+    counters = {}
+    for key in ("tests", "suites", "pass", "fail", "cancelled", "skipped", "todo"):
+        values = re.findall(rf"(?m)^# {key} (\d+)[ \t]*$", tail)
+        if len(values) == 1:
+            counters[key] = int(values[0])
+    duration = re.findall(r"(?m)^# duration_ms (\d+(?:\.\d+)?)[ \t]*$", tail)
+    complete = len(counters) == 7 and len(duration) == 1
+    collected = int(summary.group(1))
+    consistent = complete and sum(
+        counters[key] for key in ("pass", "fail", "cancelled", "skipped", "todo")
+    ) == collected
+    status = "unknown"
+    if consistent:
+        status = "failed" if counters["fail"] or counters["cancelled"] else "ok"
+    if re.search(r"(?m)^Bail out!", output):
+        status = "failed"
+    passed = counters.get("pass", 0)
+    failed = counters.get("fail", 0)
+    skipped = counters.get("skipped", 0)
+    executed = passed + failed if consistent else 0
+    return {
+        "testCount": executed,
+        "testCollectedCount": collected,
+        "testPassedCount": passed,
+        "testFailedCount": failed,
+        "testSkippedCount": skipped,
+        "testTodoCount": counters.get("todo", 0),
+        "testCancelledCount": counters.get("cancelled", 0),
+        "testCountObservations": 1,
+        "testSummaryStatus": status,
+        "testSummarySource": "tap-summary",
+        "explicitZeroTestEvidence": collected == 0,
+        "allTestsSkippedEvidence": collected > 0 and skipped == collected,
+        "testExecutionEvidence": "tap-summary" if consistent and executed > 0 else "none",
+    }
+
+
+def test_execution_metrics(output: str) -> dict:
+    """Read the final attributable runner summary, not incidental log text."""
+    unittest_summaries = list(UNITTEST_SUMMARY_PATTERN.finditer(output))
+    generic_candidates: list[tuple[int, int]] = []
+    for pattern in GENERIC_TEST_SUMMARY_PATTERNS:
+        generic_candidates.extend(
+            (match.start(), int(match.group(1)))
+            for match in pattern.finditer(output)
+        )
+    unittest_candidate = unittest_summaries[-1] if unittest_summaries else None
+    generic_candidate = max(generic_candidates) if generic_candidates else None
+    tap_summaries = list(TAP_TESTS_PATTERN.finditer(output))
+    if tap_summaries and tap_summaries[-1].start() > max(
+        unittest_candidate.start() if unittest_candidate else -1,
+        generic_candidate[0] if generic_candidate else -1,
+    ):
+        return tap_execution_metrics(output, tap_summaries[-1])
+    if unittest_candidate is not None and (
+        generic_candidate is None or unittest_candidate.start() > generic_candidate[0]
+    ):
+        summary = unittest_candidate
+        collected = int(summary.group(1))
+        tail = output[summary.end():]
+        failure = UNITTEST_FAILURE_PATTERN.search(tail)
+        success = UNITTEST_SUCCESS_PATTERN.search(tail)
+        summary_status = (
+            "failed"
+            if failure and (not success or failure.start() < success.start())
+            else "ok"
+            if success
+            else "unknown"
+        )
+        skip_match = UNITTEST_SKIP_PATTERN.search(tail)
+        skipped = min(int(skip_match.group(1)), collected) if skip_match else 0
+        executed = max(collected - skipped, 0)
+        evidence_source = "unittest-summary"
+    elif generic_candidate is not None:
+        _, collected = generic_candidate
+        skipped = 0
+        executed = collected
+        summary_status = "ok"
+        evidence_source = "runner-summary"
+    else:
+        collected = 0
+        skipped = 0
+        executed = 0
+        summary_status = "unknown"
+        evidence_source = "none"
+    return {
+        "testCount": executed,
+        "testCollectedCount": collected,
+        "testSkippedCount": skipped,
+        "testCountObservations": 1 if evidence_source != "none" else 0,
+        "testSummaryStatus": summary_status,
+        "testSummarySource": evidence_source,
+        "explicitZeroTestEvidence": evidence_source != "none" and collected == 0,
+        "allTestsSkippedEvidence": collected > 0 and executed == 0,
+        "testExecutionEvidence": (
+            evidence_source if executed > 0 else "none"
+        ),
+    }
+
+
 def _run_make_target(target: str, root: Path, log_path: Path) -> dict:
     command = ["make", "--no-print-directory", target]
+    execution_kind = target_execution_kind(target)
     started = time.time()
     try:
         # Incremental ORM targets share the profile-selected schema-bound test
@@ -4112,8 +4383,11 @@ def _run_make_target(target: str, root: Path, log_path: Path) -> dict:
         return {
             "target": target,
             "command": command,
+            "executionKind": execution_kind,
             "status": "blocked",
             "returncode": None,
+            "testCount": None,
+            "testExecutionEvidence": "none",
             "durationSeconds": round(duration, 3),
             "reason": str(exc),
             "log": str(log_path),
@@ -4128,8 +4402,11 @@ def _run_make_target(target: str, root: Path, log_path: Path) -> dict:
         return {
             "target": target,
             "command": command,
+            "executionKind": execution_kind,
             "status": "interrupted",
             "returncode": 130,
+            "testCount": None,
+            "testExecutionEvidence": "none",
             "durationSeconds": round(duration, 3),
             "log": str(log_path),
             "logSha256": hashlib.sha256(log_path.read_bytes()).hexdigest(),
@@ -4137,20 +4414,52 @@ def _run_make_target(target: str, root: Path, log_path: Path) -> dict:
     duration = time.time() - started
     output = result.stdout or ""
     log_path.write_text(output, encoding="utf-8")
+    metrics = test_execution_metrics(output)
     if result.returncode == 0:
-        status = "passed"
+        no_test_execution = (
+            execution_kind == "test"
+            and (
+                metrics["testSummaryStatus"] != "ok"
+                or metrics["explicitZeroTestEvidence"]
+                or metrics["allTestsSkippedEvidence"]
+                or metrics["testCount"] <= 0
+                or metrics["testExecutionEvidence"] == "none"
+            )
+        )
+        if no_test_execution:
+            status = "failed"
+            status_reason = (
+                "test target reported a failed final runner summary"
+                if metrics["testSummaryStatus"] == "failed"
+                else "test target reported zero collected tests"
+                if metrics["explicitZeroTestEvidence"]
+                else "test target skipped every collected test"
+                if metrics["allTestsSkippedEvidence"]
+                else "test target has no successful final runner summary"
+                if metrics["testCount"] > 0 and metrics["testSummaryStatus"] != "ok"
+                else "test target reported zero executed tests"
+            )
+        else:
+            status = "passed"
+            status_reason = ""
     else:
         status = "failed"
+        status_reason = "target exited nonzero"
     print(output, end="" if output.endswith("\n") else "\n", flush=True)
-    return {
+    payload = {
         "target": target,
         "command": command,
+        "executionKind": execution_kind,
         "status": status,
         "returncode": result.returncode,
         "durationSeconds": round(duration, 3),
         "log": str(log_path),
         "logSha256": hashlib.sha256(log_path.read_bytes()).hexdigest(),
+        **metrics,
     }
+    if status_reason:
+        payload["statusReason"] = status_reason
+    return payload
 
 
 def execute_targets(
@@ -4294,6 +4603,9 @@ def execute_targets(
         "candidateEvidence": False,
         "heavyValidationIncluded": False,
         "testsRun": False,
+        "testTargetCount": 0,
+        "staticCheckCount": 0,
+        "testCount": 0,
         "verificationPassed": False,
         "reason": "",
     }
@@ -4408,7 +4720,7 @@ def execute_targets(
         None if set(required_targets) & (non_reusable_targets or set())
         else incremental_verified_receipt(root, paths, required_targets, identity)
     )
-    resume_receipt, resume_head, carried_results = (
+    resume_receipt, _, carried_results = (
         resumable_receipt_results(
             root,
             paths,
@@ -4421,29 +4733,10 @@ def execute_targets(
         else (None, "", {})
     )
     if resume_receipt is not None:
-        # A dirty candidate's receipt already contains its full dirty tree.
-        # `_paths_since` would otherwise invalidate every original dirty target.
-        try:
-            resume_identity = json.loads(
-                resume_receipt.read_text(encoding="utf-8")
-            ).get("identity", {})
-        except (OSError, ValueError, TypeError):
-            resume_identity = {}
-        same_runtime_identity = (
-            resume_identity.get("runtimeTreeSha256")
-            == identity.get("runtimeTreeSha256")
-            and resume_identity.get("authoritySha256")
-            == identity.get("authoritySha256")
-        )
-        invalidated = (
-            set()
-            if resume_head == identity.get("head") or same_runtime_identity
-            else set(select_targets(_paths_since(root, resume_head)))
-        )
         carried_results = {
             target: row
             for target, row in carried_results.items()
-            if target not in invalidated and target not in (non_reusable_targets or set())
+            if target not in (non_reusable_targets or set())
         }
     receipt_directory = _execution_directory(root, receipt_dir)
     if source_receipt is not None:
@@ -4528,6 +4821,22 @@ def execute_targets(
         if target not in executed_targets and target not in carried_results
     ]
     payload["testsRun"] = bool(executed_targets)
+    payload["testTargetCount"] = sum(
+        result.get("executionKind") == "test"
+        for target, result in result_rows.items()
+        if target in executed_targets
+    )
+    payload["staticCheckCount"] = sum(
+        result.get("executionKind") == "static"
+        for target, result in result_rows.items()
+        if target in executed_targets
+    )
+    payload["testCount"] = sum(
+        result.get("testCount")
+        for target, result in result_rows.items()
+        if target in executed_targets
+        and type(result.get("testCount")) is int
+    )
     payload["verificationPassed"] = payload["status"] == "passed"
     payload["executedTargetCount"] = len(executed_targets)
     reused = sorted(set(reusable) | set(carried_results) | handoff_targets)

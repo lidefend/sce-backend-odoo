@@ -375,6 +375,8 @@ jobs:
           set -euo pipefail
           make architecture.complexity_baseline_lock
           make verify.guard.registry
+          make verify.test.coverage.registry
+          make verify.ci.backend_impact_plan.unit
           python3 scripts/verify/frontend_product_page_header_guard.py
           python3 scripts/verify/frontend_delivery_hardening_guard.py
           make verify.unified_page_contract.v2.assembler

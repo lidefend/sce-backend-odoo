@@ -107,6 +107,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("CANDIDATE_REQUESTED:", text)
         self.assertIn("Resolve effective frontend lane", text)
         self.assertIn("steps.effective_lane.outputs.frontend_mode", text)
+        self.assertIn("steps.effective_lane.outputs.run_contract_diagnostic", text)
         self.assertIn('[ "${CANDIDATE_REQUESTED}" != "true" ] && [ "${mode}" = "full" ]', text)
         self.assertIn("frontend_mode == 'full'", text)
         self.assertIn("frontend_mode == 'standard'", text)
@@ -139,17 +140,25 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             if step.get("name") == "Resolve effective frontend lane"
         )
         cases = (
-            ("schedule", "skip", "false", "false", "false", "full"),
-            ("pull_request", "full", "true", "false", "false", "standard"),
-            ("pull_request", "full", "false", "true", "false", "full"),
-            ("pull_request", "standard", "false", "false", "false", "standard"),
-            ("pull_request", "full", "false", "false", "false", "standard"),
-            ("pull_request", "standard", "false", "false", "true", "contract_diagnostic"),
-            ("pull_request", "full", "false", "false", "true", "contract_diagnostic"),
+            ("schedule", "skip", "false", "false", "false", "full", "false"),
+            ("pull_request", "full", "true", "false", "false", "standard", "false"),
+            ("pull_request", "full", "false", "true", "false", "full", "false"),
+            ("pull_request", "standard", "false", "false", "false", "standard", "false"),
+            ("pull_request", "full", "false", "false", "false", "standard", "false"),
+            ("pull_request", "standard", "false", "false", "true", "standard", "true"),
+            ("pull_request", "full", "false", "false", "true", "standard", "true"),
         )
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / "github-output"
-            for event, mode, full_required, candidate, diagnostic, expected in cases:
+            for (
+                event,
+                mode,
+                full_required,
+                candidate,
+                diagnostic,
+                expected_mode,
+                expected_diagnostic,
+            ) in cases:
                 with self.subTest(event=event, mode=mode, full_required=full_required,
                                   candidate=candidate, diagnostic=diagnostic):
                     output.write_text("")
@@ -174,7 +183,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
                     )
                     self.assertEqual(0, result.returncode, result.stderr)
                     self.assertEqual(
-                        f"frontend_mode={expected}\n",
+                        f"frontend_mode={expected_mode}\n"
+                        f"run_contract_diagnostic={expected_diagnostic}\n",
                         output.read_text(),
                     )
 
@@ -722,15 +732,23 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         steps = next(iter(workflow['jobs'].values()))['steps']
         install = next(s for s in steps if s.get('name') == 'Install locked frontend toolchain')['run']
         cache = next(s for s in steps if s.get('id') == 'playwright-cache')
-        self.assertEqual("steps.effective_lane.outputs.frontend_mode != 'skip'", cache['if'])
-        for mode, expected in [
-            ('skip', False),
-            ('standard', True),
-            ('contract_diagnostic', True),
-            ('full', True),
+        self.assertIn("run_contract_diagnostic == 'true'", cache['if'])
+        for mode, diagnostic, expected in [
+            ('skip', 'false', False),
+            ('skip', 'true', True),
+            ('standard', 'false', True),
+            ('standard', 'true', True),
+            ('full', 'false', True),
         ]:
-            script = install.replace("${{ steps.effective_lane.outputs.frontend_mode }}", mode).replace(
-                "${{ steps.playwright-cache.outputs.cache-hit }}", 'false')
+            script = (
+                install
+                .replace("${{ steps.effective_lane.outputs.frontend_mode }}", mode)
+                .replace(
+                    "${{ steps.effective_lane.outputs.run_contract_diagnostic }}",
+                    diagnostic,
+                )
+                .replace("${{ steps.playwright-cache.outputs.cache-hit }}", 'false')
+            )
             stubs = 'python3() { :; }; corepack() { :; }; pnpm() { printf "%s\\n" "$*"; };\n'
             result = subprocess.run(['bash', '-c', stubs + script], text=True, capture_output=True)
             self.assertEqual(0, result.returncode, result.stderr)
@@ -744,12 +762,12 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             'Freeze isolated frontend release identity',
         ):
             step = next(s for s in steps if s.get('name') == name)
-            self.assertIn("frontend_mode == 'contract_diagnostic'", step['if'])
+            self.assertIn("run_contract_diagnostic == 'true'", step['if'])
         diagnostic = next(
             s for s in steps if s.get('name') == 'Run focused payment-request diagnostic'
         )
         self.assertIn('PAYMENT_REQUEST_DIAGNOSTIC', diagnostic['if'])
-        self.assertIn("frontend_mode == 'contract_diagnostic'", diagnostic['if'])
+        self.assertIn("run_contract_diagnostic == 'true'", diagnostic['if'])
         self.assertEqual(
             'make --no-print-directory verify.frontend.payment_request.diagnostic',
             diagnostic['run'],
@@ -758,9 +776,42 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             s for s in steps if s.get('name') == 'Record explicit non-release lane result'
         )
         self.assertIn('PAYMENT_REQUEST_DIAGNOSTIC_OUTCOME', record['env'])
-        self.assertIn('contract_diagnostic', record['run'])
+        self.assertIn('RUN_CONTRACT_DIAGNOSTIC', record['env'])
+        self.assertIn('STANDARD_OUTCOME', record['run'])
         cleanup = (ROOT / "scripts/ci/self_hosted_runner_cleanup.sh").read_text(encoding="utf-8")
-        self.assertIn('"$frontend_mode" == "contract_diagnostic"', cleanup)
+        self.assertIn('"$contract_diagnostic_required" == "true"', cleanup)
+
+    def test_standard_lane_without_diagnostic_records_success(self):
+        workflow = yaml.safe_load(self.text("frontend_release_gate.yml"))
+        steps = next(iter(workflow["jobs"].values()))["steps"]
+        record = next(
+            step
+            for step in steps
+            if step.get("name") == "Record explicit non-release lane result"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(
+                ["bash", "-c", record["run"]],
+                cwd=tmp,
+                env={
+                    **os.environ,
+                    "FRONTEND_MODE": "standard",
+                    "RUN_CONTRACT_DIAGNOSTIC": "false",
+                    "PAYMENT_REQUEST_DIAGNOSTIC": "0",
+                    "STANDARD_OUTCOME": "success",
+                    "PAYMENT_REQUEST_DIAGNOSTIC_OUTCOME": "skipped",
+                    "RISK_LANE": "STANDARD",
+                    "CHECKOUT_SHA": "a" * 40,
+                },
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            payload = json.loads(
+                Path(tmp, "artifacts/ci-risk-tiering/frontend-release-gate.json").read_text()
+            )
+            self.assertEqual("standard", payload["mode"])
+            self.assertEqual("PASS", payload["result"])
 
     def test_merge_summary_matches_backend_and_mainline_execution(self):
         workflow = yaml.safe_load(self.text('merge_policy_gate.yml'))
@@ -1083,6 +1134,8 @@ class ParallelQualityExecutionTest(unittest.TestCase):
         for guard in (
             'make architecture.complexity_baseline_lock',
             'make verify.guard.registry',
+            'make verify.test.coverage.registry',
+            'make verify.ci.backend_impact_plan.unit',
             'scripts/verify/frontend_product_page_header_guard.py',
             'scripts/verify/frontend_delivery_hardening_guard.py',
         ):

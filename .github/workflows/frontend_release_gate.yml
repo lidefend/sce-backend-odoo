@@ -92,17 +92,16 @@ jobs:
           contract_diagnostic='${{ steps.risk.outputs.frontend_contract_diagnostic_required }}'
           if [ "${GITHUB_EVENT_NAME}" = "schedule" ] || [ "${CANDIDATE_REQUESTED}" = "true" ]; then
             mode='full'
-          elif [ "${contract_diagnostic}" = "true" ]; then
-            mode='contract_diagnostic'
           elif [ "${CANDIDATE_REQUESTED}" != "true" ] && [ "${mode}" = "full" ]; then
             mode='standard'
           fi
           printf 'frontend_mode=%s\n' "${mode}" >> "${GITHUB_OUTPUT}"
+          printf 'run_contract_diagnostic=%s\n' "${contract_diagnostic}" >> "${GITHUB_OUTPUT}"
 
       - name: Generate isolated acceptance environment
         if: >-
           steps.effective_lane.outputs.frontend_mode == 'full' ||
-          steps.effective_lane.outputs.frontend_mode == 'contract_diagnostic'
+          steps.effective_lane.outputs.run_contract_diagnostic == 'true'
         run: |
           set -euo pipefail
           db_password="$(openssl rand -hex 32)"
@@ -166,19 +165,23 @@ jobs:
       - name: Freeze isolated frontend release identity
         if: >-
           steps.effective_lane.outputs.frontend_mode == 'full' ||
-          steps.effective_lane.outputs.frontend_mode == 'contract_diagnostic'
+          steps.effective_lane.outputs.run_contract_diagnostic == 'true'
         run: |
           set -euo pipefail
           bash scripts/common/frontend_release_ci_identity.sh freeze "${GITHUB_WORKSPACE}"
 
       - name: Pin frontend Node toolchain
-        if: steps.effective_lane.outputs.frontend_mode != 'skip'
+        if: >-
+          steps.effective_lane.outputs.frontend_mode != 'skip' ||
+          steps.effective_lane.outputs.run_contract_diagnostic == 'true'
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22.17.0
 
       - name: Restore content-addressed pnpm store
-        if: steps.effective_lane.outputs.frontend_mode != 'skip'
+        if: >-
+          steps.effective_lane.outputs.frontend_mode != 'skip' ||
+          steps.effective_lane.outputs.run_contract_diagnostic == 'true'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: ~/.local/share/pnpm/store
@@ -188,15 +191,19 @@ jobs:
 
       - name: Restore content-addressed Playwright browser
         id: playwright-cache
-        # Both selected commands include Chromium tests; skip has no browser consumer.
-        if: steps.effective_lane.outputs.frontend_mode != 'skip'
+        # Diagnostics can run without a standard/full frontend lane.
+        if: >-
+          steps.effective_lane.outputs.frontend_mode != 'skip' ||
+          steps.effective_lane.outputs.run_contract_diagnostic == 'true'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
         with:
           path: ~/.cache/ms-playwright
           key: playwright-chromium-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
 
       - name: Install locked frontend toolchain
-        if: steps.effective_lane.outputs.frontend_mode != 'skip'
+        if: >-
+          steps.effective_lane.outputs.frontend_mode != 'skip' ||
+          steps.effective_lane.outputs.run_contract_diagnostic == 'true'
         run: |
           set -euo pipefail
           python3 scripts/ci/frontend_professional_extension_guard.py
@@ -204,7 +211,8 @@ jobs:
           corepack prepare pnpm@9.12.3 --activate
           pnpm config set store-dir "${HOME}/.local/share/pnpm/store"
           pnpm -C frontend install --frozen-lockfile
-          if [ '${{ steps.effective_lane.outputs.frontend_mode }}' != 'skip' ]; then
+          if [ '${{ steps.effective_lane.outputs.frontend_mode }}' != 'skip' ] || \
+            [ '${{ steps.effective_lane.outputs.run_contract_diagnostic }}' = 'true' ]; then
             if [ '${{ steps.playwright-cache.outputs.cache-hit }}' = 'true' ]; then
               pnpm -C frontend/apps/web exec playwright install-deps chromium
             else
@@ -226,7 +234,7 @@ jobs:
         id: payment_request_diagnostic
         if: >-
           env.PAYMENT_REQUEST_DIAGNOSTIC == '1' ||
-          steps.effective_lane.outputs.frontend_mode == 'contract_diagnostic'
+          steps.effective_lane.outputs.run_contract_diagnostic == 'true'
         run: make --no-print-directory verify.frontend.payment_request.diagnostic
 
       - name: Execute governed managed ORM regressions
@@ -299,6 +307,8 @@ jobs:
         if: always() && steps.effective_lane.outputs.frontend_mode != 'full'
         env:
           FRONTEND_MODE: ${{ steps.effective_lane.outputs.frontend_mode }}
+          RUN_CONTRACT_DIAGNOSTIC: ${{ steps.effective_lane.outputs.run_contract_diagnostic }}
+          PAYMENT_REQUEST_DIAGNOSTIC: ${{ env.PAYMENT_REQUEST_DIAGNOSTIC }}
           STANDARD_OUTCOME: ${{ steps.standard.outcome }}
           PAYMENT_REQUEST_DIAGNOSTIC_OUTCOME: ${{ steps.payment_request_diagnostic.outcome }}
           RISK_LANE: ${{ steps.risk.outputs.lane }}
@@ -307,10 +317,23 @@ jobs:
           mkdir -p artifacts/ci-risk-tiering
           if [ "${FRONTEND_MODE}" = "standard" ]; then
             test "${STANDARD_OUTCOME}" = "success"
-          elif [ "${FRONTEND_MODE}" = "contract_diagnostic" ]; then
-            test "${PAYMENT_REQUEST_DIAGNOSTIC_OUTCOME}" = "success"
+          elif [ "${FRONTEND_MODE}" = "skip" ]; then
+            :
           else
-            test "${FRONTEND_MODE}" = "skip"
+            echo "invalid frontend mode: ${FRONTEND_MODE}" >&2
+            exit 1
+          fi
+          run_diagnostic="${RUN_CONTRACT_DIAGNOSTIC}"
+          if [ "${PAYMENT_REQUEST_DIAGNOSTIC}" = "1" ]; then
+            run_diagnostic=true
+          fi
+          if [ "${run_diagnostic}" = "true" ]; then
+            test "${PAYMENT_REQUEST_DIAGNOSTIC_OUTCOME}" = "success"
+          elif [ "${run_diagnostic}" != "false" ]; then
+            echo "invalid contract diagnostic selector: ${run_diagnostic}" >&2
+            exit 1
+          else
+            :
           fi
           python3 - "${RISK_LANE}" "${FRONTEND_MODE}" "${CHECKOUT_SHA}" \
             > artifacts/ci-risk-tiering/frontend-release-gate.json <<'PY'
@@ -363,6 +386,8 @@ jobs:
         if: always()
         env:
           FRONTEND_MODE: ${{ steps.effective_lane.outputs.frontend_mode }}
+          CONTRACT_DIAGNOSTIC_REQUIRED: ${{ steps.effective_lane.outputs.run_contract_diagnostic }}
+          PAYMENT_REQUEST_DIAGNOSTIC: ${{ env.PAYMENT_REQUEST_DIAGNOSTIC }}
         run: bash scripts/ci/self_hosted_runner_cleanup.sh
 
   managed_orm:

@@ -685,6 +685,47 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertTrue(occurrence["modifiers"]["readonly"])
         self.assertTrue(occurrence["modifiers"]["invisible"])
 
+    def test_tree_open_form_is_additive_and_respects_open_form_view(self):
+        fields = {
+            "name": {"type": "char", "string": "Name"},
+        }
+        enabled = self.tree_form_parser._parse_tree_view(
+            '<tree open_form_view="1">'
+            '<field name="name"/>'
+            '<button name="mark_checked" type="object" string="Check"/>'
+            '</tree>',
+            fields,
+        )
+        actions = enabled["row_actions"]
+        self.assertEqual(
+            [row["name"] for row in actions],
+            ["mark_checked", "open_form"],
+        )
+        self.assertEqual(actions[0]["payload"]["method"], "mark_checked")
+        self.assertEqual(actions[1], {
+            "name": "open_form",
+            "label": "打开",
+            "kind": "open",
+            "level": "row",
+            "selection": "single",
+            "trigger": "row_click",
+            "display_mode": "row_click",
+            "intent": "open",
+            "payload": {"ref": None, "view_mode": "form"},
+        })
+
+        disabled = self.tree_form_parser._parse_tree_view(
+            '<tree open_form_view="0">'
+            '<field name="name"/>'
+            '<button name="mark_checked" type="object" string="Check"/>'
+            '</tree>',
+            fields,
+        )
+        self.assertEqual(
+            [row["name"] for row in disabled["row_actions"]],
+            ["mark_checked"],
+        )
+
     def test_form_field_keeps_raw_and_normalized_modifier_values(self):
         element = _parse_test_xml(
             '<field name="partner_id" modifiers="{\'readonly\': true}" can_create="0"/>'
@@ -1088,6 +1129,7 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
             ["open_partner", "open_form"],
         )
         self.assertEqual(tree["row_actions"][0]["payload"]["method"], "open_partner")
+        self.assertEqual(tree["row_actions"][1]["trigger"], "row_click")
         self.assertEqual(
             [row["name"] for row in tree["columns"]],
             ["partner_id", "amount"],

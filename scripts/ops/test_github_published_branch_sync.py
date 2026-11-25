@@ -68,7 +68,11 @@ class GithubSyncTests(unittest.TestCase):
         for path in REPORTS | {INDEX, SYNC_TOOL_PATH}:
             p = self.root / path
             p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_text(json.dumps(index(base='base')) if path == INDEX else 'base\n')
+            if path == INDEX:
+                content = json.dumps(index(base='base'))
+            else:
+                content = 'base\n'
+            p.write_text(content)
         self.commit()
         git(self.root, 'init', '--bare', self.remote)
         git(self.root, 'remote', 'add', 'origin', self.remote)
@@ -108,7 +112,10 @@ class GithubSyncTests(unittest.TestCase):
         self.assertEqual(out(self.root, 'show', '-s', '--format=%P', 'HEAD'), self.head+' '+self.main)
         self.assertEqual(json.loads((self.root / INDEX).read_text()), index(base='base', ours='ours', theirs='theirs'))
         self.assertTrue(result['generated_reports_refresh_required'])
-        self.assertEqual(set(result['resolved_conflicts']), REPORTS | {INDEX, SYNC_TOOL_PATH})
+        self.assertEqual(
+            set(result['resolved_conflicts']),
+            REPORTS | {INDEX, SYNC_TOOL_PATH},
+        )
         for report in REPORTS:
             self.assertEqual((self.root / report).read_text(), 'ours\n')
         self.assertEqual(out(self.root, 'ls-remote', 'origin', 'refs/heads/fix/test').split()[0], self.head)
@@ -137,6 +144,37 @@ class GithubSyncTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'unapproved'):
             self.run_sync(apply=True, confirm=CONFIRM)
         self.assertEqual(out(self.root, 'rev-parse', 'HEAD'), self.head)
+        self.assertEqual(out(self.root, 'status', '--porcelain'), '')
+
+    def test_parser_test_conflict_never_auto_selects_candidate(self):
+        path = 'addons/smart_core/tests/test_native_view_parser_surfaces.py'
+        parser = self.root / path
+        parser.parent.mkdir(parents=True, exist_ok=True)
+        candidate_text = (
+            'class TestParser:\n'
+            '    def test_candidate_open_form_assertion(self):\n'
+            '        pass\n'
+        )
+        parser.write_text(candidate_text, encoding='utf-8')
+        self.head = self.commit()
+        git(self.root, 'push', 'origin', 'fix/test')
+
+        git(self.root, 'switch', 'main')
+        parser.parent.mkdir(parents=True, exist_ok=True)
+        parser.write_text(
+            'class TestParser:\n'
+            '    def test_main_field_projection_assertion(self):\n'
+            '        pass\n',
+            encoding='utf-8',
+        )
+        self.main = self.commit()
+        git(self.root, 'push', 'origin', 'main')
+        git(self.root, 'switch', 'fix/test')
+
+        with self.assertRaisesRegex(RuntimeError, 'unapproved'):
+            self.run_sync(apply=True, confirm=CONFIRM)
+        self.assertEqual(out(self.root, 'rev-parse', 'HEAD'), self.head)
+        self.assertEqual(parser.read_text(encoding='utf-8'), candidate_text)
         self.assertEqual(out(self.root, 'status', '--porcelain'), '')
 
     def test_remote_drift_during_resolution_aborts(self):

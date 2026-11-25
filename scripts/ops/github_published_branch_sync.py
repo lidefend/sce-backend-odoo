@@ -49,7 +49,8 @@ def validate_sync_tool_resolution(text):
 
 def resolve_metadata(root):
     paths = set(out(root, 'diff', '--name-only', '--diff-filter=U').splitlines())
-    if not paths or not paths <= REPORTS | {INDEX, SYNC_TOOL_PATH}:
+    if not paths or not paths <= REPORTS | {
+            INDEX, SYNC_TOOL_PATH}:
         raise RuntimeError('unapproved merge conflict; original candidate restored')
     # Compute every resolution before changing the index; only regular files.
     results = {}

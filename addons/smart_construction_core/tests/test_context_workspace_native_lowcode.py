@@ -319,7 +319,8 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
             "op": "model", "model": action.res_model, "action_id": action.id,
             "view_id": self.view_ref_id(view_id),
             "view_type": "form", "render_profile": "create",
-            "client_type": "web_pc", "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES), **extra,
+            "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES), **extra,
         })
         result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
         self.assertTrue(result.get("ok", True), result.get("error"))
@@ -1354,7 +1355,8 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
             "op": "model", "model": action.res_model, "action_id": action.id,
             "view_id": self.view_ref_id(view_key), "view_type": "form",
             "render_profile": "create",
-            "client_type": "web_pc", "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES),
+            "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES),
             **extra,
         })
         result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result

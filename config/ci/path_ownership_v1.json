@@ -140,7 +140,9 @@
       "backend": true,
       "backend_runtime": true,
       "control_plane": false,
-      "tool_checks": []
+      "tool_checks": [
+        "verify.test.coverage.registry"
+      ]
     },
     {
       "id": "build_runtime",
@@ -205,6 +207,7 @@
       "control_plane": true,
       "tool_checks": [
         "verify.baseline.iteration.execution.policy",
+        "verify.branch.governance.consistency",
         "verify.pr.push.unit"
       ]
     },

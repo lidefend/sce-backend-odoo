@@ -329,7 +329,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         test_partition = channel_target_sets(test_targets, paths=[test_only])
         test_remote = backend_impact_plan.select([test_only], graph, graph)
         self.assertEqual(
-            ["verify.changed_tests.orm"],
+            ["verify.changed_tests.orm", "verify.test.coverage.registry"],
             test_partition["backend"],
         )
         self.assertEqual([], test_partition["frontend"])
@@ -386,6 +386,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.baseline.iteration.execution.policy",
                 "verify.ci.workflow.contract",
+                "verify.test.coverage.registry",
             ],
             control_remote["tool_checks"],
         )
@@ -511,6 +512,51 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 )
             )
 
+    def test_backend_handoff_rejects_changed_environment_readback(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            log = root / ".runtime/frontend-dev-validation/executions/env/verify.contract.unit.log"
+            log.parent.mkdir(parents=True)
+            log.write_text("Ran 2 tests in 0.01s\nOK\n", encoding="utf-8")
+            source_identity = {
+                "head": "a" * 40,
+                "runtimeTreeSha256": "b" * 64,
+                "authoritySha256": {"authority.py": "c" * 64},
+                "environmentReadbackSha256": "d" * 64,
+                "worktreeClean": True,
+            }
+            current_identity = {
+                **source_identity,
+                "environmentReadbackSha256": "e" * 64,
+            }
+            receipt = {
+                "status": "passed",
+                "verificationPassed": True,
+                "channel": CHANNEL_BACKEND,
+                "runId": "RUN",
+                "identity": source_identity,
+                "requiredTargets": ["verify.contract.unit"],
+                "targetResults": [{
+                    "target": "verify.contract.unit",
+                    "status": "passed",
+                    "returncode": 0,
+                    "log": log.relative_to(root).as_posix(),
+                    "logSha256": hashlib.sha256(log.read_bytes()).hexdigest(),
+                }],
+                "notRunTargets": [],
+            }
+            (log.parent / "receipt.json").write_text(json.dumps(receipt), encoding="utf-8")
+            found, _, rows = incremental.resumable_receipt_results(
+                root,
+                [],
+                ["verify.contract.unit"],
+                identity=current_identity,
+                channel=CHANNEL_BACKEND,
+                run_id="RUN",
+            )
+            self.assertIsNone(found)
+            self.assertEqual({}, rows)
+
     def test_frontend_shared_contract_targets_block_without_backend_receipt(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -625,6 +671,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.changed_tests.orm",
                 "verify.daily_dev.acceptance_fixture.unit",
+                "verify.test.coverage.registry",
             ],
         )
 
@@ -758,7 +805,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             completed = subprocess.CompletedProcess(
                 ["make", "verify.node_component_validation.unit"],
                 0,
-                stdout="ok\n",
+                stdout="PASS cases=1\n",
                 stderr="",
             )
             with mock.patch.dict(
@@ -787,7 +834,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             completed = subprocess.CompletedProcess(
                 ["make", "verify.node_component_validation.unit"],
                 0,
-                stdout="ok\n",
+                stdout="PASS cases=1\n",
                 stderr="",
             )
             with mock.patch.dict(
@@ -3112,6 +3159,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets(["make/codex.mk"]),
             [
                 "verify.baseline.iteration.execution.policy",
+                "verify.branch.governance.consistency",
                 "verify.ci.path_ownership.unit",
                 "verify.pr.push.unit",
                 "verify.pr.review.unit",
@@ -3403,10 +3451,46 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(
             select_targets(["addons/smart_core/core/native_widget_profile.py"]),
             [
+                "verify.native_advisory.unit",
                 "verify.native_widget.provenance.unit",
                 "verify.semantic.registry.lint",
                 "verify.unified_page_contract.v2.assembler",
+                "verify.unified_page_contract.v2.runtime",
             ],
+        )
+
+    def test_parser_source_selects_standalone_parser_and_contract_consumers(self) -> None:
+        targets = set(select_targets([
+            "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+        ]))
+        self.assertIn("verify.native_advisory.unit", targets)
+        self.assertIn("verify.unified_page_contract.v2.runtime", targets)
+
+    def test_merge_control_plane_selects_branch_governance_regression(self) -> None:
+        self.assertIn(
+            "verify.branch.governance.consistency",
+            select_targets(["make/codex.mk"]),
+        )
+
+    def test_test_declarations_and_imports_select_registry_audit(self) -> None:
+        for path in (
+            "addons/smart_core/tests/test_workflow_contract_platform.py",
+            "addons/smart_core/tests/__init__.py",
+            "scripts/verify/test_coverage_registry.yaml",
+            "scripts/ci/backend_impact_plan.py",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.test.coverage.registry",
+                    select_iteration_targets([path]),
+                )
+
+    def test_workflow_contract_platform_has_exact_orm_owner(self) -> None:
+        self.assertIn(
+            "verify.workflow_contract.platform.orm",
+            select_targets([
+                "addons/smart_core/tests/test_workflow_contract_platform.py",
+            ]),
         )
 
     def test_native_field_descriptor_selects_producer_and_registry_checks(self) -> None:
@@ -3417,9 +3501,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]),
             [
                 "verify.frontend.collection_view_semantics.unit",
+                "verify.native_advisory.unit",
                 "verify.native_widget.provenance.unit",
                 "verify.semantic.registry.lint",
                 "verify.unified_page_contract.v2.assembler",
+                "verify.unified_page_contract.v2.runtime",
             ],
         )
 
@@ -3847,6 +3933,233 @@ class IncrementalExecutionTest(unittest.TestCase):
             self.assertEqual(len(row["logSha256"]), 64)
             self.assertTrue((self.root / row["log"]).is_file())
 
+    def test_zero_test_target_fails_even_when_make_exits_zero(self) -> None:
+        self.root.joinpath("Makefile").write_text(
+            self.root.joinpath("Makefile").read_text(encoding="utf-8")
+            + "verify.zero.unit:\n"
+            "\t@printf 'Ran 0 tests in 0.001s\\nOK\\n'\n",
+            encoding="utf-8",
+        )
+        log = self.root / "zero-unit.log"
+        result = incremental._run_make_target(
+            "verify.zero.unit",
+            self.root,
+            log,
+        )
+        self.assertEqual("test", result["executionKind"])
+        self.assertEqual("failed", result["status"])
+        self.assertEqual(0, result["returncode"])
+        self.assertEqual(0, result["testCount"])
+        self.assertTrue(result["explicitZeroTestEvidence"])
+        self.assertIn("zero collected tests", result["statusReason"])
+
+    def test_all_skipped_test_target_is_not_executed_success(self) -> None:
+        self.root.joinpath("Makefile").write_text(
+            self.root.joinpath("Makefile").read_text(encoding="utf-8")
+            + "verify.skipped.unit:\n"
+            "\t@printf 'Ran 1 test in 0.001s\\n\\nOK (skipped=1)\\n'\n",
+            encoding="utf-8",
+        )
+        result = incremental._run_make_target(
+            "verify.skipped.unit",
+            self.root,
+            self.root / "skipped-unit.log",
+        )
+        self.assertEqual("failed", result["status"])
+        self.assertEqual(0, result["testCount"])
+        self.assertEqual(1, result["testCollectedCount"])
+        self.assertEqual(1, result["testSkippedCount"])
+        self.assertTrue(result["allTestsSkippedEvidence"])
+        self.assertIn("skipped every", result["statusReason"])
+
+    def test_naked_pass_is_not_nonzero_test_execution_evidence(self) -> None:
+        self.root.joinpath("Makefile").write_text(
+            self.root.joinpath("Makefile").read_text(encoding="utf-8")
+            + "verify.naked-pass.unit:\n"
+            "\t@printf 'PASS\\n'\n",
+            encoding="utf-8",
+        )
+        result = incremental._run_make_target(
+            "verify.naked-pass.unit",
+            self.root,
+            self.root / "naked-pass-unit.log",
+        )
+        self.assertEqual("failed", result["status"])
+        self.assertEqual(0, result["testCount"])
+        self.assertEqual("none", result["testExecutionEvidence"])
+        self.assertIn("zero executed tests", result["statusReason"])
+
+    def test_incomplete_test_summary_fails_even_when_make_exits_zero(self) -> None:
+        self.root.joinpath("Makefile").write_text(
+            self.root.joinpath("Makefile").read_text(encoding="utf-8")
+            + "verify.incomplete.unit:\n"
+            "\t@printf 'Ran 5 tests in 0.001s\\n'\n",
+            encoding="utf-8",
+        )
+        result = incremental._run_make_target(
+            "verify.incomplete.unit",
+            self.root,
+            self.root / "incomplete-unit.log",
+        )
+        self.assertEqual(0, result["returncode"])
+        self.assertEqual(5, result["testCount"])
+        self.assertEqual("unknown", result["testSummaryStatus"])
+        self.assertEqual("failed", result["status"])
+        self.assertIn("no successful final runner summary", result["statusReason"])
+
+    def test_nonzero_final_test_summary_passes(self) -> None:
+        self.root.joinpath("Makefile").write_text(
+            self.root.joinpath("Makefile").read_text(encoding="utf-8")
+            + "verify.nonzero.unit:\n"
+            "\t@printf 'Ran 2 tests in 0.001s\\n\\nOK\\n'\n",
+            encoding="utf-8",
+        )
+        result = incremental._run_make_target(
+            "verify.nonzero.unit",
+            self.root,
+            self.root / "nonzero-unit.log",
+        )
+        self.assertEqual("passed", result["status"])
+        self.assertEqual(2, result["testCount"])
+        self.assertEqual(2, result["testCollectedCount"])
+        self.assertEqual(0, result["testSkippedCount"])
+
+    def test_nested_zero_test_diagnostic_does_not_override_outer_result(self) -> None:
+        self.root.joinpath("Makefile").write_text(
+            self.root.joinpath("Makefile").read_text(encoding="utf-8")
+            + "verify.wrapped-zero.unit:\n"
+            f"\t@PYTHONPATH={ROOT} python3 -m unittest "
+            "scripts.verify.test_frontend_dev_incremental."
+            "IncrementalExecutionTest."
+            "test_zero_test_target_fails_even_when_make_exits_zero\n",
+            encoding="utf-8",
+        )
+        result = incremental._run_make_target(
+            "verify.wrapped-zero.unit",
+            self.root,
+            self.root / "wrapped-zero-unit.log",
+        )
+        self.assertEqual("passed", result["status"])
+        self.assertEqual(1, result["testCount"])
+        self.assertEqual("unittest-summary", result["testSummarySource"])
+
+    def _run_node_tap(self, source):
+        self.root.joinpath("tap.test.mjs").write_text(
+            "import test from 'node:test';\n" + source, encoding="utf-8",
+        )
+        self.root.joinpath("Makefile").write_text(
+            "verify.tap.unit:\n\t@node --test --test-reporter=tap tap.test.mjs\n",
+            encoding="utf-8",
+        )
+        return incremental._run_make_target(
+            "verify.tap.unit", self.root, self.root / "tap.log",
+        )
+
+    def test_real_node_tap_all_skipped_is_rejected(self):
+        result = self._run_node_tap(
+            "test('not executed', {skip: true}, () => { throw Error('must not run'); });\n"
+        )
+        self.assertEqual(0, result["returncode"])
+        self.assertEqual("failed", result["status"])
+        self.assertEqual(1, result["testCollectedCount"])
+        self.assertEqual(1, result["testSkippedCount"])
+        self.assertEqual(0, result["testPassedCount"])
+        self.assertEqual(0, result["testCount"])
+
+    def test_real_node_tap_success_and_todo_are_separate(self):
+        result = self._run_node_tap(
+            "test('executed', () => {});\n"
+            "test('todo', {todo: true}, () => {});\n"
+            "test('skipped', {skip: true}, () => {});\n"
+        )
+        self.assertEqual("passed", result["status"])
+        self.assertEqual(3, result["testCollectedCount"])
+        self.assertEqual(1, result["testCount"])
+        self.assertEqual(1, result["testTodoCount"])
+        self.assertEqual(1, result["testSkippedCount"])
+
+    def test_real_node_tap_failure_is_not_success(self):
+        for source, counter in (
+            ("test('failure', () => { throw Error('expected'); });\n", "testFailedCount"),
+        ):
+            with self.subTest(counter=counter):
+                result = self._run_node_tap(source)
+                self.assertEqual("failed", result["status"])
+                self.assertEqual("failed", result["testSummaryStatus"])
+                self.assertEqual(1, result[counter])
+
+    def test_tap_cancelled_and_todo_counters_never_count_as_execution(self):
+        for cancelled, todo, status in ((1, 0, "failed"), (0, 1, "ok")):
+            with self.subTest(cancelled=cancelled, todo=todo):
+                output = (
+                    "TAP version 13\n1..1\n# tests 1\n# suites 0\n# pass 0\n# fail 0\n"
+                    f"# cancelled {cancelled}\n# skipped 0\n# todo {todo}\n# duration_ms 1.0\n"
+                )
+                metrics = incremental.test_execution_metrics(output)
+                self.assertEqual(status, metrics["testSummaryStatus"])
+                self.assertEqual(cancelled, metrics["testCancelledCount"])
+                self.assertEqual(todo, metrics["testTodoCount"])
+                self.assertEqual(0, metrics["testCount"])
+                self.assertEqual("none", metrics["testExecutionEvidence"])
+
+    def test_incomplete_tap_does_not_inherit_previous_success(self):
+        for output in (
+            "# tests 5\n",
+            "Ran 2 tests in 0.001s\nOK\n# tests 5\n",
+            "# tests 5\n# suites 0\n# pass 5\n# fail 0\n",
+            "# tests 5\n# suites 0\n# pass 1\n# fail 0\n"
+            "# cancelled 0\n# skipped 0\n# todo 0\n# duration_ms 1.0\n",
+        ):
+            with self.subTest(output=output):
+                metrics = incremental.test_execution_metrics(output)
+                self.assertEqual("unknown", metrics["testSummaryStatus"])
+                self.assertEqual("none", metrics["testExecutionEvidence"])
+                self.assertEqual(0, metrics["testCount"])
+        self.root.joinpath("Makefile").write_text(
+            "verify.partial.unit:\n\t@printf '# tests 5\\n'\n", encoding="utf-8",
+        )
+        result = incremental._run_make_target(
+            "verify.partial.unit", self.root, self.root / "partial.log",
+        )
+        self.assertEqual(0, result["returncode"])
+        self.assertEqual("failed", result["status"])
+
+    def test_existing_frontend_make_producer_has_attributable_execution(self):
+        result = incremental._run_make_target(
+            "verify.frontend.action_view_route_lease_race.unit",
+            ROOT, self.root / "native-frontend.log",
+        )
+        self.assertEqual(0, result["returncode"])
+        self.assertEqual("passed", result["status"])
+        self.assertEqual("tap-summary", result["testSummarySource"])
+        self.assertEqual(1, result["testPassedCount"])
+        self.assertEqual(1, result["testCount"])
+
+    def test_final_aggregate_summary_supersedes_inner_runner_summaries(self) -> None:
+        metrics = incremental.test_execution_metrics(
+            "Ran 1 test in 0.001s\n\nOK\n"
+            "[changed-tests] PASS tests=17 modules=3 reused=2 executed=1\n"
+        )
+        self.assertEqual(17, metrics["testCount"])
+        self.assertEqual(17, metrics["testCollectedCount"])
+        self.assertEqual("runner-summary", metrics["testSummarySource"])
+
+    def test_static_target_does_not_need_a_fabricated_test_count(self) -> None:
+        self.root.joinpath("Makefile").write_text(
+            self.root.joinpath("Makefile").read_text(encoding="utf-8")
+            + "verify.static.guard:\n"
+            "\t@printf 'contract assertion passed\\n'\n",
+            encoding="utf-8",
+        )
+        result = incremental._run_make_target(
+            "verify.static.guard",
+            self.root,
+            self.root / "static-guard.log",
+        )
+        self.assertEqual("static", result["executionKind"])
+        self.assertEqual("passed", result["status"])
+        self.assertEqual(0, result["testCount"])
+
     def test_reusable_check_targets_are_not_executed(self) -> None:
         code, receipt = self.execute(
             registered=set(FRONTEND_SOURCE_TARGETS),
@@ -3973,9 +4286,9 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.root.joinpath("Makefile").write_text(
             self.root.joinpath("Makefile").read_text(encoding="utf-8")
             + "verify.frontend.primitive_adapter.unit:\n"
-            "\t@printf 'primitive adapter executed\\n'\n"
+            "\t@printf 'primitive adapter executed PASS cases=1\\n'\n"
             "verify.frontend.page_pattern_reference_parity.unit:\n"
-            "\t@printf 'page pattern executed\\n'\n",
+            "\t@printf 'page pattern executed PASS cases=1\\n'\n",
             encoding="utf-8",
         )
         required = set(select_targets([path]))
@@ -4468,6 +4781,95 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
         self.assertIsNone(receipt)
         self.assertEqual(rows, {})
 
+    def test_shared_contract_receipt_is_invalidated_by_contract_commit(self) -> None:
+        contract = self.root / "frontend/apps/web/src/app/contracts/v2/schema.ts"
+        contract.parent.mkdir(parents=True)
+        contract.write_text("export const version = 1;\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "contract"], check=True)
+        source_identity = incremental.current_execution_identity(self.root)
+        target = "verify.frontend.canonical_form_presenter.unit"
+        receipt_dir = (
+            self.root / ".runtime/frontend-dev-validation/executions/backend-contract"
+        )
+        receipt_dir.mkdir(parents=True)
+        log = receipt_dir / f"{target}.log"
+        log.write_text("Ran 3 tests in 0.01s\nOK\n", encoding="utf-8")
+        (receipt_dir / "receipt.json").write_text(json.dumps({
+            "status": "passed",
+            "verificationPassed": True,
+            "channel": CHANNEL_BACKEND,
+            "runId": "RUN",
+            "identity": source_identity,
+            "requiredTargets": [target],
+            "targetResults": [{
+                "target": target,
+                "status": "passed",
+                "returncode": 0,
+                "log": log.relative_to(self.root).as_posix(),
+                "logSha256": hashlib.sha256(log.read_bytes()).hexdigest(),
+            }],
+            "notRunTargets": [],
+        }), encoding="utf-8")
+
+        contract.write_text("export const version = 2;\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "contract change"], check=True)
+
+        receipt, _, rows = incremental.resumable_receipt_results(
+            self.root,
+            ["frontend/apps/web/src/app/contracts/v2/schema.ts"],
+            [target],
+            identity=incremental.current_execution_identity(self.root),
+            channel=CHANNEL_BACKEND,
+            run_id="RUN",
+        )
+        self.assertIsNone(receipt)
+        self.assertEqual({}, rows)
+
+    def test_shared_contract_receipt_rejects_same_head_dirty_contract_change(self) -> None:
+        contract = self.root / "frontend/apps/web/src/app/contracts/v2/schema.ts"
+        contract.parent.mkdir(parents=True)
+        contract.write_text("export const version = 1;\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "contract"], check=True)
+        target = "verify.frontend.canonical_form_presenter.unit"
+        receipt_dir = (
+            self.root / ".runtime/frontend-dev-validation/executions/backend-contract-dirty"
+        )
+        receipt_dir.mkdir(parents=True)
+        log = receipt_dir / f"{target}.log"
+        log.write_text("Ran 3 tests in 0.01s\nOK\n", encoding="utf-8")
+        identity = incremental.current_execution_identity(self.root)
+        (receipt_dir / "receipt.json").write_text(json.dumps({
+            "status": "passed",
+            "verificationPassed": True,
+            "channel": CHANNEL_BACKEND,
+            "runId": "RUN",
+            "identity": identity,
+            "requiredTargets": [target],
+            "targetResults": [{
+                "target": target,
+                "status": "passed",
+                "returncode": 0,
+                "log": log.relative_to(self.root).as_posix(),
+                "logSha256": hashlib.sha256(log.read_bytes()).hexdigest(),
+            }],
+            "notRunTargets": [],
+        }), encoding="utf-8")
+        contract.write_text("export const version = 2;\n", encoding="utf-8")
+
+        receipt, _, rows = incremental.resumable_receipt_results(
+            self.root,
+            ["frontend/apps/web/src/app/contracts/v2/schema.ts"],
+            [target],
+            identity=incremental.current_execution_identity(self.root),
+            channel=CHANNEL_BACKEND,
+            run_id="RUN",
+        )
+        self.assertIsNone(receipt)
+        self.assertEqual({}, rows)
+
     def test_reverted_dirty_fix_cannot_survive_unrelated_commit(self) -> None:
         source = self.root / "frontend/apps/web/src/NewSurface.vue"
         original = source.read_text()
@@ -4599,6 +5001,40 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
             second["sourceReceipt"],
             ".runtime/frontend-dev-validation/executions/first/receipt.json",
         )
+
+    def test_registry_audit_invalidated_by_selector_change_executes_and_fails(self) -> None:
+        planner = self.root / "scripts/ci/backend_impact_plan.py"
+        planner.parent.mkdir(parents=True)
+        planner.write_text("VERSION = 1\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.root), "commit", "-qm", "planner"],
+            check=True,
+        )
+        self.paths.append("scripts/ci/backend_impact_plan.py")
+
+        first = self._execute("registry-first", interrupted=False)
+        self.assertEqual(first["_code"], 0)
+        self.assertIn("verify.test.coverage.registry", first["_calls"])
+
+        planner.write_text("VERSION = 2\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.root), "commit", "-qm", "planner change"],
+            check=True,
+        )
+        second = self._execute(
+            "registry-second",
+            interrupted=False,
+            failed_target="verify.test.coverage.registry",
+        )
+
+        self.assertEqual(second["_code"], 1)
+        self.assertEqual(second["status"], "failed")
+        self.assertIn("verify.test.coverage.registry", second["_calls"])
+        self.assertIn("verify.ci.workflow.contract", second["_calls"])
+        self.assertNotIn("verify.frontend.lint.src", second["_calls"])
+        self.assertIn("verify.frontend.lint.src", second["reusedTargets"])
 
     def test_new_unrelated_target_does_not_rerun_passed_business_targets(self) -> None:
         self.paths = ["frontend/apps/web/src/NewSurface.vue"]
