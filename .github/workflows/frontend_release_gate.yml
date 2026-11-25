@@ -333,7 +333,7 @@ jobs:
             echo "invalid contract diagnostic selector: ${run_diagnostic}" >&2
             exit 1
           else
-            test "${FRONTEND_MODE}" = "skip"
+            :
           fi
           python3 - "${RISK_LANE}" "${FRONTEND_MODE}" "${CHECKOUT_SHA}" \
             > artifacts/ci-risk-tiering/frontend-release-gate.json <<'PY'

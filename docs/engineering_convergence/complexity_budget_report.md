@@ -151,6 +151,7 @@ Generated from repository source files. This report is informational during the 
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
 | 1191 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
 | 1182 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
+| 1171 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1169 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1160 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
@@ -160,7 +161,6 @@ Generated from repository source files. This report is informational during the 
 | 1147 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1142 | TypeScript source | `frontend/apps/web/src/api/platformCapabilityExplorer.ts` |
-| 1139 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 1135 | Python source | `addons/smart_core/tests/test_release_operator_surface_copy_backend.py` |
 | 1133 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
 | 1131 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |

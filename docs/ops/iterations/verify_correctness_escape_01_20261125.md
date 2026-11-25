@@ -118,6 +118,13 @@ real isolated ORM run passed one test with `ORM_RESULT_GUARD=PASS`, followed by
 the real-contract decoder check with 45 strict descriptors. The complete local
 iteration then passed all 13 required targets.
 
+PR #1003 then exposed one additional validation-tool defect in its first remote
+frontend run: the standard lint, strict typecheck, unit tests and static
+convergence steps passed, but the result-recording shell branch incorrectly
+required `frontend_mode=skip` when no diagnostic was requested. The branch is
+now a no-op after the already-validated standard outcome, and a focused workflow
+contract test executes the real recording script for that exact case.
+
 ## Retained failure and recovery
 
 The first `make ci.local.iteration` attempt stopped before execution because

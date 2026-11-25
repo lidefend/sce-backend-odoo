@@ -781,6 +781,38 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         cleanup = (ROOT / "scripts/ci/self_hosted_runner_cleanup.sh").read_text(encoding="utf-8")
         self.assertIn('"$contract_diagnostic_required" == "true"', cleanup)
 
+    def test_standard_lane_without_diagnostic_records_success(self):
+        workflow = yaml.safe_load(self.text("frontend_release_gate.yml"))
+        steps = next(iter(workflow["jobs"].values()))["steps"]
+        record = next(
+            step
+            for step in steps
+            if step.get("name") == "Record explicit non-release lane result"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(
+                ["bash", "-c", record["run"]],
+                cwd=tmp,
+                env={
+                    **os.environ,
+                    "FRONTEND_MODE": "standard",
+                    "RUN_CONTRACT_DIAGNOSTIC": "false",
+                    "PAYMENT_REQUEST_DIAGNOSTIC": "0",
+                    "STANDARD_OUTCOME": "success",
+                    "PAYMENT_REQUEST_DIAGNOSTIC_OUTCOME": "skipped",
+                    "RISK_LANE": "STANDARD",
+                    "CHECKOUT_SHA": "a" * 40,
+                },
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(0, result.returncode, result.stderr)
+            payload = json.loads(
+                Path(tmp, "artifacts/ci-risk-tiering/frontend-release-gate.json").read_text()
+            )
+            self.assertEqual("standard", payload["mode"])
+            self.assertEqual("PASS", payload["result"])
+
     def test_merge_summary_matches_backend_and_mainline_execution(self):
         workflow = yaml.safe_load(self.text('merge_policy_gate.yml'))
         step = next(s for job in workflow['jobs'].values() for s in job.get('steps', [])
