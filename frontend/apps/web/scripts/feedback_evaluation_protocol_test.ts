@@ -55,7 +55,7 @@ function snapshot() {
     containerId: 'feedback',
     type: 'div',
     visible: false,
-    componentKey: 'sc.feedback.message',
+    semanticType: 'feedback_message',
     componentConfig: {
       purpose: 'advisory',
       contentRef: { containerId: 'source' },
@@ -72,7 +72,6 @@ function snapshot() {
         visible: true,
         children: [host],
       }],
-      componentRegistry: { 'sc.feedback.message': { version: '1.0.0' } },
     },
     statusContract: { containerStatus: [{ containerId: 'feedback', visible: false }] },
     dataContract: { mainData: {} },
@@ -258,7 +257,7 @@ function relationSnapshot() {
     containerId: 'refund-feedback',
     type: 'div',
     visible: false,
-    componentKey: 'sc.feedback.message',
+    semanticType: 'feedback_message',
     componentConfig: {
       purpose: 'advisory',
       contentRef: { containerId: 'refund-source' },
@@ -280,7 +279,6 @@ function relationSnapshot() {
         visible: true,
         children: [host],
       }],
-      componentRegistry: { 'sc.feedback.message': { version: '1.0.0' } },
     },
     statusContract: { containerStatus: [{ containerId: 'refund-feedback', visible: false }] },
     dataContract: { mainData: {} },

@@ -1,6 +1,7 @@
 import { onScopeDispose, shallowRef, watch, type Ref } from 'vue';
 import { triggerOnchange } from '../../api/onchange';
 import type { ContractV2NormalizedStore } from '../../app/contracts/v2/types';
+import { resolveNodeSemanticImplementation } from '../../app/presentation/nodeComponentPresentation';
 import {
   FEEDBACK_DRAFT_CAPABILITY,
   FEEDBACK_EVALUATION_VERSION,
@@ -94,7 +95,9 @@ function draftHosts(store: ContractV2NormalizedStore | null): FeedbackHost[] {
   return nodes.flatMap((host) => {
     const config = object(host.componentConfig);
     const evaluation = object(config.evaluation);
-    if (host.componentKey !== 'sc.feedback.message' || config.purpose !== 'advisory'
+    const semanticType = text(host.semanticType);
+    if (!semanticType || resolveNodeSemanticImplementation(semanticType) !== 'sc.feedback.message'
+      || config.purpose !== 'advisory'
       || evaluation.capability !== FEEDBACK_DRAFT_CAPABILITY
       || evaluation.visibilityOwner !== 'feedback_evaluation') return [];
     const sourceId = text(object(config.contentRef).containerId);

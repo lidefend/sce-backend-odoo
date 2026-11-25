@@ -3,7 +3,7 @@
   "id": "P0-FORM-COMPONENT-REGISTRY-CLOSURE-20261125",
   "branch": "fix/project-ledger-registry-closure-20261125",
   "status": "verification_pending",
-  "baseline_sha": "e940285aed4a9747931c26ec0a52283b5d296d14",
+  "baseline_sha": "5b2724b1b56da295526f3b9e74e73f986a739085",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/P0-FORM-COMPONENT-REGISTRY-CLOSURE-20261125.yaml",
@@ -105,6 +105,7 @@
     "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
     "frontend/apps/web/scripts/create_default_hydration_test.ts",
     "frontend/apps/web/scripts/create_record_user_journey_test.ts",
+    "frontend/apps/web/scripts/feedback_evaluation_protocol_test.ts",
     "frontend/apps/web/scripts/fixtures/native_embedded_widget_contract_v2.json",
     "frontend/apps/web/scripts/native_embedded_widget_browser_check.mjs",
     "frontend/apps/web/scripts/node_component_consumption_test.ts",
@@ -144,6 +145,7 @@
     "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
     "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
     "frontend/apps/web/src/pages/contractForm/useContractFormPageState.ts",
+    "frontend/apps/web/src/pages/contractForm/useDraftFeedbackEvaluation.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
     "frontend/apps/web/src/views/ActionView.vue",
@@ -257,10 +259,22 @@
         "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
         "frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts"
       ]
+    },
+    "feedback_evaluation_contract": {
+      "target": "verify.frontend.feedback_evaluation.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/feedback_evaluation_protocol_test.ts",
+        "frontend/apps/web/src/pages/contractForm/useDraftFeedbackEvaluation.ts",
+        "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "frontend/apps/web/src/app/contracts/onchangeFeedbackEvaluation.ts",
+        "make/frontend.mk"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the review follow-up, update existing PR #1004 through the governed entrypoint, inspect the new backend evidence for the identity-probe path, verify the four required checks on its exact HEAD, then stop for independent review.",
+  "next_exact_step": "Commit the feedback semantic consumer fix, update existing PR #1004 through the governed entrypoint, then verify its required checks on the exact HEAD.",
   "goal": ".agent/goals/P0-FORM-COMPONENT-REGISTRY-CLOSURE-20261125.yaml",
   "record": "docs/ops/iterations/p0_form_component_registry_closure_20261125.md"
 }
