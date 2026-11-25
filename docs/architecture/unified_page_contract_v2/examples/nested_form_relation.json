@@ -7,7 +7,7 @@
     "viewType": "form",
     "layoutType": "combine",
     "renderMode": "governed",
-    "contractVersion": "2.5.0",
+    "contractVersion": "2.7.0",
     "clientType": "web_pc"
   },
   "layoutContract": {
@@ -36,7 +36,6 @@
                 "fieldCode": "contract_line_ids",
                 "label": "Lines",
                 "span": 12,
-                "componentKey": "sc.relation.table",
                 "capabilities": [
                   "editable",
                   "inline-create",
@@ -45,7 +44,8 @@
                 "componentConfig": {
                   "dataKey": "contract_line_ids"
                 },
-                "ownerContainerId": "main.contracting.lines"
+                "ownerContainerId": "main.contracting.lines",
+                "semanticType": "detail_collection"
               }
             ]
           }
@@ -57,26 +57,18 @@
             "fieldCode": "contract_amount",
             "label": "Contract Amount",
             "span": 6,
-            "componentKey": "sc.input.number",
             "capabilities": [],
             "componentConfig": {
               "precision": 2
             },
-            "ownerContainerId": "main.contracting"
+            "ownerContainerId": "main.contracting",
+            "semanticType": "number"
           }
         ]
       }
     ],
     "layoutHints": {
       "columns": 12
-    },
-    "componentRegistry": {
-      "sc.input.number": {
-        "version": "1.0"
-      },
-      "sc.relation.table": {
-        "version": "1.0"
-      }
     }
   },
   "statusContract": {
@@ -198,14 +190,14 @@
       "stage": "runtime_delivery",
       "definition": {
         "schemaId": "smart_core.unified_page_contract_v2",
-        "schemaVersion": "2.5.0",
-        "schemaSha256": "c5c961d3bd141f40231b39e1c8c7182b53537cc84d66bc4273a1936288e64f65",
-        "contractVersion": "2.5.0",
+        "schemaVersion": "2.7.0",
+        "schemaSha256": "4075e4fe443c2d4c4a5e7e581b1c14ff03a1c6edf69669d6b8b0e0d98d05a8c6",
+        "contractVersion": "2.7.0",
         "normativeStatus": "stable"
       },
       "generation": {
         "generator": "documentation.example",
-        "generatorVersion": "2.5.0",
+        "generatorVersion": "2.7.0",
         "sourceType": "ui.contract",
         "sourceSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
       },
@@ -217,7 +209,7 @@
       },
       "integrity": {
         "algorithm": "sha256",
-        "contractSha256": "d2b95e20e7e8dc15caed488f923a806490be00d3d411b543daa41663dc5718b1"
+        "contractSha256": "26e601b6aa2b205044a98c21b38aaa05b7ea0555a742e5ca7360c40479c7e96d"
       },
       "authority": {
         "kind": "documentation_example",

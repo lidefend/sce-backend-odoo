@@ -39,7 +39,7 @@ class TestCostProcessingFeedback(TransactionCase):
         view = self.env.ref('smart_construction_core.' + view_xmlid)
         contract, _proof = draft_feedback._assemble_contract(model, view.id)
         hosts = [node for node, _parent in native_advisory.walk(contract['layoutContract']['containerTree'])
-                 if node.get('componentKey') == draft_feedback.COMPONENT_KEY]
+                 if node.get('semanticType') == draft_feedback.SEMANTIC_TYPE]
         self.assertEqual(len(hosts), 1)
         request = {'version': draft_feedback.VERSION, 'operation': 'describe',
                    'request_id': 'cost_describe', 'view_id': view.id,

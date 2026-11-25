@@ -38,7 +38,7 @@ class TestWorkspaceProcessingFeedback(TransactionCase):
         view = self.env.ref("smart_construction_core.view_sc_%s_form" % stem)
         contract, _proof = draft_feedback._assemble_contract(model, view.id)
         nodes = list(native_advisory.walk(contract["layoutContract"]["containerTree"]))
-        hosts = [n for n, _ in nodes if n.get("componentKey") == draft_feedback.COMPONENT_KEY]
+        hosts = [n for n, _ in nodes if n.get("semanticType") == draft_feedback.SEMANTIC_TYPE]
         self.assertEqual(len(hosts), 1)
         host = hosts[0]
         source = next(n for n, _ in nodes if n.get("containerId") ==

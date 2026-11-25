@@ -27,8 +27,8 @@ const producer = ${JSON.stringify(fixture)};
 const supported = structuredClone(producer);
 supported.layoutContract.containerTree = supported.layoutContract.containerTree.slice(0, 2);
 supported.statusContract.containerStatus = supported.statusContract.containerStatus.slice(0, 2);
-delete supported.layoutContract.componentRegistry['sc.unsupported.native_node'];
 
+document.documentElement.dataset.stage = 'native';
 const bridge = buildCanonicalNativeFormBridge(
   presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(supported)), 'readonly'),
 );
@@ -40,6 +40,7 @@ createApp({
   }),
 }).mount('#native');
 
+document.documentElement.dataset.stage = 'canonical';
 const store = createContractV2Store(decodeContractV2Snapshot(supported));
 const model = presentContractV2Form(store, 'readonly');
 createApp({
@@ -49,6 +50,7 @@ createApp({
   }),
 }).mount('#canonical');
 
+document.documentElement.dataset.stage = 'hidden';
 const hidden = structuredClone(supported);
 hidden.statusContract.containerStatus[0].visible = false;
 const hiddenStore = createContractV2Store(decodeContractV2Snapshot(hidden));
@@ -60,6 +62,7 @@ createApp({
   }),
 }).mount('#hidden');
 
+document.documentElement.dataset.stage = 'hidden-native';
 const hiddenNative = structuredClone(supported);
 hiddenNative.statusContract.containerStatus[0].visible = false;
 const hiddenNativeBridge = buildCanonicalNativeFormBridge(
@@ -73,6 +76,7 @@ createApp({
   }),
 }).mount('#hidden-native');
 
+document.documentElement.dataset.stage = 'parent-hidden';
 const parentHidden = structuredClone(supported);
 const hiddenWidget = parentHidden.layoutContract.containerTree[0];
 parentHidden.layoutContract.containerTree = [{
@@ -100,6 +104,7 @@ createApp({
   }),
 }).mount('#parent-hidden');
 
+document.documentElement.dataset.stage = 'unsupported';
 let unsupported = '';
 try {
   decodeContractV2Snapshot(producer);
@@ -146,6 +151,9 @@ const bundled = await build({
   logLevel: 'error',
 });
 const bundle = bundled.outputFiles[0].text;
+if (process.env.SCE_NATIVE_WIDGET_BUNDLE_OUT) {
+  fs.writeFileSync(process.env.SCE_NATIVE_WIDGET_BUNDLE_OUT, bundle);
+}
 const server = http.createServer((request, response) => {
   if (request.url === '/app.mjs') {
     response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
@@ -161,13 +169,25 @@ const browser = await launchChromium({ headless: true });
 try {
   const page = await browser.newPage();
   const businessRequests = [];
+  const pageErrors = [];
+  const consoleErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(String(error?.stack || error)));
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
   page.on('request', (request) => {
     if (!['document', 'script'].includes(request.resourceType())) {
       businessRequests.push(request.url());
     }
   });
   await page.goto(`http://127.0.0.1:${address.port}/`, { waitUntil: 'networkidle' });
-  await page.waitForFunction(() => document.documentElement.dataset.ready === 'true');
+  try {
+    await page.waitForFunction(() => document.documentElement.dataset.ready === 'true');
+  } catch (error) {
+    const stage = await page.evaluate(() => document.documentElement.dataset.stage || '');
+    console.error(JSON.stringify({ stage, pageErrors, consoleErrors }, null, 2));
+    throw error;
+  }
 
   const nativeRibbons = page.locator('#native [data-native-widget="web_ribbon"]');
   assert.equal(await nativeRibbons.count(), 2);

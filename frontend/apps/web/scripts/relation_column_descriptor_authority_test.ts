@@ -41,7 +41,7 @@ for (const testCase of cases) {
       name: 'payment_request_line_ids',
       type: 'one2many',
       relation: 'payment.request.line',
-      ...(testCase.relationEntryShape ? { relation_entry: testCase.relationEntryShape } : {}),
+      ...(testCase.relationEntryShape ? { relationEntry: testCase.relationEntryShape } : {}),
     },
   };
   const relationFieldDescriptors = { value: {} as Record<string, unknown> };
@@ -90,11 +90,11 @@ for (const testCase of cases) {
 const settlementFields: Record<string, Record<string, unknown>> = {
   payment_request_ids: {
     name: 'payment_request_ids', type: 'one2many', relation: 'payment.request',
-    relation_entry: { model: 'payment.request', can_read: false, reason_code: 'RELATION_READ_FORBIDDEN' },
+    relationEntry: { model: 'payment.request', can_read: false, reason_code: 'RELATION_READ_FORBIDDEN' },
   },
   payment_request_line_ids: {
     name: 'payment_request_line_ids', type: 'one2many', relation: 'payment.request.line',
-    relation_entry: { model: 'payment.request.line', can_read: false, reason_code: 'RELATION_READ_FORBIDDEN' },
+    relationEntry: { model: 'payment.request.line', can_read: false, reason_code: 'RELATION_READ_FORBIDDEN' },
   },
 };
 const settlementDescriptors = { value: {} as Record<string, unknown> };

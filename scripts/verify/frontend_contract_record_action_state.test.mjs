@@ -53,9 +53,9 @@ function snapshot(globalStatus, searchContract, nativeActionContract) {
   return {
     pageInfo: {
       pageId: 'contract.form', sceneKey: 'contract.form', pageName: 'Contract', model: 'sc.general.contract',
-      viewType: 'form', layoutType: 'form', renderMode: 'governed', contractVersion: '2.4.0', clientType: 'web_pc',
+      viewType: 'form', layoutType: 'form', renderMode: 'governed', contractVersion: '2.7.0', clientType: 'web_pc',
     },
-    layoutContract: { pageId: 'contract.form', layoutType: 'form', adaptMode: 'pc', containerTree: [], layoutHints: {}, componentRegistry: {} },
+    layoutContract: { pageId: 'contract.form', layoutType: 'form', adaptMode: 'pc', containerTree: [], layoutHints: {} },
     statusContract: {
       globalStatus,
       containerStatus: [], widgetStatus: [], buttonStatus: [], selectorStatus: [],
@@ -200,7 +200,7 @@ function listSnapshot(columns) {
     ...value.pageInfo,
     viewType: 'list',
     layoutType: 'table',
-    contractVersion: '2.4.0',
+    contractVersion: '2.7.0',
   };
   value.layoutContract = {
     ...value.layoutContract,
@@ -324,7 +324,7 @@ check(() => assert.throws(
 
 check(() => {
   const value = snapshot({ pageVisible: true, pageAuth: 'read' });
-  value.pageInfo.contractVersion = '2.4.0';
+  value.pageInfo.contractVersion = '2.7.0';
   value.actionContract.actionRuleList = [{
     actionId: 'action.confirm',
     nativeIdentity: {

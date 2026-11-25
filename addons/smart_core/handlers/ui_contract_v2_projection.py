@@ -488,17 +488,11 @@ CONTRACT_FORBIDDEN_COMPONENT_RENDER_KEYS = (
 
 
 def normalize_component_registry_entries(contract: dict[str, Any]) -> None:
-    """Strip rendering traits from every declared component registry entry."""
+    """Retired V2.7 compatibility hook; component registry is a frontend fact."""
     if not isinstance(contract, dict):
         return
     layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
-    registry = layout.get("componentRegistry") if isinstance(layout.get("componentRegistry"), dict) else {}
-    for row in registry.values():
-        if not isinstance(row, dict):
-            continue
-        for forbidden in CONTRACT_FORBIDDEN_COMPONENT_RENDER_KEYS:
-            row.pop(forbidden, None)
-    layout["componentRegistry"] = registry
+    layout.pop("componentRegistry", None)
     contract["layoutContract"] = layout
 
 
@@ -684,11 +678,14 @@ def sync_v2_list_widget_status_from_profile(
                 field_code = str(widget.get("fieldCode") or "").strip()
                 widget_id = str(widget.get("widgetId") or "").strip()
                 widget_type = str(widget.get("widgetType") or "").strip().lower()
-                component_key = str(widget.get("componentKey") or "").strip()
+                semantic_type = str(widget.get("semanticType") or "").strip().lower()
                 if (
                     field_code in recoverable_fields | hidden_fields
                     and widget_id
-                    and (widget_type == "table" or component_key == "sc.table.data")
+                    and (
+                        widget_type == "table"
+                        or semantic_type in {"detail_table", "detail_collection"}
+                    )
                 ):
                     table_widgets[widget_id] = field_code
             for key in ("children", "pages", "tabs", "nodes", "items"):

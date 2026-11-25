@@ -165,21 +165,13 @@ def _is_widget_node(node: dict[str, Any]) -> bool:
 
 
 def _apply_declared_semantic(node: dict[str, Any], semantic: str) -> str:
-    """Declare the meaning on the field fact and let the registry name its component.
-
-    Returns the component key the node now renders through (``""`` when the
-    declaration was refused), so the caller publishes the identity the page
-    actually uses.
-    """
-    component_key = _semantic_resolver.component_key_for_semantic(semantic)
-    if not component_key:
-        _logger.error(
-            "contract_semantic_undeclared semantic=%s declared_by=%s; the field keeps the component "
-            "its facts resolve to. Fix the declaration in contracts/registry/semantic.yaml.",
-            semantic,
-            _sc_text(node.get("fieldCode") or node.get("name") or node.get("field")) or "<unnamed field>",
+    """Declare the meaning on the field fact; component choice stays client-side."""
+    if not _semantic_resolver.is_field_semantic(semantic):
+        raise ValueError(
+            "CONTRACT_SEMANTIC_UNDECLARED:"
+            f"{semantic}:"
+            f"{_sc_text(node.get('fieldCode') or node.get('name') or node.get('field')) or '<unnamed field>'}"
         )
-        return ""
     # The v2 schema lets a *widget* node carry a field descriptor and forbids it
     # on a native layout node, while the component identity is legal on both.  The
     # meaning is therefore written only on the node kind that can hold it: a
@@ -187,15 +179,16 @@ def _apply_declared_semantic(node: dict[str, Any], semantic: str) -> str:
     if _is_widget_node(node):
         descriptor = node.get("fieldDescriptor") if isinstance(node.get("fieldDescriptor"), dict) else {}
         descriptor["semanticType"] = semantic
-        descriptor["componentKey"] = component_key
+        descriptor.pop("componentKey", None)
         node["fieldDescriptor"] = descriptor
-    node["componentKey"] = component_key
+    node["semanticType"] = semantic
+    node.pop("componentKey", None)
     vocabulary = SEMANTIC_PRESENTATION_VOCABULARY.get(semantic)
     if vocabulary:
         config = node.get("componentConfig") if isinstance(node.get("componentConfig"), dict) else {}
         config.update(deepcopy(vocabulary))
         node["componentConfig"] = config
-    return component_key
+    return semantic
 
 
 def _apply_attachment_role(
@@ -241,7 +234,6 @@ def normalize_declared_field_presentation(
         return
     layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
     tree = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
-    resolved: set[str] = set()
 
     def visit(value: Any) -> None:
         if isinstance(value, list):
@@ -258,18 +250,11 @@ def normalize_declared_field_presentation(
             else ""
         )
         if semantic:
-            component_key = _apply_declared_semantic(value, semantic)
-            if component_key:
-                resolved.add(component_key)
+            _apply_declared_semantic(value, semantic)
         for key in ("children", "tabs", "pages", "nodes", "items", "widgetList"):
             visit(value.get(key))
 
     visit(tree)
-    if not resolved:
-        return
-    registry = layout.get("componentRegistry") if isinstance(layout.get("componentRegistry"), dict) else {}
-    registry.update(_semantic_resolver.component_registry(resolved))
-    layout["componentRegistry"] = registry
     contract["layoutContract"] = layout
 
 def general_contract_tax_contract(contract: dict[str, Any], source_contract: dict[str, Any] | None = None) -> None:
@@ -319,10 +304,7 @@ def general_contract_tax_contract(contract: dict[str, Any], source_contract: dic
             "label": "税率",
             "fieldInfo": descriptor,
             "widget": "many2one",
-            # The registry names the component for this field's facts.  The
-            # previous literal was a key no carrier declared, so the frontend
-            # fell back silently.
-            "componentKey": _semantic_resolver.component_key("many2one", {"ttype": "many2one"}),
+            "semanticType": "relation",
             "componentConfig": {"readonly": False, "required": False, "fieldType": "many2one"},
             "widgetId": "field.tax_id",
             "field_info": descriptor,

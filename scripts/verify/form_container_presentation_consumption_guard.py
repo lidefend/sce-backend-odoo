@@ -146,9 +146,28 @@ def _load_projection():
     base = "sce_presentation_guard"
     root_package = sys.modules.setdefault(base, types.ModuleType(base))
     root_package.__path__ = [str(ROOT / "addons/smart_core")]
-    for sub in ("handlers", "core"):
+    for sub in ("handlers", "core", "utils"):
         package = sys.modules.setdefault(f"{base}.{sub}", types.ModuleType(f"{base}.{sub}"))
         package.__path__ = [str(ROOT / f"addons/smart_core/{sub}")]
+
+    # The projection now imports the extension-hook authority from its owning
+    # Odoo package. This guard remains database-free, so expose the repository
+    # modules through a minimal package namespace instead of requiring the host
+    # Python environment to contain Odoo.
+    odoo = sys.modules.setdefault("odoo", types.ModuleType("odoo"))
+    odoo.__path__ = []
+    odoo_addons = sys.modules.setdefault("odoo.addons", types.ModuleType("odoo.addons"))
+    odoo_addons.__path__ = [str(ROOT / "addons")]
+    odoo_smart_core = sys.modules.setdefault(
+        "odoo.addons.smart_core",
+        types.ModuleType("odoo.addons.smart_core"),
+    )
+    odoo_smart_core.__path__ = [str(ROOT / "addons/smart_core")]
+    odoo_core = sys.modules.setdefault(
+        "odoo.addons.smart_core.core",
+        types.ModuleType("odoo.addons.smart_core.core"),
+    )
+    odoo_core.__path__ = [str(ROOT / "addons/smart_core/core")]
 
     def _load(module_name: str):
         name = f"{base}.handlers.{module_name}"

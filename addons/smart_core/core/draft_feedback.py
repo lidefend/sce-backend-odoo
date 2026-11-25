@@ -17,11 +17,12 @@ from datetime import date
 from . import native_advisory
 from .form_configuration_compiler import FormConfigurationError
 from .node_component_validation import walk
+from .contract_runtime.semantic_resolver import SEMANTIC_SPEC_VERSION_VALUE
 
 VERSION = "1.0.0"
 CAPABILITY = native_advisory.DRAFT_FEEDBACK_CAPABILITY
-COMPONENT_KEY = "sc.feedback.message"
-COMPONENT_VERSION = "1.0.0"
+SEMANTIC_TYPE = "feedback_message"
+SEMANTIC_VERSION = str(SEMANTIC_SPEC_VERSION_VALUE)
 PURPOSE = "advisory"
 VISIBILITY_OWNER = native_advisory.DRAFT_FEEDBACK_VISIBILITY_OWNER
 RELATION_PRESENCE = "many2one_presence"
@@ -283,7 +284,7 @@ def _assemble_contract(model, view_id):
 def _binding(model, contract, proof, view_id, container_id, request_id):
     rows = list(walk((contract.get("layoutContract") or {}).get("containerTree") or []))
     hosts = [node for node, _ in rows if node.get("containerId") == container_id]
-    if len(hosts) != 1 or hosts[0].get("componentKey") != COMPONENT_KEY:
+    if len(hosts) != 1 or hosts[0].get("semanticType") != SEMANTIC_TYPE:
         fail("FEEDBACK_SOURCE_INVALID", "feedback_evaluation.container_id", request_id)
     host = hosts[0]
     config = host.get("componentConfig")
@@ -303,10 +304,6 @@ def _binding(model, contract, proof, view_id, container_id, request_id):
     if field is None or getattr(field, "sc_feedback_usage", None) is None or source.get("type") != "field":
         fail("FEEDBACK_SOURCE_INVALID", "feedback_evaluation.container_id", request_id)
     review = proof.review(field)
-    registry = (contract.get("layoutContract") or {}).get("componentRegistry") or {}
-    registration = registry.get(COMPONENT_KEY)
-    if (not isinstance(registration, dict) or registration.get("version") != COMPONENT_VERSION):
-        fail("FEEDBACK_SOURCE_INVALID", "feedback_evaluation.component", request_id)
     invisible = native_advisory.condition(host, field_name, "feedback_evaluation.condition")
     locator = source.get("nativeLocator") or source.get("native_locator")
     occurrence = source.get("occurrenceIndex") or source.get("occurrence_index")
@@ -320,8 +317,8 @@ def _binding(model, contract, proof, view_id, container_id, request_id):
         "source_container_id": ref_id,
         "native_locator": locator,
         "occurrence_index": occurrence,
-        "component_key": COMPONENT_KEY,
-        "component_version": COMPONENT_VERSION,
+        "semantic_type": SEMANTIC_TYPE,
+        "semantic_version": SEMANTIC_VERSION,
         "purpose": PURPOSE,
         "visibility_owner": VISIBILITY_OWNER,
         "dependencies": review["inputs"],
@@ -503,8 +500,8 @@ def evaluate(model, block, *, origin=None):
             "binding": {
                 key: deepcopy(binding[key]) for key in (
                     "etag", "model", "view_id", "container_id", "source_container_id",
-                    "native_locator", "occurrence_index", "component_key",
-                    "component_version", "purpose", "dependencies", "visibility_owner",
+                    "native_locator", "occurrence_index", "semantic_type",
+                    "semantic_version", "purpose", "dependencies", "visibility_owner",
                 )
             },
         }

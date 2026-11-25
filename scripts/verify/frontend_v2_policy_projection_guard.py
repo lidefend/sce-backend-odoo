@@ -281,10 +281,9 @@ ALLOWED_STRICT_STORE_SNAKE_CASE_TOKENS = {
     # The single page-access verdict the store derives from the contract's status
     # declaration; the page reads that verdict instead of judging for itself.
     "UNIFIED_PAGE_CONTRACT_V2_PAGE_FORBIDDEN",
-    # Formal relation and widget-option carrier keys.
-    "relation_entry",
+    # Formal relation carrier key. V2.7 Store projections use canonical camelCase
+    # relationEntry/widgetOptions; snake_case variants are not accepted here.
     "relation_field",
-    "widget_options",
     # Declared delete-policy vocabulary, bound to its producers below.
     *ALLOWED_STRICT_STORE_DELETE_POLICY_TOKENS,
     # Published capability authorization state, bound to its producer below.
@@ -318,6 +317,17 @@ def _form_structure_schema_values(schema_payload: dict, field: str) -> list[str]
 
 
 ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
+    # V2.7 validates semantics against the generated independent specification.
+    # These names identify that specification; they do not select a renderer.
+    "NODE_SEMANTICS",
+    "SEMANTIC_FIELD_TYPES",
+    "semantic_registry",
+    # Opaque business JSON may contain this key without declaring frontend
+    # implementation identity. The decoder recognizes it only to stop the
+    # structural scan at the business-value boundary.
+    "value_json",
+    # Relation defaults are business values, not structural semantic declarations.
+    "default_vals",
     # Formal configuration provenance: schema separates draft id=0 from published ids.
     "source_kind",
     "change_set_preview",
@@ -351,7 +361,10 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     "field_groups",
     "legacy_contract",
     "visible_fields",
-    "native_widget",
+    # V2.7 may name only the fail-closed semantic; the literal component
+    # identity below is inspected solely by the protocol-boundary rejection.
+    "component_key",
+    "unsupported_native_widget",
     "native_explicit",
     "model_metadata_derived",
     "compatibility_default",

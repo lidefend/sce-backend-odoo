@@ -29,7 +29,9 @@ INDUSTRY_MANIFEST_REL = "frontend/apps/web/src/app/presentation/industry_rendere
 INDUSTRY_EXTENSION_REL = "frontend/apps/web/src/extensions/industryRenderers.ts"
 MAIN_REL = "frontend/apps/web/src/main.ts"
 SEMANTIC_DECLARATION_REL = "contracts/registry/semantic.yaml"
-COMPONENT_DECLARATION_REL = "contracts/registry/component.yaml"
+COMPONENT_DECLARATION_REL = (
+    "frontend/apps/web/src/app/presentation/implementation_registry.yaml"
+)
 GENERATED_REGISTRY_SOURCE = "SEMANTIC_REGISTRY_ROWS"
 # Anchored on the row's closing brace: a row whose renderer is not a bare
 # literal (for example laundered through a cast) must fail to parse rather than
@@ -1863,7 +1865,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     semantic_declaration = yaml.safe_load(read_text(SEMANTIC_DECLARATION_REL)) or {}
     component_declaration = yaml.safe_load(read_text(COMPONENT_DECLARATION_REL)) or {}
     semantics = semantic_declaration.get("semantics") if isinstance(semantic_declaration, dict) else {}
-    components = component_declaration.get("components") if isinstance(component_declaration, dict) else {}
+    components = component_declaration.get("implementations") if isinstance(component_declaration, dict) else {}
     semantics = semantics if isinstance(semantics, dict) else {}
     components = components if isinstance(components, dict) else {}
     declared_capability_providers = (
@@ -1885,15 +1887,15 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         str(capability): str(provider)
         for capability, provider in declared_capability_providers.items()
     }:
-        failures.append("generated renderer capability providers differ from component.yaml")
+        failures.append("generated renderer capability providers differ from the frontend implementation registry")
     industry_component_keys = {
-        key for key, entry in components.items()
-        if isinstance(entry, dict) and entry.get("kind", "field") == "field"
-        and str((semantics.get(str(entry.get("semantic") or "")) or {}).get("category") or "") == "industry"
+        str(entry.get("component_key") or "") for semantic_type, entry in components.items()
+        if isinstance(entry, dict)
+        and str((semantics.get(str(semantic_type)) or {}).get("category") or "") == "industry"
     }
     platform_component_keys = {
-        key for key, entry in components.items()
-        if isinstance(entry, dict) and entry.get("kind", "field") == "field"
+        str(entry.get("component_key") or "") for _semantic_type, entry in components.items()
+        if isinstance(entry, dict)
     } - industry_component_keys
     platform_rows = generated_registry_rows(generated_registry)
     industry_rows = generated_registry_rows(industry_manifest)
@@ -2061,8 +2063,10 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append(
             "FormSection reaches a builtin prototype, so the fail-closed predicate can be patched at load time"
         )
-    if "resolveContractProfessionalComponent({" not in presenter:
-        failures.append("Presenter does not resolve every canonical field through the registry")
+    if "resolveContractSemanticComponent({" not in presenter:
+        failures.append("Presenter does not resolve every canonical field through the frontend semantic registry")
+    if "layoutContract.componentRegistry" in presenter or "componentRegistry[" in presenter:
+        failures.append("Presenter still consumes backend component registry identity")
     if "componentResolution," not in presenter:
         failures.append("Presenter does not retain the registry resolution")
     for marker in SEMANTIC_MARKERS:

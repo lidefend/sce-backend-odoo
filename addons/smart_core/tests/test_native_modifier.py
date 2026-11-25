@@ -205,6 +205,11 @@ def differential_cases():
                                        MODULE_PATH.parents[1] / "core" / "unified_page_contract_v2_modifier_dependencies.py")
     assert dependencies.collect_modifier_dependency_fields(MODULE.normalize_native_modifier("amount > context.get('limit', 0)")) == ['amount']
     assert dependencies.collect_modifier_dependency_fields(MODULE.normalize_native_modifier("context.get('limit', 0) > amount")) == ['amount']
+    fact_contract = {"layoutContract": {"containerTree": [{"widgetList": [
+        {"fieldDescriptor": {"fieldCode": "hidden_fact", "uiUsage": "fact"}},
+        {"fieldDescriptor": {"fieldCode": "workflow_guidance", "uiUsage": "interaction"}},
+    ]}]}}
+    assert dependencies.collect_fact_hydration_fields(fact_contract) == ["hidden_fact"]
     assert fixture.assembler._ui_source_context({'context': {}}, {'context': {'flag': 'fallback'}})['context'] == {}
     for source in ({}, {"context": None}, {"context": []}):
         contract = {"dataContract": {"mainData": {"$native.context": {"flag": True}}, "dataMeta": {"sourceContext": source}}}

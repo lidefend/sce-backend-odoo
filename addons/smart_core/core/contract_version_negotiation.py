@@ -12,9 +12,7 @@ from typing import Any, Iterable
 
 
 NEGOTIATION_VERSION = "1.0.0"
-LEGACY_CONTRACT_VERSION = "2.5.0"
-CURRENT_CONTRACT_VERSION = "2.6.0"
-LEGACY_PAGE_ORCHESTRATION_VERSION = "2.0.0"
+CURRENT_CONTRACT_VERSION = "2.7.0"
 CURRENT_PAGE_ORCHESTRATION_VERSION = "2.1.0"
 
 PAGE_BLOCK_DATA_CAPABILITY = "page_block_data.v1"
@@ -26,6 +24,8 @@ KNOWN_CARRIERS = (
     PAGE_BLOCK_ACTION_CAPABILITY,
 )
 STABLE_CLIENT_TYPES = ("web_pc", "wx_mini", "harmony_h5")
+INTERNAL_CLIENT_TYPE = "web_pc"
+INTERNAL_ACCEPTED_CONTRACT_VERSIONS = ("2.7.x",)
 
 REASON_CONTRACT_VERSION_UNSUPPORTED = "CONTRACT_VERSION_UNSUPPORTED"
 
@@ -54,6 +54,27 @@ def _string_list(value: Any) -> list[str]:
     return sorted({_text(item) for item in source if _text(item)})
 
 
+def _alias_value(
+    params: dict[str, Any],
+    snake_name: str,
+    camel_name: str,
+) -> tuple[bool, Any]:
+    """Read one declaration while refusing conflicting wire aliases."""
+
+    snake_present = snake_name in params
+    camel_present = camel_name in params
+    if snake_present and camel_present and params[snake_name] != params[camel_name]:
+        raise ContractNegotiationError(
+            REASON_CONTRACT_VERSION_UNSUPPORTED,
+            f"conflicting declarations: {snake_name} and {camel_name}",
+        )
+    if snake_present:
+        return True, params[snake_name]
+    if camel_present:
+        return True, params[camel_name]
+    return False, None
+
+
 def accepted_minors(value: Any) -> tuple[int, ...]:
     """Return supported Contract V2 minor versions declared by the client."""
 
@@ -67,33 +88,9 @@ def accepted_minors(value: Any) -> tuple[int, ...]:
         if not minor.isdigit():
             continue
         parsed = int(minor)
-        if 0 <= parsed <= 6:
+        if parsed == 7:
             minors.add(parsed)
     return tuple(sorted(minors, reverse=True))
-
-
-def _legacy_result(
-    *,
-    client_type: str,
-    accepted_versions: list[str],
-    capabilities: list[str],
-    compatibility_mode: str,
-) -> dict[str, Any]:
-    return {
-        "negotiationVersion": NEGOTIATION_VERSION,
-        "status": "legacy",
-        "clientType": client_type,
-        "compatibilityMode": compatibility_mode,
-        "acceptedContractVersions": accepted_versions,
-        "clientContractCapabilities": capabilities,
-        "contractVersion": LEGACY_CONTRACT_VERSION,
-        "pageOrchestrationVersion": LEGACY_PAGE_ORCHESTRATION_VERSION,
-        "carriers": {
-            PAGE_BLOCK_DATA_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": False},
-            ATTACHMENT_FACT_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": False},
-            PAGE_BLOCK_ACTION_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": False},
-        },
-    }
 
 
 def negotiate_client_contract(
@@ -104,24 +101,15 @@ def negotiate_client_contract(
 ) -> dict[str, Any]:
     """Choose one complete contract projection.
 
-    A pre-negotiation client that sends neither a client type, accepted version
-    nor capability receives the complete 2.5/2.0 legacy projection. Its client
-    identity remains empty: absence of negotiation fields is evidence of the old
-    request shape, not evidence that the caller is ``web_pc``. Once any
-    negotiation field is present, an unknown/missing client type fails closed.
+    Contract V2.7 is the only delivered protocol. Missing identity, missing
+    version declaration or an unknown version fails closed; pre-production
+    legacy projections are not retained as a second contract model.
     """
 
     resolved_client = _text(client_type)
     versions = _string_list(accepted_contract_versions)
     capabilities = _string_list(client_contract_capabilities)
     if not resolved_client:
-        if not versions and not capabilities:
-            return _legacy_result(
-                client_type="",
-                accepted_versions=[],
-                capabilities=[],
-                compatibility_mode="pre_negotiation_client_without_identity",
-            )
         raise ContractNegotiationError(
             REASON_CONTRACT_VERSION_UNSUPPORTED,
             "client_type is required when contract versions or capabilities are declared",
@@ -132,11 +120,9 @@ def negotiate_client_contract(
             f"unsupported client type: {resolved_client}",
         )
     if not versions:
-        return _legacy_result(
-            client_type=resolved_client,
-            accepted_versions=[],
-            capabilities=capabilities,
-            compatibility_mode="known_client_without_versions",
+        raise ContractNegotiationError(
+            REASON_CONTRACT_VERSION_UNSUPPORTED,
+            "accepted contract versions are required",
         )
     minors = accepted_minors(versions)
     if not minors:
@@ -146,7 +132,7 @@ def negotiate_client_contract(
         )
     page_block_data_enabled = PAGE_BLOCK_DATA_CAPABILITY in capabilities
     page_block_action_enabled = PAGE_BLOCK_ACTION_CAPABILITY in capabilities
-    if 6 in minors and (page_block_data_enabled or page_block_action_enabled):
+    if 7 in minors:
         compatibility_mode = (
             "page_block_data_and_action_v1"
             if page_block_data_enabled and page_block_action_enabled
@@ -175,17 +161,6 @@ def negotiate_client_contract(
                 },
             },
         }
-    if 5 in minors:
-        return _legacy_result(
-            client_type=resolved_client,
-            accepted_versions=versions,
-            capabilities=capabilities,
-            compatibility_mode=(
-                "new_version_without_page_block_capability"
-                if 6 in minors
-                else "legacy_common_version"
-            ),
-        )
     raise ContractNegotiationError(
         REASON_CONTRACT_VERSION_UNSUPPORTED,
         "no common supported Contract V2 version",
@@ -198,6 +173,43 @@ def carrier_enabled(negotiation: dict[str, Any], carrier: str) -> bool:
     return bool(isinstance(row, dict) and row.get("enabled") is True)
 
 
+def with_internal_client_contract(
+    params: Any = None,
+    *,
+    client_type: Any = None,
+    capabilities: Any = None,
+) -> dict[str, Any]:
+    """Declare the protocol identity of a trusted backend-to-backend call.
+
+    This helper is only for internal consumers of a contract handler. External
+    requests must still declare their identity themselves, and explicit values
+    supplied by a caller are preserved so old or malformed declarations remain
+    fail-closed.
+    """
+
+    resolved = dict(params) if isinstance(params, dict) else {}
+    declarations = (
+        ("client_type", "clientType"),
+        ("accepted_contract_versions", "acceptedContractVersions"),
+        ("client_contract_capabilities", "clientContractCapabilities"),
+    )
+    defaults = {
+        "client_type": _text(client_type) or INTERNAL_CLIENT_TYPE,
+        "accepted_contract_versions": list(INTERNAL_ACCEPTED_CONTRACT_VERSIONS),
+        "client_contract_capabilities": (
+            list(capabilities) if isinstance(capabilities, (list, tuple, set)) else []
+        ),
+    }
+    for snake_name, camel_name in declarations:
+        present, value = _alias_value(resolved, snake_name, camel_name)
+        if present:
+            resolved[snake_name] = value
+            resolved.pop(camel_name, None)
+        else:
+            resolved[snake_name] = defaults[snake_name]
+    return resolved
+
+
 def negotiate_payload(
     payload: Any,
     *,
@@ -208,20 +220,19 @@ def negotiate_payload(
     envelope = payload if isinstance(payload, dict) else {}
     params = envelope.get("params") if isinstance(envelope.get("params"), dict) else envelope
     source_headers = headers if isinstance(headers, dict) else {}
-    client_type = (
+    client_header = (
         source_headers.get("X-SC-Client-Type")
         or source_headers.get("x-sc-client-type")
-        or params.get("client_type")
-        or params.get("clientType")
+    )
+    _client_present, declared_client = _alias_value(params, "client_type", "clientType")
+    _versions_present, accepted_versions = _alias_value(
+        params, "accepted_contract_versions", "acceptedContractVersions",
+    )
+    _capabilities_present, capabilities = _alias_value(
+        params, "client_contract_capabilities", "clientContractCapabilities",
     )
     return negotiate_client_contract(
-        client_type=client_type,
-        accepted_contract_versions=(
-            params.get("accepted_contract_versions")
-            or params.get("acceptedContractVersions")
-        ),
-        client_contract_capabilities=(
-            params.get("client_contract_capabilities")
-            or params.get("clientContractCapabilities")
-        ),
+        client_type=client_header or declared_client,
+        accepted_contract_versions=accepted_versions,
+        client_contract_capabilities=capabilities,
     )

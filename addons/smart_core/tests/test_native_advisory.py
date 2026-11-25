@@ -107,7 +107,7 @@ class NativeAdvisoryTests(unittest.TestCase):
             self.record.business_date, self.record.note = date, note
             result = self.assemble()
             rows = list(walk(result['layoutContract']['containerTree']))
-            hosts = [n for n, _ in rows if n.get('componentKey') == 'sc.feedback.message']
+            hosts = [n for n, _ in rows if n.get('semanticType') == 'feedback_message']
             self.assertEqual(len(hosts), 1)
             host = hosts[0]
             self.assertEqual(host['componentConfig']['purpose'], 'advisory')
@@ -146,7 +146,7 @@ class NativeAdvisoryTests(unittest.TestCase):
         result = self.assemble()
         host = next(
             node for node, _path in walk(result['layoutContract']['containerTree'])
-            if node.get('componentKey') == 'sc.feedback.message'
+            if node.get('semanticType') == 'feedback_message'
         )
         self.assertEqual(host['componentConfig']['evaluation'], {
             'capability': 'form.feedback.draft.v1',
@@ -288,13 +288,13 @@ class NativeAdvisoryTests(unittest.TestCase):
         self.host['children'][0]['source_authority'] = {'model': 'other.model'}
         self.rejects('FEEDBACK_SOURCE_INVALID')
         self.host['children'][0].pop('source_authority')
-        self.host['componentKey'] = 'sc.feedback.message'
+        self.host['semanticType'] = 'feedback_message'
         self.rejects('FEEDBACK_OWNERSHIP_CONFLICT')
 
     def test_final_validation_rechecks_binding_and_condition(self):
         result = self.assemble()
         originals = copy.deepcopy(result['layoutContract']['containerTree'])
-        host = next(n for n, _ in walk(result['layoutContract']['containerTree']) if n.get('componentKey') == 'sc.feedback.message')
+        host = next(n for n, _ in walk(result['layoutContract']['containerTree']) if n.get('semanticType') == 'feedback_message')
         host['modifiers']['invisible']['raw'] = 'not note'
         with self.assertRaisesRegex(FormConfigurationError, 'FEEDBACK_CONDITION_INVALID'):
             validate_final_nodes(self.env, result, originals)

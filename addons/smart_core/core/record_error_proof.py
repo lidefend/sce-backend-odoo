@@ -146,7 +146,7 @@ def validate_record_errors(record, final_nodes, native_nodes, *, action_rules):
     No values/proof tokens are returned; call again for every assembly/record/env.
     """
     nodes, native = list(_nodes(final_nodes)), list(_nodes(native_nodes))
-    errors = [node for node in nodes if node.get("componentKey") == "sc.feedback.message"
+    errors = [node for node in nodes if node.get("semanticType") == "feedback_message"
               and isinstance(node.get("componentConfig"), dict)
               and node["componentConfig"].get("purpose") == "error"]
     if not errors:

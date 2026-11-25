@@ -677,7 +677,7 @@ class BusinessConfigSurfaceTests(unittest.TestCase):
 
     def test_product_catalog_consumes_canonical_navigation_carrier(self):
         from unittest.mock import patch
-        startup = types.SimpleNamespace(SystemInitHandler=lambda **kwargs: types.SimpleNamespace(handle=lambda **kw: types.SimpleNamespace(data={
+        startup = types.SimpleNamespace(SystemInitHandler=lambda **kwargs: types.SimpleNamespace(handle=lambda **kw: types.SimpleNamespace(ok=True, data={
             "navigation": {"nav": [{"label": "Administration", "children": [{"label": "Certificate", "menu_id": 356, "meta": {"action_id": 666}}]}]},
             "nav": [{"action_id": 999}],
         })))
@@ -685,6 +685,24 @@ class BusinessConfigSurfaceTests(unittest.TestCase):
             catalog = self.module.BusinessConfigCoverageScanHandler(env=_Env())._business_catalog()
         self.assertEqual(set(catalog), {666})
         self.assertEqual(catalog[666], {"menu_id": 356, "module_label": "Administration", "entry_label": "Certificate"})
+
+    def test_product_catalog_propagates_system_init_failure(self):
+        from unittest.mock import patch
+        startup = types.SimpleNamespace(
+            SystemInitHandler=lambda **kwargs: types.SimpleNamespace(
+                handle=lambda **kw: types.SimpleNamespace(
+                    ok=False,
+                    error={
+                        "code": 409,
+                        "message": "contract identity rejected",
+                        "reason_code": "CONTRACT_VERSION_UNSUPPORTED",
+                    },
+                )
+            )
+        )
+        with patch.dict(sys.modules, {"odoo.addons.smart_core.handlers.system_init": startup}):
+            with self.assertRaisesRegex(Exception, "contract identity rejected"):
+                self.module.BusinessConfigCoverageScanHandler(env=_Env())._business_catalog()
 
     def test_product_catalog_intersects_released_targets_and_read_permissions(self):
         from unittest.mock import patch

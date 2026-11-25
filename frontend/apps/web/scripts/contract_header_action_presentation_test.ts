@@ -224,10 +224,10 @@ const explicitStatuses = (...rows: Array<Record<string, unknown>>) => Object.fro
 const decodeSnapshotWithActions = (actionRuleList: Array<Record<string, unknown>>) => decodeContractV2Snapshot({
   pageInfo: {
     pageId: 'x.document.form', sceneKey: 'x.document.form', pageName: 'Document', model: 'x.document',
-    viewType: 'form', layoutType: 'form', renderMode: 'governed', contractVersion: '2.2.0', clientType: 'web_pc',
+    viewType: 'form', layoutType: 'form', renderMode: 'governed', contractVersion: '2.7.0', clientType: 'web_pc',
   },
   layoutContract: {
-    pageId: 'x.document.form', layoutType: 'form', adaptMode: 'pc', containerTree: [], layoutHints: {}, componentRegistry: {},
+    pageId: 'x.document.form', layoutType: 'form', adaptMode: 'pc', containerTree: [], layoutHints: {},
   },
   statusContract: {
     globalStatus: { pageVisible: true },
@@ -247,7 +247,7 @@ const decodeSnapshotWithActions = (actionRuleList: Array<Record<string, unknown>
     etag: 'upc-v2-sha256-test', snapshotId: 'snapshot.upc.v2.test', traceId: 'trace.test', requestId: 'request.test', sourceType: 'ui.contract',
     lifecycle: {
       lifecycleVersion: '1.0.0', stage: 'runtime_delivery',
-      definition: { schemaId: 'smart_core.unified_page_contract_v2', schemaVersion: '2.2.0', schemaSha256: 'test', contractVersion: '2.2.0', normativeStatus: 'stable' },
+      definition: { schemaId: 'smart_core.unified_page_contract_v2', schemaVersion: '2.7.0', schemaSha256: 'test', contractVersion: '2.7.0', normativeStatus: 'stable' },
       generation: { generator: 'test', generatorVersion: '2.2.0', sourceType: 'ui.contract', sourceSha256: 'test' },
       runtime: { requestId: 'request.test', traceId: 'trace.test', clientType: 'web_pc', traceSource: 'request_context' },
       integrity: { algorithm: 'sha256', contractSha256: 'test' }, authority: {},

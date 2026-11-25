@@ -39,7 +39,7 @@ class TestConditionedProcessingFeedback(TransactionCase):
         view = self.env.ref('smart_construction_core.' + xmlid)
         contract, _ = draft_feedback._assemble_contract(model, view.id)
         hosts = [node for node, _ in native_advisory.walk(contract['layoutContract']['containerTree'])
-                 if node.get('componentKey') == draft_feedback.COMPONENT_KEY]
+                 if node.get('semanticType') == draft_feedback.SEMANTIC_TYPE]
         self.assertEqual(len(hosts), 1)
         request = {'version': draft_feedback.VERSION, 'operation': 'describe',
                    'request_id': 'conditional_describe', 'view_id': view.id,
@@ -225,6 +225,7 @@ class TestConditionedProcessingFeedback(TransactionCase):
             'view_type': 'form',
             'render_profile': 'edit',
             'client_type': 'web_pc',
+            'accepted_contract_versions': ['2.7.x'],
             'delivery_profile': 'full',
             'client_contract_capabilities': [
                 'container_tree.v2',
@@ -248,6 +249,6 @@ class TestConditionedProcessingFeedback(TransactionCase):
             node for node, _path in native_advisory.walk(
                 response['data']['layoutContract']['containerTree']
             )
-            if node.get('componentKey') == draft_feedback.COMPONENT_KEY
+            if node.get('semanticType') == draft_feedback.SEMANTIC_TYPE
         ]
         self.assertEqual(len(hosts), 1)

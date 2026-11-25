@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """GENERATED CONTRACT-RUNTIME CARRIER - do not edit by hand.
 
-Declaration authority: contracts/registry/semantic.yaml -> contracts/registry/component.yaml
+Semantic declaration authority: contracts/registry/semantic.yaml
 Regenerate with:
 
     python3 scripts/contract/generate_semantic_registry.py
@@ -12,8 +12,8 @@ Drift between this carrier and the declaration is a lint failure
 
 from __future__ import annotations
 
-GENERATED_FROM = ('contracts/registry/semantic.yaml', 'contracts/registry/component.yaml')
-REGISTRY_DOCUMENT_VERSION = 2
+GENERATED_FROM = ('contracts/registry/semantic.yaml')
+REGISTRY_DOCUMENT_VERSION = 3
 DERIVATION_DEFAULT = 'readable_value'
 
 # Ordered: the first rule whose conditions all hold decides.  Derived from the
@@ -52,37 +52,46 @@ DERIVATION_RULES = (
     {"semantic": 'readable_value', "widgets": ('display',)},
 )
 
-# semantic -> the component key the frontend renders.
-SEMANTIC_COMPONENTS = {
-    'action': 'sc.button.action',
-    'activity_collection': 'sc.relation.activity',
-    'binary': 'sc.input.binary',
-    'boolean': 'sc.input.boolean',
-    'challenge_status': 'sc.auth.challenge_status',
-    'choice': 'sc.select.remote',
-    'credential_entry': 'sc.auth.credential_entry',
-    'date': 'sc.input.date',
-    'datetime': 'sc.input.datetime',
-    'detail_collection': 'sc.relation.table',
-    'detail_table': 'sc.table.data',
-    'duration': 'sc.value.duration',
-    'hierarchical_collection': 'sc.tree.data',
-    'long_text': 'sc.input.textarea',
-    'money': 'sc.value.money',
-    'number': 'sc.input.number',
-    'one_time_secret': 'sc.auth.one_time_secret',
-    'payment_settlement_detail_collection': 'sc.payment.settlement_detail_collection',
-    'percentage': 'sc.value.percentage',
-    'readable_value': 'sc.display.text',
-    'reference': 'sc.display.text',
-    'relation': 'sc.relation.many2one',
-    'relation_collection': 'sc.relation.many2many',
-    'secret_confirmation': 'sc.auth.secret_confirmation',
-    'status': 'sc.display.status',
-    'support_action': 'sc.auth.support_action',
-    'tag_collection': 'sc.select.tags',
-    'text': 'sc.input.text',
-    'unsupported_native_widget': 'sc.unsupported.native_widget',
+# Client-independent field semantics and applicability.
+FIELD_SEMANTICS = {
+    'action': {'category': 'behavioral', 'appliesTo': 'field', 'fieldTypes': ('action',)},
+    'activity_collection': {'category': 'collection', 'appliesTo': 'field', 'fieldTypes': ('one2many',)},
+    'binary': {'category': 'basic', 'appliesTo': 'field', 'fieldTypes': ('binary',)},
+    'boolean': {'category': 'basic', 'appliesTo': 'field', 'fieldTypes': ('boolean',)},
+    'challenge_status': {'category': 'auth', 'appliesTo': 'field', 'fieldTypes': ('char', 'selection', 'text')},
+    'choice': {'category': 'basic', 'appliesTo': 'field', 'fieldTypes': ('selection',)},
+    'credential_entry': {'category': 'auth', 'appliesTo': 'field', 'fieldTypes': ('char',)},
+    'date': {'category': 'temporal', 'appliesTo': 'field', 'fieldTypes': ('date',)},
+    'datetime': {'category': 'temporal', 'appliesTo': 'field', 'fieldTypes': ('datetime',)},
+    'detail_collection': {'category': 'collection', 'appliesTo': 'field', 'fieldTypes': ('one2many',)},
+    'detail_table': {'category': 'collection', 'appliesTo': 'field', 'fieldTypes': ('one2many', 'many2many')},
+    'duration': {'category': 'temporal', 'appliesTo': 'field', 'fieldTypes': ('float', 'integer')},
+    'hierarchical_collection': {'category': 'collection', 'appliesTo': 'field', 'fieldTypes': ('one2many', 'many2many')},
+    'long_text': {'category': 'basic', 'appliesTo': 'field', 'fieldTypes': ('text', 'html')},
+    'money': {'category': 'business', 'appliesTo': 'field', 'fieldTypes': ('monetary', 'float')},
+    'number': {'category': 'basic', 'appliesTo': 'field', 'fieldTypes': ('integer', 'float', 'monetary')},
+    'one_time_secret': {'category': 'auth', 'appliesTo': 'field', 'fieldTypes': ('char', 'text')},
+    'payment_settlement_detail_collection': {'category': 'industry', 'appliesTo': 'field', 'fieldTypes': ('one2many',)},
+    'percentage': {'category': 'business', 'appliesTo': 'field', 'fieldTypes': ('float', 'integer')},
+    'readable_value': {'category': 'basic', 'appliesTo': 'field', 'fieldTypes': ('*',)},
+    'reference': {'category': 'basic', 'appliesTo': 'field', 'fieldTypes': ('many2one_reference', 'reference')},
+    'relation': {'category': 'relation', 'appliesTo': 'field', 'fieldTypes': ('many2one',)},
+    'relation_collection': {'category': 'relation', 'appliesTo': 'field', 'fieldTypes': ('many2many',)},
+    'secret_confirmation': {'category': 'auth', 'appliesTo': 'field', 'fieldTypes': ('char',)},
+    'status': {'category': 'business', 'appliesTo': 'field', 'fieldTypes': ('selection', 'char')},
+    'support_action': {'category': 'auth', 'appliesTo': 'field', 'fieldTypes': ('action',)},
+    'tag_collection': {'category': 'relation', 'appliesTo': 'field', 'fieldTypes': ('many2many',)},
+    'text': {'category': 'basic', 'appliesTo': 'field', 'fieldTypes': ('char',)},
+    'unsupported_native_widget': {'category': 'behavioral', 'appliesTo': 'field', 'fieldTypes': ('*',)},
+}
+
+NODE_SEMANTICS = {
+    'action_list': {'category': 'behavioral'},
+    'display_ribbon': {'category': 'behavioral'},
+    'feedback_message': {'category': 'behavioral'},
+    'insight_summary': {'category': 'industry'},
+    'navigation_anchor': {'category': 'behavioral'},
+    'unsupported_native_node': {'category': 'behavioral'},
 }
 
 # explicit native View Widget token -> declared support status.
@@ -105,6 +114,7 @@ NATIVE_WIDGET_STATUS = {
     'email': {'status': 'ready', 'reasonCode': ''},
     'field_partner_autocomplete': {'status': 'fallback', 'reasonCode': 'NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK'},
     'float_time': {'status': 'ready', 'reasonCode': ''},
+    'gantt': {'status': 'ready', 'reasonCode': ''},
     'handle': {'status': 'fallback', 'reasonCode': 'NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK'},
     'html': {'status': 'ready', 'reasonCode': ''},
     'image': {'status': 'fallback', 'reasonCode': 'NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK'},
@@ -140,54 +150,17 @@ NATIVE_WIDGET_STATUS = {
     'url': {'status': 'ready', 'reasonCode': ''},
 }
 
-# Embedded Form <widget name="..."/> nodes -> node component identity.
-NATIVE_VIEW_WIDGET_COMPONENTS = {
-    'sc_insight_banner': {'component': 'sc.insight.summary', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True, 'payloadSchema': 'insight_summary.v1'},
-    'sc_next_actions': {'component': 'sc.action.list', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True, 'payloadSchema': 'action_list.v1'},
-    'sc_stage_requirements': {'component': 'sc.action.list', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True, 'payloadSchema': 'action_list.v1'},
-    'web_ribbon': {'component': 'sc.display.ribbon', 'status': 'ready', 'reasonCode': '', 'payloadRequired': False, 'payloadSchema': ''},
+# Embedded Form <widget name="..."/> nodes -> semantic and payload protocol.
+NATIVE_VIEW_WIDGET_SEMANTICS = {
+    'sc_insight_banner': {'semantic': 'insight_summary', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True, 'payloadSchema': 'insight_summary.v1'},
+    'sc_next_actions': {'semantic': 'action_list', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True, 'payloadSchema': 'action_list.v1'},
+    'sc_stage_requirements': {'semantic': 'action_list', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True, 'payloadSchema': 'action_list.v1'},
+    'web_ribbon': {'semantic': 'display_ribbon', 'status': 'ready', 'reasonCode': '', 'payloadRequired': False, 'payloadSchema': ''},
 }
 NATIVE_VIEW_WIDGET_DEFAULT = {
-    'component': 'sc.unsupported.native_node',
+    'semantic': 'unsupported_native_node',
     'status': 'unsupported',
     'reasonCode': 'NATIVE_VIEW_WIDGET_UNSUPPORTED',
 }
 
-# Backend registration identity only; no client support is implied.
-FIELD_CONTRACT_VERSION = '1.0'
-COMPONENT_REGISTRATIONS = {
-    'sc.action.list': {'kind': 'node', 'version': '1.0.0'},
-    'sc.auth.challenge_status': {'kind': 'field', 'version': '1.0'},
-    'sc.auth.credential_entry': {'kind': 'field', 'version': '1.0'},
-    'sc.auth.one_time_secret': {'kind': 'field', 'version': '1.0'},
-    'sc.auth.secret_confirmation': {'kind': 'field', 'version': '1.0'},
-    'sc.auth.support_action': {'kind': 'field', 'version': '1.0'},
-    'sc.button.action': {'kind': 'field', 'version': '1.0'},
-    'sc.display.ribbon': {'kind': 'node', 'version': '1.0.0'},
-    'sc.display.status': {'kind': 'field', 'version': '1.0'},
-    'sc.display.text': {'kind': 'field', 'version': '1.0'},
-    'sc.feedback.message': {'kind': 'node', 'version': '1.0.0'},
-    'sc.input.binary': {'kind': 'field', 'version': '1.0'},
-    'sc.input.boolean': {'kind': 'field', 'version': '1.0'},
-    'sc.input.date': {'kind': 'field', 'version': '1.0'},
-    'sc.input.datetime': {'kind': 'field', 'version': '1.0'},
-    'sc.input.number': {'kind': 'field', 'version': '1.0'},
-    'sc.input.text': {'kind': 'field', 'version': '1.0'},
-    'sc.input.textarea': {'kind': 'field', 'version': '1.0'},
-    'sc.insight.summary': {'kind': 'node', 'version': '1.0.0'},
-    'sc.navigation.anchor': {'kind': 'node', 'version': '1.0.0'},
-    'sc.payment.settlement_detail_collection': {'kind': 'field', 'version': '1.0'},
-    'sc.relation.activity': {'kind': 'field', 'version': '1.0'},
-    'sc.relation.many2many': {'kind': 'field', 'version': '1.0'},
-    'sc.relation.many2one': {'kind': 'field', 'version': '1.0'},
-    'sc.relation.table': {'kind': 'field', 'version': '1.0'},
-    'sc.select.remote': {'kind': 'field', 'version': '1.0'},
-    'sc.select.tags': {'kind': 'field', 'version': '1.0'},
-    'sc.table.data': {'kind': 'field', 'version': '1.0'},
-    'sc.tree.data': {'kind': 'field', 'version': '1.0'},
-    'sc.unsupported.native_node': {'kind': 'node', 'version': '1.0.0'},
-    'sc.unsupported.native_widget': {'kind': 'field', 'version': '1.0'},
-    'sc.value.duration': {'kind': 'field', 'version': '1.0'},
-    'sc.value.money': {'kind': 'field', 'version': '1.0'},
-    'sc.value.percentage': {'kind': 'field', 'version': '1.0'},
-}
+SEMANTIC_SPEC_VERSION = 3

@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import type { ContractV2Snapshot, ContractV2Container } from '../src/app/contracts/v2/types';
-import { projectNodeComponents, navigateToDeclaredNode } from '../src/app/presentation/nodeComponentPresentation';
+import {
+  navigateToDeclaredNode,
+  projectNodeComponents,
+  resolveNodeSemanticImplementation,
+} from '../src/app/presentation/nodeComponentPresentation';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import {
   createContractV2Store,
@@ -16,17 +20,11 @@ function baseSnapshot(): ContractV2Snapshot {
     pageInfo: {
       pageId: 'page.x.document.form', sceneKey: 'x.document.form', pageName: 'Document',
       model: 'x.document', viewType: 'form', layoutType: 'form', renderMode: 'governed',
-      contractVersion: '2.2.0', clientType: 'web_pc',
+      contractVersion: '2.7.0', clientType: 'web_pc',
     },
     layoutContract: {
       pageId: 'page.x.document.form', layoutType: 'form', adaptMode: 'pc',
-      layoutHints: { mobileColumns: 1 }, componentRegistry: {
-        'sc.input.text': { version: '1.0' },
-        'sc.display.status': { version: '1.0' },
-        'sc.display.text': { version: '1.0' },
-        'sc.relation.many2one': { version: '1.0' },
-        'sc.relation.table': { version: '1.0' },
-      },
+      layoutHints: { mobileColumns: 1 },
       containerTree: [{
         containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24, columns: 2,
         children: [{
@@ -34,14 +32,14 @@ function baseSnapshot(): ContractV2Snapshot {
           label: 'Name', nolabel: true,
           children: [], widgetList: [{
             widgetId: 'field.name', widgetType: 'input', fieldCode: 'name', label: 'Name', span: 12,
-            componentKey: 'sc.input.text', capabilities: [], componentConfig: { fieldType: 'char' },
+            semanticType: 'text', capabilities: [], componentConfig: { fieldType: 'char' },
             ownerContainerId: 'field.name',
           }],
         }, {
           containerId: 'field.state', containerType: 'field', type: 'field', name: 'state', title: '', span: 12,
           children: [], widgetList: [{
             widgetId: 'field.state', widgetType: 'select', fieldCode: 'state', label: 'State', span: 12,
-            componentKey: 'sc.display.status', capabilities: [], componentConfig: { fieldType: 'selection' },
+            semanticType: 'status', capabilities: [], componentConfig: { fieldType: 'selection' },
             ownerContainerId: 'field.state',
           }],
         }, {
@@ -53,7 +51,7 @@ function baseSnapshot(): ContractV2Snapshot {
             nolabel: true,
             children: [], widgetList: [{
               widgetId: 'field.line_ids', widgetType: 'table', fieldCode: 'line_ids', label: 'Lines', span: 24,
-              componentKey: 'sc.relation.table', capabilities: [], componentConfig: { fieldType: 'one2many' },
+              semanticType: 'detail_collection', capabilities: [], componentConfig: { fieldType: 'one2many' },
               ownerContainerId: 'field.line_ids',
             }],
           }], widgetList: [],
@@ -125,18 +123,44 @@ export function fixture(purpose='advisory', field=false) {
   const source: ContractV2Container={containerId:'content',type:field?'field':'span',containerType:field?'field':'span',
     name:field?'message':undefined,text:field?'':'Read this',span:24,children:[],widgetList:[],nativeLocator:'/form/content',occurrenceIndex:1,
     sourceAuthority:{kind:'native_view'},fieldInfo:field?{type:'text',readonly:true}:{}};
+  const sourceIdentity = {
+    schemaVersion: '1.0.0' as const,
+    model: 'x.document',
+    viewType: 'form',
+    viewId: 71,
+    viewXmlId: 'x.document_form',
+    viewContentHash: 'd'.repeat(64),
+    viewStructureKey: `struct.v1.${'e'.repeat(24)}`,
+    crossEnvironmentStable: true,
+    kind: field ? 'field' as const : 'container' as const,
+    name: field ? 'message' : 'content',
+    nativeLocator: '/form/content',
+    occurrenceIndex: 1,
+    sourcePosition: 0,
+    occurrenceKey: `occ.v1.${'f'.repeat(24)}`,
+    authoritative: true,
+    sourceAuthority: { kind: 'ir.ui.view' as const, projectionOnly: true as const, noBusinessFactAuthority: true as const },
+  };
+  source.nativeIdentity = sourceIdentity;
   s.layoutContract.containerTree=[{containerId:'feedback',title:'',type:'div',containerType:'div',columns:1,span:24,children:[source],widgetList:[],
-    componentKey:'sc.feedback.message',componentConfig:{purpose,contentRef:{containerId:'content'}},modifiers:{invisible:purpose==='explanation'?{kind:'static',value:false}:{kind:'not',expr:{kind:'field_truthy',field:'active'}}}}];
+    semanticType:'feedback_message',componentConfig:{purpose,contentRef:{containerId:'content'}},modifiers:{invisible:purpose==='explanation'?{kind:'static',value:false}:{kind:'not',expr:{kind:'field_truthy',field:'active'}}}}];
   if(field) {
     Object.assign(source,{widgetId:'content',fieldCode:'message',sourcePosition:0});
     source.widgetList=[{widgetId:'content',widgetType:'input',fieldCode:'message',label:'Message',span:24,
-      ownerContainerId:'content',componentKey:'sc.input.textarea',capabilities:[],
+      ownerContainerId:'content',semanticType:'long_text',capabilities:[],
+      nativeLocator:'/form/content',occurrenceIndex:1,sourcePosition:0,nativeIdentity:sourceIdentity,
       componentConfig:{fieldType:'text',native_locator:'/form/content',occurrence_index:1,source_position:0},
-      fieldDescriptor:{name:'message',type:'text',readonly:true}}];
-    s.layoutContract.componentRegistry['sc.input.textarea']={version:'1.0'};
+      fieldDescriptor:{
+        schemaVersion:'1.0.0',
+        fieldCode:'message',
+        label:'Message',
+        fieldType:'text',
+        widgetType:'input',
+        semanticType:'long_text',
+        readonly:true,
+      }}];
     s.statusContract.widgetStatus=[{widgetId:'content',visible:true,readonly:true,required:false,disabled:false,auth:'read'}];
   }
-  s.layoutContract.componentRegistry['sc.feedback.message']={version:'1.0.0'};
   s.dataContract.mainData.message='Read this';
   return s;
 }
@@ -161,18 +185,30 @@ for(const purpose of ['advisory','error','warning','explanation']) test('empty '
   if(['error','warning'].includes(purpose)) assert.throws(()=>projectNodeComponents(s),{name:'ContractGapError'});
   else assert.equal(projectNodeComponents(s).presentations.get('feedback')?.visible,false);
 });
-for(const mutation of ['key','purpose','version','extra','missing','duplicate','source','condition','owner']) test(mutation,()=>{
+for(const mutation of ['semantic','purpose','extra','missing','duplicate','source','condition','owner']) test(mutation,()=>{
   const s=fixture();const n=s.layoutContract.containerTree[0];
-  if(mutation==='key') n.componentKey='sc.unknown';
+  if(mutation==='semantic') n.semanticType='future_node_semantic';
   if(mutation==='purpose') n.componentConfig!.purpose='danger';
-  if(mutation==='version') s.layoutContract.componentRegistry['sc.feedback.message']={version:'9.0.0'};
   if(mutation==='extra') n.componentConfig!.html='bad';
   if(mutation==='missing') n.children=[];
   if(mutation==='duplicate') n.children.push({...n.children[0]});
   if(mutation==='source') n.children[0].nativeLocator='';
   if(mutation==='condition') n.modifiers={};
   if(mutation==='owner') s.layoutContract.containerTree.push({...n,containerId:'other',children:[]});
-  assert.throws(()=>projectNodeComponents(s),{name:'ContractGapError'});
+  assert.throws(
+    () => projectNodeComponents(s),
+    {name: 'ContractGapError'},
+  );
+});
+test('declared node semantic without frontend implementation is a capability gap',()=>{
+  assert.throws(
+    () => resolveNodeSemanticImplementation('feedback_message', {}),
+    {name: 'FrontendCapabilityGapError'},
+  );
+  assert.throws(
+    () => resolveNodeSemanticImplementation('feedback_messsage', {}),
+    {name: 'ContractGapError'},
+  );
 });
 test('actual decoder presenter bridge',()=>{
   const b=bridge();assert.equal(b.primaryNodes[0].containerId,'feedback');
@@ -180,9 +216,17 @@ test('actual decoder presenter bridge',()=>{
   assert.equal((b.primaryNodes[0].children![0] as { feedbackContentOwned?: boolean }).feedbackContentOwned,true);
 });
 export function navigationFixture() {
-  const s=fixture();s.layoutContract.componentRegistry['sc.navigation.anchor']={version:'1.0.0'};
-  s.layoutContract.containerTree=[{containerId:'link',title:'',nativeLocator:'/form/link',occurrenceIndex:1,sourceAuthority:{kind:'native_view'},type:'div',containerType:'div',span:24,columns:1,text:'Details',children:[],widgetList:[],componentKey:'sc.navigation.anchor',componentConfig:{targetContainerId:'target'}},
-    {containerId:'target',nativeLocator:'/form/target',occurrenceIndex:1,sourceAuthority:{kind:'native_view'},type:'group',containerType:'group',span:24,columns:1,title:'Details',text:'Target',children:[],widgetList:[]}];
+  const s=fixture();
+  const identity = (name:string, locator:string, fill:string) => ({
+    schemaVersion:'1.0.0' as const, model:'x.document', viewType:'form', viewId:72,
+    viewXmlId:'x.document_navigation_form', viewContentHash:'3'.repeat(64),
+    viewStructureKey:`struct.v1.${'3'.repeat(24)}`, crossEnvironmentStable:true,
+    kind:'container' as const, name, nativeLocator:locator, occurrenceIndex:1,
+    sourcePosition:1, occurrenceKey:`occ.v1.${fill.repeat(24)}`, authoritative:true,
+    sourceAuthority:{kind:'ir.ui.view' as const, projectionOnly:true as const, noBusinessFactAuthority:true as const},
+  });
+  s.layoutContract.containerTree=[{containerId:'link',title:'',nativeLocator:'/form/link',occurrenceIndex:1,nativeIdentity:identity('link','/form/link','1'),sourceAuthority:{kind:'native_view'},type:'div',containerType:'div',span:24,columns:1,text:'Details',children:[],widgetList:[],semanticType:'navigation_anchor',componentConfig:{targetContainerId:'target'}},
+    {containerId:'target',nativeLocator:'/form/target',occurrenceIndex:1,nativeIdentity:identity('target','/form/target','2'),sourceAuthority:{kind:'native_view'},type:'group',containerType:'group',span:24,columns:1,title:'Details',text:'Target',children:[],widgetList:[]}];
   return s;
 }
 function nativeWidgetOccurrence(name: string, locator: string, index: number) {
@@ -207,11 +251,10 @@ function nativeWidgetOccurrence(name: string, locator: string, index: number) {
 }
 export function ribbonFixture() {
   const s = baseSnapshot();
-  s.pageInfo.contractVersion = '2.5.0';
+  s.pageInfo.contractVersion = '2.7.0';
   s.statusContract.widgetStatus = [];
   s.statusContract.buttonStatus = [];
   s.actionContract.actionRuleList = [];
-  s.layoutContract.componentRegistry['sc.display.ribbon'] = { version: '1.0.0' };
   s.layoutContract.containerTree = [{
     containerId: 'widget.web_ribbon.1',
     containerType: 'widget',
@@ -228,7 +271,7 @@ export function ribbonFixture() {
     sourcePosition: 1,
     nativeIdentity: nativeWidgetOccurrence('web_ribbon', '/form[1]/widget[1]', 1),
     sourceAuthority: { kind: 'native_view', projectionOnly: true, noBusinessFactAuthority: true },
-    componentKey: 'sc.display.ribbon',
+    semanticType: 'display_ribbon',
     componentConfig: {
       nativeWidget: 'web_ribbon',
       widgetStatus: 'ready',
@@ -251,7 +294,7 @@ export function unsupportedNativeNodeFixture(name = 'sc_stage_requirements') {
   node.title = 'Stages';
   node.label = 'Stages';
   node.nativeIdentity = nativeWidgetOccurrence(name, `/form[1]/widget[1]`, 1);
-  node.componentKey = 'sc.unsupported.native_node';
+  node.semanticType = 'unsupported_native_node';
   node.componentConfig = {
     nativeWidget: name,
     widgetStatus: 'unsupported',
@@ -261,11 +304,10 @@ export function unsupportedNativeNodeFixture(name = 'sc_stage_requirements') {
     options: { limit: 3 },
     reasonCode: 'NATIVE_VIEW_WIDGET_UNSUPPORTED',
   };
-  s.layoutContract.componentRegistry['sc.unsupported.native_node'] = { version: '1.0.0' };
   s.statusContract.containerStatus = [{ containerId: node.containerId, visible: true, disabled: true, reasonCode: 'NATIVE_VIEW_WIDGET_UNSUPPORTED' }];
   return s;
 }
-function payloadNodeFixture(componentKey: 'sc.insight.summary' | 'sc.action.list', nativeWidget: string, payloadSchema: string, payload: Record<string, unknown>) {
+function payloadNodeFixture(semanticType: 'insight_summary' | 'action_list', nativeWidget: string, payloadSchema: string, payload: Record<string, unknown>) {
   const s = ribbonFixture();
   const node = s.layoutContract.containerTree[0];
   node.containerId = `widget.${nativeWidget}.1`;
@@ -276,7 +318,7 @@ function payloadNodeFixture(componentKey: 'sc.insight.summary' | 'sc.action.list
   node.nativeIdentity = nativeWidgetOccurrence(nativeWidget, '/form[1]/sheet[1]/widget[1]', 1);
   node.nativeLocator = '/form[1]/sheet[1]/widget[1]';
   node.occurrenceIndex = 1;
-  node.componentKey = componentKey;
+  node.semanticType = semanticType;
   node.componentConfig = {
     nativeWidget,
     widgetStatus: 'ready',
@@ -293,12 +335,11 @@ function payloadNodeFixture(componentKey: 'sc.insight.summary' | 'sc.action.list
       noBusinessFactAuthority: false,
     },
   };
-  s.layoutContract.componentRegistry = { [componentKey]: { version: '1.0.0' } };
   s.statusContract.containerStatus = [{ containerId: node.containerId, visible: true, disabled: false }];
   return s;
 }
 export function insightSummaryFixture() {
-  return payloadNodeFixture('sc.insight.summary', 'sc_insight_banner', 'insight_summary.v1', {
+  return payloadNodeFixture('insight_summary', 'sc_insight_banner', 'insight_summary.v1', {
     tone: 'warning',
     title: '项目已创建，可以继续推进。',
     message: '建议先补全项目地点。',
@@ -306,7 +347,7 @@ export function insightSummaryFixture() {
   });
 }
 export function actionListFixture(nativeWidget = 'sc_stage_requirements') {
-  return payloadNodeFixture('sc.action.list', nativeWidget, 'action_list.v1', {
+  return payloadNodeFixture('action_list', nativeWidget, 'action_list.v1', {
     title: nativeWidget === 'sc_next_actions' ? '下一步动作' : '阶段要求',
     emptyText: '当前没有需要处理的事项',
     items: [{
@@ -376,7 +417,6 @@ test('real producer fixture flows through decoder and both consumption paths', (
   const supported = structuredClone(producer);
   supported.layoutContract.containerTree = supported.layoutContract.containerTree.slice(0, 2);
   supported.statusContract.containerStatus = supported.statusContract.containerStatus.slice(0, 2);
-  delete supported.layoutContract.componentRegistry['sc.unsupported.native_node'];
 
   const decoded = decodeContractV2Snapshot(supported);
   const store = createContractV2Store(decoded);
@@ -444,7 +484,6 @@ for (const mutation of [
   'options-raw-type',
   'parsed-missing-options',
   'missing-reason',
-  'version',
 ]) test('ribbon '+mutation,()=>{
   const s = ribbonFixture();
   const node = s.layoutContract.containerTree[0];
@@ -454,8 +493,7 @@ for (const mutation of [
   if (mutation === 'options-raw-type') node.componentConfig!.optionsRaw = { limit: 3 };
   if (mutation === 'parsed-missing-options') delete node.componentConfig!.options;
   if (mutation === 'missing-reason') {
-    node.componentKey = 'sc.unsupported.native_node';
-    s.layoutContract.componentRegistry['sc.unsupported.native_node'] = { version: '1.0.0' };
+    node.semanticType = 'unsupported_native_node';
     node.componentConfig = {
       nativeWidget: 'unknown_widget',
       widgetStatus: 'unsupported',
@@ -463,7 +501,6 @@ for (const mutation of [
       optionsResolution: 'none',
     };
   }
-  if (mutation === 'version') s.layoutContract.componentRegistry['sc.display.ribbon'] = { version: '9.0.0' };
   assert.throws(() => projectNodeComponents(s), { name: 'ContractGapError' }, mutation);
 });
 test('DOM target checked again on activation',()=>{

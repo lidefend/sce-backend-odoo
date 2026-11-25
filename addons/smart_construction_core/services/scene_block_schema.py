@@ -427,7 +427,6 @@ def _page_block_data_projection(
                     label=text(block.get("title")) or key,
                     field_type="integer",
                     widget_type="number",
-                    component_key="sc.input.number",
                     semantic_type="number",
                 )
             )

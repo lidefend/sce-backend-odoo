@@ -6,9 +6,10 @@
     data-semantic-state-surface="page"
     :data-contract-gap="stateResolution.gap"
     :data-contract-gap-kind="contractDefect?.kind || 'contract_defect'"
-    :data-contract-gap-layer="contractDefect?.requiredDeclarationLayer || undefined"
-    :data-consumer-error-name="contractDefect?.consumerContext?.errorName || undefined"
-    :data-consumer-error-stage="contractDefect?.consumerContext?.stage || undefined"
+    :data-contract-gap-layer="contractDefectOwnerLayer || undefined"
+    :data-contract-semantic-type="contractDefect?.kind === 'frontend_capability_gap' ? contractDefect.semanticType : undefined"
+    :data-consumer-error-name="contractConsumerContext?.errorName || undefined"
+    :data-consumer-error-stage="contractConsumerContext?.stage || undefined"
     :data-consumer-component-trace="consumerComponentTraceText || undefined"
   >
     <h2>{{ contractGapTitle }}</h2>
@@ -16,15 +17,20 @@
     <p v-if="message" class="trace">{{ message }}</p>
     <p class="trace">错误类型：{{ contractGapErrorType }}</p>
     <p class="trace">失败分类：{{ contractGapFailureLabel }}</p>
-    <p v-if="contractDefect?.consumerContext?.stage" class="trace">
-      失败阶段：{{ contractDefect.consumerContext.stage }}
+    <p v-if="contractConsumerContext?.stage" class="trace">
+      失败阶段：{{ contractConsumerContext.stage }}
     </p>
     <p v-if="consumerComponentTraceText" class="trace">
       组件链：{{ consumerComponentTraceText }}
     </p>
     <p class="trace">{{ contractGapLocationLabel }}：{{ stateResolution.gap }}</p>
-    <p v-if="contractDefect?.requiredDeclarationLayer" class="trace">
-      责任层：{{ contractDefect.requiredDeclarationLayer }}
+    <p v-if="contractDefect?.kind === 'frontend_capability_gap'" class="trace">
+      语义：{{ contractDefect.semanticType }}
+      <span v-if="contractDefect.fieldType"> · 字段类型：{{ contractDefect.fieldType }}</span>
+      <span v-if="contractDefect.presentationMode"> · 模式：{{ contractDefect.presentationMode }}</span>
+    </p>
+    <p v-if="contractDefectOwnerLayer" class="trace">
+      责任层：{{ contractDefectOwnerLayer }}
     </p>
   </section>
   <section
@@ -36,7 +42,7 @@
     :data-state="busy ? 'loading' : variant === 'error' ? 'error' : productState?.kind"
     :data-contract-gap="contractDefect?.missing || undefined"
     :data-contract-gap-kind="contractDefect?.kind || undefined"
-    :data-contract-gap-layer="contractDefect?.requiredDeclarationLayer || undefined"
+    :data-contract-gap-layer="contractDefectOwnerLayer || undefined"
     :role="variant === 'error' ? 'alert' : 'status'"
     :aria-live="variant === 'error' ? 'assertive' : 'polite'"
     :aria-busy="busy || undefined"
@@ -77,7 +83,7 @@
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { contractGapError } from '../app/contract/contractGap';
-import type { ContractDefectRef } from '../app/contract/contractGap';
+import type { ContractConsumerDefectRef } from '../app/contract/contractGap';
 import { useSessionStore } from '../stores/session';
 import { useSuggestedAction } from '../composables/useSuggestedAction';
 import { isHudEnabled } from '../config/debug';
@@ -92,7 +98,7 @@ const props = defineProps<{
   reasonCode?: string;
   errorCategory?: string;
   errorDetails?: Record<string, unknown>;
-  contractDefect?: ContractDefectRef | null;
+  contractDefect?: ContractConsumerDefectRef | null;
   retryable?: boolean;
   hint?: string;
   suggestedAction?: string;
@@ -150,30 +156,47 @@ const stateResolution = computed(() => {
 });
 const productState = computed(() => stateResolution.value.state);
 const contractGapTitle = computed(() => {
+  if (props.contractDefect?.kind === 'frontend_capability_gap') return '前端渲染能力缺失';
   const failureClass = props.contractDefect?.failureClass || 'contract_missing';
   if (failureClass === 'contract_mismatch') return '生产契约与平台解码规则不一致';
   if (failureClass === 'consumer_error') return '前端实现异常已停机';
   return '业务契约声明缺失';
 });
 const contractGapStopMessage = computed(() => (
-  props.contractDefect?.failureClass === 'consumer_error'
+  props.contractDefect?.kind === 'frontend_capability_gap'
+    ? '契约语义合法，但当前前端没有可用实现，系统已停止继续操作。'
+    : props.contractDefect?.failureClass === 'consumer_error'
     ? '系统已停止继续操作，以避免在错误的前端实现状态下执行业务。'
     : '系统已停止继续操作，以避免在不完整或错误的契约上执行业务。'
 ));
 const contractGapErrorType = computed(() => (
-  props.contractDefect?.consumerContext?.errorName || 'ContractGapError'
+  contractConsumerContext.value?.errorName
+    || (props.contractDefect?.kind === 'frontend_capability_gap' ? 'FrontendCapabilityGapError' : 'ContractGapError')
 ));
 const contractGapLocationLabel = computed(() => (
-  props.contractDefect?.consumerContext ? '失败位置' : '契约路径'
+  props.contractDefect?.kind === 'frontend_capability_gap'
+    ? '缺失能力'
+    : contractConsumerContext.value ? '失败位置' : '契约路径'
 ));
 const contractGapFailureLabel = computed(() => {
+  if (props.contractDefect?.kind === 'frontend_capability_gap') {
+    return 'frontend_capability_gap（前端实现注册表缺失）';
+  }
   const failureClass = props.contractDefect?.failureClass || 'contract_missing';
   if (failureClass === 'contract_mismatch') return 'contract_mismatch（等待 P0 契约/解码裁定）';
   if (failureClass === 'consumer_error') return 'consumer_error（前端实现错误）';
   return 'contract_missing（声明层缺失）';
 });
 const consumerComponentTraceText = computed(() => (
-  (props.contractDefect?.consumerContext?.componentTrace || []).join(' > ')
+  (contractConsumerContext.value?.componentTrace || []).join(' > ')
+));
+const contractConsumerContext = computed(() => (
+  props.contractDefect?.kind === 'contract_defect' ? props.contractDefect.consumerContext : undefined
+));
+const contractDefectOwnerLayer = computed(() => (
+  props.contractDefect?.kind === 'frontend_capability_gap'
+    ? props.contractDefect.requiredImplementationLayer
+    : props.contractDefect?.requiredDeclarationLayer
 ));
 const displayTitle = computed(() => props.variant === 'error' ? productState.value?.title : props.title);
 const displayMessage = computed(() => props.variant === 'error' ? productState.value?.message : props.message);

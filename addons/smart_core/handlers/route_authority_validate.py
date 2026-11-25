@@ -84,7 +84,7 @@ class RouteAuthorityValidateHandler(BaseIntentHandler):
             payload={"params": {"op": "model", "model": model, "record_id": record_id,
                 "action_id": action_id, "menu_id": menu_id, "view_type": "form",
                 "render_profile": "readonly", "delivery_profile": "full", "client_type": "web_pc",
-                "accepted_contract_versions": ["2.5.x"], "client_contract_capabilities": [
+                "accepted_contract_versions": ["2.7.x"], "client_contract_capabilities": [
                     "container_tree.v2", "data_source.v2", "action_rule.v2", "relation_entry.v2", "status_contract.v2"]}},
         ).handle()
         envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result

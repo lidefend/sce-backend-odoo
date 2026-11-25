@@ -119,7 +119,7 @@ function withClientContractNegotiation(payload: IntentPayload): IntentPayload {
   params.client_type = params.client_type ?? params.clientType ?? 'web_pc';
   params.accepted_contract_versions = params.accepted_contract_versions
     ?? params.acceptedContractVersions
-    ?? ['2.0.x', '2.1.x', '2.2.x', '2.3.x', '2.4.x', '2.5.x', '2.6.x'];
+    ?? ['2.7.x'];
   params.client_contract_capabilities = params.client_contract_capabilities
     ?? params.clientContractCapabilities
     ?? [...CONTRACT_V2_CLIENT_CAPABILITIES];

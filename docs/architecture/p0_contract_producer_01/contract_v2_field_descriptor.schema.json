@@ -11,7 +11,6 @@
     "label",
     "fieldType",
     "widgetType",
-    "componentKey",
     "semanticType"
   ],
   "properties": {
@@ -63,6 +62,7 @@
         "checkbox",
         "radio",
         "tree",
+        "gantt",
         "relation",
         "display",
         "binary",
@@ -102,10 +102,6 @@
         "payment",
         "statinfo"
       ]
-    },
-    "componentKey": {
-      "type": "string",
-      "minLength": 1
     },
     "semanticType": {
       "enum": [
@@ -198,6 +194,55 @@
       "type": "string",
       "minLength": 1
     },
+    "help": {
+      "type": "string",
+      "minLength": 1
+    },
+    "uiUsage": {
+      "enum": [
+        "fact",
+        "interaction"
+      ]
+    },
+    "changeDefault": {
+      "type": "boolean"
+    },
+    "definitionRecord": {
+      "type": "string",
+      "minLength": 1
+    },
+    "definitionRecordField": {
+      "type": "string",
+      "minLength": 1
+    },
+    "groupOperator": {
+      "type": "string",
+      "minLength": 1
+    },
+    "searchable": {
+      "type": "boolean"
+    },
+    "sortable": {
+      "type": "boolean"
+    },
+    "store": {
+      "type": "boolean"
+    },
+    "translate": {
+      "type": "boolean"
+    },
+    "trim": {
+      "type": "boolean"
+    },
+    "related": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "technical": {
       "type": "boolean"
     },
@@ -250,6 +295,10 @@
     "currencyField": {
       "type": "string",
       "minLength": 1
+    },
+    "size": {
+      "type": "integer",
+      "minimum": 1
     },
     "unit": {
       "type": "object",
@@ -477,7 +526,10 @@
         ],
         "properties": {
           "fieldType": {
-            "const": "monetary"
+            "enum": [
+              "monetary",
+              "float"
+            ]
           },
           "unit": false,
           "temporal": false,

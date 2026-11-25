@@ -7,7 +7,7 @@ import { cleanRelationDisplayLabel, fieldType, normalizeRelationIds } from './fi
 import type { RelationOption, RelationSearchColumn, RelationSearchRow, RelationUiLabels } from './types';
 
 export function relationEntry(descriptor?: FieldDescriptor) {
-  const entry = (descriptor as Record<string, unknown> | undefined)?.relation_entry;
+  const entry = (descriptor as Record<string, unknown> | undefined)?.relationEntry;
   if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null;
   const row = entry as Record<string, unknown>;
   const actionId = toPositiveInt(row.action_id);
@@ -82,11 +82,9 @@ export function relationOrder(descriptor?: FieldDescriptor) {
 
 export function relationColorField(descriptor?: FieldDescriptor) {
   const row = descriptor && typeof descriptor === 'object' ? descriptor as Record<string, unknown> : {};
-  const options = row.widget_options && typeof row.widget_options === 'object' && !Array.isArray(row.widget_options)
-    ? row.widget_options as Record<string, unknown>
-    : row.options && typeof row.options === 'object' && !Array.isArray(row.options)
-      ? row.options as Record<string, unknown>
-      : {};
+  const options = row.widgetOptions && typeof row.widgetOptions === 'object' && !Array.isArray(row.widgetOptions)
+    ? row.widgetOptions as Record<string, unknown>
+    : {};
   const colorField = String(options.color_field || '').trim();
   return colorField || '';
 }
@@ -222,7 +220,7 @@ export function singleContainingRelationOption(rows: RelationOption[], keyword: 
 }
 
 export function relationUiLabels(descriptor?: FieldDescriptor): RelationUiLabels {
-  const entry = (descriptor as Record<string, unknown> | undefined)?.relation_entry;
+  const entry = (descriptor as Record<string, unknown> | undefined)?.relationEntry;
   const labels = entry && typeof entry === 'object' && !Array.isArray(entry)
     ? (entry as Record<string, unknown>).ui_labels
     : null;
@@ -484,7 +482,7 @@ export function mergeRelationDomains(base: unknown, runtime: unknown) {
 }
 
 export function relationSearchDialogContract(descriptor?: FieldDescriptor): Record<string, unknown> {
-  const entry = (descriptor as Record<string, unknown> | undefined)?.relation_entry;
+  const entry = (descriptor as Record<string, unknown> | undefined)?.relationEntry;
   if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return {};
   const dialog = (entry as Record<string, unknown>).search_dialog;
   if (!dialog || typeof dialog !== 'object' || Array.isArray(dialog)) return {};

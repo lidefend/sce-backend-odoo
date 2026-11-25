@@ -257,7 +257,7 @@ const writableMany2oneColumns = one2manyColumnsFromSubview({ tree: { columns: [{
   name: 'partner_id', label: '往来单位', ttype: 'many2one', required: true, readonly: false,
 }] } }, () => ({
   type: 'many2one', relation: 'res.partner', required: true,
-  relation_entry: { model: 'res.partner', can_read: true },
+  relationEntry: { model: 'res.partner', can_read: true },
 }));
 assert.equal(writableMany2oneColumns[0]?.readonly, false, 'readable relation columns may only become writable through the child field contract');
 assert.equal(writableMany2oneColumns[0]?.relationReadable, true);

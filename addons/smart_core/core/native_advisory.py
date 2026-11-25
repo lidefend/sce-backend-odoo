@@ -138,7 +138,7 @@ def project(source_contract, env):
                 fail('FEEDBACK_SOURCE_INVALID', path)
             host_shape(host, node, path)
             condition(host, name, path)
-            if host.get('componentKey') or host.get('componentConfig'):
+            if host.get('semanticType') or host.get('componentConfig'):
                 fail('FEEDBACK_OWNERSHIP_CONFLICT', path)
             # Derive provenance from this resolved native view, not page configuration.
             authority = {'kind': 'native_view', 'model': model, 'view_id': view_id}
@@ -149,7 +149,7 @@ def project(source_contract, env):
                 item['source_authority'] = {**prior, **authority}
             locator, occurrence = identity(node)
             ref = f'field.{name}.occ.' + _fingerprint({'locator': locator, 'occurrence': occurrence})
-            host['componentKey'] = 'sc.feedback.message'
+            host['semanticType'] = 'feedback_message'
             config = {'purpose': 'advisory', 'contentRef': {'containerId': ref}}
             if has_draft_evaluation(model_obj, field):
                 config['evaluation'] = {

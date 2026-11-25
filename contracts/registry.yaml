@@ -106,7 +106,4 @@ contracts:
     version: 1
   - path: registry/semantic.yaml
     kind: schema
-    version: 2
-  - path: registry/component.yaml
-    kind: schema
-    version: 2
+    version: 3

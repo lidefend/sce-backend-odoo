@@ -855,14 +855,9 @@
   ],
   "schemas": [
     {
-      "content_hash": "942392e3b5e91031",
-      "path": "registry/component.yaml",
-      "version": 2
-    },
-    {
-      "content_hash": "21729bec06d04c93",
+      "content_hash": "f4419449ece78a56",
       "path": "registry/semantic.yaml",
-      "version": 2
+      "version": 3
     },
     {
       "content_hash": "3d1338fe01caa111",

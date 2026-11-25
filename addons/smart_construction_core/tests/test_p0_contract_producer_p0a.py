@@ -42,7 +42,6 @@ def _build_real_money_contract(env):
         label="当前预算成本",
         field_type="monetary",
         widget_type="monetary",
-        component_key="sc.value.money",
         semantic_type="money",
         digits=[16, int(currency.decimal_places or 2)],
         currencyField="company_currency_id",
@@ -62,7 +61,7 @@ class TestP0ContractProducerP0A(TransactionCase):
         return {
             "params": {
                 "client_type": "web_pc",
-                "accepted_contract_versions": ["2.0.x", "2.5.x", "2.6.x"],
+                "accepted_contract_versions": ["2.7.x"],
                 "client_contract_capabilities": ["page_block_data.v1"],
                 **params,
             }
@@ -84,7 +83,7 @@ class TestP0ContractProducerP0A(TransactionCase):
         self.assertEqual(descriptor["semanticType"], "number")
         self.assertEqual(descriptor["fieldType"], "integer")
 
-    def test_legacy_workspace_projection_has_no_page_block_data(self):
+    def test_workspace_projection_without_page_block_carrier(self):
         contract = WorkspaceContractBuilder(self.env).build(page_block_data_enabled=False)
         orchestration = contract["page_orchestration"]
         self.assertEqual(orchestration["contract_version"], "2.0.0")
@@ -96,17 +95,17 @@ class TestP0ContractProducerP0A(TransactionCase):
         current = handler.handle(self._request())
         self.assertTrue(current["ok"])
         self.assertEqual(current["data"]["page_orchestration"]["contract_version"], "2.1.0")
-        self.assertEqual(current["meta"]["contract_negotiation"]["contractVersion"], "2.6.0")
+        self.assertEqual(current["meta"]["contract_negotiation"]["contractVersion"], "2.7.0")
 
-        legacy = handler.handle({
+        unsupported = handler.handle({
             "params": {
                 "client_type": "web_pc",
-                "accepted_contract_versions": ["2.5.x", "2.6.x"],
+                "accepted_contract_versions": ["2.6.x"],
                 "client_contract_capabilities": [],
             }
         })
-        self.assertEqual(legacy["data"]["page_orchestration"]["contract_version"], "2.0.0")
-        self.assertNotIn("block_data_contracts", legacy["data"]["page_orchestration"])
+        self.assertFalse(unsupported["ok"])
+        self.assertEqual(unsupported["error"]["reason_code"], "CONTRACT_VERSION_UNSUPPORTED")
 
     def test_handler_rejects_unknown_client_negotiation(self):
         result = WorkspaceHomeEnterHandler(self.env).handle({
@@ -119,15 +118,10 @@ class TestP0ContractProducerP0A(TransactionCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["error"]["reason_code"], "CONTRACT_VERSION_UNSUPPORTED")
 
-    def test_pre_negotiation_request_keeps_identity_unassigned(self):
+    def test_pre_negotiation_request_fails_closed(self):
         result = WorkspaceHomeEnterHandler(self.env).handle({"params": {}})
-        self.assertTrue(result["ok"])
-        self.assertEqual(result["meta"]["contract_negotiation"]["clientType"], "")
-        self.assertEqual(
-            result["meta"]["contract_negotiation"]["compatibilityMode"],
-            "pre_negotiation_client_without_identity",
-        )
-        self.assertEqual(result["data"]["page_orchestration"]["contract_version"], "2.0.0")
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error"]["reason_code"], "CONTRACT_VERSION_UNSUPPORTED")
 
     def test_handler_rejects_24_only_as_no_common_version(self):
         result = WorkspaceHomeEnterHandler(self.env).handle({
@@ -187,7 +181,6 @@ class TestP0ContractProducerP0A(TransactionCase):
             label="缺少币种金额",
             field_type="monetary",
             widget_type="monetary",
-            component_key="sc.value.money",
             semantic_type="money",
             digits=[16, int(project.company_currency_id.decimal_places or 2)],
             currencyField="company_currency_id",
@@ -210,6 +203,16 @@ class TestP0ContractProducerP0A(TransactionCase):
                 "name": "operation_strategy",
                 "type": "selection",
                 "widget": "selection",
+                "help": "选择项目的经营模式",
+                "sc_ui_usage": "fact",
+                "change_default": True,
+                "searchable": True,
+                "sortable": False,
+                "store": True,
+                "translate": True,
+                "trim": True,
+                "size": 64,
+                "related": ["parent_id", "operation_strategy"],
             },
             "componentConfig": {
                 "fieldType": "selection",
@@ -222,6 +225,16 @@ class TestP0ContractProducerP0A(TransactionCase):
         self.assertIsNotNone(descriptor)
         self.assertEqual(descriptor["widgetType"], "select")
         self.assertEqual(descriptor["semanticType"], "choice")
+        self.assertEqual(descriptor["help"], "选择项目的经营模式")
+        self.assertEqual(descriptor["uiUsage"], "fact")
+        self.assertIs(descriptor["changeDefault"], True)
+        self.assertIs(descriptor["searchable"], True)
+        self.assertIs(descriptor["sortable"], False)
+        self.assertIs(descriptor["store"], True)
+        self.assertIs(descriptor["translate"], True)
+        self.assertIs(descriptor["trim"], True)
+        self.assertEqual(descriptor["size"], 64)
+        self.assertEqual(descriptor["related"], ["parent_id", "operation_strategy"])
         self.assertEqual(
             descriptor["selection"],
             [["direct", "公司直营"], ["joint", "联营项目"]],
@@ -257,7 +270,6 @@ class TestP0ContractProducerP0A(TransactionCase):
                 "fieldType": "date",
                 "nativeWidget": "daterange",
                 "semanticType": "date",
-                "componentKey": "sc.input.date",
                 "widgetOptions": {"end_date_field": "date", "always_range": "1"},
             },
             {
@@ -266,7 +278,6 @@ class TestP0ContractProducerP0A(TransactionCase):
                 "fieldType": "date",
                 "nativeWidget": "display",
                 "semanticType": "date",
-                "componentKey": "sc.input.date",
             },
             {
                 "fieldCode": "planned_at",
@@ -274,7 +285,6 @@ class TestP0ContractProducerP0A(TransactionCase):
                 "fieldType": "datetime",
                 "nativeWidget": "display",
                 "semanticType": "datetime",
-                "componentKey": "sc.input.datetime",
             },
             {
                 "fieldCode": "phone",
@@ -282,7 +292,6 @@ class TestP0ContractProducerP0A(TransactionCase):
                 "fieldType": "char",
                 "nativeWidget": "phone",
                 "semanticType": "text",
-                "componentKey": "sc.input.text",
             },
             {
                 "fieldCode": "state",
@@ -290,7 +299,6 @@ class TestP0ContractProducerP0A(TransactionCase):
                 "fieldType": "selection",
                 "nativeWidget": "statusbar",
                 "semanticType": "status",
-                "componentKey": "sc.display.status",
             },
             {
                 "fieldCode": "activity_ids",
@@ -298,7 +306,6 @@ class TestP0ContractProducerP0A(TransactionCase):
                 "fieldType": "one2many",
                 "nativeWidget": "list_activity",
                 "semanticType": "activity_collection",
-                "componentKey": "sc.relation.activity",
                 "relation": "mail.activity",
             },
             {
@@ -307,7 +314,6 @@ class TestP0ContractProducerP0A(TransactionCase):
                 "fieldType": "many2many",
                 "nativeWidget": "many2many_tags",
                 "semanticType": "tag_collection",
-                "componentKey": "sc.select.tags",
                 "relation": "res.partner.category",
             },
             {
@@ -316,7 +322,6 @@ class TestP0ContractProducerP0A(TransactionCase):
                 "fieldType": "many2one",
                 "nativeWidget": "many2one_avatar_user",
                 "semanticType": "relation",
-                "componentKey": "sc.relation.many2one",
                 "relation": "res.users",
             },
         )
@@ -349,7 +354,7 @@ class TestP0ContractProducerP0A(TransactionCase):
                 self.assertEqual(descriptor["widgetType"], case["nativeWidget"])
                 self.assertEqual(descriptor["fieldType"], case["fieldType"])
                 self.assertEqual(descriptor["semanticType"], case["semanticType"])
-                self.assertEqual(descriptor["componentKey"], case["componentKey"])
+                self.assertNotIn("componentKey", descriptor)
                 if case["fieldType"] == "date":
                     self.assertEqual(
                         descriptor["temporal"],
@@ -454,7 +459,7 @@ class TestP0ContractProducerP0A(TransactionCase):
         }, model_name="res.users")
         self.assertIsNotNone(activity)
         self.assertEqual(activity["semanticType"], "activity_collection")
-        self.assertEqual(activity["componentKey"], "sc.relation.activity")
+        self.assertNotIn("componentKey", activity)
         self.assertEqual(activity["relationEntry"]["page_size"], 20)
 
         account_type = _strict_field_descriptor({
@@ -473,7 +478,7 @@ class TestP0ContractProducerP0A(TransactionCase):
         }, model_name="account.account")
         self.assertIsNotNone(account_type)
         self.assertEqual(account_type["semanticType"], "choice")
-        self.assertEqual(account_type["componentKey"], "sc.select.remote")
+        self.assertNotIn("componentKey", account_type)
 
     def test_strict_monetary_descriptor_keeps_currency_binding_without_inventing_precision(self):
         contract = {
@@ -558,9 +563,7 @@ class TestP0ContractDescriptorConformanceEvidence(TransactionCase):
         })
         common = {
             "client_type": "web_pc",
-            "accepted_contract_versions": [
-                "2.0.x", "2.1.x", "2.2.x", "2.3.x", "2.4.x", "2.5.x", "2.6.x",
-            ],
+            "accepted_contract_versions": ["2.7.x"],
             "client_contract_capabilities": [
                 "container_tree.v2",
                 "data_source.v2",
@@ -621,7 +624,8 @@ class TestP0ContractDescriptorConformanceEvidence(TransactionCase):
         self.assertEqual(descriptor["fieldType"], "date")
         self.assertEqual(descriptor["widgetType"], "daterange")
         self.assertEqual(descriptor["semanticType"], "date")
-        self.assertEqual(descriptor["componentKey"], "sc.input.date")
+        self.assertNotIn("componentKey", descriptor)
+        self.assertNotIn("componentRegistry", form_contract["layoutContract"])
         self.assertEqual(
             descriptor["temporal"],
             {"kind": "date", "timezoneAuthority": "not_applicable"},

@@ -51,6 +51,22 @@
       }
     },
     {
+      "id": "DESC-MONEY-FLOAT-VALID",
+      "expect": "valid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "payment.pending_amount",
+        "label": "待付款金额",
+        "fieldType": "float",
+        "widgetType": "monetary",
+        "semanticType": "money",
+        "digits": [16, 2],
+        "currencyField": "currency_id",
+        "help": "合同币种金额",
+        "uiUsage": "fact"
+      }
+    },
+    {
       "id": "DESC-PERCENT-VALID",
       "expect": "valid",
       "descriptor": {
@@ -211,13 +227,13 @@
       "id": "DESC-MONEY-INVALID-FIELDTYPE",
       "expect": "invalid",
       "failed_by": [
-        "structural_schema"
+    "semantic_registry"
       ],
       "descriptor": {
         "schemaVersion": "1.0.0",
         "fieldCode": "payment.pending_amount",
         "label": "待付款金额",
-        "fieldType": "float",
+        "fieldType": "char",
         "widgetType": "number",
         "componentKey": "sc.value.money",
         "semanticType": "money",
@@ -284,7 +300,7 @@
       "id": "DESC-SEMANTIC-COMPONENT-MISMATCH",
       "expect": "invalid",
       "failed_by": [
-        "semantic_registry"
+        "structural_schema"
       ],
       "descriptor": {
         "schemaVersion": "1.0.0",
@@ -310,6 +326,26 @@
         "componentKey": "sc.display.text",
         "semanticType": "reference",
         "relation": "res.partner"
+      }
+    },
+    {
+      "id": "DESC-CHAR-CAPABILITIES-VALID",
+      "expect": "valid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.code",
+        "label": "项目编码",
+        "fieldType": "char",
+        "widgetType": "input",
+        "semanticType": "text",
+        "changeDefault": true,
+        "searchable": true,
+        "sortable": false,
+        "store": true,
+        "translate": true,
+        "trim": true,
+        "size": 64,
+        "related": ["parent_id.code"]
       }
     },
     {

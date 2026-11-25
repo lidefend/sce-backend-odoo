@@ -82,6 +82,11 @@ export interface PageOrchestrationContract {
   action_contract?: ContractV2ActionContract;
 }
 
+const PAGE_BLOCK_DESCRIPTOR_RESOLUTIONS = new WeakMap<
+  PageOrchestrationContract,
+  Record<string, ContractV2FieldDescriptorDecodeResult['registryResolution']>
+>();
+
 export interface PageBlockActionEvent {
   actionKey: string;
   blockKey: string;
@@ -876,7 +881,7 @@ export function decodePageOrchestrationContract(raw: unknown): PageOrchestration
       message: 'requires page-block-action action_schema',
     }]);
   }
-  return {
+  const decodedContract = {
     ...source,
     schema_version: schemaVersion,
     contract_version: version,
@@ -885,6 +890,10 @@ export function decodePageOrchestrationContract(raw: unknown): PageOrchestration
     ...(actionSchema ? { action_schema: actionSchema } : {}),
     ...(actionContract ? { action_contract: actionContract } : {}),
   } as unknown as PageOrchestrationContract;
+  if (decodedDescriptors) {
+    PAGE_BLOCK_DESCRIPTOR_RESOLUTIONS.set(decodedContract, decodedDescriptors.registryResolution);
+  }
+  return decodedContract;
 }
 
 function readPath(value: unknown, path: string): { found: boolean; value: unknown } {
@@ -972,6 +981,13 @@ export function resolvePageBlockData(
       }
       if (located.found) values[slotKey] = located.value;
       fieldDescriptors[slotKey] = descriptor;
+      const carriedResolution = ref.kind === 'descriptor'
+        ? PAGE_BLOCK_DESCRIPTOR_RESOLUTIONS.get(contract)?.[ref.descriptorId]
+        : undefined;
+      if (carriedResolution) {
+        registryResolution[slotKey] = carriedResolution;
+        return;
+      }
       try {
         registryResolution[slotKey] = decodeContractV2FieldDescriptor(descriptor, `descriptor.${slotKey}`).registryResolution;
       } catch (error) {

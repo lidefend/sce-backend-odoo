@@ -80,7 +80,7 @@ Record._compute_issue._sc_record_error_review = REVIEW
 def trees():
     source = dict(type='field', name='message', containerId='native-message', nativeLocator='/form/group/field[1]',
                   occurrenceIndex=0, sourceAuthority={'kind': 'native_view', 'view_id': 42})
-    host = dict(type='container', containerId='error-host', componentKey='sc.feedback.message',
+    host = dict(type='container', containerId='error-host', semanticType='feedback_message',
                 componentConfig={'purpose': 'error', 'contentRef': {'containerId': 'native-message'}},
                 modifiers={'invisible': {'kind': 'not', 'expr': {'kind': 'field_truthy', 'field': 'active'}}})
     return [host, copy.deepcopy(source)], [source]

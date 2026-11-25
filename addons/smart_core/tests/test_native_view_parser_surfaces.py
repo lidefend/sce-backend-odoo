@@ -803,8 +803,8 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         occurrence = tree["column_occurrences"][0]
         schema = tree["columns_schema"][0]
         self.assertEqual(occurrence["digits"], [16, 4])
-        self.assertEqual(occurrence["component_key"], "sc.value.percentage")
-        self.assertEqual(schema["component_key"], "sc.value.percentage")
+        self.assertEqual(occurrence["semantic_type"], "percentage")
+        self.assertEqual(schema["semantic_type"], "percentage")
         base_info = self.base_parser._field_info_for_layout("ratio_without_widget", {
             "ratio_without_widget": {"type": "float", "string": "Ratio", "digits": (16, 6)},
         })
@@ -882,6 +882,41 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         )
         self.assertEqual(reference_info["widget"], "")
         self.assertEqual(reference_info["type"], "reference")
+
+    def test_native_field_capabilities_are_projected_from_orm_metadata(self):
+        info = self.base_parser._field_info_for_layout(
+            "project_code",
+            {"project_code": {
+                "type": "char",
+                "string": "项目编码",
+                "help": "项目唯一编码",
+                "change_default": True,
+                "definition_record": "project_id",
+                "definition_record_field": "code",
+                "group_operator": "count",
+                "searchable": True,
+                "sortable": False,
+                "store": True,
+                "translate": True,
+                "trim": True,
+                "size": 64,
+                "related": ["project_id.code"],
+                "sc_ui_usage": "fact",
+            }},
+        )
+        self.assertEqual(info["help"], "项目唯一编码")
+        self.assertIs(info["change_default"], True)
+        self.assertEqual(info["definition_record"], "project_id")
+        self.assertEqual(info["definition_record_field"], "code")
+        self.assertEqual(info["group_operator"], "count")
+        self.assertIs(info["searchable"], True)
+        self.assertIs(info["sortable"], False)
+        self.assertIs(info["store"], True)
+        self.assertIs(info["translate"], True)
+        self.assertIs(info["trim"], True)
+        self.assertEqual(info["size"], 64)
+        self.assertEqual(info["related"], ["project_id.code"])
+        self.assertEqual(info["sc_ui_usage"], "fact")
 
     def test_unmapped_non_reference_types_keep_the_previous_widget_passthrough(self):
         # The reference fix must not silently change unrelated rendering: the
@@ -1048,7 +1083,10 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
                 "raw": "state == 'done'",
             }
         })
-        self.assertEqual(len(tree["row_actions"]), 1)
+        self.assertEqual(
+            [action["name"] for action in tree["row_actions"]],
+            ["open_partner", "open_form"],
+        )
         self.assertEqual(tree["row_actions"][0]["payload"]["method"], "open_partner")
         self.assertEqual(
             [row["name"] for row in tree["columns"]],

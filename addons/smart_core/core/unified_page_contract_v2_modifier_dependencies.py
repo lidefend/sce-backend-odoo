@@ -250,7 +250,8 @@ def collect_fact_hydration_fields(contract_v2: Any) -> list[str]:
     def fact_name(descriptor: Any) -> str:
         if not isinstance(descriptor, dict):
             return ""
-        if str(descriptor.get("sc_ui_usage") or "").strip() != "fact":
+        usage = descriptor.get("uiUsage", descriptor.get("sc_ui_usage"))
+        if str(usage or "").strip() != "fact":
             return ""
         return str(descriptor.get("name") or descriptor.get("fieldCode") or "").strip()
 

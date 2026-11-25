@@ -17,6 +17,7 @@
  * index or a button verdict read as field authority each change an expectation.
  */
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { isContractGapError } from '../src/app/contract/contractGap';
 import { computed, reactive, ref } from 'vue';
 import { createContractV2Store } from '../src/app/contracts/v2/store';
@@ -27,11 +28,48 @@ import { useRecordFormLayout } from '../src/pages/contractForm/useRecordFormLayo
 const VISIBLE_BUTTON_IDENTITY = 'native_button:object:action_sc_submit:/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/button[5]:1';
 const HIDDEN_BUTTON_IDENTITY = 'native_button:object:action_sc_start:/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/button[4]:1';
 
+function nativeOccurrence(
+  name: string,
+  kind: 'field' | 'container' | 'button' | 'widget',
+  locator: string,
+  occurrenceIndex: number,
+  extra: Record<string, unknown> = {},
+) {
+  const occurrenceKey = createHash('sha256')
+    .update(`${kind}:${name}:${locator}:${occurrenceIndex}`)
+    .digest('hex')
+    .slice(0, 24);
+  return {
+    schemaVersion: '1.0.0' as const,
+    model: 'project.project',
+    viewType: 'form',
+    viewId: 91,
+    viewXmlId: 'project.view_project_form',
+    viewContentHash: 'a'.repeat(64),
+    viewStructureKey: `struct.v1.${'b'.repeat(24)}`,
+    crossEnvironmentStable: true,
+    kind,
+    name,
+    nativeLocator: locator,
+    occurrenceIndex,
+    sourcePosition: occurrenceIndex,
+    occurrenceKey: `occ.v1.${occurrenceKey}`,
+    authoritative: true,
+    sourceAuthority: {
+      kind: 'ir.ui.view' as const,
+      projectionOnly: true as const,
+      noBusinessFactAuthority: true as const,
+    },
+    ...extra,
+  };
+}
+
 function buttonNode(name: string, backendIdentity: string, occurrenceIndex: number) {
   const locator = `/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/button[${occurrenceIndex}]`;
   return {
     containerId: name, containerType: 'button', type: 'button', name, string: name, title: name,
     span: 12, nativeLocator: locator, occurrenceIndex, sourcePosition: occurrenceIndex,
+    nativeIdentity: nativeOccurrence(name, 'container', locator, occurrenceIndex, { type: 'object' }),
     attributes: { name, type: 'object' },
     action: { name, actionId: `action.${name}`, backendIdentity, kind: 'object', level: 'body', intent: 'execute' },
     children: [], widgetList: [],
@@ -40,21 +78,34 @@ function buttonNode(name: string, backendIdentity: string, occurrenceIndex: numb
 
 function fieldNode(name: string, widgetId: string, occurrenceIndex: number) {
   const locator = `/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/field[${occurrenceIndex}]`;
+  const identity = nativeOccurrence(name, 'field', locator, occurrenceIndex);
   return {
     containerId: widgetId, containerType: 'field', type: 'field', name, widgetId,
     span: 12, fieldCode: name, label: name,
     title: name, nativeLocator: locator, occurrenceIndex, sourcePosition: occurrenceIndex,
+    nativeIdentity: identity,
     fieldInfo: { name, type: 'selection', readonly: true, required: true, modifiers: { readonly: true } },
     children: [],
     widgetList: [{
       widgetId, widgetType: 'select', fieldCode: name, label: name, span: 12,
-      componentKey: 'sc.select.remote', capabilities: [],
+      semanticType: 'choice', capabilities: [],
       componentConfig: {
         fieldType: 'selection', native_locator: locator, occurrence_index: occurrenceIndex,
         source_position: occurrenceIndex, readonly: true, required: true,
       },
-      fieldDescriptor: { name, type: 'selection' },
+      fieldDescriptor: {
+        schemaVersion: '1.0.0',
+        fieldCode: name,
+        label: name,
+        fieldType: 'selection',
+        widgetType: 'select',
+        semanticType: 'choice',
+        required: true,
+        readonly: true,
+        selection: [['draft', 'Draft'], ['done', 'Done']],
+      },
       nativeLocator: locator, occurrenceIndex, sourcePosition: occurrenceIndex,
+      nativeIdentity: identity,
       ownerContainerId: widgetId,
     }],
   };
@@ -64,12 +115,11 @@ const snapshot = {
   pageInfo: {
     pageId: 'page.project.project.form', sceneKey: 'project.project.form', pageName: 'Project',
     model: 'project.project', viewType: 'form', layoutType: 'form', renderMode: 'governed',
-    contractVersion: '2.2.0', clientType: 'web_pc',
+    contractVersion: '2.7.0', clientType: 'web_pc',
   },
   layoutContract: {
     pageId: 'page.project.project.form', layoutType: 'form', adaptMode: 'pc',
     layoutHints: { mobileColumns: 1 },
-    componentRegistry: {},
     // The real project stage row: one declared flex container holding the
     // declared stage fields and the declared stage actions, in declared order.
     containerTree: [{
@@ -82,6 +132,12 @@ const snapshot = {
         {
           containerId: 'container.hidden.1', containerType: 'container', type: 'container',
           title: '', span: 24, nativeLocator: '/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[3]', occurrenceIndex: 1,
+          nativeIdentity: nativeOccurrence(
+            'container.hidden.1',
+            'container',
+            '/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[3]',
+            1,
+          ),
           children: [], widgetList: [],
         },
       ],
@@ -94,10 +150,6 @@ const snapshot = {
       triggerType: 'click', sourceWidgetId: 'action_sc_submit', targetIds: [], dispatchMode: 'server',
       targetScope: 'page', refreshMode: 'partial', allowed: true, enabled: true, disabled: false,
       entitlementEvaluated: true, visibleProfiles: ['edit', 'create', 'readonly'],
-      nativeIdentity: {
-        authoritative: true, name: 'action_sc_submit', type: 'object',
-        native_locator: '/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/button[5]', occurrence_index: 5,
-      },
     }],
     dependencyGraph: {},
   },
@@ -146,7 +198,7 @@ const snapshot = {
 };
 
 const strictSnapshot = structuredClone(snapshot) as any;
-strictSnapshot.pageInfo.contractVersion = '2.6.0';
+strictSnapshot.pageInfo.contractVersion = '2.7.0';
 const strictField = fieldNode('validation_status', 'field.validation_status.occ.strict', 1);
 const strictViewIdentity = {
   schemaVersion: '1.0.0',
@@ -187,7 +239,6 @@ strictField.widgetList[0].fieldDescriptor = {
   label: 'validation_status',
   fieldType: 'selection',
   widgetType: 'select',
-  componentKey: 'sc.select.remote',
   semanticType: 'choice',
   required: true,
   readonly: true,
@@ -209,7 +260,7 @@ const strictDecoded = decodeContractV2Snapshot(strictSnapshot);
 assert.equal(
   strictDecoded.layoutContract.containerTree[0].widgetList[0].fieldDescriptor?.fieldCode,
   'validation_status',
-  'strict 2.6 form occurrences must validate canonical fieldCode/fieldType descriptors',
+  'strict 2.7 form occurrences must validate canonical fieldCode/fieldType descriptors',
 );
 
 const missingNativeIdentity = structuredClone(strictSnapshot);
@@ -218,7 +269,7 @@ delete missingNativeIdentity.layoutContract.containerTree[0].widgetList[0].nativ
 assert.throws(
   () => decodeContractV2Snapshot(missingNativeIdentity),
   /native layout occurrence requires nativeIdentity/,
-  '2.6 is cumulative and must retain the strict native occurrence authority introduced in 2.4',
+  '2.7 must retain strict native occurrence authority',
 );
 
 const malformedActionIdentity = structuredClone(strictSnapshot);
@@ -235,7 +286,7 @@ malformedActionIdentity.actionContract.actionRuleList = [{
 assert.throws(
   () => decodeContractV2Snapshot(malformedActionIdentity),
   /nativeIdentity/,
-  '2.6 action identities must use the strict occurrence carrier instead of the legacy opaque object',
+  '2.7 action identities must use the strict occurrence carrier',
 );
 
 
@@ -251,6 +302,7 @@ for (const [id, reason, disabled, staticHidden, dependency] of [
   snapshot.layoutContract.containerTree[0].children.push({
     containerId: id, containerType: 'group', type: 'group', title: id,
     nativeLocator: '/form[1]/sheet[1]/group[' + id + ']', occurrenceIndex: 1,
+    nativeIdentity: nativeOccurrence(id, 'container', '/form[1]/sheet[1]/group[' + id + ']', 1),
     visible: !staticHidden, span: 24, columns: 2,
     children: id === 'dynamic' ? [fieldNode('group_content', 'field.group_content.occ.1', 1)] : [], widgetList: [],
     modifiers: {invisible: {kind: 'field_compare', field: dependency, operator: '!=', value: 'fund'}},
@@ -507,7 +559,10 @@ function attachDomain(nodes: Array<Record<string, unknown>>): boolean {
   for (const node of nodes) {
     const widgets = node.widgetList as Array<Record<string, unknown>> | undefined;
     if (widgets?.length) {
-      Object.assign(widgets[0].fieldDescriptor as object, { domain: domainFixture.raw, domain_expression: domainFixture.expression });
+      Object.assign(widgets[0].fieldDescriptor as object, {
+        domain: domainFixture.raw,
+        domainExpression: domainFixture.expression,
+      });
       return true;
     }
     if (Array.isArray(node.children) && attachDomain(node.children)) return true;

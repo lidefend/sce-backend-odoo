@@ -187,7 +187,7 @@ assert.equal(normalizeContractFieldValue({
 
 assert.equal(relationCreateMode({
   relation: 'project.project',
-  relation_entry: {
+  relationEntry: {
     can_read: true,
     can_create: false,
     create_mode: 'page',
@@ -196,7 +196,7 @@ assert.equal(relationCreateMode({
 } as never), 'none', 'a readonly page entry must not be projected as a create capability');
 assert.equal(relationCreateMode({
   relation: 'project.project',
-  relation_entry: {
+  relationEntry: {
     can_read: true,
     can_create: true,
     create_mode: 'page',
@@ -205,7 +205,7 @@ assert.equal(relationCreateMode({
 } as never), 'page', 'a backend-authorized page create entry must remain available');
 assert.equal(relationCreateMode({
   relation: 'project.project',
-  relation_entry: {
+  relationEntry: {
     can_read: true,
     can_create: true,
     create_mode: 'dialog',
@@ -502,17 +502,11 @@ function snapshot(): ContractV2Snapshot {
     pageInfo: {
       pageId: 'page.x.document.form', sceneKey: 'x.document.form', pageName: 'Document',
       model: 'x.document', viewType: 'form', layoutType: 'form', renderMode: 'governed',
-      contractVersion: '2.3.0', clientType: 'web_pc',
+      contractVersion: '2.7.0', clientType: 'web_pc',
     },
     layoutContract: {
       pageId: 'page.x.document.form', layoutType: 'form', adaptMode: 'pc',
-      layoutHints: { mobileColumns: 1 }, componentRegistry: {
-        'sc.input.text': { version: '1.0' },
-        'sc.display.status': { version: '1.0' },
-        'sc.display.text': { version: '1.0' },
-        'sc.relation.many2one': { version: '1.0' },
-        'sc.relation.table': { version: '1.0' },
-      },
+      layoutHints: { mobileColumns: 1 },
       containerTree: [{
         containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24, columns: 2,
         children: [{
@@ -520,14 +514,14 @@ function snapshot(): ContractV2Snapshot {
           label: 'Name', nolabel: true,
           children: [], widgetList: [{
             widgetId: 'field.name', widgetType: 'input', fieldCode: 'name', label: 'Name', span: 12,
-            componentKey: 'sc.input.text', capabilities: [], componentConfig: { fieldType: 'char' },
+            semanticType: 'text', capabilities: [], componentConfig: { fieldType: 'char' },
             ownerContainerId: 'field.name',
           }],
         }, {
           containerId: 'field.state', containerType: 'field', type: 'field', name: 'state', title: '', span: 12,
           children: [], widgetList: [{
             widgetId: 'field.state', widgetType: 'select', fieldCode: 'state', label: 'State', span: 12,
-            componentKey: 'sc.display.status', capabilities: [], componentConfig: { fieldType: 'selection' },
+            semanticType: 'status', capabilities: [], componentConfig: { fieldType: 'selection' },
             ownerContainerId: 'field.state',
           }],
         }, {
@@ -539,7 +533,7 @@ function snapshot(): ContractV2Snapshot {
             nolabel: true,
             children: [], widgetList: [{
               widgetId: 'field.line_ids', widgetType: 'table', fieldCode: 'line_ids', label: 'Lines', span: 24,
-              componentKey: 'sc.relation.table', capabilities: [], componentConfig: { fieldType: 'one2many' },
+              semanticType: 'detail_collection', capabilities: [], componentConfig: { fieldType: 'one2many' },
               ownerContainerId: 'field.line_ids',
             }],
           }], widgetList: [],
@@ -616,6 +610,31 @@ function collectTexts(nodes: ReturnType<typeof presentContractV2Form>['zones']['
 
 function collectTitles(nodes: ReturnType<typeof presentContractV2Form>['zones']['primary']): string[] {
   return nodes.flatMap((node) => [node.title, ...collectTitles(node.children)]).filter(Boolean);
+}
+
+function nativeButtonIdentity(name: string, nativeLocator: string, occurrenceIndex: number, fill: string) {
+  return {
+    schemaVersion: '1.0.0',
+    model: 'x.document',
+    viewType: 'form',
+    viewId: 801,
+    viewXmlId: 'x.document_form',
+    viewContentHash: fill.repeat(64),
+    viewStructureKey: `struct.v1.${fill.repeat(24)}`,
+    crossEnvironmentStable: true,
+    kind: 'button',
+    name,
+    nativeLocator,
+    occurrenceIndex,
+    sourcePosition: occurrenceIndex,
+    occurrenceKey: `occ.v1.${fill.repeat(24)}`,
+    authoritative: true,
+    sourceAuthority: {
+      kind: 'ir.ui.view',
+      projectionOnly: true,
+      noBusinessFactAuthority: true,
+    },
+  };
 }
 
 const source = snapshot();
@@ -774,15 +793,20 @@ assert.equal(
 assert.equal(canonicalDuplicateWorkflowAction.reasonCode, 'WORKFLOW_ACTION_IDENTITY_AMBIGUOUS');
 
 const nativeMonetarySnapshot = snapshot();
-nativeMonetarySnapshot.layoutContract.componentRegistry['sc.value.money'] = {
-  version: '1.0',
-};
 nativeMonetarySnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'field.amount', containerType: 'field', type: 'field', name: 'amount', title: '', span: 12,
   children: [], widgetList: [{
     widgetId: 'field.amount', widgetType: 'input', fieldCode: 'amount', label: 'Amount', span: 12,
-    componentKey: 'sc.value.money', capabilities: [], componentConfig: { fieldType: 'monetary' },
-    fieldDescriptor: { name: 'amount', type: 'monetary', currency_field: 'currency_id' },
+    semanticType: 'money', capabilities: [], componentConfig: { fieldType: 'monetary' },
+    fieldDescriptor: {
+      schemaVersion: '1.0.0',
+      fieldCode: 'amount',
+      label: 'Amount',
+      fieldType: 'monetary',
+      widgetType: 'input',
+      semanticType: 'money',
+      currencyField: 'currency_id',
+    },
     ownerContainerId: 'field.amount',
   }],
 });
@@ -801,6 +825,51 @@ const nativeMonetarySchema = canonicalFieldToFormSection(nativeMonetaryField!);
 assert.equal(nativeMonetarySchema.currencyField, 'currency_id');
 assert.equal(nativeMonetarySchema.currencyLabel, 'CNY');
 
+const floatMonetarySnapshot = structuredClone(nativeMonetarySnapshot);
+const floatMonetaryWidget = floatMonetarySnapshot.layoutContract.containerTree[0].children
+  .find((node) => node.containerId === 'field.amount')!.widgetList[0];
+floatMonetaryWidget.widgetType = 'input';
+floatMonetaryWidget.componentConfig = { fieldType: 'float', nativeWidget: 'monetary' };
+floatMonetaryWidget.fieldDescriptor = {
+  ...floatMonetaryWidget.fieldDescriptor,
+  fieldType: 'float',
+  widgetType: 'monetary',
+  help: '金额采用合同币种',
+  uiUsage: 'fact',
+  changeDefault: true,
+  searchable: true,
+  sortable: false,
+  store: true,
+  translate: true,
+  trim: true,
+  size: 32,
+  related: ['currency_id'],
+};
+const floatMonetaryField = collectFields(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(floatMonetarySnapshot)),
+  'edit',
+  { amount: 50, currency_id: 6 },
+).zones.primary).find((field) => field.fieldCode === 'amount');
+assert.deepEqual(
+  floatMonetaryField?.componentConfig.currencyValue,
+  [6, 'CNY'],
+  'money semantics must carry the currency value even when Odoo stores the amount as float',
+);
+const floatMonetarySchema = canonicalFieldToFormSection(floatMonetaryField!);
+assert.equal(floatMonetarySchema.type, 'monetary');
+assert.equal(floatMonetarySchema.currencyField, 'currency_id');
+assert.equal(floatMonetarySchema.currencyLabel, 'CNY');
+assert.equal(floatMonetarySchema.helpText, '金额采用合同币种');
+assert.equal(floatMonetaryField?.fieldDescriptor.uiUsage, 'fact');
+assert.equal(floatMonetarySchema.maxLength, 32);
+assert.equal(floatMonetaryField?.fieldDescriptor.changeDefault, true);
+assert.equal(floatMonetaryField?.fieldDescriptor.searchable, true);
+assert.equal(floatMonetaryField?.fieldDescriptor.sortable, false);
+assert.equal(floatMonetaryField?.fieldDescriptor.store, true);
+assert.equal(floatMonetaryField?.fieldDescriptor.translate, true);
+assert.equal(floatMonetaryField?.fieldDescriptor.trim, true);
+assert.deepEqual(floatMonetaryField?.fieldDescriptor.related, ['currency_id']);
+
 // A form draft keeps a selected record as a plain id (record hydration stores
 // the bare id and the relation runtime publishes the display name on a separate
 // channel) and `false` once the field is cleared. Selecting a record on a field
@@ -812,8 +881,16 @@ function projectRelationDraft(runtimeValues: Record<string, unknown> | undefined
     containerId: 'field.partner_id', containerType: 'field', type: 'field', name: 'partner_id', title: '', span: 12,
     children: [], widgetList: [{
       widgetId: 'field.partner_id', widgetType: 'relation', fieldCode: 'partner_id', label: '客户', span: 12,
-      componentKey: 'sc.relation.many2one', capabilities: [], componentConfig: { fieldType: 'many2one' },
-      fieldDescriptor: { name: 'partner_id', type: 'many2one', relation: 'res.partner' },
+      semanticType: 'relation', capabilities: [], componentConfig: { fieldType: 'many2one' },
+      fieldDescriptor: {
+        schemaVersion: '1.0.0',
+        fieldCode: 'partner_id',
+        label: '客户',
+        fieldType: 'many2one',
+        widgetType: 'relation',
+        semanticType: 'relation',
+        relation: 'res.partner',
+      },
       ownerContainerId: 'field.partner_id',
     }],
   });
@@ -920,7 +997,7 @@ const declaredOne2manySchema = canonicalFieldToFormSection({
     name: 'outflow_line_ids',
     type: 'one2many',
     relation: 'payment.request.line',
-    relation_entry: { page_size: 20, options_limit: 80, options_search_limit: 40 },
+    relationEntry: { page_size: 20, options_limit: 80, options_search_limit: 40 },
   },
 });
 assert.equal(
@@ -1025,42 +1102,12 @@ assert.equal(nestedProgress.hasChanges.value, true, 'nested one2many drafts must
 nestedOne2manyRows.responsibility_ids.splice(0);
 assert.equal(nestedProgress.hasChanges.value, false, 'removing a new one2many draft row must restore the clean form state');
 
-for (const legacyVersion of ['2.0.0', '2.1.0']) {
-  const legacyServerSnapshot = snapshot() as ContractV2Snapshot & {
-    layoutContract: { containerTree: Array<Record<string, unknown>> };
-  };
-  legacyServerSnapshot.pageInfo.contractVersion = legacyVersion;
-  const legacyRoot = legacyServerSnapshot.layoutContract.containerTree[0];
-  const legacyChildren = legacyRoot.children as Array<Record<string, unknown>>;
-  legacyRoot.children = [legacyChildren[0], legacyChildren[2]];
-  legacyRoot.tabs = [legacyChildren[1]];
-  for (const child of [...legacyRoot.children as Array<Record<string, unknown>>, ...legacyRoot.tabs as Array<Record<string, unknown>>]) {
-    for (const widget of child.widgetList as Array<Record<string, unknown>>) delete widget.ownerContainerId;
-  }
-  const normalizedLegacyStore = createContractV2Store(decodeContractV2Snapshot(legacyServerSnapshot));
-  assert.deepEqual(
-    collectFields(presentContractV2Form(normalizedLegacyStore, 'edit').zones.primary).map((field) => field.fieldCode),
-    ['name', 'line_ids', 'state'],
-    `a new client must normalize an old ${legacyVersion} child carrier and ownership before the strict store`,
-  );
-}
-
-const malformedLegacyChildCarrier = snapshot() as ContractV2Snapshot & {
-  layoutContract: { containerTree: Array<Record<string, unknown>> };
-};
-malformedLegacyChildCarrier.pageInfo.contractVersion = '2.0.0';
-malformedLegacyChildCarrier.layoutContract.containerTree[0].tabs = { invalid: true };
-assert.throws(
-  () => decodeContractV2Snapshot(malformedLegacyChildCarrier),
-  /tabs is not allowed/,
-  'legacy compatibility must not erase a malformed child carrier before strict decoding',
-);
 const unsupportedFutureVersion = snapshot();
-unsupportedFutureVersion.pageInfo.contractVersion = '2.7.0';
+unsupportedFutureVersion.pageInfo.contractVersion = '2.8.0';
 assert.throws(
   () => decodeContractV2Snapshot(unsupportedFutureVersion),
-  /must be a negotiated 2\.0 through 2\.6 version/,
-  'an unadvertised future minor must fail closed instead of using the 2.5 decoder',
+  /must be a negotiated 2\.7 version/,
+  'an unadvertised future minor must fail closed instead of using the 2.7 decoder',
 );
 assert.deepEqual(
   collectUnifiedPageContractV2FieldWidgets(snapshot()).map((widget) => widget.fieldCode),
@@ -1345,21 +1392,14 @@ assert.deepEqual(
     pageContractVersion: structurePresentationFields.find((field) => field.fieldCode === 'name')?.pageContractVersion,
   },
   {
-    version: '1.0',
+    version: '2.7.0',
     rendererVersion: '1.0.0',
-    supportedContractVersion: '>=2.0.0 <2.7.0',
-    pageContractVersion: '2.3.0',
+    supportedContractVersion: '>=2.0.0 <2.8.0',
+    pageContractVersion: '2.7.0',
   },
-  'component identity, renderer version and page Contract V2 version must reach the presentation model',
+  'semantic implementation, renderer version and page Contract V2 version must reach the presentation model',
 );
 
-const missingComponentRegistrySnapshot = snapshot();
-delete missingComponentRegistrySnapshot.layoutContract.componentRegistry['sc.input.text'];
-assert.throws(
-  () => presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(missingComponentRegistrySnapshot)), 'edit'),
-  /PROFESSIONAL_COMPONENT_CONTRACT_REGISTRY_MISSING:sc\.input\.text/,
-  'a widget without its delivered component registry authority must fail closed',
-);
 assert.deepEqual(
   {
     span: structurePresentationModel.zones.primary[0].span,
@@ -1639,6 +1679,28 @@ const widgetIdentitySnapshot = snapshot();
 widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].widgetType = 'radio';
 widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].nativeLocator = '/form/sheet/group/field[1]';
 widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].occurrenceIndex = 1;
+widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].nativeIdentity = {
+  schemaVersion: '1.0.0',
+  model: 'x.document',
+  viewType: 'form',
+  viewId: 801,
+  viewXmlId: 'x.document_form',
+  viewContentHash: '1'.repeat(64),
+  viewStructureKey: `struct.v1.${'2'.repeat(24)}`,
+  crossEnvironmentStable: true,
+  kind: 'field',
+  name: 'name',
+  nativeLocator: '/form/sheet/group/field[1]',
+  occurrenceIndex: 1,
+  sourcePosition: 7,
+  occurrenceKey: `occ.v1.${'3'.repeat(24)}`,
+  authoritative: true,
+  sourceAuthority: {
+    kind: 'ir.ui.view',
+    projectionOnly: true,
+    noBusinessFactAuthority: true,
+  },
+};
 widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].sourcePosition = 7;
 const widgetIdentityField = collectFields(presentContractV2Form(
   createContractV2Store(decodeContractV2Snapshot(widgetIdentitySnapshot)),
@@ -1954,12 +2016,22 @@ assert.equal(
 const nativeOccurrenceActionSnapshot = structuredClone(snapshot());
 nativeOccurrenceActionSnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'button.native.submit', containerType: 'button', type: 'button', title: 'Submit Native', span: 24,
-  action: { native_identity: { type: 'object', name: 'action_submit', occurrence_index: 1 } },
+  action: {
+    nativeIdentity: nativeButtonIdentity(
+      'action_submit',
+      '/form[1]/header[1]/button[3]',
+      1,
+      '7',
+    ),
+  },
   children: [], widgetList: [],
 });
-nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].nativeIdentity = {
-  type: 'object', name: 'action_submit', occurrence_index: 1,
-};
+nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].nativeIdentity = nativeButtonIdentity(
+  'action_submit',
+  '/form[1]/header[1]/button[3]',
+  1,
+  '7',
+);
 nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].sourceWidgetId = 'button.native.submit';
 nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].targetScope = 'record';
 nativeOccurrenceActionSnapshot.actionContract.actionRuleList[0].backendIdentity = 'native_button:object:action_submit:/form[1]/header[1]/button[3]:1';
@@ -2195,7 +2267,7 @@ const relationMappedField = canonicalFieldToFormSection({
   required: true,
   fieldDescriptor: {
     relation: 'project.project',
-    relation_entry: {
+    relationEntry: {
       can_read: true,
       can_open: true,
       can_create: true,
@@ -2240,7 +2312,7 @@ semanticEditNameNode.fields.push({
   label: 'Amount',
   value: 50,
   fieldType: 'monetary',
-  componentKey: 'sc.field.monetary',
+  semanticType: 'money',
   semanticRole: 'summary',
 });
 semanticEditNameNode.fields.push({
@@ -2250,7 +2322,7 @@ semanticEditNameNode.fields.push({
   label: 'Lines',
   value: [],
   fieldType: 'one2many',
-  componentKey: 'sc.relation.table',
+  semanticType: 'detail_collection',
   required: false,
   semanticRole: 'relation',
   semanticSlot: 'lines',
@@ -2444,7 +2516,7 @@ function addContextGroup(groupId: string, fieldCodes: string[]) {
     containerId: `field.${fieldCode}`, containerType: 'field', type: 'field', name: fieldCode, title: '', span: 12,
     children: [], widgetList: [{
       widgetId: `field.${fieldCode}`, widgetType: 'input', fieldCode, label: fieldCode, span: 12,
-      componentKey: 'sc.display.text', capabilities: [], componentConfig: { fieldType: 'char' },
+      semanticType: 'readable_value', capabilities: [], componentConfig: { fieldType: 'char' },
       ownerContainerId: `field.${fieldCode}`,
     }],
   }));
@@ -2574,7 +2646,7 @@ createFloorplanSnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'field.empty_context', containerType: 'field', type: 'field', name: 'empty_context', title: '', span: 12,
   children: [], widgetList: [{
     widgetId: 'field.empty_context', widgetType: 'input', fieldCode: 'empty_context', label: 'Empty context', span: 12,
-    componentKey: 'sc.display.text', capabilities: [], componentConfig: { fieldType: 'char' },
+    semanticType: 'readable_value', capabilities: [], componentConfig: { fieldType: 'char' },
     ownerContainerId: 'field.empty_context',
   }],
 });
@@ -2704,7 +2776,7 @@ contextRailSnapshot.layoutContract.containerTree.splice(1, 0, {
     containerId: 'field.reference', containerType: 'field', type: 'field', name: 'reference', title: '', span: 24,
     children: [], widgetList: [{
       widgetId: 'field.reference', widgetType: 'input', fieldCode: 'reference', label: 'Reference', span: 24,
-      componentKey: 'sc.display.text', capabilities: [], componentConfig: { fieldType: 'char' },
+      semanticType: 'readable_value', capabilities: [], componentConfig: { fieldType: 'char' },
       ownerContainerId: 'field.reference',
     }],
   }], widgetList: [],
@@ -2735,7 +2807,7 @@ relationSnapshot.layoutContract.containerTree[0].children.push({
   containerId: 'field.project_id', containerType: 'field', type: 'field', name: 'project_id', title: '', span: 12,
   children: [], widgetList: [{
     widgetId: 'field.project_id', widgetType: 'select', fieldCode: 'project_id', label: 'Project', span: 12,
-    componentKey: 'sc.relation.many2one', capabilities: [],
+    semanticType: 'relation', capabilities: [],
     componentConfig: { relation: 'project.project', fieldType: 'many2one' },
     ownerContainerId: 'field.project_id',
   }],
@@ -2977,7 +3049,7 @@ duplicateAcrossRoots.layoutContract.containerTree.splice(1, 0, {
   containerId: 'legacy.identity.mirror', containerType: 'group', type: 'group', title: 'Legacy mirror', span: 24,
   children: [], widgetList: [{
     widgetId: 'field.name', widgetType: 'input', fieldCode: 'name', label: 'Name', span: 12,
-    componentKey: 'sc.input.text', capabilities: [], componentConfig: { fieldType: 'char' },
+    semanticType: 'text', capabilities: [], componentConfig: { fieldType: 'char' },
     ownerContainerId: 'legacy.identity.mirror',
   }],
 });
@@ -2990,6 +3062,28 @@ assert.throws(
 const duplicateOccurrences = snapshot();
 const duplicateRoot = duplicateOccurrences.layoutContract.containerTree[0];
 const duplicateBaseWidget = duplicateRoot.children[0].widgetList[0];
+const duplicateIdentity = (index: number, locator: string) => ({
+  schemaVersion: '1.0.0' as const,
+  model: 'x.document',
+  viewType: 'form',
+  viewId: 801,
+  viewXmlId: 'x.document_form',
+  viewContentHash: '4'.repeat(64),
+  viewStructureKey: `struct.v1.${'5'.repeat(24)}`,
+  crossEnvironmentStable: true,
+  kind: 'field' as const,
+  name: 'name',
+  nativeLocator: locator,
+  occurrenceIndex: index,
+  sourcePosition: index,
+  occurrenceKey: `occ.v1.${String(index).padStart(24, '6')}`,
+  authoritative: true,
+  sourceAuthority: {
+    kind: 'ir.ui.view' as const,
+    projectionOnly: true as const,
+    noBusinessFactAuthority: true as const,
+  },
+});
 duplicateRoot.widgetList = [];
 duplicateRoot.children = [
   {
@@ -3000,11 +3094,23 @@ duplicateRoot.children = [
     nativeLocator: 'form/field[name=name][1]',
     occurrenceIndex: 1,
     sourcePosition: 1,
+    nativeIdentity: duplicateIdentity(1, 'form/field[name=name][1]'),
     widgetList: [{
       ...duplicateBaseWidget,
       widgetId: 'field.name.occ.first',
       ownerContainerId: 'field.name.occ.first',
-      fieldDescriptor: { name: 'name', type: 'char' },
+      nativeLocator: 'form/field[name=name][1]',
+      occurrenceIndex: 1,
+      sourcePosition: 1,
+      nativeIdentity: duplicateIdentity(1, 'form/field[name=name][1]'),
+      fieldDescriptor: {
+        schemaVersion: '1.0.0',
+        fieldCode: 'name',
+        label: 'Name',
+        fieldType: 'char',
+        widgetType: 'input',
+        semanticType: 'text',
+      },
       componentConfig: {
         ...duplicateBaseWidget.componentConfig,
         native_locator: 'form/field[name=name][1]',
@@ -3021,11 +3127,23 @@ duplicateRoot.children = [
     nativeLocator: 'form/field[name=name][2]',
     occurrenceIndex: 2,
     sourcePosition: 2,
+    nativeIdentity: duplicateIdentity(2, 'form/field[name=name][2]'),
     widgetList: [{
       ...duplicateBaseWidget,
       widgetId: 'field.name.occ.second',
       ownerContainerId: 'field.name.occ.second',
-      fieldDescriptor: { name: 'name', type: 'char' },
+      nativeLocator: 'form/field[name=name][2]',
+      occurrenceIndex: 2,
+      sourcePosition: 2,
+      nativeIdentity: duplicateIdentity(2, 'form/field[name=name][2]'),
+      fieldDescriptor: {
+        schemaVersion: '1.0.0',
+        fieldCode: 'name',
+        label: 'Name',
+        fieldType: 'char',
+        widgetType: 'input',
+        semanticType: 'text',
+      },
       componentConfig: {
         ...duplicateBaseWidget.componentConfig,
         native_locator: 'form/field[name=name][2]',
@@ -4095,12 +4213,12 @@ function stateDependentNativeHeaderSnapshot() {
     sourceWidgetId: 'page.header',
     sourceChannel: 'native_form_header',
     button: { name: 'action_project_borrow_company', type: 'object' },
-    nativeIdentity: {
-      type: 'object',
-      name: 'action_project_borrow_company',
-      native_locator: '/form[1]/header[1]/button[1]',
-      occurrence_index: 1,
-    },
+    nativeIdentity: nativeButtonIdentity(
+      'action_project_borrow_company',
+      '/form[1]/header[1]/button[1]',
+      1,
+      '9',
+    ),
     visible: {
       attrs: {
         invisible: { kind: 'not', expr: { kind: 'field_truthy', field: 'project_id' } },
@@ -4214,13 +4332,12 @@ function stageGapLayoutButtonSnapshot(mainDataPatch: Record<string, unknown>) {
     presentationAuthority: 'native_contract',
     button: { name: '556', type: 'action' },
     target: { action_ref: '556', view_type: 'tree' },
-    nativeIdentity: {
-      type: 'action',
-      name: '556',
-      string: '去补齐资料',
-      native_locator: '/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/button[1]',
-      occurrence_index: 1,
-    },
+    nativeIdentity: nativeButtonIdentity(
+      '556',
+      '/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/button[1]',
+      1,
+      '8',
+    ),
     presentation: { tier: 'overflow' },
     visibleProfiles: ['create', 'edit', 'readonly'],
     visible: {
@@ -4377,8 +4494,10 @@ console.log('[canonical_form_presenter] declared field-to-field action visibilit
 // contract's fetch-time primary resolution stays dominant (the workspace case
 // ships a save action alongside a state-dependent business primary).
 const stateDerivedPrimarySnapshot = stateDependentNativeHeaderSnapshot();
+const stateDerivedSaveBase = { ...stateDerivedPrimarySnapshot.actionContract.actionRuleList[0] };
+delete stateDerivedSaveBase.nativeIdentity;
 stateDerivedPrimarySnapshot.actionContract.actionRuleList.push({
-  ...stateDerivedPrimarySnapshot.actionContract.actionRuleList[0],
+  ...stateDerivedSaveBase,
   actionId: 'form.save',
   actionKey: 'form.save',
   label: '保存草稿',
@@ -4387,7 +4506,6 @@ stateDerivedPrimarySnapshot.actionContract.actionRuleList.push({
   sourceWidgetId: 'page.root',
   triggerType: 'submit',
   targetScope: 'page',
-  nativeIdentity: {},
   button: {},
   visible: {},
   presentation: { tier: 'primary' },
@@ -4550,7 +4668,7 @@ assert.deepEqual(createRelationStore.snapshot.dataContract.mainData.line_ids, cr
 console.log('native create relation snapshot binding: passed');
 
 const nestedWidgetSnapshot: ContractV2Snapshot = structuredClone(snapshot());
-nestedWidgetSnapshot.pageInfo.contractVersion = '2.4.0';
+nestedWidgetSnapshot.pageInfo.contractVersion = '2.7.0';
 const nestedContainer = nestedWidgetSnapshot.layoutContract.containerTree[0];
 const sourceAuthority = {
   kind: 'ir.ui.view' as const,
@@ -4593,7 +4711,7 @@ const nestedWidget = {
   fieldCode: 'name',
   label: 'Name',
   span: 12,
-  componentKey: 'sc.input.text',
+  semanticType: 'text',
   capabilities: [],
   componentConfig: { fieldType: 'char' },
   ownerContainerId: nestedContainer.containerId,
@@ -4611,7 +4729,7 @@ assert.doesNotThrow(
 );
 
 const fieldOwnerSnapshot: ContractV2Snapshot = structuredClone(snapshot());
-fieldOwnerSnapshot.pageInfo.contractVersion = '2.4.0';
+fieldOwnerSnapshot.pageInfo.contractVersion = '2.7.0';
 const fieldOwnerNode = fieldOwnerSnapshot.layoutContract.containerTree[0].children[0];
 fieldOwnerNode.nativeLocator = widgetLocator;
 fieldOwnerNode.occurrenceIndex = 1;

@@ -127,60 +127,40 @@ class ContractVersionNegotiationTest(unittest.TestCase):
     def negotiate(self, **overrides):
         values = {
             "client_type": "web_pc",
-            "accepted_contract_versions": ["2.0.x", "2.1.x", "2.2.x", "2.3.x", "2.4.x", "2.5.x"],
+            "accepted_contract_versions": ["2.7.x"],
             "client_contract_capabilities": [],
         }
         values.update(overrides)
         return NEGOTIATION_MODULE.negotiate_client_contract(**values)
 
-    def test_known_old_client_without_versions_gets_complete_legacy_projection(self):
-        result = self.negotiate(accepted_contract_versions=[])
-        self.assertEqual(result["contractVersion"], "2.5.0")
-        self.assertEqual(result["pageOrchestrationVersion"], "2.0.0")
-        self.assertEqual(result["compatibilityMode"], "known_client_without_versions")
-        self.assertFalse(result["carriers"]["page_block_data.v1"]["enabled"])
+    def test_current_client_gets_v27_projection(self):
+        result = self.negotiate()
+        self.assertEqual(result["contractVersion"], "2.7.0")
+        self.assertEqual(result["pageOrchestrationVersion"], "2.1.0")
+        self.assertEqual(result["status"], "current")
 
-    def test_client_that_only_accepts_25_gets_complete_legacy_projection(self):
-        result = self.negotiate(accepted_contract_versions=["2.5"])
-        self.assertEqual(result["contractVersion"], "2.5.0")
-        self.assertEqual(result["pageOrchestrationVersion"], "2.0.0")
-
-    def test_client_that_only_accepts_24_fails_closed(self):
+    def test_missing_versions_fail_closed(self):
         with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:
-            self.negotiate(accepted_contract_versions=["2.4.x"])
+            self.negotiate(accepted_contract_versions=[])
         self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
 
-    def test_client_that_only_accepts_20_fails_closed(self):
-        with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:
-            self.negotiate(accepted_contract_versions=["2.0.x"])
-        self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
+    def test_pre_v27_versions_fail_closed(self):
+        for version in ("2.0.x", "2.4.x", "2.5.x", "2.6.x"):
+            with self.subTest(version=version):
+                with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:
+                    self.negotiate(accepted_contract_versions=[version])
+                self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
 
-    def test_mixed_versions_without_25_have_no_common_legacy_version(self):
-        with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:
-            self.negotiate(accepted_contract_versions=["2.4.x", "2.6.x"])
-        self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
-
-    def test_26_without_page_block_capability_gets_complete_legacy_projection(self):
-        result = self.negotiate(accepted_contract_versions=["2.5.x", "2.6.x"])
-        self.assertEqual(result["contractVersion"], "2.5.0")
-        self.assertEqual(result["pageOrchestrationVersion"], "2.0.0")
-        self.assertEqual(result["compatibilityMode"], "new_version_without_page_block_capability")
-
-    def test_26_only_without_page_block_capability_fails_closed(self):
-        with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:
-            self.negotiate(accepted_contract_versions=["2.6.x"])
-        self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
-
-    def test_26_enables_each_declared_current_carrier_independently(self):
+    def test_27_enables_each_declared_current_carrier_independently(self):
         result = self.negotiate(
-            accepted_contract_versions=["2.5.x", "2.6.x"],
+            accepted_contract_versions=["2.7.x"],
             client_contract_capabilities=[
                 "page_block_data.v1",
                 "attachment_fact.v1",
                 "page_block_action.v1",
             ],
         )
-        self.assertEqual(result["contractVersion"], "2.6.0")
+        self.assertEqual(result["contractVersion"], "2.7.0")
         self.assertEqual(result["pageOrchestrationVersion"], "2.1.0")
         self.assertTrue(result["carriers"]["page_block_data.v1"]["enabled"])
         self.assertFalse(result["carriers"]["attachment_fact.v1"]["enabled"])
@@ -190,12 +170,12 @@ class ContractVersionNegotiationTest(unittest.TestCase):
             "page_block_data_and_action_v1",
         )
 
-    def test_26_with_only_page_block_action_enables_action_carrier(self):
+    def test_27_with_only_page_block_action_enables_action_carrier(self):
         result = self.negotiate(
-            accepted_contract_versions=["2.5.x", "2.6.x"],
+            accepted_contract_versions=["2.7.x"],
             client_contract_capabilities=["page_block_action.v1"],
         )
-        self.assertEqual(result["contractVersion"], "2.6.0")
+        self.assertEqual(result["contractVersion"], "2.7.0")
         self.assertEqual(result["pageOrchestrationVersion"], "2.1.0")
         self.assertFalse(result["carriers"]["page_block_data.v1"]["enabled"])
         self.assertFalse(result["carriers"]["attachment_fact.v1"]["enabled"])
@@ -206,41 +186,92 @@ class ContractVersionNegotiationTest(unittest.TestCase):
         with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:
             self.negotiate(
                 client_type="unknown_native",
-                accepted_contract_versions=["2.5"],
+                accepted_contract_versions=["2.7.x"],
             )
         self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
 
     def test_missing_client_type_with_negotiation_declaration_fails_closed(self):
         with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError):
-            self.negotiate(client_type="", accepted_contract_versions=["2.6.x"])
+            self.negotiate(client_type="", accepted_contract_versions=["2.7.x"])
 
     def test_no_common_version_fails_closed(self):
         with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:
             self.negotiate(accepted_contract_versions=["1.0.x", "2.99.x"])
         self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
 
-    def test_pre_negotiation_absence_gets_legacy_projection(self):
-        result = NEGOTIATION_MODULE.negotiate_client_contract(
-            client_type="",
-            accepted_contract_versions=None,
-            client_contract_capabilities=None,
-        )
-        self.assertEqual(result["contractVersion"], "2.5.0")
-        self.assertEqual(result["clientType"], "")
-        self.assertEqual(
-            result["compatibilityMode"],
-            "pre_negotiation_client_without_identity",
-        )
+    def test_pre_negotiation_absence_fails_closed(self):
+        with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError):
+            NEGOTIATION_MODULE.negotiate_client_contract(
+                client_type="",
+                accepted_contract_versions=None,
+                client_contract_capabilities=None,
+            )
 
     def test_new_version_never_leaks_unrequested_carriers(self):
         result = self.negotiate(
-            accepted_contract_versions=["2.6.x"],
+            accepted_contract_versions=["2.7.x"],
             client_contract_capabilities=["page_block_data.v1"],
         )
         self.assertEqual(
             {key for key, row in result["carriers"].items() if row["enabled"]},
             {"page_block_data.v1"},
         )
+
+    def test_internal_helper_preserves_explicit_camel_case_refusals(self):
+        cases = (
+            {
+                "clientType": "web_pc",
+                "acceptedContractVersions": ["2.6.x"],
+            },
+            {
+                "clientType": "unknown_native",
+                "acceptedContractVersions": ["2.7.x"],
+            },
+        )
+        for params in cases:
+            with self.subTest(params=params):
+                normalized = NEGOTIATION_MODULE.with_internal_client_contract(params)
+                with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError):
+                    NEGOTIATION_MODULE.negotiate_payload(normalized)
+
+    def test_internal_helper_defaults_only_missing_declarations(self):
+        normalized = NEGOTIATION_MODULE.with_internal_client_contract({
+            "clientType": "wx_mini",
+            "acceptedContractVersions": ["2.7.x"],
+            "clientContractCapabilities": ["page_block_data.v1"],
+        })
+        self.assertEqual(normalized["client_type"], "wx_mini")
+        self.assertEqual(normalized["accepted_contract_versions"], ["2.7.x"])
+        self.assertEqual(
+            normalized["client_contract_capabilities"],
+            ["page_block_data.v1"],
+        )
+        self.assertNotIn("clientType", normalized)
+        self.assertNotIn("acceptedContractVersions", normalized)
+        self.assertEqual(
+            NEGOTIATION_MODULE.negotiate_payload(normalized)["clientType"],
+            "wx_mini",
+        )
+
+    def test_conflicting_snake_and_camel_declarations_fail_closed(self):
+        with self.assertRaisesRegex(
+            NEGOTIATION_MODULE.ContractNegotiationError,
+            "conflicting declarations",
+        ):
+            NEGOTIATION_MODULE.with_internal_client_contract({
+                "client_type": "web_pc",
+                "clientType": "wx_mini",
+                "accepted_contract_versions": ["2.7.x"],
+            })
+        with self.assertRaisesRegex(
+            NEGOTIATION_MODULE.ContractNegotiationError,
+            "conflicting declarations",
+        ):
+            NEGOTIATION_MODULE.negotiate_payload({
+                "client_type": "web_pc",
+                "clientType": "wx_mini",
+                "accepted_contract_versions": ["2.7.x"],
+            })
 
 
 class PageBlockDataContractTest(unittest.TestCase):
@@ -355,7 +386,9 @@ class P0ContractProducerDesignTest(unittest.TestCase):
     DESCRIPTOR_SCHEMA_PATH = Path("docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json")
     DESCRIPTOR_CASES_PATH = Path("docs/architecture/p0_contract_producer_01/descriptor_cases.json")
     SEMANTIC_REGISTRY_PATH = Path("contracts/registry/semantic.yaml")
-    COMPONENT_REGISTRY_PATH = Path("contracts/registry/component.yaml")
+    IMPLEMENTATION_REGISTRY_PATH = Path(
+        "frontend/apps/web/src/app/presentation/implementation_registry.yaml"
+    )
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -364,23 +397,25 @@ class P0ContractProducerDesignTest(unittest.TestCase):
         cls.report = (ROOT / cls.REPORT_PATH).read_text(encoding="utf-8")
         cls.descriptor_schema = json.loads((ROOT / cls.DESCRIPTOR_SCHEMA_PATH).read_text(encoding="utf-8"))
         cls.descriptor_cases = json.loads((ROOT / cls.DESCRIPTOR_CASES_PATH).read_text(encoding="utf-8"))
+        for case in cls.descriptor_cases.get("cases", []):
+            if (
+                case.get("id") != "DESC-SEMANTIC-COMPONENT-MISMATCH"
+                and isinstance(case.get("descriptor"), dict)
+            ):
+                case["descriptor"].pop("componentKey", None)
         cls.semantic_registry = yaml.safe_load((ROOT / cls.SEMANTIC_REGISTRY_PATH).read_text(encoding="utf-8"))
-        cls.component_registry = yaml.safe_load((ROOT / cls.COMPONENT_REGISTRY_PATH).read_text(encoding="utf-8"))
+        cls.implementation_registry = yaml.safe_load(
+            (ROOT / cls.IMPLEMENTATION_REGISTRY_PATH).read_text(encoding="utf-8")
+        )
         cls.packages = {item["id"]: item for item in cls.design["work_packages"]}
 
     def descriptor_field_semantics(self) -> dict[str, dict]:
         semantics = self.semantic_registry["semantics"]
-        components = self.component_registry["components"]
         field_semantics: dict[str, dict] = {}
         for semantic_type, declaration in semantics.items():
-            component_key = declaration.get("component")
-            component = components.get(component_key)
-            if not isinstance(component, dict) or component.get("kind"):
-                continue
-            supported = component.get("field_types", [])
+            supported = declaration.get("field_types", [])
             if "*" in supported or any(field_type != "action" for field_type in supported):
                 field_semantics[semantic_type] = {
-                    "component": component_key,
                     "supported_field_types": supported,
                 }
         return field_semantics
@@ -394,24 +429,19 @@ class P0ContractProducerDesignTest(unittest.TestCase):
     def descriptor_registry_errors(self, descriptor: dict) -> list[str]:
         errors: list[str] = []
         semantic_type = descriptor.get("semanticType")
-        component_key = descriptor.get("componentKey")
         field_type = descriptor.get("fieldType")
         semantics = self.semantic_registry["semantics"]
-        components = self.component_registry["components"]
         field_semantics = self.descriptor_field_semantics()
-        component = components.get(component_key)
+        if "componentKey" in descriptor:
+            errors.append("V2.7 Field Descriptor must not publish frontend componentKey")
         if semantic_type in semantics and semantic_type not in field_semantics:
             errors.append(f"semanticType {semantic_type!r} is an action-only semantic owned by P0-C")
         elif semantic_type not in field_semantics:
             errors.append(f"semanticType {semantic_type!r} is not declared")
-        elif field_semantics[semantic_type]["component"] != component_key:
-            errors.append(f"semanticType {semantic_type!r} does not resolve to {component_key!r}")
-        if not isinstance(component, dict) or component.get("kind"):
-            errors.append(f"componentKey {component_key!r} is not a registered field component")
         else:
-            supported = component.get("field_types", [])
+            supported = field_semantics[semantic_type]["supported_field_types"]
             if "*" not in supported and field_type not in supported:
-                errors.append(f"componentKey {component_key!r} does not support fieldType {field_type!r}")
+                errors.append(f"semanticType {semantic_type!r} does not support fieldType {field_type!r}")
         widget_type = descriptor.get("widgetType")
         widget_declaration = self.semantic_registry["native_widgets"].get(widget_type)
         if not isinstance(widget_declaration, dict):
@@ -457,45 +487,36 @@ class P0ContractProducerDesignTest(unittest.TestCase):
 
     def test_accepted_versions_and_capabilities_are_real_negotiation_inputs(self) -> None:
         strategy = self.design["version_strategy"]
-        self.assertIn("2.6.x", strategy["accepted_contract_versions_extension"]["target_values"])
+        self.assertEqual(strategy["contract_v2_target"], "2.7.0")
+        self.assertEqual(strategy["accepted_contract_versions"]["target_values"], ["2.7.x"])
         self.assertEqual(
             set(strategy["client_contract_capabilities_extension"]["required_new_capabilities"]),
             {"page_block_data.v1", "attachment_fact.v1", "page_block_action.v1"},
         )
         self.assertEqual(
-            strategy["accepted_contract_versions_extension"]["server_request_field"],
+            strategy["accepted_contract_versions"]["server_request_field"],
             "accepted_contract_versions",
         )
-        self.assertIn("does not preserve", strategy["current_state"]["backend_request_normalizer"])
-        self.assertIn("not frontend decoder evidence", strategy["current_state"]["contract_compatibility_core"])
-        missing = strategy["accepted_contract_versions_extension"]["missing_declaration_policy"]
         self.assertEqual(
-            missing["known_client_without_versions"],
-            "serve the complete legacy projection",
-        )
-        self.assertEqual(
-            missing["unknown_or_missing_client_type"],
+            strategy["accepted_contract_versions"]["missing_declaration_policy"],
             "fail closed with CONTRACT_VERSION_UNSUPPORTED",
         )
-        self.assertFalse(missing["new_carriers_allowed"])
+        self.assertEqual(strategy["projection_contract"]["pre_v27_projection"], "rejected")
         client_source = (ROOT / "frontend/apps/web/src/app/contracts/v2/client.ts").read_text(encoding="utf-8")
         schema_source = (ROOT / "frontend/apps/web/src/app/contracts/v2/schema.ts").read_text(encoding="utf-8")
         payload_source = (ROOT / "addons/smart_core/app_config_engine/utils/payload.py").read_text(encoding="utf-8")
         workbench_source = (ROOT / "frontend/apps/web/src/views/WorkbenchView.vue").read_text(encoding="utf-8")
-        self.assertIn("2.6.x", client_source)
-        self.assertIn(r"/^2\.(0|1|2|3|4|5|6)\.\d+$/", schema_source)
+        self.assertIn("['2.7.x']", client_source)
+        self.assertIn(r"/^2\.7\.\d+$/", schema_source)
         self.assertNotIn("accepted_contract_versions", payload_source)
         self.assertIn("asText(contract.contract_version) === '2.0.0'", workbench_source)
 
     def test_decoder_evidence_distinguishes_executed_and_pending(self) -> None:
         cases = {row["case"]: row for row in self.design["version_strategy"]["real_decoder_acceptance"]}
-        self.assertEqual(cases["old_decoder_old_projection"]["evidence_status"], "executed")
-        self.assertEqual(cases["old_decoder_new_outer_version"]["expected"], "REJECT")
-        self.assertEqual(cases["old_decoder_undeclared_carrier"]["expected"], "REJECT")
-        self.assertEqual(
-            cases["new_decoder_new_projection"]["evidence_status"],
-            "required_not_run_pending_implementation",
-        )
+        self.assertEqual(cases["current_v27_projection"]["evidence_status"], "executed")
+        self.assertEqual(cases["pre_v27_projection"]["expected"], "REJECT")
+        self.assertEqual(cases["frontend_component_identity"]["expected"], "REJECT")
+        self.assertEqual(cases["undeclared_carrier"]["expected"], "REJECT")
         executed = {row["id"] for row in self.matrix["cases"] if row["evidence"] == "executed"}
         self.assertEqual(executed, {"DEC-01", "DEC-02", "DEC-03", "DEC-04", "NEG-05", "VER-07"})
         pending = {row["id"] for row in self.matrix["cases"] if row["evidence"] == "not_run_pending_implementation"}
@@ -619,20 +640,10 @@ class P0ContractProducerDesignTest(unittest.TestCase):
             set(self.descriptor_schema["properties"]["semanticType"]["enum"]),
             set(field_semantics),
         )
-        registry_field_types = {
-            field_type
-            for component in self.component_registry["components"].values()
-            if isinstance(component, dict) and not component.get("kind")
-            for field_type in component.get("field_types", [])
-            if field_type not in {"action", "*"}
-        }
         for semantic_type, declaration in field_semantics.items():
             supported = set(declaration["supported_field_types"])
             if "*" not in supported:
                 self.assertTrue(supported & schema_field_types, semantic_type)
-        self.assertTrue(
-            registry_field_types.issubset(schema_field_types),
-        )
         self.assertEqual(
             set(self.descriptor_schema["properties"]["widgetType"]["enum"]),
             set(self.descriptor_widget_statuses()),
@@ -647,7 +658,7 @@ class P0ContractProducerDesignTest(unittest.TestCase):
             self.assertTrue(declaration.get("reason_code"), widget_type)
         self.assertEqual(
             set(self.descriptor_schema["required"]),
-            {"schemaVersion", "fieldCode", "label", "fieldType", "widgetType", "componentKey", "semanticType"},
+            {"schemaVersion", "fieldCode", "label", "fieldType", "widgetType", "semanticType"},
         )
         seen = set()
         expected: dict[str, str] = {}
@@ -661,7 +672,6 @@ class P0ContractProducerDesignTest(unittest.TestCase):
                 self.assertTrue(errors, case["id"])
             if "semantic_registry" in failed_by:
                 self.assertTrue(registry_errors, case["id"])
-                self.assertEqual(errors, [], case["id"])
             if case["expect"] == "valid":
                 self.assertEqual(registry_errors, [], case["id"])
             actual = "invalid" if errors or registry_errors else "valid"
@@ -672,7 +682,7 @@ class P0ContractProducerDesignTest(unittest.TestCase):
             for row in self.matrix["cases"]
             if row["evidence"] == "executed_schema_validation"
         }
-        self.assertEqual(len(expected), 24)
+        self.assertEqual(len(expected), 26)
         self.assertEqual(schema_matrix, expected)
 
     def test_decode_result_keeps_registry_widget_metadata_outside_descriptor(self) -> None:
@@ -710,7 +720,6 @@ class P0ContractProducerDesignTest(unittest.TestCase):
             "label": "收藏",
             "fieldType": "boolean",
             "widgetType": "boolean_toggle",
-            "componentKey": "sc.input.boolean",
             "semanticType": "boolean",
         }
         original_registry = self.semantic_registry

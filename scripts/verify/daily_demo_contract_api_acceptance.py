@@ -181,7 +181,7 @@ def main():
             report["released_entry"] = entry
             contract = call(reader, "ui.contract.v2", {"op": "model", "model": MODEL, **entry,
                 "view_type": "form", "record_id": RECORD, "render_profile": "readonly",
-                "delivery_profile": "full", "client_type": "web_pc", "accepted_contract_versions": ["2.5.x"],
+                "delivery_profile": "full", "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"],
                 "client_contract_capabilities": ["container_tree.v2", "data_source.v2", "action_rule.v2", "relation_entry.v2", "status_contract.v2"]})
             button = approval_button(contract, "action_signed")
             report["pending_mutation"] = {"actor": current_actor, "button": button}
@@ -212,7 +212,7 @@ def main():
             origin = target_origin(workspace)
             contract = call(client, "ui.contract.v2", {"op": "model", "model": MODEL,
                 "view_type": "form", "record_id": RECORD, "render_profile": "readonly",
-                "delivery_profile": "full", "client_type": "web_pc", "accepted_contract_versions": ["2.5.x"],
+                "delivery_profile": "full", "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"],
                 "client_contract_capabilities": ["container_tree.v2", "data_source.v2", "action_rule.v2", "relation_entry.v2", "status_contract.v2"]})
             button = approval_button(contract)
             report["pending_mutation"] = {"actor": login, "origin": origin, "button": button}

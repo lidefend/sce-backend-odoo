@@ -398,6 +398,7 @@
                   :status="field.invalid ? 'error' : 'default'"
                   :described-by="fieldDescribedBy(field)"
                   :type="inputType(field.type)"
+                  :max-length="field.maxLength"
                   :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
                   @update:model-value="emitFieldChange(field, $event)"
                 />

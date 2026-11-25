@@ -16,16 +16,23 @@ CAPS = list(NODE_CAPABILITIES.values())
 
 def contract(keys):
     return {'pageInfo': {'contractVersion': '2.2.0'}, 'layoutContract': {
-        'containerTree': [{'containerId': str(i), 'componentKey': k} for i, k in enumerate(keys)],
-        'componentRegistry': {k: {'version': '1.0.0'} for k in keys}}}
+        'containerTree': [
+            {
+                'containerId': str(i),
+                'type': 'field' if k == 'readable_value' else 'div',
+                **({'fieldCode': 'field_%s' % i} if k == 'readable_value' else {}),
+                'semanticType': k,
+            }
+            for i, k in enumerate(keys)
+        ]}}
 
 
 class CapabilityTests(unittest.TestCase):
     def test_matrix(self):
-        for keys in ([], ['sc.feedback.message'], ['sc.navigation.anchor'], list(NODE_CAPABILITIES)):
+        for keys in ([], ['feedback_message'], ['navigation_anchor'], list(NODE_CAPABILITIES)):
             for supplied in (None, [], CAPS[:1], CAPS[1:], CAPS, True, CAPS[0], {'x': True}, [None]):
                 with self.subTest(keys=keys, supplied=supplied):
-                    p = {'accepted_contract_versions': ['2.5.x']}
+                    p = {'accepted_contract_versions': ['2.7.x']}
                     if supplied is not None: p['client_contract_capabilities'] = supplied
                     expected = isinstance(supplied, list) and all(NODE_CAPABILITIES[k] in supplied for k in keys)
                     if not keys or expected:
@@ -35,47 +42,46 @@ class CapabilityTests(unittest.TestCase):
                             validate_component_capabilities(contract(keys), p)
                         self.assertEqual(exc.exception.code, 'COMPONENT_CAPABILITY_REQUIRED')
 
-    def test_unknown_identity(self):
-        with self.assertRaisesRegex(FormConfigurationError, 'COMPONENT_UNREGISTERED'):
-            validate_component_capabilities(contract(['sc.unknown']), {'client_contract_capabilities': CAPS})
-
-    def test_versions_come_from_registry(self):
-        for version in ('1.0', '2.0.0', 'bogus', None):
-            c = contract(['sc.feedback.message'])
-            c['layoutContract']['componentRegistry']['sc.feedback.message']['version'] = version
-            with self.assertRaisesRegex(FormConfigurationError, 'COMPONENT_VERSION_UNSUPPORTED'):
-                validate_component_capabilities(c, {'client_contract_capabilities': CAPS})
-        import core.node_component_capabilities as module
-        with patch.object(module, 'component_registration', return_value={'kind': 'node', 'version': '2.0.0'}):
-            with self.assertRaisesRegex(FormConfigurationError, 'COMPONENT_VERSION_UNSUPPORTED'):
-                validate_component_capabilities(contract(['sc.feedback.message']), {'client_contract_capabilities': CAPS})
-
-    def test_empty_registry_does_not_require_unused_capability(self):
+    def test_empty_tree_does_not_require_unused_capability(self):
         c = contract([])
-        c['layoutContract']['componentRegistry']['sc.feedback.message'] = {'version': '1.0.0'}
         validate_component_capabilities(c, {})
 
     def test_registered_field_behavior_unchanged(self):
-        validate_component_capabilities(contract(['sc.display.text']), {})
+        validate_component_capabilities(contract(['readable_value']), {})
+
+    def test_unknown_or_mispositioned_semantic_is_a_contract_defect(self):
+        with self.assertRaises(FormConfigurationError) as unknown:
+            validate_component_capabilities(contract(['feedback_messsage']), {})
+        self.assertEqual(unknown.exception.code, 'NODE_SEMANTIC_UNKNOWN')
+
+        misplaced = contract([])
+        misplaced['layoutContract']['containerTree'] = [{
+            'containerId': 'node',
+            'type': 'div',
+            'semanticType': 'readable_value',
+        }]
+        with self.assertRaises(FormConfigurationError) as context:
+            validate_component_capabilities(misplaced, {})
+        self.assertEqual(context.exception.code, 'NODE_SEMANTIC_CONTEXT_INVALID')
 
     def test_ribbon_requires_capability_but_unsupported_node_is_published_for_client_rejection(self):
         with self.assertRaises(FormConfigurationError) as exc:
             validate_component_capabilities(
-                contract(['sc.display.ribbon']),
+                contract(['display_ribbon']),
                 {'client_contract_capabilities': []},
             )
         self.assertEqual(exc.exception.code, 'COMPONENT_CAPABILITY_REQUIRED')
         validate_component_capabilities(
-            contract(['sc.display.ribbon']),
+            contract(['display_ribbon']),
             {'client_contract_capabilities': ['form.display.ribbon.v1']},
         )
         validate_component_capabilities(
-            contract(['sc.unsupported.native_node']),
+            contract(['unsupported_native_node']),
             {'client_contract_capabilities': []},
         )
 
     def test_draft_feedback_requires_independent_capability(self):
-        c = contract(['sc.feedback.message'])
+        c = contract(['feedback_message'])
         c['layoutContract']['containerTree'][0]['componentConfig'] = {
             'purpose': 'advisory',
             'contentRef': {'containerId': 'source'},
@@ -97,13 +103,13 @@ class CapabilityTests(unittest.TestCase):
 
     def test_unsupported_optional_nodes_do_not_fail_the_page(self):
         c = contract([
-            'sc.feedback.message',
-            'sc.insight.summary',
-            'sc.action.list',
+            'feedback_message',
+            'insight_summary',
+            'action_list',
         ])
         c['layoutContract']['containerTree'][1]['children'] = [{
             'containerId': 'nested-optional',
-            'componentKey': 'sc.action.list',
+            'semanticType': 'action_list',
         }]
         c['statusContract'] = {'containerStatus': [
             {'containerId': '0'},
@@ -114,19 +120,19 @@ class CapabilityTests(unittest.TestCase):
             'client_contract_capabilities': ['form.feedback.message.v1'],
         })
         self.assertEqual(
-            [node['componentKey'] for node in c['layoutContract']['containerTree']],
-            ['sc.feedback.message'],
+            [node['semanticType'] for node in c['layoutContract']['containerTree']],
+            ['feedback_message'],
         )
         self.assertEqual(c['statusContract']['containerStatus'], [{'containerId': '0'}])
 
     def test_supported_optional_nodes_remain_when_the_client_declares_them(self):
-        c = contract(['sc.insight.summary', 'sc.action.list'])
+        c = contract(['insight_summary', 'action_list'])
         validate_component_capabilities(c, {
             'client_contract_capabilities': list(OPTIONAL_NODE_CAPABILITIES.values()),
         })
         self.assertEqual(
-            [node['componentKey'] for node in c['layoutContract']['containerTree']],
-            ['sc.insight.summary', 'sc.action.list'],
+            [node['semanticType'] for node in c['layoutContract']['containerTree']],
+            ['insight_summary', 'action_list'],
         )
 
 
@@ -149,7 +155,7 @@ class DeliveryTests(unittest.TestCase):
                 params = {
                     'client_type': 'web_pc',
                     'client_contract_capabilities': caps,
-                    'accepted_contract_versions': ['2.5.x'],
+                    'accepted_contract_versions': ['2.7.x'],
                 }
                 params.update({'source_type': 'scene_contract', 'scene_key': 'fixture'} if scene else {'model': 'res.partner'})
                 with patch.object(module, 'trim_unified_page_contract_v2', side_effect=lambda c, **kw: c) as trim:
@@ -176,7 +182,7 @@ class DeliveryTests(unittest.TestCase):
                         'model': 'res.partner',
                         'client_type': 'web_pc',
                         'client_contract_capabilities': caps,
-                        'accepted_contract_versions': ['2.5.x'],
+                        'accepted_contract_versions': ['2.7.x'],
                     }
                     if scene: params.update(source_type='scene_contract', scene_key='fixture')
                     with patch.object(module, 'trim_unified_page_contract_v2', side_effect=lambda c, **kw: c):
@@ -186,9 +192,13 @@ class DeliveryTests(unittest.TestCase):
     def test_post_seal_injection_is_checked(self):
         module, handler = self.handler()
         self.fixture.contract['layoutContract']['containerTree'] = []
-        module._authority.seal_runtime_contract = lambda *a, **kw: contract(['sc.feedback.message'])
+        module._authority.seal_runtime_contract = lambda *a, **kw: contract(['feedback_message'])
         with patch.object(module, 'trim_unified_page_contract_v2', side_effect=lambda c, **kw: c):
-            result = handler.handle({'params': {'model': 'res.partner'}})
+            result = handler.handle({'params': {
+                'model': 'res.partner',
+                'client_type': 'web_pc',
+                'accepted_contract_versions': ['2.7.x'],
+            }})
         self.assertFalse(result.ok)
         self.assertEqual(result.error['reason_code'], 'COMPONENT_CAPABILITY_REQUIRED')
 
@@ -209,14 +219,22 @@ class DeliveryTests(unittest.TestCase):
                 module, 'CONTRACT_PROJECTION_HOT_CACHE', cache), patch.object(
                 module, 'assemble_unified_page_contract_v2', side_effect=AssertionError('hot reassembly')), patch.object(
                 module, 'trim_unified_page_contract_v2', side_effect=AssertionError('hot trim')):
-            result = handler.handle({'params': {'model': 'res.partner'}})
+            result = handler.handle({'params': {
+                'model': 'res.partner',
+                'client_type': 'web_pc',
+                'accepted_contract_versions': ['2.7.x'],
+            }})
         self.assertTrue(result.ok, result)
 
     def test_final_boundary_covers_any_success_and_mutated_seal(self):
         module, handler = self.handler()
-        for keys in ([], ['sc.feedback.message'], ['sc.navigation.anchor'], list(NODE_CAPABILITIES)):
+        for keys in ([], ['feedback_message'], ['navigation_anchor'], list(NODE_CAPABILITIES)):
             handler._handle_contract = lambda *args: module.IntentExecutionResult(ok=True, data=contract(keys))
-            result = handler.handle({'params': {'client_contract_capabilities': []}})
+            result = handler.handle({'params': {
+                'client_type': 'web_pc',
+                'client_contract_capabilities': [],
+                'accepted_contract_versions': ['2.7.x'],
+            }})
             self.assertEqual(result.ok, not keys)
             if keys: self.assertEqual(result.error['reason_code'], 'COMPONENT_CAPABILITY_REQUIRED')
 
@@ -224,13 +242,21 @@ class DeliveryTests(unittest.TestCase):
         module, handler = self.handler()
         self.fixture.host['componentConfig']['extra'] = True
         with patch.object(module, 'trim_unified_page_contract_v2', side_effect=AssertionError('must reject before trim')):
-            result = handler.handle({'params': {'model': 'res.partner'}})
+            result = handler.handle({'params': {
+                'model': 'res.partner',
+                'client_type': 'web_pc',
+                'accepted_contract_versions': ['2.7.x'],
+            }})
         self.assertEqual(result.error['reason_code'], 'FEEDBACK_CONFIG_INVALID')
 
     def test_trim_cannot_hide_unsupported_component(self):
         module, handler = self.handler()
         with patch.object(module, 'trim_unified_page_contract_v2', side_effect=lambda c, **kw: contract([])) as trim:
-            result = handler.handle({'params': {'model': 'res.partner'}})
+            result = handler.handle({'params': {
+                'model': 'res.partner',
+                'client_type': 'web_pc',
+                'accepted_contract_versions': ['2.7.x'],
+            }})
         self.assertFalse(result.ok)
         self.assertEqual(trim.call_count, 0)
 
@@ -259,7 +285,7 @@ class DeliveryTests(unittest.TestCase):
                     'model': 'res.partner',
                     'client_type': 'web_pc',
                     'client_contract_capabilities': caps,
-                    'accepted_contract_versions': ['2.5.x'],
+                    'accepted_contract_versions': ['2.7.x'],
                 }})
             self.assertEqual(result.ok, bool(caps), result)
             if not caps: self.assertEqual(result.error['reason_code'], 'COMPONENT_CAPABILITY_REQUIRED')
