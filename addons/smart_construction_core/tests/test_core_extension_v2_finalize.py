@@ -795,9 +795,12 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         )
 
         # P0 injects the canonical workflow contract after native projection.
-        # With no industry-only project-page mutation left, this P1 hook must
-        # report "unchanged" rather than rebuilding the page graph.
-        self.assertIsNone(projected)
+        # The P1 hook may normalize the V2.7 wire, but it must not rebuild or
+        # redefine the project page graph.
+        self.assertIsNotNone(projected)
+        self.assertEqual(projected["layoutContract"]["containerTree"], contract["layoutContract"]["containerTree"])
+        self.assertEqual(projected["statusContract"], contract["statusContract"])
+        self.assertNotIn("componentRegistry", projected["layoutContract"])
         self.assertEqual(contract["layoutContract"], self._base_project_contract()["layoutContract"])
         self.assertEqual(contract["statusContract"], self._base_project_contract()["statusContract"])
         self.assertEqual(
@@ -891,7 +894,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                 "view_type": "form",
                 "render_profile": "edit",
                 "client_type": "web_pc",
-                "accepted_contract_versions": ["2.5.x"],
+                "accepted_contract_versions": ["2.7.x"],
                 "client_contract_capabilities": list(NODE_CAPABILITIES.values()),
             })
             result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
@@ -984,7 +987,18 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             self._base_project_contract(),
             {"source_contract": {"model": "res.partner", "view_type": "form"}},
         )
-        self.assertIsNone(projected)
+        self.assertIsNotNone(projected)
+        self.assertNotIn("componentRegistry", projected["layoutContract"])
+        self.assertEqual(
+            {
+                row.get("name")
+                for row in self._field_nodes(
+                    projected["layoutContract"]["containerTree"],
+                    include_widget_list=False,
+                )
+            },
+            {"user_id", "partner_id", "manager_id"},
+        )
 
     def test_payment_settlement_lines_use_explicit_professional_component_contract(self):
         contract = {

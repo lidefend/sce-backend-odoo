@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
-"""Project the contract semantic/component registry into runtime carriers.
+"""Project the V2.7 semantic specification and frontend implementation registry.
 
-The declaration authority is ``contracts/registry/{semantic,component}.yaml``.
+The backend semantic authority is ``contracts/registry/semantic.yaml``.
+The frontend implementation authority is
+``frontend/apps/web/src/app/presentation/implementation_registry.yaml``.
 The Odoo runtime image mounts only ``addons/`` (see ``docker-compose.yml``:
 ``./addons:/mnt/source-addons``), so ``contracts/`` is *not* readable at
 runtime.  This generator projects the declaration into a carrier that lives
@@ -13,10 +15,9 @@ Only tables the resolver actually consumes are emitted.  Projecting a table
 nobody reads would be a declared-but-unconsumed capability, which is exactly the
 defect class this programme is removing.
 
-Two carriers are projected from one declaration: the Python runtime carrier the
-Odoo addon imports, and the TypeScript table the frontend builds its component
-registrations from.  Projecting the frontend table is what removes the second
-hand-written frontend vocabulary instead of merely checking it for drift.
+The Python carrier contains no component implementation facts. The TypeScript
+carriers join semantic applicability from the semantic specification with
+frontend-owned renderer choices from the implementation registry.
 
 ``--check`` re-renders in memory and compares with the committed carriers, so a
 declaration edit without regeneration is a lint failure instead of silent drift.
@@ -26,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -34,7 +36,9 @@ import jsonschema
 
 ROOT = Path(__file__).resolve().parents[2]
 SEMANTIC_REL = Path("contracts/registry/semantic.yaml")
-COMPONENT_REL = Path("contracts/registry/component.yaml")
+IMPLEMENTATION_REL = Path(
+    "frontend/apps/web/src/app/presentation/implementation_registry.yaml"
+)
 REGISTRY_REL = Path("contracts/registry.yaml")
 CARRIER_REL = Path("addons/smart_core/core/contract_runtime/semantic_registry_generated.py")
 FRONTEND_REL = Path(
@@ -60,7 +64,7 @@ WHEN_KEYS = ("field_types", "widgets", "widgets_exclude", "widget_suffix")
 HEADER = '''# -*- coding: utf-8 -*-
 """GENERATED CONTRACT-RUNTIME CARRIER - do not edit by hand.
 
-Declaration authority: {sources}
+Semantic declaration authority: {sources}
 Regenerate with:
 
     python3 scripts/contract/generate_semantic_registry.py
@@ -95,25 +99,58 @@ def load(path: Path) -> dict:
     return data if isinstance(data, dict) else {}
 
 
-def validate_component_registry(component: dict) -> None:
+def validate_semantic_registry(semantic: dict) -> None:
     schema = json.loads((ROOT / "contracts/registry/registry.schema.json").read_text())
     try:
-        jsonschema.Draft202012Validator(schema).validate(component)
+        jsonschema.Draft202012Validator(schema).validate(semantic)
     except jsonschema.ValidationError as exc:
-        raise SystemExit(f"invalid component registry: {exc.message}") from exc
-    for key, entry in component["components"].items():
-        if entry.get("kind", "field") == "field" and entry["renderer"] not in component["renderers"]:
-            raise SystemExit(f"component {key!r} names unregistered renderer")
+        raise SystemExit(f"invalid semantic registry: {exc.message}") from exc
+
+
+def validate_implementation_registry(semantic: dict, implementation: dict) -> None:
+    if implementation.get("registry") != "implementation":
+        raise SystemExit("[generate-semantic-registry] FAIL: registry must be implementation")
+    renderers = set(implementation.get("renderers") or [])
+    field_semantics = semantic.get("semantics") or {}
+    node_semantics = semantic.get("node_semantics") or {}
+    implementations = implementation.get("implementations") or {}
+    node_implementations = implementation.get("node_implementations") or {}
+    extra = sorted(set(implementations) - set(field_semantics))
+    if extra:
+        raise SystemExit(
+            "[generate-semantic-registry] FAIL: frontend field implementation "
+            f"names undeclared semantics: extra={extra}"
+        )
+    extra_nodes = sorted(set(node_implementations) - set(node_semantics))
+    if extra_nodes:
+        raise SystemExit(
+            "[generate-semantic-registry] FAIL: frontend node implementation "
+            f"names undeclared semantics: extra={extra_nodes}"
+        )
+    for semantic_type, entry in [*implementations.items(), *node_implementations.items()]:
+        if not isinstance(entry, dict):
+            raise SystemExit(
+                f"[generate-semantic-registry] FAIL: implementation {semantic_type!r} is malformed"
+            )
+        component_key = str(entry.get("component_key") or "").strip()
+        if not re.fullmatch(r"sc\.[a-z0-9_]+(?:\.[a-z0-9_]+)+", component_key):
+            raise SystemExit(
+                f"[generate-semantic-registry] FAIL: implementation {semantic_type!r} "
+                f"has invalid component_key {component_key!r}"
+            )
+        renderer = str(entry.get("renderer") or implementation.get("type_directed_renderer") or "")
+        if semantic_type in implementations and renderer not in renderers:
+            raise SystemExit(
+                f"[generate-semantic-registry] FAIL: implementation {semantic_type!r} "
+                f"names unregistered renderer {renderer!r}"
+            )
 
 
 def registry_versions(root: Path = ROOT) -> int:
     registry = load(root / REGISTRY_REL)
     entries = registry.get("contracts") if isinstance(registry.get("contracts"), list) else []
     # registry.yaml paths are relative to contracts/, not to the repository root.
-    wanted = {
-        SEMANTIC_REL.relative_to("contracts").as_posix(),
-        COMPONENT_REL.relative_to("contracts").as_posix(),
-    }
+    wanted = {SEMANTIC_REL.relative_to("contracts").as_posix()}
     versions = {
         entry.get("version")
         for entry in entries
@@ -121,7 +158,7 @@ def registry_versions(root: Path = ROOT) -> int:
     }
     if len(versions) != 1 or not isinstance(next(iter(versions), None), int):
         raise SystemExit(
-            "[generate-semantic-registry] FAIL: both registry documents must share one "
+            "[generate-semantic-registry] FAIL: semantic registry must have one "
             f"integer version in contracts/registry.yaml, found {sorted(map(str, versions))}"
         )
     return versions.pop()
@@ -154,15 +191,15 @@ def native_view_widget_payload_contract(entry: dict, widget_name: str) -> tuple[
     return payload_required, payload_schema
 
 
-def render(semantic: dict, component: dict, *, version: int) -> str:
-    validate_component_registry(component)
+def render(semantic: dict, *, version: int) -> str:
+    validate_semantic_registry(semantic)
     derivation = semantic.get("derivation") or {}
     rules = derivation.get("rules") or []
     semantics = semantic.get("semantics") or {}
+    node_semantics = semantic.get("node_semantics") or {}
     native_widgets = semantic.get("native_widgets") or {}
     native_view_widgets = semantic.get("native_view_widgets") or {}
     native_view_widget_default = semantic.get("native_view_widget_default") or {}
-    components = component.get("components") or {}
 
     default = derivation.get("default")
     if not default or default not in semantics:
@@ -179,20 +216,31 @@ def render(semantic: dict, component: dict, *, version: int) -> str:
             )
         lines.append(render_rule(rule) + ",")
 
-    mapping: list[str] = []
+    semantic_rows: list[str] = []
     for key in sorted(semantics):
         entry = semantics[key] or {}
-        component_key = entry.get("component")
-        if not component_key:
-            raise SystemExit(f"[generate-semantic-registry] FAIL: semantic {key!r} has no component")
-        if component_key not in components:
+        field_types = tuple(str(item) for item in entry.get("field_types") or ())
+        if not field_types:
             raise SystemExit(
-                f"[generate-semantic-registry] FAIL: semantic {key!r} points at unregistered "
-                f"component {component_key!r}"
+                f"[generate-semantic-registry] FAIL: semantic {key!r} has no field_types"
             )
-        if components[component_key].get("kind", "field") != "field":
-            raise SystemExit(f"field semantic {key!r} cannot reference node component {component_key!r}")
-        mapping.append(f"    {key!r}: {component_key!r},")
+        semantic_rows.append(
+            "    {key!r}: {{'category': {category!r}, 'appliesTo': 'field', "
+            "'fieldTypes': {field_types!r}}},"
+            .format(
+                key=key,
+                category=str(entry.get("category") or ""),
+                field_types=field_types,
+            )
+        )
+
+    node_rows = [
+        "    {key!r}: {{'category': {category!r}}},".format(
+            key=key,
+            category=str((entry or {}).get("category") or ""),
+        )
+        for key, entry in sorted(node_semantics.items())
+    ]
 
     native_widget_rows: list[str] = []
     for key in sorted(native_widgets):
@@ -225,21 +273,16 @@ def render(semantic: dict, component: dict, *, version: int) -> str:
                 f"[generate-semantic-registry] FAIL: native View widget {widget_name!r} is malformed"
             )
         status = str(entry.get("status") or "")
-        component_key = str(entry.get("component") or "")
+        semantic_type = str(entry.get("semantic") or "")
         if status not in {"ready", "fallback", "unsupported"}:
             raise SystemExit(
                 f"[generate-semantic-registry] FAIL: native View widget {widget_name!r} "
                 f"has invalid status {status!r}"
             )
-        if component_key not in components:
+        if semantic_type not in node_semantics:
             raise SystemExit(
                 f"[generate-semantic-registry] FAIL: native View widget {widget_name!r} "
-                f"points at unregistered component {component_key!r}"
-            )
-        if components[component_key].get("kind") != "node":
-            raise SystemExit(
-                f"[generate-semantic-registry] FAIL: native View widget {widget_name!r} "
-                f"must reference a node component, got {component_key!r}"
+                f"points at undeclared node semantic {semantic_type!r}"
             )
         if status == "ready" and widget_name == "<default>":
             raise SystemExit(
@@ -256,21 +299,19 @@ def render(semantic: dict, component: dict, *, version: int) -> str:
                 widget_name,
             )
             native_view_widget_rows.append(
-                "    {name!r}: {{'component': {component!r}, 'status': {status!r}, "
+                "    {name!r}: {{'semantic': {semantic_type!r}, 'status': {status!r}, "
                 "'reasonCode': {reason!r}, 'payloadRequired': {payload_required!r}, "
                 "'payloadSchema': {payload_schema!r}}},"
                 .format(
                     name=widget_name,
-                    component=component_key,
+                    semantic_type=semantic_type,
                     status=status,
                     reason=str(entry.get("reason_code") or ""),
                     payload_required=payload_required,
                     payload_schema=payload_schema,
                 )
             )
-    default_widget_component = str(native_view_widget_default["component"])
-
-    sources = (SEMANTIC_REL.as_posix(), COMPONENT_REL.as_posix())
+    sources = (SEMANTIC_REL.as_posix(),)
     body = HEADER.format(
         sources=" -> ".join(sources),
         sources_tuple=", ".join(repr(item) for item in sources),
@@ -284,31 +325,27 @@ def render(semantic: dict, component: dict, *, version: int) -> str:
         "DERIVATION_RULES = (\n"
         + "\n".join(lines)
         + "\n)\n"
-        + "\n# semantic -> the component key the frontend renders.\n"
-        "SEMANTIC_COMPONENTS = {\n"
-        + "\n".join(mapping)
+        + "\n# Client-independent field semantics and applicability.\n"
+        "FIELD_SEMANTICS = {\n"
+        + "\n".join(semantic_rows)
+        + "\n}\n"
+        + "\nNODE_SEMANTICS = {\n"
+        + "\n".join(node_rows)
         + "\n}\n"
         + "\n# explicit native View Widget token -> declared support status.\n"
         "NATIVE_WIDGET_STATUS = {\n"
         + "\n".join(native_widget_rows)
         + "\n}\n"
-        + "\n# Embedded Form <widget name=\"...\"/> nodes -> node component identity.\n"
-        + "NATIVE_VIEW_WIDGET_COMPONENTS = {\n"
+        + "\n# Embedded Form <widget name=\"...\"/> nodes -> semantic and payload protocol.\n"
+        + "NATIVE_VIEW_WIDGET_SEMANTICS = {\n"
         + "\n".join(native_view_widget_rows)
         + "\n}\n"
         + "NATIVE_VIEW_WIDGET_DEFAULT = {\n"
-        + f"    'component': {default_widget_component!r},\n"
+        + f"    'semantic': {str(native_view_widget_default.get('semantic') or '')!r},\n"
         + f"    'status': {str(native_view_widget_default.get('status') or '')!r},\n"
         + f"    'reasonCode': {str(native_view_widget_default.get('reason_code') or '')!r},\n"
         + "}\n"
-        + "\n# Backend registration identity only; no client support is implied.\n"
-        + f"FIELD_CONTRACT_VERSION = {component['defaults']['field_contract_version']!r}\n"
-        + "COMPONENT_REGISTRATIONS = {\n"
-        + "\n".join(
-            f"    {key!r}: {dict(kind=entry.get('kind', 'field'), version=entry['version'] if entry.get('kind') == 'node' else component['defaults']['field_contract_version'])!r},"
-            for key, entry in sorted(components.items())
-        )
-        + "\n}\n"
+        + f"\nSEMANTIC_SPEC_VERSION = {version}\n"
     )
 
 
@@ -316,7 +353,6 @@ def render_repository_carrier(root: Path = ROOT) -> str:
     """Render the carrier a given worktree's declaration should produce."""
     return render(
         load(root / SEMANTIC_REL),
-        load(root / COMPONENT_REL),
         version=registry_versions(root),
     )
 
@@ -382,43 +418,38 @@ def semantic_categories(root: Path = ROOT) -> dict[str, str]:
     }
 
 
-def component_rows(component: dict, categories: dict[str, str]) -> tuple[list[dict], list[dict]]:
-    """Split field components into platform and industry carriers.
-
-    Node components are not field renderers and stay in the platform carrier's
-    node table. A component whose semantic has no declared category is rejected:
-    silently placing it on either side would create an unowned runtime identity.
-    """
-    components = component.get("components") or {}
-    defaults = component.get("defaults") if isinstance(component.get("defaults"), dict) else {}
+def implementation_rows(semantic: dict, implementation: dict) -> tuple[list[dict], list[dict]]:
+    """Join semantic applicability with frontend-owned renderer implementations."""
+    validate_implementation_registry(semantic, implementation)
+    semantics = semantic.get("semantics") or {}
+    implementations = implementation.get("implementations") or {}
+    defaults = implementation.get("defaults") if isinstance(implementation.get("defaults"), dict) else {}
     default_readiness = str(defaults.get("readiness") or "ready")
     default_renderer_version = str(defaults.get("renderer_version") or "")
     default_contract_version = str(defaults.get("contract_version") or "")
     default_capabilities = defaults.get("capabilities") or []
-    capability_providers = component.get("capability_providers") or {}
+    capability_providers = implementation.get("capability_providers") or {}
     if not isinstance(capability_providers, dict):
         raise SystemExit("[generate-semantic-registry] FAIL: capability_providers must be a mapping")
     platform: list[dict] = []
     industry: list[dict] = []
-    for key, entry in components.items():
-        if not isinstance(entry, dict) or entry.get("kind", "field") == "node":
-            continue
-        semantic = str(entry.get("semantic") or "").strip()
+    for semantic_type, entry in implementations.items():
+        semantic_entry = semantics.get(semantic_type) or {}
+        key = str(entry.get("component_key") or "").strip()
         renderer = str(entry.get("renderer") or "").strip()
-        if not semantic or not renderer:
+        if not semantic_type or not renderer:
             raise SystemExit(
-                f"[generate-semantic-registry] FAIL: component {key!r} lacks semantic/renderer"
+                f"[generate-semantic-registry] FAIL: implementation {key!r} lacks semantic/renderer"
             )
-        field_types = entry.get("field_types") or []
+        field_types = semantic_entry.get("field_types") or []
         if not isinstance(field_types, (list, tuple)) or not field_types:
             raise SystemExit(
-                f"[generate-semantic-registry] FAIL: component {key!r} declares no field_types"
+                f"[generate-semantic-registry] FAIL: semantic {semantic_type!r} declares no field_types"
             )
-        category = categories.get(semantic)
+        category = str(semantic_entry.get("category") or "")
         if not category:
             raise SystemExit(
-                f"[generate-semantic-registry] FAIL: component {key!r} names semantic "
-                f"{semantic!r} without a declared category"
+                f"[generate-semantic-registry] FAIL: semantic {semantic_type!r} has no category"
             )
         renderer_version = str(entry.get("renderer_version") or default_renderer_version)
         supported_contract_version = str(entry.get("contract_version") or default_contract_version)
@@ -440,7 +471,7 @@ def component_rows(component: dict, categories: dict[str, str]) -> tuple[list[di
                 )
         row = {
             "componentKey": key,
-            "semantic": semantic,
+            "semantic": semantic_type,
             "fieldTypes": field_types,
             "readiness": str(entry.get("readiness") or default_readiness),
             "renderer": renderer,
@@ -468,38 +499,31 @@ def render_frontend_rows(rows: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT) -> str:
+def render_frontend_registry(implementation: dict, *, version: int, root: Path = ROOT) -> str:
     """Project the component vocabulary into the frontend's generated table.
 
     Only the *data* is projected.  Presentation-mode profiles, the
     type-directed ``rendererByFieldType`` derivation and the readiness fallback
     are behaviour and stay in ``professionalComponentRegistry.ts``.
     """
-    validate_component_registry(component)
-    platform_rows, industry_rows = component_rows(component, semantic_categories(root))
-    sources = (SEMANTIC_REL.as_posix(), COMPONENT_REL.as_posix())
-    capability_providers = component.get("capability_providers") or {}
+    semantic = load(root / SEMANTIC_REL)
+    platform_rows, industry_rows = implementation_rows(semantic, implementation)
+    sources = (SEMANTIC_REL.as_posix(), IMPLEMENTATION_REL.as_posix())
+    capability_providers = implementation.get("capability_providers") or {}
     provider_lines = "\n".join(
         f"  {provider!r}: {str(owner)!r},"
         for provider, owner in sorted(capability_providers.items())
     )
-    semantic = load(root / SEMANTIC_REL)
     semantic_component_lines = "\n".join(
-        f"  {semantic_type!r}: {str((entry or {}).get('component') or '')!r},"
-        for semantic_type, entry in sorted((semantic.get("semantics") or {}).items())
+        f"  {semantic_type!r}: {str((entry or {}).get('component_key') or '')!r},"
+        for semantic_type, entry in sorted((implementation.get("implementations") or {}).items())
         if isinstance(entry, dict)
     )
-    semantic_field_types: dict[str, list[str]] = {}
-    for row in [*platform_rows, *industry_rows]:
-        semantic_field_types.setdefault(row["semantic"], [])
-        semantic_field_types[row["semantic"]] = [
-            *semantic_field_types[row["semantic"]],
-            *[
-                field_type
-                for field_type in row["fieldTypes"]
-                if field_type not in semantic_field_types[row["semantic"]]
-            ],
-        ]
+    semantic_field_types = {
+        semantic_type: list((entry or {}).get("field_types") or [])
+        for semantic_type, entry in (semantic.get("semantics") or {}).items()
+        if isinstance(entry, dict)
+    }
     semantic_field_type_lines = "\n".join(
         f"  {semantic_type!r}: Object.freeze([{', '.join(repr(item) for item in field_types)}]),"
         for semantic_type, field_types in sorted(semantic_field_types.items())
@@ -519,10 +543,10 @@ def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT
     for name, entry in sorted(native_view_widgets.items()):
         native_view_widget_payload_contract(entry or {}, name)
     native_view_widget_lines = "\n".join(
-        "  {name!r}: {{component: {component!r}, status: {status!r}, reasonCode: {reason!r}, payloadRequired: {payload_required}}},"
+        "  {name!r}: {{semantic: {semantic_type!r}, status: {status!r}, reasonCode: {reason!r}, payloadRequired: {payload_required}}},"
         .format(
             name=name,
-            component=str((entry or {}).get("component") or ""),
+            semantic_type=str((entry or {}).get("semantic") or ""),
             status=str((entry or {}).get("status") or ""),
             reason=str((entry or {}).get("reason_code") or ""),
             payload_required=str(bool((entry or {}).get("payload_required"))).lower(),
@@ -546,31 +570,30 @@ def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT
         + "{status: NativeWidgetStatus; reasonCode: string}>> = Object.freeze({\n"
         + native_widget_lines
         + "\n});\n"
-        + "\nexport const NODE_COMPONENT_REGISTRATIONS: Readonly<Record<string, {kind: 'node'; version: string}>> = Object.freeze({\n"
+        + "\nexport const NODE_COMPONENT_REGISTRY: Readonly<Record<string, string>> = Object.freeze({\n"
         + "\n".join(
-            f"  {key!r}: {{kind: 'node', version: {entry['version']!r}}},"
-            for key, entry in component.get("components", {}).items()
-            if entry.get("kind") == "node"
+            f"  {semantic_type!r}: {str(entry.get('component_key') or '')!r},"
+            for semantic_type, entry in sorted((implementation.get("node_implementations") or {}).items())
         )
         + "\n});\n"
-        + "\nexport const NATIVE_VIEW_WIDGET_COMPONENTS: Readonly<Record<string, "
-        + "{component: string; status: 'ready' | 'fallback' | 'unsupported'; reasonCode: string; payloadRequired: boolean}>> "
+        + "\nexport const NATIVE_VIEW_WIDGET_SEMANTICS: Readonly<Record<string, "
+        + "{semantic: string; status: 'ready' | 'fallback' | 'unsupported'; reasonCode: string; payloadRequired: boolean}>> "
         + "= Object.freeze({\n"
         + native_view_widget_lines
         + "\n});\n"
         + "\nexport const NATIVE_VIEW_WIDGET_DEFAULT = Object.freeze({\n"
-        + f"  component: {str(native_view_widget_default.get('component') or '')!r},\n"
+        + f"  semantic: {str(native_view_widget_default.get('semantic') or '')!r},\n"
         + f"  status: {str(native_view_widget_default.get('status') or '')!r} as const,\n"
         + f"  reasonCode: {str(native_view_widget_default.get('reason_code') or '')!r},\n"
         + "});\n"
     )
 
 
-def render_industry_manifest(component: dict, *, version: int, root: Path = ROOT) -> str:
+def render_industry_manifest(implementation: dict, *, version: int, root: Path = ROOT) -> str:
     """Project only industry-category field components for extension loading."""
-    validate_component_registry(component)
-    _platform_rows, industry_rows = component_rows(component, semantic_categories(root))
-    sources = (SEMANTIC_REL.as_posix(), COMPONENT_REL.as_posix())
+    semantic = load(root / SEMANTIC_REL)
+    _platform_rows, industry_rows = implementation_rows(semantic, implementation)
+    sources = (SEMANTIC_REL.as_posix(), IMPLEMENTATION_REL.as_posix())
     return (
         INDUSTRY_FRONTEND_HEADER.replace("__SOURCES__", " -> ".join(sources)).replace(
             "__VERSION__", str(version)
@@ -583,7 +606,7 @@ def render_industry_manifest(component: dict, *, version: int, root: Path = ROOT
 def render_frontend_repository(root: Path = ROOT) -> str:
     """Render the frontend carrier a given worktree's declaration should produce."""
     return render_frontend_registry(
-        load(root / COMPONENT_REL),
+        load(root / IMPLEMENTATION_REL),
         version=registry_versions(root),
         root=root,
     )
@@ -592,7 +615,7 @@ def render_frontend_repository(root: Path = ROOT) -> str:
 def render_industry_repository(root: Path = ROOT) -> str:
     """Render the industry extension manifest for a given worktree."""
     return render_industry_manifest(
-        load(root / COMPONENT_REL),
+        load(root / IMPLEMENTATION_REL),
         version=registry_versions(root),
         root=root,
     )

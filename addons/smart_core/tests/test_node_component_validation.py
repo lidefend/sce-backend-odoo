@@ -31,7 +31,7 @@ class NodeValidationTests(unittest.TestCase):
         rows, self.native = trees()
         self.contract = {'pageInfo': {'model': self.record._name, 'viewType': 'form'},
             'dataContract': {'mainData': {'id': self.record.id}},
-            'layoutContract': {'containerTree': rows, 'componentRegistry': {}},
+            'layoutContract': {'containerTree': rows},
             'statusContract': {'containerStatus': []}, 'actionContract': {'actionRuleList': []}}
 
     @property
@@ -48,7 +48,6 @@ class NodeValidationTests(unittest.TestCase):
             with self.subTest(purpose=purpose):
                 self.host['componentConfig']['purpose'] = purpose
                 self.validate()
-                self.assertEqual(self.contract['layoutContract']['componentRegistry']['sc.feedback.message'], {'version': '1.0.0'})
 
     def test_unknown_and_extra_config(self):
         self.host['componentConfig']['purpose'] = 'alert'
@@ -78,10 +77,6 @@ class NodeValidationTests(unittest.TestCase):
         )
         self.assertNotIn('visible', self.host)
         self.assertFalse(self.record.reads)
-        self.assertEqual(
-            self.contract['layoutContract']['componentRegistry']['sc.feedback.message'],
-            {'version': '1.0.0'},
-        )
 
     def test_declaration_only_draft_validation_does_not_require_a_saved_record(self):
         self.host['componentConfig']['purpose'] = 'advisory'
@@ -217,13 +212,13 @@ class NodeValidationTests(unittest.TestCase):
     def navigation(self):
         label = {'containerId': 'link', 'type': 'div', 'text': 'Details', 'nativeLocator': '/form/link',
                  'occurrenceIndex': 1, 'sourceAuthority': {'kind': 'native_view'},
-                 'componentKey': 'sc.navigation.anchor', 'componentConfig': {'targetContainerId': 'details'}}
+                 'semanticType': 'navigation_anchor', 'componentConfig': {'targetContainerId': 'details'}}
         target = {'containerId': 'details', 'type': 'group', 'nativeLocator': '/form/group',
                   'occurrenceIndex': 1, 'sourceAuthority': {'kind': 'native_view'}, 'modifiers': {'invisible': False}}
         self.native = copy.deepcopy([label, target]); self.contract['layoutContract']['containerTree'] = [label, target]
 
     def embedded_widget(self, widget='web_ribbon', supported=True):
-        key = 'sc.display.ribbon' if supported else 'sc.unsupported.native_node'
+        semantic_type = 'display_ribbon' if supported else 'unsupported_native_node'
         config = {
             'nativeWidget': widget,
             'widgetStatus': 'ready' if supported else 'unsupported',
@@ -253,17 +248,16 @@ class NodeValidationTests(unittest.TestCase):
                 'nativeLocator': '/form/widget[1]',
                 'occurrenceIndex': 1,
             },
-            'componentKey': key,
+            'semanticType': semantic_type,
             'componentConfig': config,
         }
         self.native = copy.deepcopy([node])
         self.contract['layoutContract']['containerTree'] = [node]
-        self.contract['layoutContract']['componentRegistry'] = {}
 
-    def payload_widget(self, key, native_widget, schema, payload):
+    def payload_widget(self, semantic_type, native_widget, schema, payload):
         self.embedded_widget(native_widget, supported=True)
         node = self.contract['layoutContract']['containerTree'][0]
-        node['componentKey'] = key
+        node['semanticType'] = semantic_type
         node['componentConfig'].update({
             'payloadSchema': schema,
             'payload': payload,
@@ -278,16 +272,10 @@ class NodeValidationTests(unittest.TestCase):
     def test_embedded_ribbon_and_unsupported_node_are_whitelisted_semantically(self):
         self.embedded_widget()
         self.validate()
-        self.assertEqual(
-            self.contract['layoutContract']['componentRegistry']['sc.display.ribbon'],
-            {'version': '1.0.0'},
-        )
+        self.assertEqual(self.contract['layoutContract']['containerTree'][0]['semanticType'], 'display_ribbon')
         self.embedded_widget('sc_stage_requirements', supported=False)
         self.validate()
-        self.assertEqual(
-            self.contract['layoutContract']['componentRegistry']['sc.unsupported.native_node'],
-            {'version': '1.0.0'},
-        )
+        self.assertEqual(self.contract['layoutContract']['containerTree'][0]['semanticType'], 'unsupported_native_node')
 
     def test_embedded_widget_structural_validation_fails_closed(self):
         self.embedded_widget()
@@ -317,7 +305,7 @@ class NodeValidationTests(unittest.TestCase):
 
     def test_project_payload_nodes_are_validated_and_fail_closed(self):
         self.payload_widget(
-            'sc.insight.summary',
+            'insight_summary',
             'sc_insight_banner',
             'insight_summary.v1',
             {
@@ -329,7 +317,7 @@ class NodeValidationTests(unittest.TestCase):
         )
         self.validate()
         self.payload_widget(
-            'sc.action.list',
+            'action_list',
             'sc_stage_requirements',
             'action_list.v1',
             {
@@ -378,7 +366,7 @@ class NodeValidationTests(unittest.TestCase):
         field_id = 'field.message.occ.' + _fingerprint({'locator': locator, 'occurrence': occurrence})
         field = {'type': 'field', 'name': 'message', 'native_locator': locator, 'occurrence_index': occurrence,
                  'source_authority': {'kind': 'native_view'}, 'source_position': 0}
-        host = {'type': 'div', 'name': 'feedback', 'componentKey': 'sc.feedback.message',
+        host = {'type': 'div', 'name': 'feedback', 'semanticType': 'feedback_message',
                 'componentConfig': {'purpose': 'advisory', 'contentRef': {'containerId': field_id}},
                 'modifiers': {'invisible': {'kind': 'not', 'expr': {'kind': 'field_truthy', 'field': 'active'}}},
                 'children': [field]}
@@ -392,7 +380,7 @@ class NodeValidationTests(unittest.TestCase):
             node_actor_env=self.env,
             node_validation_proof=proof,
         )
-        self.assertTrue(contract['layoutContract']['componentRegistry'].get('sc.feedback.message'))
+        self.assertNotIn('componentRegistry', contract['layoutContract'])
         self.assertEqual(len(proof.get('declarations') or {}), 1)
         with self.assertRaisesRegex(FormConfigurationError, 'INTERACTION_FIELD_BODY_FORBIDDEN'):
             assert_field_body_usage({'name': 'message', 'sc_ui_usage': 'interaction',
@@ -413,8 +401,15 @@ class NodeValidationTests(unittest.TestCase):
         # Existing structural tests use a capable caller; negotiation negatives
         # explicitly override/remove this in the capability-specific suite.
         original_params = handler._params
-        handler._params = lambda payload: {'client_type': 'web_pc', 'client_contract_capabilities': [
-            'form.feedback.message.v1', 'form.navigation.anchor.v1'], **original_params(payload)}
+        handler._params = lambda payload: {
+            'client_type': 'web_pc',
+            'accepted_contract_versions': ['2.7.x'],
+            'client_contract_capabilities': [
+                'form.feedback.message.v1',
+                'form.navigation.anchor.v1',
+            ],
+            **original_params(payload),
+        }
         # Keep the real handler return paths, substituting only upstream source
         # construction and sealing transport. Assembler behavior is tested above.
         module.assemble_unified_page_contract_v2 = lambda *a, **kw: copy.deepcopy(self.contract)
@@ -550,7 +545,7 @@ class NativeSavedFeedbackTests(unittest.TestCase):
                       nativeLocator='/form[1]/div[1]/field[1]', occurrenceIndex=1,
                       sourceAuthority={'kind': 'native_view'})
         self.host = dict(type='container', containerId='host', nativeLocator='/form[1]/div[1]',
-                         attributes={'invisible': 'not active'}, children=[source], componentKey='sc.feedback.message',
+                         attributes={'invisible': 'not active'}, children=[source], semanticType='feedback_message',
                          componentConfig={'purpose':'advisory', 'contentRef':{'containerId':'message'}},
                          modifiers={'invisible':{'kind':'not','expr':{'kind':'field_truthy','field':'active'}}})
         self.contract = {'pageInfo':{'model':self.record._name,'viewType':'form'},

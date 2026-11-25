@@ -69,18 +69,18 @@ def sc_project_field_widget(
     config = {"fieldType": field_type}
     if relation:
         config["relation"] = relation
-    component_key = "sc.select.remote"
+    semantic_type = "choice"
     if field_type == "one2many":
-        component_key = "sc.relation.table"
+        semantic_type = "detail_collection"
     elif field_type == "many2many":
-        component_key = "sc.relation.many2many"
+        semantic_type = "relation_collection"
     return {
         "widgetId": "field.%s" % field_name,
         "widgetType": "table" if field_type in {"one2many", "many2many"} else "select",
         "fieldCode": field_name,
         "label": label,
         "span": 12,
-        "componentKey": component_key,
+        "semanticType": semantic_type,
         "capabilities": [],
         "componentConfig": config,
         "ownerContainerId": owner_container_id or "field.%s" % field_name,
@@ -103,7 +103,7 @@ def sc_project_field_node(field_name: str, label: str, field_type: str, *, relat
             "widget": widget["widgetType"],
         },
         "widget": widget["widgetType"],
-        "componentKey": widget["componentKey"],
+        "semanticType": widget["semanticType"],
         "componentConfig": deepcopy(widget["componentConfig"]),
         "widgetId": widget["widgetId"],
         "containerId": widget["widgetId"],
@@ -166,10 +166,6 @@ def sc_append_project_responsibility_group(contract: dict, *, include_collaborat
     else:
         tree.append(group)
     layout["containerTree"] = tree
-    registry = layout.get("componentRegistry") if isinstance(layout.get("componentRegistry"), dict) else {}
-    registry["sc.relation.table"] = {"version": "1.0"}
-    registry["sc.relation.many2many"] = {"version": "1.0"}
-    layout["componentRegistry"] = registry
     contract["layoutContract"] = layout
     status = contract.get("statusContract") if isinstance(contract.get("statusContract"), dict) else {}
     widget_status = [row for row in status.get("widgetStatus", []) if isinstance(row, dict)]

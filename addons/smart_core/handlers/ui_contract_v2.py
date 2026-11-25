@@ -34,7 +34,6 @@ from ..core.unified_page_contract_v2_client import (
     resolve_delivery_profile,
     trim_unified_page_contract_v2,
 )
-from ..core.contract_runtime.semantic_resolver import component_registry as _component_registry
 from ..core.unified_page_contract_v2_modifier_dependencies import (
     collect_initial_record_snapshot_fields,
     hydrate_final_field_contexts,
@@ -104,7 +103,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v116"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v121"
 
 
 def _create_defaults_fingerprint(env, model_name, params, ui_params):
@@ -1818,7 +1817,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 "fieldCode": name,
                 "label": label,
                 "span": 12,
-                "componentKey": "sc.table.data",
+                "semanticType": "detail_table",
                 "capabilities": ["sortable", "filterable"],
                 "componentConfig": {
                     "readonly": True,
@@ -1847,10 +1846,6 @@ class UiContractV2Handler(BaseIntentHandler):
                 container["children"] = []
                 changed = True
         if changed:
-            layout["componentRegistry"] = {
-                **(layout.get("componentRegistry") if isinstance(layout.get("componentRegistry"), dict) else {}),
-                **_component_registry(["sc.table.data"]),
-            }
             self._set_v2_data_meta(contract_v2, {"fieldCount": len(columns)})
 
     def _apply_field_policies_to_v2_status(self, contract_v2: dict[str, Any], source_contract: dict[str, Any]) -> None:

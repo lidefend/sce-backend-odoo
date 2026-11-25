@@ -94,7 +94,7 @@ class CompanyRefundFeedbackAssertions:
         rows = list(native_advisory.walk(contract["layoutContract"]["containerTree"]))
         hosts = [
             node for node, _parent in rows
-            if node.get("componentKey") == draft_feedback.COMPONENT_KEY
+            if node.get("semanticType") == draft_feedback.SEMANTIC_TYPE
         ]
         self.assertEqual(len(hosts), 1)
         host = hosts[0]
@@ -242,7 +242,8 @@ class TestCompanyProjectRefundFeedback(CompanyRefundFeedbackAssertions, Transact
             "view_id": self.view.id,
             "view_type": "form",
             "render_profile": "create",
-            "client_type": "web_pc", "client_contract_capabilities": [
+            "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": [
                 "form.feedback.message.v1",
                 "form.feedback.draft.v1",
             ],
@@ -254,7 +255,7 @@ class TestCompanyProjectRefundFeedback(CompanyRefundFeedbackAssertions, Transact
         ))
         hosts = [
             node for node, _parent in rows
-            if node.get("componentKey") == draft_feedback.COMPONENT_KEY
+            if node.get("semanticType") == draft_feedback.SEMANTIC_TYPE
         ]
         self.assertEqual(len(hosts), 1)
         self.assertEqual(
@@ -552,7 +553,8 @@ class TestCompanyProjectRefundFeedbackHttp(
                 "allowed_company_ids": [self.company.id],
                 "lang": "en_US",
             },
-            "client_type": "web_pc", "client_contract_capabilities": capabilities if capabilities is not None else [
+            "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": capabilities if capabilities is not None else [
                 "form.feedback.message.v1",
                 "form.feedback.draft.v1",
             ],

@@ -344,7 +344,12 @@ class TestCompanyRouteScopeCache(TransactionCase):
         self.assertEqual(admitted.role_surface["landing_scene_key"], "workspace.home")
         self.assertEqual(admitted.role_surface["landing_path"], "/s/workspace.home")
         from odoo.addons.smart_core.handlers.system_init import SystemInitHandler
-        startup = SystemInitHandler(env).handle({"params": {"with_preload": True, "product_key": "construction.standard"}})
+        startup = SystemInitHandler(env).handle({"params": {
+            "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
+            "with_preload": True,
+            "product_key": "construction.standard",
+        }})
         self.assertTrue(startup.ok)
         self.assertEqual(startup.data["role_surface"]["landing_scene_key"], "workspace.home")
         self.assertEqual(startup.data["default_route"]["scene_key"], "workspace.home")

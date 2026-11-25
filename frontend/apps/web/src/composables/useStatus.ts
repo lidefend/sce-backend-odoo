@@ -1,8 +1,8 @@
 import { ref } from 'vue';
 import { ApiError } from '../api/client';
 import {
-  contractDefectFromError,
-  type ContractDefectRef,
+  consumerDefectFromError,
+  type ContractConsumerDefectRef,
 } from '../app/contract/contractGap';
 import { describeSuggestedAction } from './useSuggestedAction';
 
@@ -17,7 +17,7 @@ export interface StatusError {
   reasonCode?: string;
   suggestedAction?: string;
   details?: Record<string, unknown>;
-  contractDefect?: ContractDefectRef;
+  contractDefect?: ContractConsumerDefectRef;
 }
 
 export interface StatusCopy {
@@ -62,11 +62,13 @@ export function buildStatusError(err: unknown, fallbackMessage: string, kind?: s
       details: err.details,
     };
   }
-  const contractDefect = contractDefectFromError(err);
+  const contractDefect = consumerDefectFromError(err);
   if (contractDefect) {
     return {
       message: err instanceof Error ? err.message : fallbackMessage,
-      kind: contractDefect.failureClass === 'contract_mismatch' ? 'contract_mismatch' : 'contract_defect',
+      kind: contractDefect.kind === 'frontend_capability_gap'
+        ? 'frontend_capability_gap'
+        : contractDefect.failureClass === 'contract_mismatch' ? 'contract_mismatch' : 'contract_defect',
       contractDefect,
     };
   }

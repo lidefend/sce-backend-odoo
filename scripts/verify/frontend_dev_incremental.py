@@ -1546,6 +1546,12 @@ RULES = (
     ), (
         "verify.frontend.contract_fidelity.plan.unit",
     )),
+    Rule((
+        "addons/smart_core/core/contract_version_compatibility.py",
+        "scripts/verify/test_contract_version_compatibility.py",
+    ), (
+        "verify.frontend.contract_fidelity.plan.unit",
+    )),
     # Guard registry rows and their audit implementation are one executable
     # contract. A disposition-only fix must run the full registry audit instead
     # of falling through as an unmapped verification-tool path.
@@ -2289,6 +2295,35 @@ RULES = (
         "verify.unified_page_contract.v2.assembler",
         "verify.unified_page_contract.v2.action",
         "verify.unified_page_contract.v2.status",
+        "verify.unified_page_contract.v2.runtime",
+    )),
+    # V2.7 moved semantic production through the industry layout finalizer,
+    # record-error proof identity, and the client/runtime projection carriers.
+    # Each path has a distinct registered behavioural lock; a shared generic
+    # frontend fallback would either miss the owning assertion or run unrelated
+    # product gates.
+    Rule((
+        "addons/smart_construction_core/core_extension_project_layout.py",
+    ), (
+        "verify.unified_page_contract.v2.assembler",
+    )),
+    Rule((
+        "addons/smart_core/core/record_error_proof.py",
+        "addons/smart_core/tests/test_record_error_proof.py",
+    ), (
+        "verify.record_error_proof.unit",
+    )),
+    Rule((
+        "addons/smart_core/core/unified_page_contract_v2_client.py",
+        "scripts/verify/unified_page_contract_v2_client_guard.py",
+    ), (
+        "verify.unified_page_contract.v2.client",
+    )),
+    Rule((
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py",
+        "scripts/verify/unified_page_contract_v2_runtime_guard.py",
+    ), (
         "verify.unified_page_contract.v2.runtime",
     )),
     Rule((

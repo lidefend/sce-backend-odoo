@@ -822,8 +822,8 @@ import { contractContentLayoutMode, resolveContentLayoutMode } from '../componen
 import {
   consumerComponentTrace,
   consumerErrorDefect,
-  contractDefectFromError,
-  type ContractDefectRef,
+  consumerDefectFromError,
+  type ContractConsumerDefectRef,
 } from '../app/contract/contractGap';
 import { getUserViewPreference, setUserViewPreference, type ListColumnPreference } from '../api/preferences';
 import { readStoredListPreference, projectStoredListPreference } from '../app/runtime/listPreferenceProjection';
@@ -1191,7 +1191,7 @@ const instanceRouteQueryMap = ref<Record<string, unknown>>(normalizeActionViewRo
 const routeQueryMap = computed<Record<string, unknown>>(() => instanceRouteQueryMap.value);
 const retainedRouteFullPath = ref('');
 const renderErrorMessage = ref('');
-const renderErrorDefect = ref<ContractDefectRef | null>(null);
+const renderErrorDefect = ref<ContractConsumerDefectRef | null>(null);
 const traceId = ref('');
 const lastTraceId = ref('');
 const records = ref<Array<Record<string, unknown>>>([]);
@@ -3423,7 +3423,7 @@ onBeforeUnmount(() => {
 
 onErrorCaptured((err, instance, info) => {
   const message = err instanceof Error ? err.message : String(err || 'unknown render error');
-  renderErrorDefect.value = contractDefectFromError(err) || consumerErrorDefect(err, {
+  renderErrorDefect.value = consumerDefectFromError(err) || consumerErrorDefect(err, {
     stage: info,
     consumer: 'ActionView',
     componentTrace: consumerComponentTrace(instance),

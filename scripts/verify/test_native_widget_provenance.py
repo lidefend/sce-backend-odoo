@@ -59,7 +59,8 @@ class NativeWidgetProvenanceTest(unittest.TestCase):
         self.assertEqual(resolution["provenance"]["nativeWidget"], "daterange")
         self.assertEqual(resolution["provenance"]["widgetSource"], WIDGET_SOURCE_NATIVE_EXPLICIT)
         self.assertEqual(resolution["provenance"]["resolutionStatus"], "ready")
-        self.assertEqual(resolution["componentKey"], "sc.input.date")
+        self.assertEqual(resolution["semantic"], "date")
+        self.assertNotIn("componentKey", resolution)
 
     def test_unknown_explicit_widget_fails_closed(self):
         field = {
@@ -76,7 +77,7 @@ class NativeWidgetProvenanceTest(unittest.TestCase):
         self.assertEqual(resolution["provenance"]["resolutionStatus"], "unsupported")
         self.assertEqual(resolution["provenance"]["reasonCode"], "NATIVE_WIDGET_UNRECOGNIZED")
         self.assertEqual(resolution["semantic"], "unsupported_native_widget")
-        self.assertEqual(resolution["componentKey"], "sc.unsupported.native_widget")
+        self.assertNotIn("componentKey", resolution)
 
     def test_declared_unsupported_widget_uses_fail_closed_path(self):
         for widget, reason in (
@@ -95,7 +96,8 @@ class NativeWidgetProvenanceTest(unittest.TestCase):
                 )
                 self.assertEqual(resolution["provenance"]["resolutionStatus"], "unsupported")
                 self.assertEqual(resolution["provenance"]["reasonCode"], reason)
-                self.assertEqual(resolution["componentKey"], "sc.unsupported.native_widget")
+                self.assertEqual(resolution["semantic"], "unsupported_native_widget")
+                self.assertNotIn("componentKey", resolution)
 
     def test_fallback_widget_is_explicit_but_not_fail_closed(self):
         resolution = resolve_widget_contract(
@@ -112,12 +114,13 @@ class NativeWidgetProvenanceTest(unittest.TestCase):
             resolution["provenance"]["reasonCode"],
             "NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK",
         )
-        self.assertNotEqual(resolution["componentKey"], "sc.unsupported.native_widget")
+        self.assertEqual(resolution["semantic"], "number")
+        self.assertNotIn("componentKey", resolution)
 
-    def test_common_base_odoo_field_widgets_use_registered_generic_controls(self):
-        for widget, field_type, resolved_type, component in (
-            ("boolean_favorite", "boolean", "boolean", "sc.input.boolean"),
-            ("text", "char", "input", "sc.input.text"),
+    def test_common_base_odoo_field_widgets_publish_generic_semantics(self):
+        for widget, field_type, resolved_type, semantic in (
+            ("boolean_favorite", "boolean", "boolean", "boolean"),
+            ("text", "char", "input", "text"),
         ):
             with self.subTest(widget=widget):
                 resolution = resolve_widget_contract(
@@ -130,7 +133,8 @@ class NativeWidgetProvenanceTest(unittest.TestCase):
                     semantic_widget_type=resolved_type,
                 )
                 self.assertEqual(resolution["provenance"]["resolutionStatus"], "ready")
-                self.assertEqual(resolution["componentKey"], component)
+                self.assertEqual(resolution["semantic"], semantic)
+                self.assertNotIn("componentKey", resolution)
 
     def test_every_observed_repository_widget_has_a_declared_status(self):
         inventory = json.loads(

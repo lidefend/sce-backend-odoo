@@ -15,6 +15,49 @@ ROOT = Path(__file__).resolve().parents[2]
 MARKER = "P0_CONTRACT_DESCRIPTOR_EVIDENCE_B64="
 
 
+def validate_semantic_contract(contract: dict) -> list[str]:
+    errors: list[str] = []
+
+    def visit(value: object, path: str = "$") -> None:
+        if isinstance(value, list):
+            for index, item in enumerate(value):
+                visit(item, f"{path}[{index}]")
+            return
+        if not isinstance(value, dict):
+            return
+        for key, child in value.items():
+            here = f"{path}.{key}"
+            if key in {"componentKey", "component_key", "componentRegistry"}:
+                errors.append(f"{here}: frontend implementation identity is forbidden")
+                continue
+            visit(child, here)
+
+    visit(contract)
+
+    def fields(rows: object) -> None:
+        if not isinstance(rows, list):
+            return
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            for widget in row.get("widgetList") or []:
+                if not isinstance(widget, dict):
+                    continue
+                descriptor = widget.get("fieldDescriptor")
+                if isinstance(descriptor, dict) and not str(
+                    descriptor.get("semanticType") or ""
+                ).strip():
+                    errors.append(
+                        f"{widget.get('widgetId') or '<unknown>'}: field semanticType is missing"
+                    )
+            fields(row.get("children"))
+
+    layout = contract.get("layoutContract")
+    if isinstance(layout, dict):
+        fields(layout.get("containerTree"))
+    return errors
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--form-output", required=True)
@@ -73,6 +116,10 @@ def main() -> int:
     if not isinstance(contract, dict):
         print("[p0-descriptor-evidence] FAIL form contract missing")
         return 6
+    semantic_errors = validate_semantic_contract(contract)
+    if semantic_errors:
+        print("[p0-descriptor-evidence] FAIL " + "; ".join(semantic_errors[:10]))
+        return 7
     output = Path(args.form_output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(

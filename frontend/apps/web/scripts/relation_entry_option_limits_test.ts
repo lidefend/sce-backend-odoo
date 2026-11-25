@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { relationEntry, relationOptionsLimit, relationOptionsSearchLimit } from '../src/pages/contractForm/relationDescriptor';
+import { nativeNodeFieldDescriptor } from '../src/pages/contractForm/nativeLayoutUtils';
 import { isContractGapError } from '../src/app/contract/contractGap';
 import type { ContractGapError } from '../src/app/contract/contractGap';
 
@@ -23,7 +24,7 @@ function descriptorWith(relationEntryShape: Record<string, unknown> | undefined)
     name: 'project_id',
     type: 'many2one',
     relation: 'project.project',
-    ...(relationEntryShape ? { relation_entry: relationEntryShape } : {}),
+    ...(relationEntryShape ? { relationEntry: relationEntryShape } : {}),
   } as never;
 }
 
@@ -61,6 +62,37 @@ assert.equal(
   relationOptionsSearchLimit(baselineEntry as Record<string, unknown>),
   DECLARED_SEARCH_LIMIT,
   'baseline: options_search_limit must equal the declared value, not a frontend constant',
+);
+checked += 1;
+
+// Native form nodes retain producer-side snake_case evidence. The boundary
+// adapter must normalize that evidence once, so a complete wire contract is not
+// misreported as a missing canonical relationEntry.
+const nativeDescriptor = nativeNodeFieldDescriptor({
+  name: 'project_id',
+  fieldInfo: {
+    name: 'project_id',
+    type: 'many2one',
+    relation: 'project.project',
+    relation_entry: {
+      model: 'project.project',
+      can_read: true,
+      options_limit: DECLARED_LIMIT,
+      options_search_limit: DECLARED_SEARCH_LIMIT,
+    },
+  },
+} as never, undefined, (name) => name);
+const nativeEntry = relationEntry(nativeDescriptor);
+assert.ok(nativeEntry, 'native adapter: producer evidence must normalize to canonical relationEntry');
+assert.equal(
+  relationOptionsLimit(nativeEntry as Record<string, unknown>),
+  DECLARED_LIMIT,
+  'native adapter: options_limit must survive normalization',
+);
+assert.equal(
+  Object.prototype.hasOwnProperty.call(nativeDescriptor as object, 'relation_entry'),
+  false,
+  'native adapter: the canonical descriptor boundary must not retain a duplicate snake_case carrier',
 );
 checked += 1;
 

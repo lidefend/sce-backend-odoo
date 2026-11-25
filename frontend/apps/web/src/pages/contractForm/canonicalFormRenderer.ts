@@ -61,7 +61,7 @@ function relationValue(value: unknown): CanonicalRelationValue | null {
 function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
   const config = asRecord(field.componentConfig);
   const canonicalDescriptor = asRecord(field.fieldDescriptor);
-  const configRelationEntry = asRecord(config.relationEntry || config.relation_entry);
+  const configRelationEntry = asRecord(config.relationEntry);
   const selection = selectionOptions(config.selection).map((option) => [option.value, option.label] as [string, string]);
   return {
     ...canonicalDescriptor,
@@ -79,16 +79,13 @@ function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
       : {}),
     ...(text(config.filename) ? { filename: text(config.filename) } : {}),
     ...(normalizeDeclaredDigits(config.digits) ? { digits: normalizeDeclaredDigits(config.digits) } : {}),
-    ...(text(config.currencyField || config.currency_field)
-      ? { currency_field: text(config.currencyField || config.currency_field) }
-      : {}),
     ...(canonicalDescriptor.subview ? { subview: canonicalDescriptor.subview } : {}),
     ...(Object.keys(configRelationEntry).length
-      ? { relation_entry: configRelationEntry }
-      : canonicalDescriptor.relation_entry
-        ? { relation_entry: canonicalDescriptor.relation_entry }
+      ? { relationEntry: configRelationEntry }
+      : canonicalDescriptor.relationEntry
+        ? { relationEntry: canonicalDescriptor.relationEntry }
         : {}),
-    ...(canonicalDescriptor.widget_options ? { widget_options: canonicalDescriptor.widget_options } : {}),
+    ...(canonicalDescriptor.widgetOptions ? { widgetOptions: canonicalDescriptor.widgetOptions } : {}),
   };
 }
 
@@ -112,8 +109,10 @@ export function canonicalFieldToFormSection(
   resolveCanonicalField?: (fieldCode: string) => CanonicalFormField | undefined,
 ): FormSectionFieldSchema {
   const config = asRecord(field.componentConfig);
-  const type = text(field.fieldType || config.fieldType || config.field_type || 'char').toLowerCase() || 'char';
-  const descriptor = fieldDescriptor(field);
+  const type = text(field.fieldType || config.fieldType).toLowerCase();
+  const descriptor = asRecord(fieldDescriptor(field));
+  const semanticType = text(descriptor.semanticType || config.semanticType).toLowerCase();
+  const presentationType = semanticType === 'money' ? 'monetary' : type;
   const relationshipCollection = fieldIsBusinessRelationCollection(field);
   const relation = type === 'many2one' ? relationValue(field.value) : null;
   const runtimeRelationOptions = type === 'many2one' && relationProjection
@@ -152,10 +151,10 @@ export function canonicalFieldToFormSection(
   const digits = ['float', 'monetary'].includes(type)
     ? normalizeDeclaredDigits(config.digits || descriptor.digits)
     : undefined;
-  const currencyField = type === 'monetary'
-    ? text(config.currencyField || config.currency_field || descriptor.currency_field)
+  const currencyField = semanticType === 'money'
+    ? text(config.currencyField || descriptor.currencyField)
     : '';
-  const currencyLabel = type === 'monetary'
+  const currencyLabel = semanticType === 'money'
     ? resolveCurrencyDisplayLabel(config.currencyLabel || config.currency_label || config.currencyValue || config.currency_value)
     : '';
   const widget = text(config.nativeWidget || config.widget || field.widgetType).toLowerCase();
@@ -170,7 +169,7 @@ export function canonicalFieldToFormSection(
     name: field.fieldCode,
     label: field.label,
     hideLabel: field.hideLabel,
-    type,
+    type: presentationType,
     widget,
     nativeLocator: field.nativeLocator || undefined,
     occurrenceIndex: field.occurrenceIndex || undefined,
@@ -201,6 +200,7 @@ export function canonicalFieldToFormSection(
     readonly: field.readonly || field.disabled,
     auth: field.auth || undefined,
     helpText: typeof field.fieldDescriptor.help === 'string' ? field.fieldDescriptor.help : undefined,
+    maxLength: field.maxLength,
     inputPlaceholder: field.placeholder || undefined,
     span: field.span,
     value: relation ? relation.displayName : field.value,

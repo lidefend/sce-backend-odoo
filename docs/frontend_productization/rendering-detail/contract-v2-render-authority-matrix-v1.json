@@ -19,7 +19,6 @@
     "container",
     "nativeLayoutNode",
     "widget",
-    "componentRegistryEntry",
     "statusContract",
     "containerStatus",
     "widgetStatus",
@@ -44,8 +43,8 @@
     "deliveryLimitRecord"
   ],
   "summary": {
-    "schemaFieldCount": 363,
-    "renderedOrInteractionAuthorityCount": 224,
+    "schemaFieldCount": 361,
+    "renderedOrInteractionAuthorityCount": 222,
     "validatedNonVisualAuthorityCount": 139,
     "decodedRuntimeAuthorityGapCount": 0,
     "unclassifiedCount": 0
@@ -598,11 +597,6 @@
       "consumer": "contractFormPresenter.presentAction"
     },
     {
-      "path": "componentRegistryEntry.version",
-      "classification": "rendered_or_interaction_authority",
-      "consumer": "professionalComponentRegistry"
-    },
-    {
       "path": "container.children",
       "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter.presentNode"
@@ -998,11 +992,6 @@
       "consumer": "contractFormPresenter / ContractFormDriverHost"
     },
     {
-      "path": "layoutContract.componentRegistry",
-      "classification": "rendered_or_interaction_authority",
-      "consumer": "contractFormPresenter / ContractFormDriverHost"
-    },
-    {
       "path": "layoutContract.containerTree",
       "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter / ContractFormDriverHost"
@@ -1287,11 +1276,6 @@
       "consumer": "contractFormPresenter / canonicalNativeFormBridge / NativeFormTreeRenderer"
     },
     {
-      "path": "nativeLayoutNode.componentKey",
-      "classification": "rendered_or_interaction_authority",
-      "consumer": "contractFormPresenter / canonicalNativeFormBridge / NativeFormTreeRenderer"
-    },
-    {
       "path": "nativeLayoutNode.containerId",
       "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter / canonicalNativeFormBridge / NativeFormTreeRenderer"
@@ -1414,6 +1398,11 @@
     },
     {
       "path": "nativeLayoutNode.semanticTitle",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "contractFormPresenter / canonicalNativeFormBridge / NativeFormTreeRenderer"
+    },
+    {
+      "path": "nativeLayoutNode.semanticType",
       "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter / canonicalNativeFormBridge / NativeFormTreeRenderer"
     },
@@ -1895,11 +1884,6 @@
       "consumer": "contractFormPresenter.fieldFromWidget / canonicalFormRenderer"
     },
     {
-      "path": "widget.componentKey",
-      "classification": "rendered_or_interaction_authority",
-      "consumer": "contractFormPresenter.fieldFromWidget / canonicalFormRenderer"
-    },
-    {
       "path": "widget.fieldCode",
       "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter.fieldFromWidget / canonicalFormRenderer"
@@ -1941,6 +1925,11 @@
       "path": "widget.ownerContainerId",
       "classification": "validated_non_visual_authority",
       "reason": "layout membership identity",
+      "consumer": "contractFormPresenter.fieldFromWidget / canonicalFormRenderer"
+    },
+    {
+      "path": "widget.semanticType",
+      "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter.fieldFromWidget / canonicalFormRenderer"
     },
     {

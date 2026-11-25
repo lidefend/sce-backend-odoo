@@ -351,7 +351,10 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     "field_groups",
     "legacy_contract",
     "visible_fields",
-    "native_widget",
+    # V2.7 may name only the fail-closed semantic; the literal component
+    # identity below is inspected solely by the protocol-boundary rejection.
+    "component_key",
+    "unsupported_native_widget",
     "native_explicit",
     "model_metadata_derived",
     "compatibility_default",

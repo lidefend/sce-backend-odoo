@@ -16,7 +16,7 @@ import {
 import {
   consumerComponentTrace,
   consumerErrorDefect,
-  contractDefectFromError,
+  consumerDefectFromError,
 } from '../../app/contract/contractGap';
 import { resolveStandardFormComposition } from '../../app/presentation/standardFormComposition';
 import type { StandardPageTypeDecision } from '../../app/presentation/standardPageType';
@@ -236,7 +236,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   }
   onErrorCaptured((err, instance, info) => {
     const message = err instanceof Error ? err.message : String(err || '系统处理问题');
-    renderErrorDefect.value = contractDefectFromError(err) || consumerErrorDefect(err, {
+    renderErrorDefect.value = consumerDefectFromError(err) || consumerErrorDefect(err, {
       stage: info,
       consumer: 'ContractFormPage',
       componentTrace: consumerComponentTrace(instance),

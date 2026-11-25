@@ -6,8 +6,8 @@ import type { FormRecordHydrationTarget } from './recordHydration';
 import { readonlyMainDataCoversFields } from './readonlyMainDataCoverage';
 import { contractLoadProfileOptions } from './contractRenderProfile';
 import {
-  contractDefectFromError,
-  type ContractDefectRef,
+  consumerDefectFromError,
+  type ContractConsumerDefectRef,
 } from '../../app/contract/contractGap';
 import { resolveContractFormReadContext } from './contractRuntimeVm';
 import { canPublishRecordReady, markStartupPhase } from '../../app/performance/startupTiming';
@@ -117,7 +117,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     validationFieldErrors,
     writableFieldCount,
   } = dependencies;
-  const renderErrorDefect = dependencies.renderErrorDefect || ref<ContractDefectRef | null>(null);
+  const renderErrorDefect = dependencies.renderErrorDefect || ref<ContractConsumerDefectRef | null>(null);
   let activeReloadToken = 0;
   let activeReloadIdentity = '';
   let activeReloadPromise: Promise<void> | null = null;
@@ -481,7 +481,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         void preloadFormAuxiliaryData(reloadToken);
       } catch (err) {
         if (!reloadIsCurrent()) return;
-        renderErrorDefect.value = contractDefectFromError(err);
+        renderErrorDefect.value = consumerDefectFromError(err);
         if (err instanceof ApiError) {
           Object.assign(loadError, {
             status: err.status,

@@ -731,8 +731,9 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         widget = field_node["widgetList"][0]
         self.assertEqual(widget["widgetId"], field_node["widgetId"])
         self.assertEqual(widget["ownerContainerId"], field_node["containerId"])
-        self.assertEqual(widget["fieldDescriptor"]["name"], "analytic_account_id")
-        self.assertEqual(widget["fieldDescriptor"]["type"], "many2one")
+        self.assertEqual(widget["fieldDescriptor"]["fieldCode"], "analytic_account_id")
+        self.assertEqual(widget["fieldDescriptor"]["fieldType"], "many2one")
+        self.assertNotIn("componentKey", widget["fieldDescriptor"])
 
     def test_layout_dsl_rejects_parallel_child_carriers(self):
         source = {
@@ -1330,8 +1331,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             request_id="test.web.form.binary.object.action",
         )
 
-        component_registry = full["layoutContract"]["componentRegistry"]
-        self.assertIn("sc.input.binary", component_registry)
+        self.assertNotIn("componentRegistry", full["layoutContract"])
         action_rule = full["actionContract"]["actionRuleList"][0]
         self.assertEqual(action_rule["actionKey"], "obj_action_import_导入")
         self.assertEqual(action_rule["button"], {"name": "action_import", "type": "object"})

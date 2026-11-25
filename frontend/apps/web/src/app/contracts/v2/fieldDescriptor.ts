@@ -2,7 +2,6 @@ import {
   NATIVE_WIDGET_REGISTRY,
   SEMANTIC_COMPONENT_REGISTRY,
   SEMANTIC_FIELD_TYPES,
-  SEMANTIC_REGISTRY_ROWS,
 } from '../../presentation/semantic_registry.generated';
 import type {
   ContractV2FieldDescriptor,
@@ -35,7 +34,6 @@ const REQUIRED_KEYS = [
   'label',
   'fieldType',
   'widgetType',
-  'componentKey',
   'semanticType',
 ] as const;
 
@@ -54,10 +52,23 @@ const OPTIONAL_KEYS = [
   'subview',
   'filename',
   'surfaceRole',
+  'help',
+  'uiUsage',
+  'changeDefault',
+  'definitionRecord',
+  'definitionRecordField',
+  'groupOperator',
+  'searchable',
+  'sortable',
+  'store',
+  'translate',
+  'trim',
+  'related',
   'technical',
   'formStructureRole',
   'digits',
   'currencyField',
+  'size',
   'unit',
   'temporal',
   'attachmentRole',
@@ -75,8 +86,13 @@ const FORM_STRUCTURE_ROLES = new Set([
   'summary', 'task', 'context', 'risk', 'relation', 'activity', 'audit',
 ]);
 const UNIT_KINDS = new Set(['percent', 'duration', 'count', 'quantity']);
+const FIXED_SEMANTIC_BY_FIELD_TYPE: Readonly<Record<string, string>> = Object.freeze({
+  date: 'date',
+  datetime: 'datetime',
+  monetary: 'money',
+  boolean: 'boolean',
+});
 const ALLOWED_KEYS = new Set<string>([...REQUIRED_KEYS, ...OPTIONAL_KEYS]);
-const COMPONENTS_BY_KEY = new Map(SEMANTIC_REGISTRY_ROWS.map((row) => [row.componentKey, row]));
 
 function isRecord(value: unknown): value is UnknownRecord {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -129,6 +145,41 @@ function decodeOptionalText(
     return undefined;
   }
   return raw[key].trim();
+}
+
+function decodeOptionalStringList(
+  raw: UnknownRecord,
+  key: string,
+  path: string,
+  issues: FieldDescriptorDecodeIssue[],
+): string[] | undefined {
+  if (raw[key] === undefined) return undefined;
+  if (!Array.isArray(raw[key]) || !raw[key].length) {
+    push(issues, `${path}.${key}`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'must be a non-empty string array');
+    return undefined;
+  }
+  const values = raw[key].map((item: unknown) => (
+    typeof item === 'string' ? item.trim() : ''
+  ));
+  if (values.some((item) => !item) || new Set(values).size !== values.length) {
+    push(issues, `${path}.${key}`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'must contain unique non-empty strings');
+    return undefined;
+  }
+  return values;
+}
+
+function decodeOptionalPositiveInteger(
+  raw: UnknownRecord,
+  key: string,
+  path: string,
+  issues: FieldDescriptorDecodeIssue[],
+): number | undefined {
+  if (raw[key] === undefined) return undefined;
+  if (!Number.isInteger(raw[key]) || Number(raw[key]) < 1) {
+    push(issues, `${path}.${key}`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'must be a positive integer');
+    return undefined;
+  }
+  return Number(raw[key]);
 }
 
 function applicableFieldSemantics(): Set<string> {
@@ -309,7 +360,6 @@ export function decodeContractV2FieldDescriptor(
   const label = text(raw.label);
   const fieldType = text(raw.fieldType);
   const widgetType = text(raw.widgetType);
-  const componentKey = text(raw.componentKey);
   const semanticType = text(raw.semanticType);
   if (!fieldCode) push(issues, `${path}.fieldCode`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'fieldCode must be non-empty');
   if (!label) push(issues, `${path}.label`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'label must be non-empty');
@@ -318,30 +368,29 @@ export function decodeContractV2FieldDescriptor(
   }
   const applicable = applicableFieldSemantics();
   if (!applicable.has(semanticType)) {
-    const code = SEMANTIC_COMPONENT_REGISTRY[semanticType]
-      ? 'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH'
-      : 'FIELD_DESCRIPTOR_TYPE_INVALID';
-    push(issues, `${path}.semanticType`, code, 'semanticType is not applicable to Field Descriptors');
+    push(
+      issues,
+      `${path}.semanticType`,
+      'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH',
+      'semanticType is not declared and applicable to Field Descriptors',
+    );
   }
-  if (applicable.has(semanticType) && SEMANTIC_COMPONENT_REGISTRY[semanticType] !== componentKey) {
-    push(issues, `${path}.componentKey`, 'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH', 'componentKey does not resolve from semanticType');
+  const fixedSemantic = FIXED_SEMANTIC_BY_FIELD_TYPE[fieldType];
+  if (fixedSemantic && semanticType !== fixedSemantic) {
+    push(
+      issues,
+      `${path}.semanticType`,
+      'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH',
+      `fieldType ${fieldType} requires semanticType ${fixedSemantic}`,
+    );
   }
-  const component = COMPONENTS_BY_KEY.get(componentKey);
   const declaredFieldTypes = SEMANTIC_FIELD_TYPES[semanticType] || [];
-  if (!component && !declaredFieldTypes.length) {
-    push(issues, `${path}.componentKey`, 'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH', 'componentKey is not registered');
-  } else if (
+  if (
     declaredFieldTypes.length
     && !declaredFieldTypes.includes('*')
     && !declaredFieldTypes.includes(fieldType)
   ) {
     push(issues, `${path}.fieldType`, 'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH', 'semanticType does not support fieldType');
-  } else if (
-    component
-    && !component.supportedFieldTypes.includes('*')
-    && !component.supportedFieldTypes.includes(fieldType)
-  ) {
-    push(issues, `${path}.fieldType`, 'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH', 'componentKey does not support fieldType');
   }
   const widgetResolution = widgetType
     ? decodeWidgetResolution(widgetType, path, issues)
@@ -355,6 +404,25 @@ export function decodeContractV2FieldDescriptor(
   const currencyField = decodeOptionalText(raw, 'currencyField', path, issues) || '';
   const filename = decodeOptionalText(raw, 'filename', path, issues);
   const surfaceRole = decodeOptionalText(raw, 'surfaceRole', path, issues);
+  const helpText = decodeOptionalText(raw, 'help', path, issues);
+  const uiUsage = decodeOptionalText(raw, 'uiUsage', path, issues);
+  const normalizedUiUsage: 'fact' | 'interaction' | undefined = uiUsage === 'fact' || uiUsage === 'interaction'
+    ? uiUsage
+    : undefined;
+  const changeDefault = decodeOptionalBoolean(raw, 'changeDefault', path, issues);
+  const searchable = decodeOptionalBoolean(raw, 'searchable', path, issues);
+  const sortable = decodeOptionalBoolean(raw, 'sortable', path, issues);
+  const store = decodeOptionalBoolean(raw, 'store', path, issues);
+  const translate = decodeOptionalBoolean(raw, 'translate', path, issues);
+  const trim = decodeOptionalBoolean(raw, 'trim', path, issues);
+  const definitionRecord = decodeOptionalText(raw, 'definitionRecord', path, issues);
+  const definitionRecordField = decodeOptionalText(raw, 'definitionRecordField', path, issues);
+  const groupOperator = decodeOptionalText(raw, 'groupOperator', path, issues);
+  const related = decodeOptionalStringList(raw, 'related', path, issues);
+  const size = decodeOptionalPositiveInteger(raw, 'size', path, issues);
+  if (uiUsage !== undefined && !['fact', 'interaction'].includes(uiUsage)) {
+    push(issues, `${path}.uiUsage`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'must be fact or interaction');
+  }
   const attachmentRole = decodeOptionalText(raw, 'attachmentRole', path, issues) || '';
   for (const key of ['relationEntry', 'widgetOptions', 'subview'] as const) {
     if (raw[key] !== undefined && !isRecord(raw[key])) {
@@ -373,12 +441,12 @@ export function decodeContractV2FieldDescriptor(
 
   if (fieldType === 'monetary' || semanticType === 'money') {
     if (
-      fieldType !== 'monetary'
+      !['monetary', 'float'].includes(fieldType)
       || semanticType !== 'money'
       || !currencyField
       || currencyField === fieldCode
     ) {
-      push(issues, path, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'money requires monetary fieldType and currencyField');
+      push(issues, path, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'money requires monetary or float fieldType and currencyField');
     }
     if (raw.unit !== undefined || raw.temporal !== undefined || raw.attachmentRole !== undefined) {
       push(issues, path, 'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH', 'money cannot declare unit, temporal or attachmentRole');
@@ -426,7 +494,7 @@ export function decodeContractV2FieldDescriptor(
     label,
     fieldType,
     widgetType,
-    componentKey,
+    componentKey: SEMANTIC_COMPONENT_REGISTRY[semanticType] || '',
     semanticType,
     ...(required !== undefined ? { required } : {}),
     ...(readonly !== undefined ? { readonly } : {}),
@@ -442,6 +510,19 @@ export function decodeContractV2FieldDescriptor(
     ...(isRecord(raw.subview) ? { subview: raw.subview } : {}),
     ...(filename ? { filename } : {}),
     ...(surfaceRole ? { surfaceRole } : {}),
+    ...(helpText ? { help: helpText } : {}),
+    ...(normalizedUiUsage ? { uiUsage: normalizedUiUsage } : {}),
+    ...(changeDefault !== undefined ? { changeDefault } : {}),
+    ...(definitionRecord ? { definitionRecord } : {}),
+    ...(definitionRecordField ? { definitionRecordField } : {}),
+    ...(groupOperator ? { groupOperator } : {}),
+    ...(searchable !== undefined ? { searchable } : {}),
+    ...(sortable !== undefined ? { sortable } : {}),
+    ...(store !== undefined ? { store } : {}),
+    ...(translate !== undefined ? { translate } : {}),
+    ...(trim !== undefined ? { trim } : {}),
+    ...(related ? { related } : {}),
+    ...(size ? { size } : {}),
     ...(technical !== undefined ? { technical } : {}),
     ...(formStructureRole ? { formStructureRole } : {}),
     ...(digits ? { digits } : {}),

@@ -355,7 +355,7 @@ export interface ContractV2Widget {
   fieldCode: string;
   label: string;
   span: number;
-  componentKey: string;
+  semanticType: string;
   capabilities: string[];
   componentConfig: ContractV2Dictionary;
   ownerContainerId: string;
@@ -394,6 +394,7 @@ export interface ContractV2FieldDescriptor extends ContractV2Dictionary {
   label: string;
   fieldType: string;
   widgetType: string;
+  /** Frontend-derived renderer identity for decoded compatibility output. */
   componentKey: string;
   required?: boolean;
   readonly?: boolean;
@@ -410,6 +411,19 @@ export interface ContractV2FieldDescriptor extends ContractV2Dictionary {
   filename?: string;
   semanticType?: string;
   surfaceRole?: string;
+  help?: string;
+  uiUsage?: 'fact' | 'interaction';
+  changeDefault?: boolean;
+  definitionRecord?: string;
+  definitionRecordField?: string;
+  groupOperator?: string;
+  searchable?: boolean;
+  sortable?: boolean;
+  store?: boolean;
+  translate?: boolean;
+  trim?: boolean;
+  related?: string[];
+  size?: number;
   technical?: boolean;
   formStructureRole?: ContractV2FormStructureRole;
   digits?: [number, number];
@@ -562,7 +576,7 @@ export interface ContractV2Container {
   occurrenceIndex?: number;
   sourcePosition?: number;
   nativeIdentity?: ContractV2NativeOccurrenceIdentity;
-  componentKey?: string;
+  semanticType?: string;
   componentConfig?: ContractV2Dictionary;
   attributes?: ContractV2Dictionary;
   fieldInfo?: ContractV2Dictionary;
@@ -590,12 +604,6 @@ export interface ContractV2Container {
   fields?: string[];
   children: ContractV2Container[];
   widgetList: ContractV2Widget[];
-}
-
-/** A declared component identity and its version. Rendering adapters belong to
- * the frontend, so a contract entry carries no framework component name. */
-export interface ContractV2ComponentRegistryEntry {
-  version: string;
 }
 
 export interface ContractV2ActivityNode {
@@ -685,7 +693,7 @@ export interface ContractV2LayoutContract {
   adaptMode: ContractV2AdaptMode;
   containerTree: ContractV2Container[];
   layoutHints: ContractV2Dictionary;
-  componentRegistry: Record<string, ContractV2ComponentRegistryEntry>;
+  /** Legacy v2.0-v2.6 input compatibility; V2.7 rejects it on the wire. */
   listProfile?: ContractV2ListProfile;
   activityProfile?: ContractV2ActivityProfile;
   pivotProfile?: ContractV2AnalysisProfile;

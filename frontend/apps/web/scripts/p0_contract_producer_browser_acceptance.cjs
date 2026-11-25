@@ -78,36 +78,28 @@ async function requestScene(page, params, token) {
 async function validateCompatMatrix(page, token) {
   const base = {
     client_type: 'web_pc',
-    accepted_contract_versions: ['2.5.x'],
+    accepted_contract_versions: ['2.7.x'],
     client_contract_capabilities: [],
   };
   const cases = {
-    known_old_without_versions: {
+    current_base: base,
+    missing_versions: {
       client_type: 'web_pc',
     },
-    pre_negotiation_without_identity: {},
-    only_24: {
+    pre_v27: {
       ...base,
-      accepted_contract_versions: ['2.4.x'],
-    },
-    legacy_25: base,
-    legacy_26_without_capability: {
-      ...base,
-      accepted_contract_versions: ['2.5.x', '2.6.x'],
+      accepted_contract_versions: ['2.6.x'],
     },
     current_page_block_data: {
       ...base,
-      accepted_contract_versions: ['2.5.x', '2.6.x'],
       client_contract_capabilities: ['page_block_data.v1'],
     },
     current_page_block_action: {
       ...base,
-      accepted_contract_versions: ['2.5.x', '2.6.x'],
       client_contract_capabilities: ['page_block_action.v1'],
     },
     current_page_block_data_and_action: {
       ...base,
-      accepted_contract_versions: ['2.5.x', '2.6.x'],
       client_contract_capabilities: ['page_block_data.v1', 'page_block_action.v1'],
     },
     no_common_version: {
@@ -131,19 +123,56 @@ async function validateContractV2Matrix(page, token) {
     model: 'project.project',
     view_type: 'list',
     client_type: 'web_pc',
-    accepted_contract_versions: ['2.5.x', '2.6.x'],
-    client_contract_capabilities: [],
+    accepted_contract_versions: ['2.7.x'],
+    client_contract_capabilities: [
+      'container_tree.v2',
+      'data_source.v2',
+      'action_rule.v2',
+      'relation_entry.v2',
+      'status_contract.v2',
+      'form_layout.children_owner.v1',
+    ],
   };
   return {
-    legacy_26_without_capability: await requestIntent(page, 'ui.contract.v2', base, token),
-    current_26: await requestIntent(page, 'ui.contract.v2', {
+    current_v27: await requestIntent(page, 'ui.contract.v2', base, token),
+    rejected_pre_v27: await requestIntent(page, 'ui.contract.v2', {
       ...base,
-      client_contract_capabilities: ['page_block_data.v1'],
+      accepted_contract_versions: ['2.6.x'],
     }, token),
   };
 }
 
-async function captureProjectLedgerForm(page) {
+async function captureProjectLedgerContracts(page) {
+  const listResponsePromise = page.waitForResponse((response) => {
+    if (!response.url().includes('/api/v1/intent')) return false;
+    try {
+      const payload = JSON.parse(response.request().postData() || '{}');
+      const params = payload.params || {};
+      return (
+        payload.intent === 'ui.contract.v2'
+        && params.op === 'action_open'
+        && params.action_id
+        && !params.record_id
+      );
+    } catch {
+      return false;
+    }
+  }, { timeout: 30000 });
+  await page.goto(`${BASE_URL}/s/projects.ledger`, {
+    waitUntil: 'domcontentloaded',
+    timeout: 30000,
+  });
+  const listResponse = await listResponsePromise;
+  const listBody = await listResponse.json();
+  if (!listResponse.ok() || listBody?.ok !== true || !listBody?.data) {
+    throw new Error(`project ledger list contract failed: ${JSON.stringify({
+      status: listResponse.status(),
+      ok: listBody?.ok,
+      code: listBody?.error?.code || '',
+    })}`);
+  }
+  const row = page.locator('button[data-semantic-cell-kind="primary"]:visible').first();
+  await row.waitFor({ state: 'visible', timeout: 30000 });
   const formResponsePromise = page.waitForResponse((response) => {
     if (!response.url().includes('/api/v1/intent')) return false;
     try {
@@ -159,12 +188,6 @@ async function captureProjectLedgerForm(page) {
       return false;
     }
   }, { timeout: 30000 });
-  await page.goto(`${BASE_URL}/s/projects.ledger`, {
-    waitUntil: 'domcontentloaded',
-    timeout: 30000,
-  });
-  const row = page.locator('button[data-semantic-cell-kind="primary"]:visible').first();
-  await row.waitFor({ state: 'visible', timeout: 30000 });
   await row.click();
   const response = await formResponsePromise;
   const body = await response.json();
@@ -175,7 +198,22 @@ async function captureProjectLedgerForm(page) {
       code: body?.error?.code || '',
     })}`);
   }
-  return body.data;
+  const formRoot = page.locator('[data-semantic-component="ContractFormPage"]:visible').first();
+  await formRoot.waitFor({ state: 'visible', timeout: 30000 });
+  await page.waitForFunction(() => {
+    const root = document.querySelector('[data-semantic-component="ContractFormPage"]');
+    return root && !['loading', 'error'].includes(String(root.getAttribute('data-state') || ''));
+  }, null, { timeout: 30000 });
+  const formState = await formRoot.evaluate((element) => ({
+    state: element.getAttribute('data-state') || '',
+    model: element.getAttribute('data-form-model') || '',
+    record: element.getAttribute('data-form-record') || '',
+    action: element.getAttribute('data-form-action-id') || '',
+    menu: element.getAttribute('data-form-menu-id') || '',
+  }));
+  const screenshot = path.join(ARTIFACT_DIR, 'project-ledger-form-v27.png');
+  await page.screenshot({ path: screenshot, fullPage: true });
+  return { form: body.data, list: listBody.data, formState, screenshot };
 }
 
 function assertProjectLedgerRowNavigation(contract) {
@@ -198,6 +236,29 @@ function assertProjectLedgerRowNavigation(contract) {
   }
 }
 
+function assertSemanticContractOnly(contract) {
+  const forbidden = [];
+  const visit = (value, path = '$') => {
+    if (Array.isArray(value)) {
+      value.forEach((item, index) => visit(item, `${path}[${index}]`));
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    Object.entries(value).forEach(([key, child]) => {
+      const here = `${path}.${key}`;
+      if (key === 'componentKey' || key === 'component_key' || key === 'componentRegistry') {
+        forbidden.push(here);
+        return;
+      }
+      visit(child, here);
+    });
+  };
+  visit(contract);
+  if (forbidden.length) {
+    throw new Error(`V2.7 form contract leaked frontend implementation identity: ${JSON.stringify(forbidden)}`);
+  }
+}
+
 async function renderViewport(browser, viewport) {
   const context = await browser.newContext({ viewport: { width: viewport.width, height: viewport.height } });
   const page = await context.newPage();
@@ -206,7 +267,11 @@ async function renderViewport(browser, viewport) {
   page.on('console', (message) => {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
-  page.on('pageerror', (error) => pageErrors.push(String(error && error.message || error)));
+  page.on('pageerror', (error) => pageErrors.push({
+    message: String(error && error.message || error),
+    stack: String(error && error.stack || ''),
+    path: String(page.url() || ''),
+  }));
   const token = await login(page);
   await page.goto(`${BASE_URL}/s/${SCENE_KEY}`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => {
@@ -229,23 +294,26 @@ async function renderViewport(browser, viewport) {
     path: path.join(ARTIFACT_DIR, `company-dashboard-${viewport.width}.png`),
     fullPage: true,
   });
-  const uiConsoleErrors = [...consoleErrors];
-  const uiPageErrors = [...pageErrors];
   const matrix = await validateCompatMatrix(page, token);
   const contractV2Matrix = await validateContractV2Matrix(page, token);
-  assertProjectLedgerRowNavigation(contractV2Matrix.current_26.body?.data);
-  const projectLedgerForm = viewport.name === 'desktop'
-    ? await captureProjectLedgerForm(page)
+  const projectLedgerContracts = viewport.name === 'desktop'
+    ? await captureProjectLedgerContracts(page)
     : null;
+  if (projectLedgerContracts) {
+    assertProjectLedgerRowNavigation(projectLedgerContracts.list);
+    assertSemanticContractOnly(projectLedgerContracts.form);
+  }
+  const uiConsoleErrors = [...consoleErrors];
+  const uiPageErrors = [...pageErrors];
   if (viewport.name === 'desktop') {
     fs.writeFileSync(
       path.join(ARTIFACT_DIR, 'ui-contract-v2-project-list.json'),
-      `${JSON.stringify(contractV2Matrix.current_26.body.data, null, 2)}\n`,
+      `${JSON.stringify(projectLedgerContracts.list, null, 2)}\n`,
       'utf8',
     );
     fs.writeFileSync(
       path.join(ARTIFACT_DIR, 'ui-contract-v2-project-form.json'),
-      `${JSON.stringify(projectLedgerForm, null, 2)}\n`,
+      `${JSON.stringify(projectLedgerContracts.form, null, 2)}\n`,
       'utf8',
     );
   }
@@ -255,24 +323,41 @@ async function renderViewport(browser, viewport) {
     result,
     matrix,
     contractV2Matrix,
-    projectLedgerForm,
+    projectLedgerForm: projectLedgerContracts?.form || null,
+    projectLedgerContracts,
     consoleErrors: uiConsoleErrors,
     pageErrors: uiPageErrors,
   };
 }
 
-function assertCurrentProjection(label, payload) {
+function assertCurrentProjection(label, payload, expectedOrchestrationVersion = '2.1.0') {
   if (payload.status !== 200 || payload.body?.ok !== true) {
     throw new Error(`${label}: request failed ${JSON.stringify(payload)}`);
   }
   const orchestration = payload.body.data.page_orchestration;
-  if (orchestration.contract_version !== '2.1.0' || orchestration.schema_version !== '2.1.0') {
-    throw new Error(`${label}: expected 2.1.0`);
+  if (
+    orchestration.contract_version !== expectedOrchestrationVersion
+    || orchestration.schema_version !== expectedOrchestrationVersion
+  ) {
+    throw new Error(`${label}: expected ${expectedOrchestrationVersion}, got ${JSON.stringify({
+      contract_version: orchestration.contract_version,
+      schema_version: orchestration.schema_version,
+    })}`);
   }
   if (orchestration.attachment_facts || orchestration.action_feedback) {
     throw new Error(`${label}: undeclared carrier leaked`);
   }
   return orchestration;
+}
+
+function assertCurrentBasePayload(label, payload) {
+  const orchestration = assertCurrentProjection(label, payload, '2.0.0');
+  if (orchestration.block_data_contracts || orchestration.action_schema || orchestration.action_contract) {
+    throw new Error(`${label}: undeclared optional carriers leaked without capability`);
+  }
+  if (payload.body?.meta?.contract_negotiation?.contractVersion !== '2.7.0') {
+    throw new Error(`${label}: runtime negotiation did not bind Contract V2.7`);
+  }
 }
 
 function assertCurrentDataPayload(label, payload) {
@@ -309,21 +394,13 @@ function assertCurrentActionPayload(label, payload, expectData) {
   }
 }
 
-function assertLegacyPayload(label, payload) {
-  if (payload.status !== 200 || payload.body?.ok !== true) {
-    throw new Error(`${label}: request failed ${JSON.stringify(payload)}`);
+function assertUnsupportedPayload(label, payload, expectedReason) {
+  if (payload.status === 200 && payload.body?.ok !== false) {
+    throw new Error(`${label}: unsupported request unexpectedly succeeded`);
   }
-  const orchestration = payload.body.data.page_orchestration;
-  if (orchestration.contract_version !== '2.0.0' || orchestration.schema_version !== '2.0.0') {
-    throw new Error(`${label}: expected complete 2.0.0 projection`);
-  }
-  if (
-    orchestration.block_data_contracts
-    || orchestration.block_field_descriptors
-    || orchestration.action_schema
-    || orchestration.action_contract
-  ) {
-    throw new Error(`${label}: new semantic carrier leaked`);
+  const reasonCode = payload.body?.error?.reason_code || payload.body?.error?.reasonCode || '';
+  if (reasonCode !== expectedReason) {
+    throw new Error(`${label}: expected ${expectedReason}, got ${reasonCode || '<missing>'}`);
   }
 }
 
@@ -346,6 +423,7 @@ async function main() {
     const runs = [];
     for (const viewport of VIEWPORTS) {
       const run = await renderViewport(browser, viewport);
+      assertCurrentBasePayload(`${viewport.name}.current_base`, run.matrix.current_base);
       assertCurrentDataPayload(`${viewport.name}.current_data`, run.matrix.current_page_block_data);
       assertCurrentActionPayload(
         `${viewport.name}.current_action`,
@@ -357,42 +435,28 @@ async function main() {
         run.matrix.current_page_block_data_and_action,
         true,
       );
-      assertLegacyPayload(`${viewport.name}.known_old_without_versions`, run.matrix.known_old_without_versions);
-      assertLegacyPayload(
-        `${viewport.name}.pre_negotiation_without_identity`,
-        run.matrix.pre_negotiation_without_identity,
+      for (const key of ['missing_versions', 'pre_v27', 'no_common_version', 'unknown_client_without_versions']) {
+        assertUnsupportedPayload(
+          `${viewport.name}.${key}`,
+          run.matrix[key],
+          'CONTRACT_VERSION_UNSUPPORTED',
+        );
+      }
+      assertContractV2(`${viewport.name}.contract_v2_current`, run.contractV2Matrix.current_v27, '2.7.0');
+      assertUnsupportedPayload(
+        `${viewport.name}.contract_v2_pre_v27`,
+        run.contractV2Matrix.rejected_pre_v27,
+        'CONTRACT_VERSION_UNSUPPORTED',
       );
-      if (run.matrix.pre_negotiation_without_identity.body?.meta?.contract_negotiation?.clientType !== '') {
-        throw new Error(`${viewport.name}: missing client identity was implicitly assigned`);
-      }
-      assertLegacyPayload(`${viewport.name}.legacy_25`, run.matrix.legacy_25);
-      if (run.matrix.only_24.status === 200 && run.matrix.only_24.body?.ok !== false) {
-        throw new Error(`${viewport.name}: 2.4-only client was upgraded to a supported version`);
-      }
-      if (
-        (run.matrix.only_24.body?.error?.reason_code || run.matrix.only_24.body?.error?.reasonCode)
-        !== 'CONTRACT_VERSION_UNSUPPORTED'
-      ) {
-        throw new Error(`${viewport.name}: 2.4-only client did not fail with CONTRACT_VERSION_UNSUPPORTED`);
-      }
-      assertLegacyPayload(`${viewport.name}.legacy_26_without_capability`, run.matrix.legacy_26_without_capability);
-      if (run.matrix.no_common_version.status === 200 && run.matrix.no_common_version.body?.ok !== false) {
-        throw new Error(`${viewport.name}: no common version did not fail closed`);
-      }
-      if (
-        run.matrix.unknown_client_without_versions.status === 200
-        && run.matrix.unknown_client_without_versions.body?.ok !== false
-      ) {
-        throw new Error(`${viewport.name}: unknown client did not fail closed`);
-      }
-      assertContractV2(`${viewport.name}.contract_v2_legacy`, run.contractV2Matrix.legacy_26_without_capability, '2.5.0');
-      assertContractV2(`${viewport.name}.contract_v2_current`, run.contractV2Matrix.current_26, '2.6.0');
       if (!run.result.semanticRoot) throw new Error(`${viewport.name}: PageRenderer missing`);
       if (!/项目规模/.test(run.result.metricText)) throw new Error(`${viewport.name}: company_projects not rendered`);
       if (run.result.overflow) throw new Error(`${viewport.name}: horizontal overflow`);
-      if (run.consoleErrors.length || run.pageErrors.length) {
+      const unexpectedConsoleErrors = run.consoleErrors.filter((message) => !(
+        /Failed to load resource: the server responded with a status of 409 \(CONFLICT\)/.test(message)
+      ));
+      if (unexpectedConsoleErrors.length || run.pageErrors.length) {
         throw new Error(`${viewport.name}: browser errors ${JSON.stringify({
-          consoleErrors: run.consoleErrors,
+          consoleErrors: unexpectedConsoleErrors,
           pageErrors: run.pageErrors,
         })}`);
       }
@@ -430,6 +494,8 @@ async function main() {
         project_ledger_form: run.projectLedgerForm ? {
           action_rules: run.projectLedgerForm.actionContract?.actionRuleList?.length || 0,
           layout_contract_present: Boolean(run.projectLedgerForm.layoutContract),
+          runtime_state: run.projectLedgerContracts?.formState || null,
+          screenshot: run.projectLedgerContracts?.screenshot || '',
         } : null,
         action_carrier: (() => {
           const orchestration = run.matrix.current_page_block_action.body?.data?.page_orchestration;

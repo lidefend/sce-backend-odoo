@@ -1,19 +1,17 @@
-"""Request-local delivery checks, independent of outer contract version support."""
-import re
-
-from .contract_runtime.semantic_resolver import component_registration
+"""Request-local protocol checks for declared form node semantics."""
 from .form_configuration_compiler import FormConfigurationError
 from .node_component_validation import walk
 
-# Protocol names, not a second registry/version authority.
+# Protocol capabilities keyed by backend node semantics. These do not select a
+# frontend component and do not assert renderer implementation support.
 OPTIONAL_NODE_CAPABILITIES = {
-    'sc.insight.summary': 'form.insight.summary.v1',
-    'sc.action.list': 'form.action.list.v1',
+    'insight_summary': 'form.insight.summary.v1',
+    'action_list': 'form.action.list.v1',
 }
 NODE_CAPABILITIES = {
-    'sc.feedback.message': 'form.feedback.message.v1',
-    'sc.navigation.anchor': 'form.navigation.anchor.v1',
-    'sc.display.ribbon': 'form.display.ribbon.v1',
+    'feedback_message': 'form.feedback.message.v1',
+    'navigation_anchor': 'form.navigation.anchor.v1',
+    'display_ribbon': 'form.display.ribbon.v1',
     **OPTIONAL_NODE_CAPABILITIES,
 }
 DRAFT_FEEDBACK_CAPABILITY = 'form.feedback.draft.v1'
@@ -46,7 +44,7 @@ def _project_optional_nodes(contract, capabilities):
             if not isinstance(node, dict):
                 kept.append(node)
                 continue
-            capability = OPTIONAL_NODE_CAPABILITIES.get(node.get('componentKey'))
+            capability = OPTIONAL_NODE_CAPABILITIES.get(node.get('semanticType'))
             if capability is not None and capability not in capabilities:
                 collect_ids(node, removed_ids)
                 continue
@@ -67,35 +65,29 @@ def _project_optional_nodes(contract, capabilities):
 
 def validate_component_capabilities(contract, params):
     layout = contract.get('layoutContract') or {}
-    registry = layout.get('componentRegistry') or {}
     supplied = params.get('client_contract_capabilities')
     capabilities = set(supplied) if isinstance(supplied, list) and all(type(v) is str for v in supplied) else set()
     _project_optional_nodes(contract, capabilities)
     required = []
     for node, path in walk(layout.get('containerTree', [])):
-        key = node.get('componentKey')
-        if key is None:
+        semantic_type = node.get('semanticType')
+        if semantic_type is None:
             continue
-        if type(key) is not str or not key:
-            raise FormConfigurationError('COMPONENT_UNREGISTERED', path + '.componentKey')
-        try:
-            registration = component_registration(key)
-        except ValueError as exc:
-            raise FormConfigurationError('COMPONENT_UNREGISTERED', path + '.componentKey') from exc
-        if registration['kind'] != 'node':
-            continue  # Existing field-component contract remains unchanged.
-        version = registration['version']
-        delivered = registry.get(key) if isinstance(registry, dict) else None
-        if (not re.fullmatch(r'1\.[0-9]+\.[0-9]+', version)
-                or not isinstance(delivered, dict) or delivered.get('version') != version):
-            raise FormConfigurationError('COMPONENT_VERSION_UNSUPPORTED', path + '.componentKey')
-        if key == 'sc.unsupported.native_node':
+        if type(semantic_type) is not str or not semantic_type:
+            raise FormConfigurationError('NODE_SEMANTIC_MISSING', path + '.semanticType')
+        if (
+            semantic_type not in NODE_CAPABILITIES
+            and semantic_type not in OPTIONAL_NODE_CAPABILITIES
+            and semantic_type != 'unsupported_native_node'
+        ):
+            continue
+        if semantic_type == 'unsupported_native_node':
             # The unsupported node is deliberately published so the client can
             # reject it through the same contract-gap path with its own reason.
             continue
-        capability = NODE_CAPABILITIES.get(key)
+        capability = NODE_CAPABILITIES.get(semantic_type)
         if capability is None or capability not in capabilities:
-            required.append(path + '.componentKey')
+            required.append(path + '.semanticType')
         evaluation = (node.get('componentConfig') or {}).get('evaluation')
         if evaluation is not None and DRAFT_FEEDBACK_CAPABILITY not in capabilities:
             required.append(path + '.componentConfig.evaluation')

@@ -2274,15 +2274,6 @@ verify.backend.contract_supply_chain.unit: guard.prod.forbid
 		scripts/verify/test_contract_supply_chain_attestation.py
 	@python3 -m unittest scripts.verify.test_contract_supply_chain_attestation
 
-# N-1 / N / N+1 consumer-compatibility and append-only rollback drill, declared
-# as data over the contract's key surface rather than over rendered strings.
-.PHONY: verify.backend.contract_supply_chain.compatibility.unit
-verify.backend.contract_supply_chain.compatibility.unit: guard.prod.forbid
-	@python3 -m py_compile \
-		addons/smart_core/core/contract_version_compatibility.py \
-		scripts/verify/test_contract_version_compatibility.py
-	@python3 -m unittest scripts.verify.test_contract_version_compatibility
-
 # Runtime half: builds a real attestation for the running deployment on the
 # isolated contract-lifecycle profile (schema digest from the lifecycle
 # authority, contract digest from a real ui.contract.v2 delivery, artifact

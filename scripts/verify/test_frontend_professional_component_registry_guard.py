@@ -17,7 +17,7 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
         def source(path):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("contractFormPresenter.ts"):
-                return value.replace("resolveContractProfessionalComponent({", "bypassRegistry({")
+                return value.replace("resolveContractSemanticComponent({", "bypassRegistry({")
             return value
 
         self.assertTrue(any("Presenter" in failure for failure in validate(source)))
@@ -2381,9 +2381,9 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
             if path.endswith("semantic_registry.generated.ts"):
                 return value.replace(
                     "renderer: 'FormSectionField', rendererVersion: '1.0.0', "
-                    "supportedContractVersion: '>=2.0.0 <2.7.0', requiredCapabilities: []",
+                    "supportedContractVersion: '>=2.0.0 <2.8.0', requiredCapabilities: []",
                     "renderer: 'FormSectionField', rendererVersion: '1.0.0', "
-                    "supportedContractVersion: '>=2.0.0 <2.7.0', "
+                    "supportedContractVersion: '>=2.0.0 <2.8.0', "
                     "requiredCapabilities: ['form.relation.one2many']",
                     1,
                 )
@@ -2409,7 +2409,7 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("industry_renderer_manifest.generated.ts"):
                 return value.replace(
-                    "supportedContractVersion: '>=2.0.0 <2.7.0'",
+                    "supportedContractVersion: '>=2.0.0 <2.8.0'",
                     "supportedContractVersion: '^2'",
                     1,
                 )

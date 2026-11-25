@@ -40,7 +40,7 @@ class TestApprovalPolicyFeedback(TransactionCase):
             allowed_company_ids=self.env.company.ids, lang='en_US')
         contract, _ = draft_feedback._assemble_contract(model, self.view.id)
         hosts = [n for n, _ in native_advisory.walk(contract['layoutContract']['containerTree'])
-                 if n.get('componentKey') == draft_feedback.COMPONENT_KEY]
+                 if n.get('semanticType') == draft_feedback.SEMANTIC_TYPE]
         self.assertEqual(len(hosts), 1)
         request = {'version': draft_feedback.VERSION, 'operation': 'describe',
                    'request_id': 'approval_describe', 'view_id': self.view.id,

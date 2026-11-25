@@ -12,9 +12,7 @@ from typing import Any, Iterable
 
 
 NEGOTIATION_VERSION = "1.0.0"
-LEGACY_CONTRACT_VERSION = "2.5.0"
-CURRENT_CONTRACT_VERSION = "2.6.0"
-LEGACY_PAGE_ORCHESTRATION_VERSION = "2.0.0"
+CURRENT_CONTRACT_VERSION = "2.7.0"
 CURRENT_PAGE_ORCHESTRATION_VERSION = "2.1.0"
 
 PAGE_BLOCK_DATA_CAPABILITY = "page_block_data.v1"
@@ -67,33 +65,9 @@ def accepted_minors(value: Any) -> tuple[int, ...]:
         if not minor.isdigit():
             continue
         parsed = int(minor)
-        if 0 <= parsed <= 6:
+        if parsed == 7:
             minors.add(parsed)
     return tuple(sorted(minors, reverse=True))
-
-
-def _legacy_result(
-    *,
-    client_type: str,
-    accepted_versions: list[str],
-    capabilities: list[str],
-    compatibility_mode: str,
-) -> dict[str, Any]:
-    return {
-        "negotiationVersion": NEGOTIATION_VERSION,
-        "status": "legacy",
-        "clientType": client_type,
-        "compatibilityMode": compatibility_mode,
-        "acceptedContractVersions": accepted_versions,
-        "clientContractCapabilities": capabilities,
-        "contractVersion": LEGACY_CONTRACT_VERSION,
-        "pageOrchestrationVersion": LEGACY_PAGE_ORCHESTRATION_VERSION,
-        "carriers": {
-            PAGE_BLOCK_DATA_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": False},
-            ATTACHMENT_FACT_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": False},
-            PAGE_BLOCK_ACTION_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": False},
-        },
-    }
 
 
 def negotiate_client_contract(
@@ -104,24 +78,15 @@ def negotiate_client_contract(
 ) -> dict[str, Any]:
     """Choose one complete contract projection.
 
-    A pre-negotiation client that sends neither a client type, accepted version
-    nor capability receives the complete 2.5/2.0 legacy projection. Its client
-    identity remains empty: absence of negotiation fields is evidence of the old
-    request shape, not evidence that the caller is ``web_pc``. Once any
-    negotiation field is present, an unknown/missing client type fails closed.
+    Contract V2.7 is the only delivered protocol. Missing identity, missing
+    version declaration or an unknown version fails closed; pre-production
+    legacy projections are not retained as a second contract model.
     """
 
     resolved_client = _text(client_type)
     versions = _string_list(accepted_contract_versions)
     capabilities = _string_list(client_contract_capabilities)
     if not resolved_client:
-        if not versions and not capabilities:
-            return _legacy_result(
-                client_type="",
-                accepted_versions=[],
-                capabilities=[],
-                compatibility_mode="pre_negotiation_client_without_identity",
-            )
         raise ContractNegotiationError(
             REASON_CONTRACT_VERSION_UNSUPPORTED,
             "client_type is required when contract versions or capabilities are declared",
@@ -132,11 +97,9 @@ def negotiate_client_contract(
             f"unsupported client type: {resolved_client}",
         )
     if not versions:
-        return _legacy_result(
-            client_type=resolved_client,
-            accepted_versions=[],
-            capabilities=capabilities,
-            compatibility_mode="known_client_without_versions",
+        raise ContractNegotiationError(
+            REASON_CONTRACT_VERSION_UNSUPPORTED,
+            "accepted contract versions are required",
         )
     minors = accepted_minors(versions)
     if not minors:
@@ -146,7 +109,7 @@ def negotiate_client_contract(
         )
     page_block_data_enabled = PAGE_BLOCK_DATA_CAPABILITY in capabilities
     page_block_action_enabled = PAGE_BLOCK_ACTION_CAPABILITY in capabilities
-    if 6 in minors and (page_block_data_enabled or page_block_action_enabled):
+    if 7 in minors:
         compatibility_mode = (
             "page_block_data_and_action_v1"
             if page_block_data_enabled and page_block_action_enabled
@@ -175,17 +138,6 @@ def negotiate_client_contract(
                 },
             },
         }
-    if 5 in minors:
-        return _legacy_result(
-            client_type=resolved_client,
-            accepted_versions=versions,
-            capabilities=capabilities,
-            compatibility_mode=(
-                "new_version_without_page_block_capability"
-                if 6 in minors
-                else "legacy_common_version"
-            ),
-        )
     raise ContractNegotiationError(
         REASON_CONTRACT_VERSION_UNSUPPORTED,
         "no common supported Contract V2 version",

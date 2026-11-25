@@ -29,7 +29,7 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v116"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v121"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
 ASSEMBLED_CACHE_MODULE = "addons/smart_core/utils/load_contract_response_cache.py"
 ASSEMBLED_CACHE_INPUTS = (
@@ -45,6 +45,7 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/core/native_modifier_comparison.py",
     "addons/smart_core/core/native_modifier_context.py",
     "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
+    "addons/smart_core/core/contract_lifecycle.py",
     "addons/smart_core/core/node_component_validation.py",
     "addons/smart_core/core/native_advisory.py",
     "addons/smart_core/core/node_component_capabilities.py",
@@ -67,15 +68,15 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/core/native_view_occurrence.py",
     "addons/smart_core/core/node_component_validation.py",
     "addons/smart_core/core/node_component_capabilities.py",
-    # The assembler resolves component keys through the contract registry, so the
-    # resolver and its generated carrier决定 assembled contract 的组件键。它们是运行时
-    # 输入，必须一并纳入指纹；否则声明改动会留下被缓存的旧装配。
+    # The assembler resolves canonical field and node semantics through the
+    # contract registry. The resolver and generated carrier therefore determine
+    # the assembled semantic contract and must remain part of this fingerprint.
     "addons/smart_core/core/contract_runtime/native_widget_contract.py",
     "addons/smart_core/core/contract_runtime/semantic_resolver.py",
     "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
     # The resolver also annotates a field with the entity semantics projected out
     # of the parsed model/view facts, so that carrier changes the assembled
-    # component keys too and has to be part of the same fingerprint.
+    # semantic contract too and has to be part of the same fingerprint.
     "addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py",
     # The assembler imports the permission resolver directly, and the collection
     # capabilities it publishes are produced by the governance surfaces through the
@@ -89,8 +90,9 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/utils/contract_governance.py",
     "addons/smart_core/utils/contract_governance_list_surface.py",
     "addons/smart_core/utils/contract_governance_user_surface.py",
+    "addons/smart_core/utils/native_field_descriptor.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "c3d60f1165aa1db2c43a5bfcf823b9c957267f129cf0cec5c8d4018281c39835"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "c22ccd9ff16d2ae38ba6f302f67bdffd920e26ecdb756df8770c4f0d2c328b92"
 
 # Cache layers are deliberately separated:
 #   * dynamic per-request computation owns record facts, permission verdicts and
@@ -572,8 +574,8 @@ def validate_contract(
     payload_keys = set(payload.keys())
     if not required <= payload_keys or payload_keys - required - optional:
         fail(errors, f"contract top-level mismatch: {sorted(payload.keys())}")
-    if payload.get("pageInfo", {}).get("contractVersion") != "2.5.0":
-        fail(errors, "contractVersion must be 2.5.0")
+    if payload.get("pageInfo", {}).get("contractVersion") != "2.7.0":
+        fail(errors, "contractVersion must be 2.7.0")
     meta = payload.get("meta", {}) if isinstance(payload.get("meta"), dict) else {}
     if meta.get("sourceType") != expected_source_type:
         fail(errors, f"meta.sourceType must be {expected_source_type}")
@@ -641,7 +643,11 @@ def validate_contract(
                 and node["containerType"] not in (registry_path(registry, ("containerType",)) or [])
             ):
                 fail(errors, f"{node_path}.containerType must be listed in enum_registry.containerType")
-            if "widgetType" in node and node["widgetType"] not in (registry_path(registry, ("widgetType",)) or []):
+            if (
+                "widgetId" in node
+                and "widgetType" in node
+                and node["widgetType"] not in (registry_path(registry, ("widgetType",)) or [])
+            ):
                 fail(errors, f"{node_path}.widgetType must be listed in enum_registry.widgetType")
             if _owns_direct_field_child(node) and not _declared_positive_int(node.get("columns")):
                 fail(
@@ -689,8 +695,8 @@ def validate_patch(payload: dict[str, Any], snapshot: dict[str, Any], errors: li
         if key not in payload:
             fail(errors, f"patch missing {key}")
     meta = payload.get("meta", {})
-    if meta.get("contractVersion") != "2.5.0":
-        fail(errors, "patch contractVersion must be 2.5.0")
+    if meta.get("contractVersion") != "2.7.0":
+        fail(errors, "patch contractVersion must be 2.7.0")
     if meta.get("sourceType") != "api.onchange":
         fail(errors, "patch meta.sourceType must be api.onchange")
     if "compat" in meta:
@@ -832,19 +838,21 @@ def main() -> int:
     onchange_patch = target.assemble_unified_page_patch_v2(onchange_source, action_id="project.name.change")
 
     widget_projection_cases = (
-        ({"name": "state", "type": "selection", "widget": "selection", "widget_source": "native_explicit"}, "select", "sc.select.remote"),
-        ({"name": "active", "type": "boolean", "widget": "boolean", "widget_source": "native_explicit"}, "checkbox", "sc.input.boolean"),
-        ({"name": "line_ids", "type": "one2many", "widget": "one2many_list", "widget_source": "native_explicit", "relation": "x.line"}, "table", "sc.relation.table"),
-        ({"name": "amount", "type": "monetary", "widget": "monetary", "widget_source": "native_explicit"}, "number", "sc.value.money"),
-        ({"name": "state", "type": "selection", "widget": "statusbar", "widget_source": "native_explicit"}, "display", "sc.display.status"),
-        ({"name": "quick_encoding_vals", "type": "json", "widget": "json", "widget_source": "native_explicit"}, "display", "sc.display.text"),
+        ({"name": "state", "type": "selection", "widget": "selection", "widget_source": "native_explicit"}, "select", "choice"),
+        ({"name": "active", "type": "boolean", "widget": "boolean", "widget_source": "native_explicit"}, "checkbox", "boolean"),
+        ({"name": "line_ids", "type": "one2many", "widget": "one2many_list", "widget_source": "native_explicit", "relation": "x.line"}, "table", "detail_collection"),
+        ({"name": "amount", "type": "monetary", "widget": "monetary", "widget_source": "native_explicit"}, "number", "money"),
+        ({"name": "state", "type": "selection", "widget": "statusbar", "widget_source": "native_explicit"}, "display", "status"),
+        ({"name": "quick_encoding_vals", "type": "json", "widget": "json", "widget_source": "native_explicit"}, "display", "readable_value"),
     )
-    for field, expected_widget, expected_component in widget_projection_cases:
+    for field, expected_widget, expected_semantic in widget_projection_cases:
         projected = target._field_widget(field, layout_type="form")
         if projected.get("widgetType") != expected_widget:
             fail(errors, f"native widget {field['widget']} must normalize to {expected_widget}")
-        if projected.get("componentKey") != expected_component:
-            fail(errors, f"native widget {field['widget']} must resolve component {expected_component}")
+        if projected.get("semanticType") != expected_semantic:
+            fail(errors, f"native widget {field['widget']} must resolve semantics {expected_semantic}")
+        if any(key in projected for key in ("componentKey", "component_key", "componentRegistry")):
+            fail(errors, f"native widget {field['widget']} must not publish frontend implementation identity")
         if projected.get("componentConfig", {}).get("nativeWidget") != field["widget"]:
             fail(errors, f"native widget {field['widget']} must remain available as presentation metadata")
 
@@ -895,8 +903,10 @@ def main() -> int:
         layout_type="form",
     )
     unsupported_provenance = unsupported_widget.get("componentConfig", {}).get("widgetProvenance", {})
-    if unsupported_widget.get("componentKey") != "sc.unsupported.native_widget":
-        fail(errors, "unknown explicit Widget must resolve to sc.unsupported.native_widget")
+    if unsupported_widget.get("semanticType") != "unsupported_native_widget":
+        fail(errors, "unknown explicit Widget must resolve to unsupported_native_widget")
+    if any(key in unsupported_widget for key in ("componentKey", "component_key", "componentRegistry")):
+        fail(errors, "unknown explicit Widget must not publish frontend implementation identity")
     if unsupported_provenance.get("resolutionStatus") != "unsupported":
         fail(errors, "unknown explicit Widget must publish unsupported resolution")
     if unsupported_provenance.get("reasonCode") != "NATIVE_WIDGET_UNRECOGNIZED":

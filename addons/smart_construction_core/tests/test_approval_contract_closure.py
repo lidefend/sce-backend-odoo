@@ -95,7 +95,7 @@ class TestApprovalContractClosure(BusinessTransactionCase):
                 "render_profile": "edit",
                 "delivery_profile": "full",
                 "client_type": "web_pc",
-                "accepted_contract_versions": ["2.5.x"],
+                "accepted_contract_versions": ["2.7.x"],
                 "client_contract_capabilities": [
                     "container_tree.v2",
                     "data_source.v2",

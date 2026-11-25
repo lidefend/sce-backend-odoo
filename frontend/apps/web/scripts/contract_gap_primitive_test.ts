@@ -11,6 +11,9 @@
 import assert from 'node:assert/strict';
 
 import {
+  consumerDefectFromError,
+  contractDefectFromError,
+  frontendCapabilityGap,
   isContractGapError,
   optionalDeclaredNumber,
   requireDeclaredNumber,
@@ -92,5 +95,24 @@ accepted(optionalDeclaredNumber(30, spec), 30, 'a present optional declaration i
 rejected(0, () => optionalDeclaredNumber(0, spec), 'a present-but-illegal optional declaration still stops');
 rejected('30', () => optionalDeclaredNumber('30', spec), 'a present optional numeric string must not be parsed');
 rejected(true, () => optionalDeclaredNumber(true, spec), 'a present optional boolean must not become 1');
+
+const capabilityGap = frontendCapabilityGap({
+  semanticType: 'future_contract_semantic',
+  fieldType: 'char',
+  presentationMode: 'task',
+  missing: 'frontend.implementation.future_contract_semantic',
+  requiredImplementationLayer: 'P0:frontend:implementation_registry',
+}, 'frontend implementation missing');
+assert.equal(capabilityGap.name, 'FrontendCapabilityGapError');
+assert.equal(contractDefectFromError(capabilityGap), null, 'a frontend capability gap is not a backend contract defect');
+assert.deepEqual(consumerDefectFromError(capabilityGap), {
+  kind: 'frontend_capability_gap',
+  semanticType: 'future_contract_semantic',
+  fieldType: 'char',
+  presentationMode: 'task',
+  missing: 'frontend.implementation.future_contract_semantic',
+  requiredImplementationLayer: 'P0:frontend:implementation_registry',
+});
+cases += 1;
 
 console.log(`[contract_gap_primitive_test] PASS cases=${cases}`);

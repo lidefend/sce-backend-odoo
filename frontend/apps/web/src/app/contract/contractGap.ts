@@ -43,11 +43,34 @@ export type ConsumerErrorEvidence = {
  */
 export type ContractGapError = Error & { readonly defect: ContractDefectRef };
 
+export type FrontendCapabilityDefectRef = {
+  kind: 'frontend_capability_gap';
+  semanticType: string;
+  fieldType?: string;
+  presentationMode?: string;
+  missing: string;
+  requiredImplementationLayer: 'P0:frontend:implementation_registry';
+};
+
+export type FrontendCapabilityGapError = Error & { readonly defect: FrontendCapabilityDefectRef };
+
+export type ContractConsumerDefectRef = ContractDefectRef | FrontendCapabilityDefectRef;
+
 /** 构造唯一的停机错误。前端不夹取、不默认、不改写，缺口以 `ContractGapError` 交给声明层。 */
 export function contractGapError(defect: ContractDefectRef, message: string): ContractGapError {
   const error = new Error(message) as Error & { defect: ContractDefectRef };
   error.name = 'ContractGapError';
   error.defect = defect;
+  return error;
+}
+
+export function frontendCapabilityGap(
+  defect: Omit<FrontendCapabilityDefectRef, 'kind'>,
+  message: string,
+): FrontendCapabilityGapError {
+  const error = new Error(message) as Error & { defect: FrontendCapabilityDefectRef };
+  error.name = 'FrontendCapabilityGapError';
+  error.defect = { kind: 'frontend_capability_gap', ...defect };
   return error;
 }
 
@@ -173,6 +196,11 @@ export function isContractGapError(error: unknown): error is ContractGapError {
     && (error as { name?: string }).name === 'ContractGapError';
 }
 
+export function isFrontendCapabilityGapError(error: unknown): error is FrontendCapabilityGapError {
+  return typeof error === 'object' && error !== null
+    && (error as { name?: string }).name === 'FrontendCapabilityGapError';
+}
+
 /**
  * Normalize the two explicit contract-consumer failures into the user-visible
  * defect carrier. Ordinary transport and business errors are deliberately not
@@ -199,6 +227,16 @@ export function contractDefectFromError(error: unknown): ContractDefectRef | nul
     };
   }
   return null;
+}
+
+export function frontendCapabilityDefectFromError(error: unknown): FrontendCapabilityDefectRef | null {
+  if (!isFrontendCapabilityGapError(error)) return null;
+  const defect = (error as FrontendCapabilityGapError).defect;
+  return defect?.kind === 'frontend_capability_gap' ? defect : null;
+}
+
+export function consumerDefectFromError(error: unknown): ContractConsumerDefectRef | null {
+  return frontendCapabilityDefectFromError(error) || contractDefectFromError(error);
 }
 
 /**

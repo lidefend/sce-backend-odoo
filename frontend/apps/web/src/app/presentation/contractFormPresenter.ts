@@ -35,7 +35,8 @@ import type { ContractV2FormStructureRoleName } from '../contracts/v2/types';
 import { canonicalRoleForFormStructureRole } from '../contracts/v2/formStructureRoles';
 import { resolveContractV2ModifierValues, resolveContractV2SelectorStatus } from '../contracts/v2/store';
 import { evaluateNativeModifierValue } from '../modifierEngine';
-import { resolveContractProfessionalComponent } from './professionalComponentRegistry';
+import { resolveContractSemanticComponent } from './professionalComponentRegistry';
+import { NODE_COMPONENT_REGISTRY } from './semantic_registry.generated';
 import { resolveWorkflowActionAvailability } from '../contracts/v2/workflowActionAvailability';
 import { declaredActionAuthorityDenial } from '../contracts/v2/actionRuleAuthority';
 
@@ -217,8 +218,7 @@ function presentFieldValue(
   hasRuntimeValue: boolean,
 ): unknown | CanonicalRelationValue {
   const fieldType = text(
-    widget.componentConfig.fieldType || widget.componentConfig.field_type
-    || widget.fieldDescriptor?.type || widget.fieldDescriptor?.ttype,
+    widget.componentConfig.fieldType || widget.fieldDescriptor?.fieldType,
   ).toLowerCase();
   const selected = hasRuntimeValue ? runtimeValue : contractValue;
   if (fieldType === 'many2one') {
@@ -264,24 +264,21 @@ function fieldFromWidget(
   containerRequired: boolean,
   authoritativeFieldLabels: Readonly<Record<string, string>>,
   structure: ContractV2FormStructureContract | undefined,
-  componentRegistry: ContractV2Dictionary,
   clientType: string,
   pageContractVersion: string,
   store: ContractV2NormalizedStore,
 ): CanonicalFormField {
   const statusResolved = Boolean(status);
   const fieldType = text(
-    widget.componentConfig.fieldType || widget.componentConfig.field_type
-    || widget.fieldDescriptor?.type || widget.fieldDescriptor?.ttype,
+    widget.componentConfig.fieldType || widget.fieldDescriptor?.fieldType,
   );
-  const componentResolution = resolveContractProfessionalComponent({
-    componentKey: widget.componentKey,
+  const semanticType = text(widget.fieldDescriptor?.semanticType || widget.semanticType);
+  const componentResolution = resolveContractSemanticComponent({
+    semanticType,
     fieldType,
     pageContractVersion,
     presentationMode,
     renderProfile: mode,
-    clientType,
-    contractRegistryEntry: componentRegistry[widget.componentKey],
   });
   const hasRuntimeValue = Boolean(runtimeValues)
     && Object.prototype.hasOwnProperty.call(runtimeValues, widget.fieldCode);
@@ -301,10 +298,9 @@ function fieldFromWidget(
   const componentConfig = { ...widget.componentConfig };
   const currencyField = text(
     componentConfig.currencyField
-    || componentConfig.currency_field
-    || widget.fieldDescriptor?.currency_field,
+    || widget.fieldDescriptor?.currencyField,
   );
-  if (fieldType === 'monetary' && currencyField) {
+  if (semanticType === 'money' && currencyField) {
     const runtimeCurrencyValue = runtimeValues?.[currencyField];
     componentConfig.currencyValue = hasCurrencyDisplayLabel(runtimeCurrencyValue)
       ? runtimeCurrencyValue
@@ -316,7 +312,7 @@ function fieldFromWidget(
     ? componentConfig.widgetSemantics as ContractV2Dictionary
     : {};
   const dateRangeEndField = text(widgetSemantics.end_field);
-  if (text(componentConfig.nativeWidget).toLowerCase() === 'daterange' && dateRangeEndField) {
+  if (fieldType === 'date' && dateRangeEndField) {
     const hasRuntimeEndValue = Boolean(runtimeValues)
       && Object.prototype.hasOwnProperty.call(runtimeValues, dateRangeEndField);
     componentConfig.dateRangeEndValue = hasRuntimeEndValue
@@ -337,7 +333,7 @@ function fieldFromWidget(
       hasRuntimeValue,
     ),
     fieldType,
-    componentKey: widget.componentKey,
+    componentKey: componentResolution.componentKey,
     componentResolution,
     pageContractVersion,
     presentationMode,
@@ -363,6 +359,9 @@ function fieldFromWidget(
     semanticSlot: fieldSemantics.slot,
     semanticGroup: fieldSemantics.group,
     ...(semanticOrder !== undefined ? { semanticOrder } : {}),
+    ...(Number.isInteger(widget.fieldDescriptor?.size) && Number(widget.fieldDescriptor?.size) > 0
+      ? { maxLength: Number(widget.fieldDescriptor?.size) }
+      : {}),
     componentConfig: Object.freeze(componentConfig),
     fieldDescriptor: Object.freeze({ ...(widget.fieldDescriptor || {}) }),
   };
@@ -385,7 +384,6 @@ function presentNode(
   actionsByNativeOccurrence: ReadonlyMap<string, CanonicalFormAction>,
   authoritativeFieldLabels: Readonly<Record<string, string>>,
   structure: ContractV2FormStructureContract | undefined,
-  componentRegistry: ContractV2Dictionary,
   clientType: string,
   pageContractVersion: string,
   ancestorTitle = '',
@@ -404,7 +402,7 @@ function presentNode(
   ]);
   const currentValues = modifierValues ?? resolveContractV2ModifierValues(store, runtimeValues);
   const resolveFieldValue = (field: string) => currentValues[field];
-  const explicitFeedback = container.componentKey === 'sc.feedback.message';
+  const explicitFeedback = container.semanticType === 'feedback_message';
   const layoutInvisible = explicitFeedback ? false : evaluateNativeModifierValue(containerModifierValue(container, 'invisible'), resolveFieldValue);
   const layoutReadonly = evaluateNativeModifierValue(containerModifierValue(container, 'readonly'), resolveFieldValue);
   const layoutRequired = evaluateNativeModifierValue(containerModifierValue(container, 'required'), resolveFieldValue);
@@ -432,7 +430,6 @@ function presentNode(
       layoutRequired,
       authoritativeFieldLabels,
       structure,
-      componentRegistry,
       clientType,
       pageContractVersion,
       store,
@@ -447,10 +444,10 @@ function presentNode(
   const title = rawTitle && rawTitle === ancestorTitle ? '' : rawTitle;
   const nodeAction = asDict(container.action);
   const actionIdentity = text(nodeAction.backendIdentity);
-  const nativeIdentity = asDict(nodeAction.native_identity || nodeAction.nativeIdentity);
+  const nativeIdentity = asDict(nodeAction.nativeIdentity);
   const nativeActionKey = [
-    text(nativeIdentity.type), text(nativeIdentity.name), text(nativeIdentity.native_locator || nativeIdentity.nativeLocator),
-    String(Number(nativeIdentity.occurrence_index || nativeIdentity.occurrenceIndex || 0)),
+    text(nativeIdentity.kind), text(nativeIdentity.name), text(nativeIdentity.nativeLocator),
+    String(Number(nativeIdentity.occurrenceIndex || 0)),
   ].join('|');
   const authoritativeNodeIdentity = nodeSemantics.slot && nodeSemantics.group
     ? { slot: nodeSemantics.slot, group: nodeSemantics.group }
@@ -461,6 +458,7 @@ function presentNode(
   const authoritativeSlot = nodeSemantics.slot ? structureSlot(structure, nodeSemantics) : undefined;
   const authoritativeTitle = text(authoritativeGroup?.title || authoritativeSlot?.title);
   const authoritativeRole = authoritativeGroup?.role || authoritativeSlot?.role;
+  const frontendNodeComponentKey = NODE_COMPONENT_REGISTRY[text(container.semanticType)] || '';
   return {
     nodeId: container.containerId || `${text(container.type || container.containerType) || 'node'}.${index}`,
     kind: nodeKind,
@@ -469,7 +467,7 @@ function presentNode(
     attributes: Object.freeze({ ...container.attributes }),
     nativePresentation: Object.freeze({
       containerId: container.containerId,
-      componentKey: container.componentKey,
+      componentKey: frontendNodeComponentKey,
       componentConfig: container.componentConfig,
       displayLabel: text(container.displayLabel),
       semanticTitle: text(container.semanticTitle),
@@ -507,7 +505,7 @@ function presentNode(
     nativeWidget: nodeKind === 'widget' ? text(container.widget || container.name) : '',
     nativeWidgetComponent: nodeKind === 'widget'
       ? Object.freeze({
-          componentKey: text(container.componentKey),
+          componentKey: frontendNodeComponentKey,
           componentConfig: Object.freeze({ ...(container.componentConfig || {}) }),
           nativeWidget: text(container.widget || container.name),
         })
@@ -517,7 +515,7 @@ function presentNode(
       presentNode(
         child, effectiveRole, childIndex, store, contractValues, runtimeValues,
         mode, presentationMode, pageCanEdit, visible, disabled, readonly, actionsByIdentity, actionsByNativeOccurrence,
-        authoritativeFieldLabels, structure, componentRegistry, clientType,
+        authoritativeFieldLabels, structure, clientType,
         pageContractVersion, rawTitle || ancestorTitle, modifierValues,
       )
     )),
@@ -534,7 +532,7 @@ function isFormActionBarAction(action: ContractV2ActionRule): boolean {
   const sourceWidgetId = text(action.sourceWidgetId);
   const targetScope = text(action.targetScope).toLowerCase();
   const nativeIdentity = asDict(action.nativeIdentity);
-  const nativeLocator = text(nativeIdentity.nativeLocator || nativeIdentity.native_locator || action.backendIdentity);
+  const nativeLocator = text(nativeIdentity.nativeLocator || action.backendIdentity);
   return sourceWidgetId === 'page.header'
     || (sourceWidgetId === 'page.root' && ['header', 'page'].includes(targetScope))
     || /\/header(?:\[|\/|$)/.test(nativeLocator)
@@ -742,9 +740,9 @@ export function presentContractV2Form(
   const actionsByNativeOccurrence = new Map(visibleActions.flatMap((action) => {
     const nativeIdentity = asDict(action.actionRef.nativeIdentity);
     const key = [
-      text(nativeIdentity.type), text(nativeIdentity.name),
-      text(nativeIdentity.nativeLocator || nativeIdentity.native_locator),
-      String(Number(nativeIdentity.occurrenceIndex || nativeIdentity.occurrence_index || 0)),
+      text(nativeIdentity.kind), text(nativeIdentity.name),
+      text(nativeIdentity.nativeLocator),
+      String(Number(nativeIdentity.occurrenceIndex || 0)),
     ].join('|');
     return key !== '|||0' ? [[key, action] as const] : [];
   }));
@@ -752,7 +750,7 @@ export function presentContractV2Form(
     presentNode(
       container, declaredZoneRole(container) ?? 'primary', index, store, contractValues, runtimeValues, mode, presentationMode, pageCanEdit,
       pageVisible, contractAuthLevelDeniesAccess(pageAuthLevel), false, actionsByIdentity, actionsByNativeOccurrence, authoritativeFieldLabels, structure,
-      snapshot.layoutContract.componentRegistry, snapshot.pageInfo.clientType, snapshot.pageInfo.contractVersion, '', runtimeValuesMerged,
+      snapshot.pageInfo.clientType, snapshot.pageInfo.contractVersion, '', runtimeValuesMerged,
     )
   ));
   const explicitNodes = projectNodeComponents(snapshot, context?.feedbackEvaluations);
@@ -821,8 +819,6 @@ export function presentContractV2Form(
       adaptMode: snapshot.layoutContract.adaptMode,
       layoutHints: Object.freeze({ ...snapshot.layoutContract.layoutHints }),
     },
-    componentTokens: Object.freeze(Object.fromEntries(
-      Object.entries(snapshot.layoutContract.componentRegistry).map(([key, value]) => [key, Object.freeze({ ...asDict(value) })]),
-    )),
+    componentTokens: Object.freeze({}),
   };
 }

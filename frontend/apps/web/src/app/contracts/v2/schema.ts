@@ -13,7 +13,6 @@ import type {
   ContractV2ButtonStatus,
   ContractV2AdaptMode,
   ContractV2ClientType,
-  ContractV2ComponentRegistryEntry,
   ContractV2Container,
   ContractV2ContainerStatus,
   ContractV2ContainerZone,
@@ -79,7 +78,6 @@ import type {
   ContractV2WidgetStatus,
 } from './types';
 import { CONTRACT_V2_FORM_STRUCTURE_ROLES } from './formStructureRoles';
-import { normalizeLegacyContractV2Snapshot } from './legacyLayoutNormalizer';
 import {
   FieldDescriptorDecodeError,
   decodeContractV2FieldDescriptor,
@@ -612,8 +610,8 @@ function decodePageInfo(source: ContractV2Dictionary, issues: DecodeIssue[]): Co
     'pageId', 'sceneKey', 'pageName', 'model', 'viewType', 'layoutType', 'renderMode', 'contractVersion', 'clientType', 'deliveryProfile',
   ], 'pageInfo', issues);
   const contractVersion = requiredString(source, 'contractVersion', 'pageInfo', issues);
-  if (!/^2\.(0|1|2|3|4|5|6)\.\d+$/.test(contractVersion)) {
-    issues.push({ path: 'pageInfo.contractVersion', message: 'must be a negotiated 2.0 through 2.6 version' });
+  if (!/^2\.7\.\d+$/.test(contractVersion)) {
+    issues.push({ path: 'pageInfo.contractVersion', message: 'must be a negotiated 2.7 version' });
   }
   return {
     pageId: requiredString(source, 'pageId', 'pageInfo', issues),
@@ -853,7 +851,7 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
     return null;
   }
   rejectUnknownKeys(raw, [
-    'widgetId', 'widgetType', 'fieldCode', 'label', 'span', 'componentKey', 'capabilities',
+    'widgetId', 'widgetType', 'fieldCode', 'label', 'span', 'semanticType', 'capabilities',
     'componentConfig', 'fieldDescriptor', 'formStructureRole',
     'ownerContainerId', 'nativeLocator', 'occurrenceIndex', 'sourcePosition', 'nativeIdentity',
   ], path, issues);
@@ -862,7 +860,7 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
   const fieldCode = requiredString(raw, 'fieldCode', path, issues);
   const widgetId = requiredString(raw, 'widgetId', path, issues);
   const widgetType = decodeWidgetType(requiredString(raw, 'widgetType', path, issues), `${path}.widgetType`, issues);
-  const componentKey = requiredString(raw, 'componentKey', path, issues);
+  const semanticType = requiredString(raw, 'semanticType', path, issues);
   const widgetProvenance = decodeWidgetProvenance(
     componentConfig.widgetProvenance,
     `${path}.componentConfig.widgetProvenance`,
@@ -884,16 +882,17 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
       });
     }
     if (widgetProvenance.resolutionStatus === 'unsupported') {
-      if (componentKey !== 'sc.unsupported.native_widget' || !widgetProvenance.reasonCode) {
+      const semanticType = asString(asRecord(fieldDescriptor).semanticType);
+      if (semanticType !== 'unsupported_native_widget' || !widgetProvenance.reasonCode) {
         issues.push({
           path,
-          message: 'unsupported native Widget must resolve to the fail-closed component and name a reason',
+          message: 'unsupported native Widget must resolve to the fail-closed semantic and name a reason',
         });
       }
-    } else if (componentKey === 'sc.unsupported.native_widget') {
+    } else if (asString(asRecord(fieldDescriptor).semanticType) === 'unsupported_native_widget') {
       issues.push({
         path,
-        message: 'only an unsupported native Widget may use the fail-closed component',
+        message: 'only an unsupported native Widget may use the fail-closed semantic',
       });
     }
   }
@@ -931,7 +930,7 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
     fieldCode,
     label: requiredString(raw, 'label', path, issues),
     span: requiredIntegerInRange(raw, 'span', path, issues, 24),
-    componentKey,
+    semanticType,
     capabilities: decodeUniqueStringArray(raw.capabilities, `${path}.capabilities`, issues),
     componentConfig,
     ownerContainerId,
@@ -971,7 +970,7 @@ function decodeContainer(
     'containerId', 'containerType', 'type', 'name', 'string', 'label', 'nolabel', 'text', 'title',
     'displayLabel', 'semanticTitle', 'semanticAnchor', 'span', 'styleToken', 'zone', 'cols', 'columns',
     'widget', 'widgetId', 'fieldCode', 'nativeLocator', 'occurrenceIndex', 'sourcePosition', 'nativeIdentity',
-    'componentKey', 'componentConfig', 'attributes', 'fieldInfo', 'filename', 'buttonType',
+    'semanticType', 'componentConfig', 'attributes', 'fieldInfo', 'filename', 'buttonType',
     'action', 'badge', 'modifiers', 'invisible', 'readonly', 'required', 'column_invisible',
     'domain', 'context', 'options', 'visible', 'col', 'class', 'className', 'fieldSize', 'size',
     'formStructure', 'formStructureRole', 'sourceAuthority', 'children', 'widgetList', 'fields',
@@ -1086,7 +1085,7 @@ function decodeContainer(
     ...(Number.isInteger(occurrenceIndex) ? { occurrenceIndex } : {}),
     ...(Number.isInteger(sourcePosition) ? { sourcePosition } : {}),
     ...(nativeIdentity ? { nativeIdentity } : {}),
-    ...(asString(raw.componentKey) ? { componentKey: asString(raw.componentKey) } : {}),
+    ...(asString(raw.semanticType) ? { semanticType: asString(raw.semanticType) } : {}),
     ...(componentConfig && Object.keys(componentConfig).length ? { componentConfig } : {}),
     ...(attributes && Object.keys(attributes).length ? { attributes } : {}),
     ...(fieldInfo && Object.keys(fieldInfo).length ? { fieldInfo } : {}),
@@ -1395,33 +1394,6 @@ function decodeAnalysisProfile(
   };
 }
 
-function decodeComponentRegistry(
-  raw: unknown,
-  issues: DecodeIssue[],
-): Record<string, ContractV2ComponentRegistryEntry> {
-  if (!isRecord(raw)) {
-    issues.push({ path: 'layoutContract.componentRegistry', message: 'must be an object' });
-    return {};
-  }
-  const out: Record<string, ContractV2ComponentRegistryEntry> = {};
-  Object.entries(raw).forEach(([componentKey, value]) => {
-    const path = `layoutContract.componentRegistry.${componentKey}`;
-    if (!componentKey.trim() || !isRecord(value)) {
-      issues.push({ path, message: 'must be an object keyed by a non-empty component identity' });
-      return;
-    }
-    // Rendering is a frontend responsibility: a component entry may declare its
-    // identity and version, and nothing about how or by which framework
-    // component it renders.  A `adapter` / `selectedAdapter` / `fallback` key is
-    // a contract defect, so it is rejected rather than silently ignored.
-    rejectUnknownKeys(value, ['version'], path, issues);
-    out[componentKey] = {
-      version: requiredString(value, 'version', path, issues),
-    };
-  });
-  return out;
-}
-
 function decodeListColumnOccurrence(
   raw: unknown,
   path: string,
@@ -1501,7 +1473,7 @@ function decodeListProfile(
 
 function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2LayoutContract {
   rejectUnknownKeys(source, [
-    'pageId', 'layoutType', 'adaptMode', 'containerTree', 'layoutHints', 'componentRegistry', 'listProfile', 'activityProfile',
+    'pageId', 'layoutType', 'adaptMode', 'containerTree', 'layoutHints', 'listProfile', 'activityProfile',
     'pivotProfile', 'graphProfile',
   ], 'layoutContract', issues);
   const containerTreeRaw = Array.isArray(source.containerTree) ? source.containerTree : [];
@@ -1518,7 +1490,6 @@ function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[
     adaptMode: decodeAdaptMode(requiredString(source, 'adaptMode', 'layoutContract', issues), 'layoutContract.adaptMode', issues),
     containerTree,
     layoutHints: requiredRecord(source, 'layoutHints', 'layoutContract', issues),
-    componentRegistry: decodeComponentRegistry(source.componentRegistry, issues),
     ...(listProfile && Object.keys(listProfile).length
       ? { listProfile }
       : {}),
@@ -2789,7 +2760,6 @@ function validateNativeOccurrenceAuthority(
   pageInfo: ContractV2PageInfo,
   issues: DecodeIssue[],
 ): void {
-  const supportsStrictOccurrences = /^2\.(4|5|6)\./.test(pageInfo.contractVersion);
   const occurrenceKeys = new Map<string, string>();
   let pageViewIdentity: ContractV2NativeOccurrenceIdentity | undefined;
   const canonicalViewType = (value: string) => {
@@ -2865,7 +2835,7 @@ function validateNativeOccurrenceAuthority(
         || Number.isInteger(row.occurrenceIndex)
         || Boolean(row.nativeIdentity);
       const identity = row.nativeIdentity;
-      if (supportsStrictOccurrences && hasNativeOccurrence && !identity) {
+      if (hasNativeOccurrence && !identity) {
         issues.push({ path: rowPath, message: 'native layout occurrence requires nativeIdentity' });
       }
       if (identity) {
@@ -2890,7 +2860,7 @@ function validateNativeOccurrenceAuthority(
         const widgetPath = `${rowPath}.widgetList[${widgetIndex}]`;
         const widgetIdentity = widget.nativeIdentity;
         const widgetHasOccurrence = Boolean(widget.nativeLocator) || Number.isInteger(widget.occurrenceIndex);
-        if (supportsStrictOccurrences && widgetHasOccurrence && !widgetIdentity) {
+        if (widgetHasOccurrence && !widgetIdentity) {
           issues.push({ path: widgetPath, message: 'native widget occurrence requires nativeIdentity' });
         }
         if (identity && rowKind(row) === 'field' && !widgetIdentity) {
@@ -2941,8 +2911,7 @@ function validateNativeOccurrenceAuthority(
     ? layoutContract.listProfile?.columnOccurrences || []
     : [];
   if (
-    supportsStrictOccurrences
-    && nativeActionContract
+    nativeActionContract
     && expectedViewType === 'tree'
     && layoutContract.listProfile
     && Array.isArray(layoutContract.listProfile.columns)
@@ -3565,8 +3534,31 @@ function validateDeliveryIdentity(
   }
 }
 
+function rejectFrontendImplementationIdentity(
+  value: unknown,
+  issues: DecodeIssue[],
+  path = '$',
+): void {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => rejectFrontendImplementationIdentity(item, issues, `${path}[${index}]`));
+    return;
+  }
+  if (!isRecord(value)) return;
+  Object.entries(value).forEach(([key, child]) => {
+    const here = `${path}.${key}`;
+    if (key === 'componentKey' || key === 'component_key' || key === 'componentRegistry') {
+      issues.push({
+        path: here,
+        message: 'V2.7 contracts must not publish frontend implementation identity',
+      });
+      return;
+    }
+    rejectFrontendImplementationIdentity(child, issues, here);
+  });
+}
+
 export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
-  const root = asRecord(normalizeLegacyContractV2Snapshot(value));
+  const root = asRecord(value);
   const issues: DecodeIssue[] = [];
   rejectUnknownKeys(root, [
     'pageInfo', 'layoutContract', 'statusContract', 'actionContract', 'dataContract', 'runtimeContract',
@@ -3579,7 +3571,7 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const actionContract = decodeActionContract(
     readAliasedObject(root, 'actionContract', [], '$', issues),
     issues,
-    /^2\.(4|5|6)\./.test(pageInfo.contractVersion),
+    true,
   );
   const dataContract = decodeDataContract(readAliasedObject(root, 'dataContract', [], '$', issues), issues);
   const runtimeContract = decodeRuntimeContract(readAliasedObject(root, 'runtimeContract', [], '$', issues), issues);
@@ -3596,9 +3588,8 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const fieldOwnership = decodeFieldOwnership(root.fieldOwnership, issues);
   const pageComposition = decodePageComposition(root.pageComposition, issues);
   const noticeContract = decodeNoticeContract(root.noticeContract, issues);
-  if (pageInfo.contractVersion.startsWith('2.6.')) {
-    validateStrictFieldDescriptors(layoutContract, issues);
-  }
+  validateStrictFieldDescriptors(layoutContract, issues);
+  rejectFrontendImplementationIdentity(root, issues);
   validateFormOccurrenceAuthority(layoutContract, statusContract, issues);
   validateNativeOccurrenceAuthority(
     layoutContract,
@@ -3644,6 +3635,7 @@ function validateStrictFieldDescriptors(
             widget.fieldDescriptor,
             `layoutContract.${widget.widgetId}.fieldDescriptor`,
           ).descriptor;
+          widget.semanticType = asString(widget.fieldDescriptor.semanticType);
         } catch (error) {
           if (error instanceof FieldDescriptorDecodeError) {
             issues.push(...error.issues.map((item) => ({ path: item.path, message: item.code })));

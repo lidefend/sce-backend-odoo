@@ -1,6 +1,6 @@
 // GENERATED INDUSTRY RENDERER MANIFEST - do not edit by hand.
 //
-// Declaration authority: contracts/registry/semantic.yaml -> contracts/registry/component.yaml
+// Declaration authority: contracts/registry/semantic.yaml -> frontend/apps/web/src/app/presentation/implementation_registry.yaml
 // Regenerate with: python3 scripts/contract/generate_semantic_registry.py
 //
 // Drift between this manifest and the declaration is a lint failure
@@ -11,8 +11,8 @@
 
 import type { SemanticRegistryRow } from './semantic_registry.generated';
 
-export const INDUSTRY_RENDERER_MANIFEST_VERSION = 2;
+export const INDUSTRY_RENDERER_MANIFEST_VERSION = 3;
 
 export const INDUSTRY_RENDERER_ROWS: readonly SemanticRegistryRow[] = [
-  {componentKey: 'sc.payment.settlement_detail_collection', semanticType: 'payment_settlement_detail_collection', supportedFieldTypes: ['one2many'], readiness: 'ready', renderer: 'PaymentSettlementDetailCollectionControl', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.7.0', requiredCapabilities: ['form.relation.one2many']},
+  {componentKey: 'sc.payment.settlement_detail_collection', semanticType: 'payment_settlement_detail_collection', supportedFieldTypes: ['one2many'], readiness: 'ready', renderer: 'PaymentSettlementDetailCollectionControl', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.8.0', requiredCapabilities: ['form.relation.one2many']},
 ];

@@ -69,7 +69,7 @@ class TestFeedbackEvaluationRtHttp(HttpCase):
         self.review_patch.start()
         self.view = self.env.ref(VIEW)
         contract, _proof = draft_feedback._assemble_contract(self.model, self.view.id)
-        host = self._find_component(contract, draft_feedback.COMPONENT_KEY)
+        host = self._find_component(contract, draft_feedback.SEMANTIC_TYPE)
         self.container_id = host["containerId"]
 
     def tearDown(self):
@@ -86,7 +86,7 @@ class TestFeedbackEvaluationRtHttp(HttpCase):
         matches = []
         def walk(nodes):
             for node in nodes:
-                if node.get("componentKey") == key:
+                if node.get("semanticType") == key:
                     matches.append(node)
                 walk(node.get("children") or [])
         walk(contract["layoutContract"]["containerTree"])

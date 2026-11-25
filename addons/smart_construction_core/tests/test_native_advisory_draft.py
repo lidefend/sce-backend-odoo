@@ -78,7 +78,7 @@ class TestNativeAdvisoryDraft(TransactionCase):
         contract, _proof = draft_feedback._assemble_contract(self.model, self.view.id)
         host = next(
             node for node, _path in walk(contract['layoutContract']['containerTree'])
-            if node.get('componentKey') == draft_feedback.COMPONENT_KEY
+            if node.get('semanticType') == draft_feedback.SEMANTIC_TYPE
         )
         source_id = host['componentConfig']['contentRef']['containerId']
         source = next(

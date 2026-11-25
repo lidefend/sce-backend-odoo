@@ -22,7 +22,6 @@ const readyMoney = {
   label: '待付款金额',
   fieldType: 'monetary',
   widgetType: 'monetary',
-  componentKey: 'sc.value.money',
   semanticType: 'money',
   digits: [16, 2],
   currencyField: 'currency_id',
@@ -51,7 +50,6 @@ const paymentDetailCollection = decodeContractV2FieldDescriptor({
   label: '付款申请明细',
   fieldType: 'one2many',
   widgetType: 'one2many',
-  componentKey: 'sc.payment.settlement_detail_collection',
   semanticType: 'payment_settlement_detail_collection',
   relation: 'payment.request.line',
   relationField: 'request_id',
@@ -60,12 +58,15 @@ assert.equal(
   paymentDetailCollection.descriptor.componentKey,
   'sc.payment.settlement_detail_collection',
 );
+const paymentDetailWire = { ...paymentDetailCollection.descriptor };
+delete paymentDetailWire.componentKey;
 assert.throws(
   () => decodeContractV2FieldDescriptor({
     ...paymentDetailCollection.descriptor,
     componentKey: 'sc.relation.table',
   }),
-  /FIELD_DESCRIPTOR_SEMANTIC_MISMATCH/,
+  /FIELD_DESCRIPTOR_UNKNOWN_KEY/,
+  'backend component identity is not a Contract V2.7 descriptor field',
 );
 
 const fallback = decodeContractV2FieldDescriptor({
@@ -74,7 +75,6 @@ const fallback = decodeContractV2FieldDescriptor({
   label: '收藏',
   fieldType: 'boolean',
   widgetType: 'boolean_toggle',
-  componentKey: 'sc.input.boolean',
   semanticType: 'boolean',
 });
 
@@ -84,7 +84,6 @@ const nativeDateRange = decodeContractV2FieldDescriptor({
   label: '项目周期',
   fieldType: 'date',
   widgetType: 'daterange',
-  componentKey: 'sc.input.date',
   semanticType: 'date',
   widgetOptions: { end_date_field: 'date', always_range: '1' },
   temporal: { kind: 'date', timezoneAuthority: 'not_applicable' },
@@ -99,7 +98,6 @@ assert.equal(nativeDateRange.descriptor.componentKey, 'sc.input.date');
 assert.throws(
   () => decodeContractV2FieldDescriptor({
     ...nativeDateRange.descriptor,
-    componentKey: 'sc.display.text',
     semanticType: 'readable_value',
   }),
   /FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED/,
@@ -111,9 +109,9 @@ const carrierCapabilities = decodeContractCarrierCapabilities({
   status: 'current',
   clientType: 'web_pc',
   compatibilityMode: 'page_block_data_v1',
-  acceptedContractVersions: ['2.5.x', '2.6.x'],
+  acceptedContractVersions: ['2.7.x'],
   clientContractCapabilities: ['page_block_data.v1'],
-  contractVersion: '2.6.0',
+  contractVersion: '2.7.0',
   pageOrchestrationVersion: '2.1.0',
   carriers: {
     'page_block_data.v1': { schemaVersion: '1.0.0', enabled: true },
@@ -183,7 +181,6 @@ const activityCollection = decodeContractV2FieldDescriptor({
   label: '活动',
   fieldType: 'one2many',
   widgetType: 'list_activity',
-  componentKey: 'sc.relation.activity',
   semanticType: 'activity_collection',
   relation: 'mail.activity',
   relationField: 'res_id',
@@ -208,7 +205,6 @@ const accountTypeChoice = decodeContractV2FieldDescriptor({
   label: '类型',
   fieldType: 'selection',
   widgetType: 'account_type_selection',
-  componentKey: 'sc.select.remote',
   semanticType: 'choice',
   selection: [['asset_cash', '银行和现金']],
 });
@@ -254,13 +250,13 @@ assert.deepEqual(consumerDefect.consumerContext?.componentTrace, ['ScDialog', 'a
 assert.match(consumerDefect.missing, /^beforeUnmount hook: Cannot read properties/);
 
 const contextualRelation = decodeContractV2FieldDescriptor({
-  ...paymentDetailCollection.descriptor,
+  ...paymentDetailWire,
   context: { default_request_id: 7 },
 });
 assert.deepEqual(contextualRelation.descriptor.context, { default_request_id: 7 });
 assert.throws(
   () => decodeContractV2FieldDescriptor({
-    ...paymentDetailCollection.descriptor,
+    ...paymentDetailWire,
     context: { default_request_id: 7 },
     contextRaw: "{'default_request_id': request_id}",
   }),
@@ -340,7 +336,7 @@ assert.equal(
   'a monetary field may declare its native currency binding before a current currency fact exists',
 );
 
-const pageContract = decodePageOrchestrationContract({
+const pageContractSource = {
   contract_version: '2.1.0',
   schema_version: '2.1.0',
   scene_key: 'workspace.home',
@@ -353,7 +349,6 @@ const pageContract = decodePageOrchestrationContract({
       label: '待付款金额',
       fieldType: 'monetary',
       widgetType: 'monetary',
-      componentKey: 'sc.value.money',
       semanticType: 'money',
       digits: [16, 2],
       currencyField: 'currency_id',
@@ -364,7 +359,6 @@ const pageContract = decodePageOrchestrationContract({
       label: '启用',
       fieldType: 'boolean',
       widgetType: 'boolean',
-      componentKey: 'sc.input.boolean',
       semanticType: 'boolean',
     },
     'metric.note': {
@@ -373,7 +367,6 @@ const pageContract = decodePageOrchestrationContract({
       label: '说明',
       fieldType: 'char',
       widgetType: 'input',
-      componentKey: 'sc.input.text',
       semanticType: 'text',
     },
     'metric.currency': {
@@ -382,7 +375,6 @@ const pageContract = decodePageOrchestrationContract({
       label: '币种',
       fieldType: 'many2one',
       widgetType: 'many2one',
-      componentKey: 'sc.relation.many2one',
       semanticType: 'relation',
       relation: 'res.currency',
     },
@@ -408,7 +400,8 @@ const pageContract = decodePageOrchestrationContract({
       sourceAuthority: pageBlockSourceAuthority,
     },
   },
-});
+};
+const pageContract = decodePageOrchestrationContract(pageContractSource);
 const resolved = resolvePageBlockData(pageContract, 'ds_metrics');
 assert.equal(resolved[0].values.value, 0);
 assert.equal(resolved[0].values.active, false);
@@ -486,7 +479,6 @@ const widgetBackedContract = decodePageOrchestrationContract({
       label: '币种',
       fieldType: 'many2one',
       widgetType: 'many2one',
-      componentKey: 'sc.relation.many2one',
       semanticType: 'relation',
       relation: 'res.currency',
     },
@@ -535,14 +527,14 @@ function cloneContract<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
-const missingAuthority = cloneContract(pageContract as Record<string, unknown>);
+const missingAuthority = cloneContract(pageContractSource as Record<string, unknown>);
 delete (((missingAuthority.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).sourceAuthority);
 assert.throws(
   () => decodePageOrchestrationContract(missingAuthority),
   /sourceAuthority must be an object/,
 );
 
-const unknownAuthority = cloneContract(pageContract as Record<string, unknown>);
+const unknownAuthority = cloneContract(pageContractSource as Record<string, unknown>);
 ((unknownAuthority.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).sourceAuthority = {
   ...pageBlockSourceAuthority,
   unexpected: true,
@@ -579,7 +571,7 @@ for (const [label, mutator, pattern] of [
     /noFrontendDefaults must be true/,
   ],
 ] as const) {
-  const invalidAuthority = cloneContract(pageContract as Record<string, unknown>);
+  const invalidAuthority = cloneContract(pageContractSource as Record<string, unknown>);
   const authority = (((invalidAuthority.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).sourceAuthority) as Record<string, unknown>;
   mutator(authority);
   assert.throws(
@@ -589,7 +581,7 @@ for (const [label, mutator, pattern] of [
   );
 }
 
-const unknownFieldRef = cloneContract(pageContract as Record<string, unknown>);
+const unknownFieldRef = cloneContract(pageContractSource as Record<string, unknown>);
 const fieldRefs = (((unknownFieldRef.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).fieldRefs) as Record<string, Record<string, unknown>>;
 fieldRefs.value.unexpected = true;
 assert.throws(
@@ -597,7 +589,7 @@ assert.throws(
   /fieldRefs\.value\.unexpected is not allowed/,
 );
 
-const unknownRowEnvelope = cloneContract(pageContract as Record<string, unknown>);
+const unknownRowEnvelope = cloneContract(pageContractSource as Record<string, unknown>);
 const rows = (((unknownRowEnvelope.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).rows) as Array<Record<string, unknown>>;
 rows[0].unexpected = true;
 assert.throws(
@@ -605,7 +597,7 @@ assert.throws(
   /rows\[0\]\.unexpected is not allowed/,
 );
 
-const unknownContext = cloneContract(pageContract as Record<string, unknown>);
+const unknownContext = cloneContract(pageContractSource as Record<string, unknown>);
 const context = (((unknownContext.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).context) as Record<string, unknown>;
 context.unexpected = true;
 assert.throws(
@@ -613,7 +605,7 @@ assert.throws(
   /context\.unexpected is not allowed/,
 );
 
-const unknownCurrency = cloneContract(pageContract as Record<string, unknown>);
+const unknownCurrency = cloneContract(pageContractSource as Record<string, unknown>);
 const currencies = ((((unknownCurrency.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).context) as Record<string, unknown>).currencies as Record<string, Record<string, unknown>>;
 currencies['7'].unexpected = true;
 assert.throws(
@@ -621,7 +613,7 @@ assert.throws(
   /currencies\.7\.unexpected is not allowed/,
 );
 
-const missingCurrencyIdentity = cloneContract(pageContract as Record<string, unknown>);
+const missingCurrencyIdentity = cloneContract(pageContractSource as Record<string, unknown>);
 delete (((missingCurrencyIdentity.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).fieldRefs as Record<string, unknown>).currency_id;
 const decodedMissingCurrency = decodePageOrchestrationContract(missingCurrencyIdentity);
 assert.throws(
@@ -629,7 +621,7 @@ assert.throws(
   /money value requires exactly one currency descriptor/,
 );
 
-const wrongCurrencyDescriptor = cloneContract(pageContract as Record<string, unknown>);
+const wrongCurrencyDescriptor = cloneContract(pageContractSource as Record<string, unknown>);
 const wrongCurrencyFields = wrongCurrencyDescriptor.block_field_descriptors as Record<string, Record<string, unknown>>;
 wrongCurrencyFields['metric.currency'].relation = 'res.partner';
 assert.throws(
@@ -640,7 +632,7 @@ assert.throws(
   /money value requires exactly one currency descriptor/,
 );
 
-const duplicateCurrencyDescriptor = cloneContract(pageContract as Record<string, unknown>);
+const duplicateCurrencyDescriptor = cloneContract(pageContractSource as Record<string, unknown>);
 const duplicateFields = duplicateCurrencyDescriptor.block_field_descriptors as Record<string, Record<string, unknown>>;
 duplicateFields['metric.currency.duplicate'] = {
   ...duplicateFields['metric.currency'],

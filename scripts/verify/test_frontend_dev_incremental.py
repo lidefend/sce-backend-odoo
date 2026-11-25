@@ -2531,6 +2531,48 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.contract.entry_equivalence.guard", targets)
                 self.assertIn("verify.form_structure_authority_unification.unit", targets)
 
+    def test_contract_runtime_carriers_route_to_their_own_executors(self) -> None:
+        expected = {
+            "addons/smart_construction_core/core_extension_project_layout.py": [
+                "verify.unified_page_contract.v2.assembler",
+            ],
+            "addons/smart_core/core/record_error_proof.py": [
+                "verify.record_error_proof.unit",
+            ],
+            "addons/smart_core/tests/test_record_error_proof.py": [
+                "verify.record_error_proof.unit",
+            ],
+            "addons/smart_core/core/unified_page_contract_v2_client.py": [
+                "verify.unified_page_contract.v2.client",
+            ],
+            "scripts/verify/unified_page_contract_v2_client_guard.py": [
+                "verify.unified_page_contract.v2.client",
+            ],
+            "addons/smart_core/core/unified_page_contract_v2_runtime.py": [
+                "verify.unified_page_contract.v2.runtime",
+            ],
+            "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py": [
+                "verify.unified_page_contract.v2.runtime",
+            ],
+            "scripts/verify/unified_page_contract_v2_runtime_guard.py": [
+                "verify.unified_page_contract.v2.runtime",
+            ],
+        }
+        for path, targets in expected.items():
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), targets)
+
+    def test_retired_compatibility_tool_maps_to_the_current_contract_plan(self) -> None:
+        for path in (
+            "addons/smart_core/core/contract_version_compatibility.py",
+            "scripts/verify/test_contract_version_compatibility.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.contract_fidelity.plan.unit"],
+                )
+
     def test_native_role_and_personnel_changes_select_their_orm_owners(self) -> None:
         self.assertEqual(
             select_targets(["addons/smart_core/security/group_assignment.py"]),

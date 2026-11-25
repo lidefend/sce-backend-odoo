@@ -250,6 +250,15 @@ class TestTenderAwardFact(TransactionCase):
                 "menu_id": menu.id,
                 "client_type": "web_pc",
                 "render_profile": "create",
+                "accepted_contract_versions": ["2.7.x"],
+                "client_contract_capabilities": [
+                    "container_tree.v2",
+                    "data_source.v2",
+                    "action_rule.v2",
+                    "relation_entry.v2",
+                    "status_contract.v2",
+                    "form_layout.children_owner.v1",
+                ],
             }
         )
         envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
@@ -336,7 +345,7 @@ class TestTenderAwardFact(TransactionCase):
                 "contract_surface": "user",
                 "source_mode": "governance_pipeline",
                 "delivery_profile": "full",
-                "accepted_contract_versions": ["2.5.x"],
+                "accepted_contract_versions": ["2.7.x"],
                 "client_contract_capabilities": [
                     "container_tree.v2",
                     "data_source.v2",

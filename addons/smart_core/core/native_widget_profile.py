@@ -4,8 +4,6 @@ from __future__ import annotations
 from typing import Any
 
 from .contract_runtime.semantic_resolver import (
-    component_key,
-    component_key_for_semantic,
     resolve_native_widget,
     semantic_of,
 )
@@ -81,12 +79,9 @@ def resolve_widget_contract(
     provenance = build_widget_provenance(field, resolved_widget_type=resolved_widget_type)
     if provenance["resolutionStatus"] == "unsupported":
         semantic = "unsupported_native_widget"
-        key = component_key_for_semantic(semantic)
     else:
-        key = component_key(semantic_widget_type, field)
         semantic = semantic_of(semantic_widget_type, field)
     return {
         "semantic": semantic,
-        "componentKey": key,
         "provenance": provenance,
     }

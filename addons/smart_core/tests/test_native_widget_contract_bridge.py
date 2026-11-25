@@ -14,6 +14,11 @@ from core.contract_runtime.native_widget_contract import (  # noqa: E402
     project_native_embedded_widget_contract,
     project_native_field_widget_contract,
 )
+from core.unified_page_contract_v2_assembler import (  # noqa: E402
+    _assert_no_frontend_implementation_identity,
+    _upgrade_contract_v2_field_descriptors,
+    assemble_unified_page_patch_v2,
+)
 
 
 class NativeWidgetContractBridgeTest(unittest.TestCase):
@@ -28,14 +33,14 @@ class NativeWidgetContractBridgeTest(unittest.TestCase):
         self.assertEqual(projection["nativeWidgetType"], "daterange")
         self.assertEqual(projection["canonicalWidgetType"], "date")
         self.assertEqual(projection["semanticType"], "date")
-        self.assertEqual(projection["componentKey"], "sc.input.date")
+        self.assertNotIn("componentKey", projection)
 
     def test_fixed_field_semantics_cannot_be_downgraded_by_native_display(self) -> None:
-        for field_type, semantic, component_key in (
-            ("date", "date", "sc.input.date"),
-            ("datetime", "datetime", "sc.input.datetime"),
-            ("monetary", "money", "sc.value.money"),
-            ("boolean", "boolean", "sc.input.boolean"),
+        for field_type, semantic in (
+            ("date", "date"),
+            ("datetime", "datetime"),
+            ("monetary", "money"),
+            ("boolean", "boolean"),
         ):
             with self.subTest(field_type=field_type):
                 projection = project_native_field_widget_contract(
@@ -45,7 +50,7 @@ class NativeWidgetContractBridgeTest(unittest.TestCase):
                 )
                 self.assertEqual(projection["widgetType"], "display")
                 self.assertEqual(projection["semanticType"], semantic)
-                self.assertEqual(projection["componentKey"], component_key)
+                self.assertNotIn("componentKey", projection)
 
     def test_explicit_native_widget_rules_keep_their_declared_meaning(self) -> None:
         status = project_native_field_widget_contract(
@@ -54,7 +59,8 @@ class NativeWidgetContractBridgeTest(unittest.TestCase):
             legacy_descriptor={"type": "selection"},
         )
         self.assertEqual(status["semanticType"], "status")
-        self.assertEqual(status["componentKey"], "sc.display.status")
+        self.assertEqual(status["semanticType"], "status")
+        self.assertNotIn("componentKey", status)
 
         activity = project_native_field_widget_contract(
             field_type="one2many",
@@ -62,7 +68,8 @@ class NativeWidgetContractBridgeTest(unittest.TestCase):
             legacy_descriptor={"type": "one2many"},
         )
         self.assertEqual(activity["semanticType"], "activity_collection")
-        self.assertEqual(activity["componentKey"], "sc.relation.activity")
+        self.assertEqual(activity["semanticType"], "activity_collection")
+        self.assertNotIn("componentKey", activity)
 
     def test_presentation_variant_uses_canonical_control_when_no_rule_matches(self) -> None:
         phone = project_native_field_widget_contract(
@@ -73,7 +80,7 @@ class NativeWidgetContractBridgeTest(unittest.TestCase):
         self.assertEqual(phone["widgetType"], "phone")
         self.assertEqual(phone["canonicalWidgetType"], "input")
         self.assertEqual(phone["semanticType"], "text")
-        self.assertEqual(phone["componentKey"], "sc.input.text")
+        self.assertNotIn("componentKey", phone)
 
     def test_declared_semantic_is_consumed_for_non_fixed_field_types(self) -> None:
         projection = project_native_field_widget_contract(
@@ -84,19 +91,21 @@ class NativeWidgetContractBridgeTest(unittest.TestCase):
         )
         self.assertEqual(projection["widgetType"], "number")
         self.assertEqual(projection["semanticType"], "percentage")
-        self.assertEqual(projection["componentKey"], "sc.value.percentage")
+        self.assertEqual(projection["semanticType"], "percentage")
+        self.assertNotIn("componentKey", projection)
 
     def test_embedded_widget_node_uses_the_same_contract_bridge(self) -> None:
         ribbon = project_native_embedded_widget_contract("web_ribbon")
         self.assertEqual(ribbon["nativeWidget"], "web_ribbon")
         self.assertEqual(ribbon["widgetStatus"], "ready")
-        self.assertEqual(ribbon["componentKey"], "sc.display.ribbon")
+        self.assertEqual(ribbon["semanticType"], "display_ribbon")
+        self.assertNotIn("componentKey", ribbon)
         self.assertFalse(ribbon["payloadRequired"])
         self.assertEqual(ribbon["payloadSchema"], "")
 
         insight = project_native_embedded_widget_contract("sc_insight_banner")
         self.assertEqual(insight["widgetStatus"], "ready")
-        self.assertEqual(insight["componentKey"], "sc.insight.summary")
+        self.assertEqual(insight["semanticType"], "insight_summary")
         self.assertTrue(insight["payloadRequired"])
         self.assertEqual(insight["payloadSchema"], "insight_summary.v1")
 
@@ -106,10 +115,79 @@ class NativeWidgetContractBridgeTest(unittest.TestCase):
 
         unsupported = project_native_embedded_widget_contract("unknown_embedded_widget")
         self.assertEqual(unsupported["widgetStatus"], "unsupported")
-        self.assertEqual(unsupported["componentKey"], "sc.unsupported.native_node")
+        self.assertEqual(unsupported["semanticType"], "unsupported_native_node")
         self.assertEqual(unsupported["reasonCode"], "NATIVE_VIEW_WIDGET_UNSUPPORTED")
         self.assertFalse(unsupported["payloadRequired"])
         self.assertEqual(unsupported["payloadSchema"], "")
+
+    def test_backend_rejects_frontend_component_identity(self) -> None:
+        contract = {
+            "pageInfo": {
+                "model": "project.project",
+                "contractVersion": "2.6.0",
+            },
+            "dataContract": {"mainData": {"id": 4}},
+            "layoutContract": {
+                "containerTree": [
+                    {
+                        "type": "group",
+                        "containerId": "sc_project_information_description",
+                        "widgetList": [],
+                        "children": [
+                            {
+                                "type": "field",
+                                "name": "description",
+                                "semanticType": "readable_value",
+                                "widgetList": [
+                                    {
+                                        "widgetId": "field.description.occ.1",
+                                        "fieldCode": "description",
+                                        "label": "Description",
+                                        "widgetType": "textarea",
+                                        "componentConfig": {
+                                            "fieldType": "html",
+                                            "semanticType": "readable_value",
+                                            "nativeWidget": "",
+                                        },
+                                        "fieldDescriptor": {
+                                            "name": "description",
+                                            "type": "html",
+                                            "string": "Description",
+                                        },
+                                    }
+                                ],
+                            }
+                        ],
+                    }
+                ],
+            },
+        }
+
+        upgraded = _upgrade_contract_v2_field_descriptors(contract)
+        widget = upgraded["layoutContract"]["containerTree"][0]["children"][0]["widgetList"][0]
+        self.assertEqual(widget["fieldDescriptor"]["semanticType"], "readable_value")
+        self.assertEqual(widget["fieldDescriptor"]["semanticType"], "readable_value")
+        self.assertNotIn("componentKey", widget)
+        self.assertNotIn("componentRegistry", upgraded["layoutContract"])
+
+        upgraded["layoutContract"]["componentRegistry"] = {
+            "sc.display.text": {"version": "1.0"},
+        }
+        with self.assertRaisesRegex(
+            ValueError,
+            "CONTRACT_V27_FRONTEND_IMPLEMENTATION_IDENTITY",
+        ):
+            _assert_no_frontend_implementation_identity(upgraded)
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "CONTRACT_V27_FRONTEND_IMPLEMENTATION_IDENTITY",
+        ):
+            assemble_unified_page_patch_v2({
+                "line_patches": [
+                    {"componentKey": "sc.input.date"},
+                ],
+            })
 
 
 if __name__ == "__main__":

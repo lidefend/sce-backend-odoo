@@ -10,7 +10,7 @@ export interface ContractCarrierCapabilityRow {
 
 export interface ContractCarrierCapabilities {
   negotiationVersion: string;
-  status: 'legacy' | 'current';
+  status: 'current';
   clientType: string;
   compatibilityMode: string;
   acceptedContractVersions: string[];
@@ -80,7 +80,7 @@ export function decodeContractCarrierCapabilities(raw: unknown): ContractCarrier
     carriers[carrier] = { schemaVersion: '1.0.0', enabled: row.enabled };
   });
   const status = raw.status;
-  if (status !== 'legacy' && status !== 'current') {
+  if (status !== 'current') {
     throw new Error('CONTRACT_CARRIER_CAPABILITIES_INVALID:status');
   }
   if (raw.negotiationVersion !== '1.0.0') {
@@ -107,22 +107,12 @@ export function decodeContractCarrierCapabilities(raw: unknown): ContractCarrier
   if (!contractVersion || !pageOrchestrationVersion) {
     throw new Error('CONTRACT_CARRIER_CAPABILITIES_INVALID:version');
   }
-  const expected = status === 'legacy'
-    ? {
-      contractVersion: '2.5.0',
-      pageOrchestrationVersion: '2.0.0',
-      pageBlockData: false,
-      pageBlockAction: false,
-    }
-    : {
-      contractVersion: '2.6.0',
-      pageOrchestrationVersion: '2.1.0',
-      pageBlockData: clientContractCapabilities.includes('page_block_data.v1'),
-      pageBlockAction: clientContractCapabilities.includes('page_block_action.v1'),
-    };
-  if (status === 'current' && !expected.pageBlockData && !expected.pageBlockAction) {
-    throw new Error('CONTRACT_CARRIER_CAPABILITIES_INVALID:combination');
-  }
+  const expected = {
+    contractVersion: '2.7.0',
+    pageOrchestrationVersion: '2.1.0',
+    pageBlockData: clientContractCapabilities.includes('page_block_data.v1'),
+    pageBlockAction: clientContractCapabilities.includes('page_block_action.v1'),
+  };
   if (
     contractVersion !== expected.contractVersion
     || pageOrchestrationVersion !== expected.pageOrchestrationVersion

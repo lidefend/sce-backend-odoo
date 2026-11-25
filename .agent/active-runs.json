@@ -188,6 +188,7 @@
     "fix/system-product-release-source-db-20261124": ".agent/runs/SYSTEM-PRODUCT-RELEASE-SOURCE-IDENTITY-20261124/run.json",
     "fix/admin-workbench-navigation-enablement-20261124": ".agent/runs/ADMIN-WORKBENCH-NAV-ENABLEMENT-20261124/run.json",
     "fix/scheduled-full-baseline-remediation-20261124": ".agent/runs/SCHEDULED-FULL-BASELINE-REMEDIATION-20261124/run.json",
+    "fix/project-ledger-registry-closure-20261125": ".agent/runs/P0-FORM-COMPONENT-REGISTRY-CLOSURE-20261125/run.json",
     "fix/backend-iteration-lane-closure-20261124": ".agent/runs/BACKEND-ITERATION-LANE-CLOSURE-20261124/run.json"
   }
 }

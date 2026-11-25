@@ -273,6 +273,15 @@ def _load_handler():
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     module._captured = captured
+    original_params = module.UiContractV2Handler._params
+
+    def params_with_current_protocol(handler, payload):
+        params = dict(original_params(handler, payload))
+        params.setdefault('client_type', 'web_pc')
+        params.setdefault('accepted_contract_versions', ['2.7.x'])
+        return params
+
+    module.UiContractV2Handler._params = params_with_current_protocol
     # The handler imports its stubs eagerly. Restore the shared module before
     # returning to the test process so later test files that lazily import the
     # canonical assembler cannot receive this fixture-only projection stub.
@@ -759,7 +768,13 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         widget = assembler._field_widget({**field, "invisible": True}, layout_type="form")
         self.assertTrue(widget["componentConfig"]["invisible"])
         with self.assertRaisesRegex(ValueError, "INTERACTION_FIELD_BODY_FORBIDDEN"):
-            assembler._normalize_native_layout_nodes([{"type": "field", "name": "new_guidance_name", "fieldInfo": {"sc_ui_usage": "fact"}}], {"new_guidance_name": field}, layout_type="form", component_keys=set(), container_status=[], widget_status=[])
+            assembler._normalize_native_layout_nodes(
+                [{"type": "field", "name": "new_guidance_name", "fieldInfo": {"sc_ui_usage": "fact"}}],
+                {"new_guidance_name": field},
+                layout_type="form",
+                container_status=[],
+                widget_status=[],
+            )
 
     def test_change_set_target_role_is_distinct_from_owner(self):
         from odoo.addons.smart_core.core.form_structure_authority import assert_role_form_permissions_only

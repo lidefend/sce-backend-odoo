@@ -1,6 +1,5 @@
-import { contractGapError } from '../contract/contractGap';
-import { NODE_COMPONENT_REGISTRATIONS } from './semantic_registry.generated';
-import { isRegisteredComponentKey } from './professionalComponentRegistry';
+import { contractGapError, frontendCapabilityGap } from '../contract/contractGap';
+import { NODE_COMPONENT_REGISTRY } from './semantic_registry.generated';
 import type { ContractV2Container, ContractV2Snapshot } from '../contracts/v2/types';
 
 export type NodeComponentPresentation = {
@@ -153,16 +152,20 @@ export function projectNodeComponents(
   const ownedContent = new Set<string>();
   const sourceOwners = new Set<string>();
   for (const {node, visible, parentVisible} of rows) {
-    const key = node.componentKey;
-    if (!key) continue;
-    if (!NODE_COMPONENT_REGISTRATIONS[key]) {
-      if (!isRegisteredComponentKey(key)) reject(`${node.containerId}.componentKey`);
+    if (String(node.type || node.containerType || '').toLowerCase() === 'field') {
       continue;
     }
+    const semanticType = text(node.semanticType);
+    if (!semanticType) continue;
+    const key = NODE_COMPONENT_REGISTRY[semanticType];
+    if (!key) {
+      throw frontendCapabilityGap({
+        semanticType,
+        missing: `frontend.node_implementation.${semanticType}`,
+        requiredImplementationLayer: 'P0:frontend:implementation_registry',
+      }, `前端没有节点语义 ${semanticType} 的可用实现`);
+    }
     unique(node.containerId);
-    const registration = NODE_COMPONENT_REGISTRATIONS[key];
-    if (!/^1\.\d+\.\d+$/.test(registration.version)
-      || snapshot.layoutContract.componentRegistry[key]?.version !== registration.version) reject(`${node.containerId}.version`);
     if (key === 'sc.navigation.anchor') {
       const config = keys(node.componentConfig, ['targetContainerId']);
       const target = unique(config.targetContainerId);

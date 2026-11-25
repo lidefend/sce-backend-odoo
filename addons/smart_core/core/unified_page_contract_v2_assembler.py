@@ -33,19 +33,18 @@ from .action_semantics_vocabulary import (
 from .contract_lifecycle import payload_sha256, seal_unified_page_contract
 from .contract_runtime.semantic_resolver import (
     annotate_projected_semantics as _annotate_projected_semantics,
-    component_key_for_semantic as _component_key_for_semantic,
-    legacy_component_key as _legacy_component_key,
+    is_field_semantic as _is_field_semantic,
+    is_node_semantic as _is_node_semantic,
     semantic_widget_type as _semantic_widget_type,
 )
 from .contract_runtime.semantic_resolver import FALLBACK_SEMANTIC as _DISPLAY_SEMANTIC
-from .contract_runtime.semantic_resolver import component_registry as _component_registry_of
 from .source_authority import build_source_authority_contract
 from .unified_page_contract_v2_permissions import permission_auth_level, resolve_permission_rights
 from .unified_page_contract_v2_runtime_actions import normalize_runtime_business_actions
 from .unified_page_contract_v2_action import normalize_target_scope, normalize_trigger_type
 from .unified_page_contract_v2_form_structure import normalize_form_structure_contract_roles
 
-CONTRACT_VERSION = "2.5.0"
+CONTRACT_VERSION = "2.7.0"
 SOURCE_KIND = "unified_page_contract_v2_assembler_projection"
 SOURCE_AUTHORITIES = ("ui_contract", "page_orchestration", "scene_contract", "unified_page_contract_v2_schema")
 NO_BUSINESS_FACT_AUTHORITY = True
@@ -68,7 +67,7 @@ def source_authority_contract() -> dict[str, Any]:
         runtime_carrier="unified_page_contract_v2_assembler",
     )
 
-PATCH_VERSION = "2.5.0"
+PATCH_VERSION = "2.7.0"
 STABLE_CLIENT_TYPES = {"web_pc", "wx_mini", "harmony_h5"}
 
 
@@ -272,19 +271,6 @@ def _resolve_source_type(source: dict[str, Any], explicit: str = "") -> str:
 REFERENCE_FIELD_TYPES = frozenset({"many2one_reference", "reference"})
 
 
-def _component_key(widget_type: str, field: dict[str, Any] | None = None) -> str:
-    """Deprecated compatibility shim.
-
-    Component selection belongs to ``contracts/registry/semantic.yaml`` +
-    ``component.yaml`` and is resolved by
-    ``core.contract_runtime.semantic_resolver``.  The private mapping that used
-    to live here is gone (FE-CONTRACT-RUNTIME-00 gap G1); this shim only keeps
-    an unmigrated caller working and reports ``deprecated_component_key_usage``.
-    New code resolves through the registry directly.
-    """
-    return _legacy_component_key(widget_type, field)
-
-
 def _widget_type_from_field(field: dict[str, Any]) -> str:
     ttype = _text(field.get("ttype") or field.get("type")).lower()
     if ttype in {"selection", "many2one"}:
@@ -365,19 +351,6 @@ def _canonical_widget_type(native_widget: str, field: dict[str, Any]) -> str:
     return _widget_type_from_field(field)
 
 
-def _component_registry(component_keys: set[str]) -> dict[str, dict[str, Any]]:
-    """Declare the component identities a page uses, plus their version.
-
-    How a component renders -- the framework component name, the per-client
-    variant, its density or geometry -- is a frontend concern.  The contract
-    declares the identity and version fact only, so a rendering adapter can
-    never become a second, driftable component vocabulary.  The identity/version
-    builder lives in the contract runtime so a product-layer extension declares
-    the same fact instead of keeping a second copy.
-    """
-    return _component_registry_of(component_keys)
-
-
 def _base_contract(
     *,
     page_id: str,
@@ -422,7 +395,6 @@ def _base_contract(
             "containerTree": [],
             "layoutHints": {},
             "listProfile": {},
-            "componentRegistry": {},
         },
         "statusContract": {
             "globalStatus": {"pageVisible": True, "pageAuth": "read"},
@@ -679,7 +651,7 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
             for row in value:
                 collect(row)
         elif isinstance(value, dict):
-            if "type" in value or "componentKey" in value:
+            if "type" in value or "semanticType" in value:
                 raw_nodes.append(value)
             for key in ("children", "pages", "tabs", "nodes", "items"):
                 if key in value:
@@ -689,7 +661,7 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
     ui = _dict(source.get("ui")) or source
     raw_layout = marker.get("layout") if marker else _dict(_dict(ui.get("views")).get("form")).get("layout", [])
     collect(raw_layout)
-    declarations = [n for n in raw_nodes if n.get("componentKey") in KEYS]
+    declarations = [n for n in raw_nodes if n.get("semanticType") in KEYS]
     if not declarations:
         contract = _assemble_unified_page_contract_v2(
             source_contract, node_actor_env=node_actor_env, **kwargs,
@@ -726,7 +698,7 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
             raise FormConfigurationError("FEEDBACK_CONFIG_INVALID", "layoutContract.containerTree") from exc
         from .node_component_validation import walk
         tree = contract["layoutContract"]["containerTree"]
-        projected = [n for n, _ in walk(tree) if n.get("componentKey") in KEYS]
+        projected = [n for n, _ in walk(tree) if n.get("semanticType") in KEYS]
         if len(projected) != len(declarations):
             raise FormConfigurationError(
                 "FEEDBACK_CONFIG_INVALID",
@@ -757,6 +729,7 @@ def assemble_unified_page_contract_v2(source_contract, *, node_actor_env=None, *
         )
         if isinstance(proof_sink, dict):
             proof_sink.update(proof or {})
+        _assert_no_frontend_implementation_identity(contract)
         return contract
 
 
@@ -1242,14 +1215,12 @@ def _strict_field_descriptor(
     )
     widget_type = projection["widgetType"]
     semantic_type = projection["semanticType"]
-    component_key = projection["componentKey"]
     descriptor = {
         "schemaVersion": "1.0.0",
         "fieldCode": _text(widget.get("fieldCode") or legacy.get("name")),
         "label": _text(widget.get("label") or legacy.get("string") or legacy.get("label")),
         "fieldType": field_type,
         "widgetType": widget_type,
-        "componentKey": component_key,
         "semanticType": semantic_type,
     }
     for key in ("required", "readonly", "invisible", "technical"):
@@ -1297,10 +1268,13 @@ def _strict_field_descriptor(
             value = legacy.get(key)
         if isinstance(value, dict) and value:
             descriptor[key] = deepcopy(value)
-    for key in ("filename", "surfaceRole"):
+    for key in ("filename", "surfaceRole", "help"):
         value = _text(config.get(key) or legacy.get(key))
         if value:
             descriptor[key] = value
+    ui_usage = _text(config.get("uiUsage") or legacy.get("uiUsage") or legacy.get("sc_ui_usage"))
+    if ui_usage:
+        descriptor["uiUsage"] = ui_usage
     if isinstance(selection, list) and selection:
         pairs: list[list[str]] = []
         for item in selection:
@@ -1319,6 +1293,32 @@ def _strict_field_descriptor(
         descriptor["digits"] = digits
     if currency_field:
         descriptor["currencyField"] = currency_field
+    size = config.get("size") if isinstance(config.get("size"), int) else legacy.get("size")
+    if isinstance(size, int) and size > 0:
+        descriptor["size"] = size
+    for source_key, contract_key in (
+        ("change_default", "changeDefault"),
+        ("definition_record", "definitionRecord"),
+        ("definition_record_field", "definitionRecordField"),
+        ("group_operator", "groupOperator"),
+        ("searchable", "searchable"),
+        ("sortable", "sortable"),
+        ("store", "store"),
+        ("translate", "translate"),
+        ("trim", "trim"),
+    ):
+        value = config.get(source_key)
+        if value is None:
+            value = legacy.get(source_key)
+        if isinstance(value, (bool, str)) and value != "":
+            descriptor[contract_key] = value
+    related = config.get("related") if config.get("related") is not None else legacy.get("related")
+    if isinstance(related, str) and related.strip():
+        related = [related.strip()]
+    if isinstance(related, (list, tuple)):
+        related_path = [str(item).strip() for item in related if str(item).strip()]
+        if related_path:
+            descriptor["related"] = related_path
     if semantic_type == "percentage":
         descriptor["unit"] = {"kind": "percent", "code": "percent", "label": "%"}
     elif semantic_type == "duration":
@@ -1329,7 +1329,7 @@ def _strict_field_descriptor(
         descriptor["temporal"] = {"kind": "datetime", "timezoneAuthority": "user"}
     if relation == "ir.attachment" and attachment_role:
         descriptor["attachmentRole"] = attachment_role
-    if field_type == "monetary" and not descriptor.get("currencyField"):
+    if semantic_type == "money" and not descriptor.get("currencyField"):
         return None
     return descriptor
 
@@ -1394,13 +1394,29 @@ def _upgrade_contract_v2_field_descriptors(
                 )
                 if strict:
                     widget["fieldDescriptor"] = strict
-                    widget["componentKey"] = strict["componentKey"]
+                    widget.pop("componentKey", None)
                 elif _text(_dict(widget.get("fieldDescriptor")).get("type") or _dict(widget.get("fieldDescriptor")).get("ttype")) == "monetary":
                     widget.pop("fieldDescriptor", None)
             walk(_list(node.get("children")))
 
     walk(_list(layout.get("containerTree")))
     return out
+
+
+def _assert_no_frontend_implementation_identity(value: Any, path: str = "$") -> None:
+    """Backend V2.7 contract may not publish renderer/component identities."""
+    if isinstance(value, list):
+        for index, item in enumerate(value):
+            _assert_no_frontend_implementation_identity(item, f"{path}[{index}]")
+        return
+    if not isinstance(value, dict):
+        return
+    for key, child in value.items():
+        if key in {"componentKey", "component_key", "componentRegistry"}:
+            raise ValueError(
+                f"CONTRACT_V27_FRONTEND_IMPLEMENTATION_IDENTITY:{path}.{key}"
+            )
+        _assert_no_frontend_implementation_identity(child, f"{path}.{key}")
 
 
 def _assemble_unified_page_contract_v2(
@@ -1452,20 +1468,24 @@ def _assemble_unified_page_contract_v2(
     actions_bound_at = time.monotonic()
     if resolved in {"ui.contract", "native_form_projection"}:
         _page_composition_contract(contract, source)
-    sealed = seal_unified_page_contract(
+    projected_contract = (
         _upgrade_contract_v2_field_descriptors({
             **contract,
             "pageInfo": {
                 **(_dict(contract.get("pageInfo"))),
                 "contractVersion": contract_version,
             },
-        }, env=node_actor_env) if contract_version.startswith("2.6.") else {
+        }, env=node_actor_env) if re.match(r"^2\.[67]\.", contract_version) else {
             **contract,
             "pageInfo": {
                 **(_dict(contract.get("pageInfo"))),
                 "contractVersion": contract_version,
             },
-        },
+        }
+    )
+    _assert_no_frontend_implementation_identity(projected_contract)
+    sealed = seal_unified_page_contract(
+        projected_contract,
         source_payload=payload if resolved not in {"ui.contract", "native_form_projection"} else source,
         source_type=resolved,
         request_id=request_id,
@@ -1507,7 +1527,7 @@ def _project_native_view_widget_payloads(contract: dict[str, Any], env: Any) -> 
             if (
                 row.get("type") == "widget"
                 and resolution.get("payloadRequired") is True
-                and row.get("componentKey") == resolution.get("componentKey")
+                and row.get("semanticType") == resolution.get("semanticType")
             ):
                 nodes.append(row)
             visit(row.get("children"))
@@ -1524,7 +1544,7 @@ def _project_native_view_widget_payloads(contract: dict[str, Any], env: Any) -> 
             {
                 "occurrenceKey": _text(_dict(node.get("nativeIdentity")).get("occurrenceKey")),
                 "nativeWidget": _text(node.get("widget") or node.get("name")),
-                "componentKey": _text(node.get("componentKey")),
+                "semanticType": _text(node.get("semanticType")),
                 "title": _text(node.get("title") or node.get("label")),
                 "options": deepcopy(_dict(node.get("componentConfig")).get("options")),
                 "payloadSchema": _project_native_embedded_widget_contract(
@@ -1549,7 +1569,6 @@ def _project_native_view_widget_payloads(contract: dict[str, Any], env: Any) -> 
         except Exception as error:
             _logger.warning("[native_view_widget_payload] provider failed: %s", error)
 
-    registry = _dict(_dict(contract.get("layoutContract")).get("componentRegistry"))
     status_rows = {
         _text(row.get("containerId")): row
         for row in _list(_dict(contract.get("statusContract")).get("containerStatus"))
@@ -1588,7 +1607,7 @@ def _project_native_view_widget_payloads(contract: dict[str, Any], env: Any) -> 
                 status.pop("reasonCode", None)
             continue
         unsupported = _project_native_embedded_widget_contract("")
-        node["componentKey"] = unsupported["componentKey"]
+        node["semanticType"] = unsupported["semanticType"]
         config.update({
             "widgetStatus": "unsupported",
             "reasonCode": "NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE",
@@ -1596,13 +1615,9 @@ def _project_native_view_widget_payloads(contract: dict[str, Any], env: Any) -> 
         for key in ("payloadSchema", "payload", "payloadSourceAuthority"):
             config.pop(key, None)
         node["componentConfig"] = config
-        registry[unsupported["componentKey"]] = _component_registry_of({unsupported["componentKey"]})[
-            unsupported["componentKey"]
-        ]
         if status is not None:
             status["disabled"] = True
             status["reasonCode"] = "NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE"
-    _dict(contract.get("layoutContract"))["componentRegistry"] = registry
 
 
 def _validate_action_view_scope(
@@ -1720,7 +1735,7 @@ def assemble_unified_page_patch_v2(
     if line_patches:
         data_patch["relationRows"] = {"line_patches": deepcopy(line_patches)}
     fp = _fingerprint(source)
-    return {
+    patch = {
         "updateType": "partial",
         "layoutPatch": {},
         "statusPatch": status_patch,
@@ -1736,6 +1751,8 @@ def assemble_unified_page_patch_v2(
             "sourceType": "api.onchange",
         },
     }
+    _assert_no_frontend_implementation_identity(patch)
+    return patch
 
 
 def _extract_source_payload(source: dict[str, Any], source_type: str) -> dict[str, Any]:
@@ -1766,11 +1783,9 @@ def _assemble_scene_contract(source: dict[str, Any], *, client_type: str, reques
     )
     blocks = [item for item in _list(page.get("blocks")) if isinstance(item, dict)]
     widgets = []
-    component_keys = set()
     for block in blocks:
         widget = _block_widget(block)
         widgets.append(widget)
-        component_keys.add(widget["componentKey"])
         contract["statusContract"]["widgetStatus"].append(
             {
                 "widgetId": widget["widgetId"],
@@ -1793,7 +1808,6 @@ def _assemble_scene_contract(source: dict[str, Any], *, client_type: str, reques
             "widgetList": widgets,
         }
     ]
-    contract["layoutContract"]["componentRegistry"] = _component_registry(component_keys or {_component_key_for_semantic(_DISPLAY_SEMANTIC)})
     contract["statusContract"]["containerStatus"].append({"containerId": container_id, "visible": True, "disabled": False})
     contract["statusContract"]["globalStatus"]["reasonCode"] = _text(state.get("reason_code"), "SCENE_READY")
     _append_actions(contract, actions.get("primary_actions"), source_widget_id=widgets[0]["widgetId"] if widgets else "page.root")
@@ -1809,7 +1823,7 @@ def _block_widget(block: dict[str, Any]) -> dict[str, Any]:
         "fieldCode": block_key,
         "label": _text(block.get("title"), block_key),
         "span": 12,
-        "componentKey": _component_key_for_semantic(_DISPLAY_SEMANTIC),
+        "semanticType": _DISPLAY_SEMANTIC,
         "capabilities": [],
         "componentConfig": {"blockType": _text(block.get("block_type"), "runtime_block")},
     }
@@ -1830,7 +1844,6 @@ def _assemble_page_orchestration(source: dict[str, Any], *, client_type: str, re
         source_payload=source,
         request_id=request_id,
     )
-    component_keys = set()
     containers = []
     for zone in _list(source.get("zones")):
         if not isinstance(zone, dict):
@@ -1842,7 +1855,6 @@ def _assemble_page_orchestration(source: dict[str, Any], *, client_type: str, re
                 continue
             widget = _block_widget(block)
             widgets.append(widget)
-            component_keys.add(widget["componentKey"])
             contract["statusContract"]["widgetStatus"].append(
                 {
                     "widgetId": widget["widgetId"],
@@ -1866,7 +1878,6 @@ def _assemble_page_orchestration(source: dict[str, Any], *, client_type: str, re
         )
         contract["statusContract"]["containerStatus"].append({"containerId": container_id, "visible": True, "disabled": False})
     contract["layoutContract"]["containerTree"] = containers
-    contract["layoutContract"]["componentRegistry"] = _component_registry(component_keys or {_component_key_for_semantic(_DISPLAY_SEMANTIC)})
     contract["dataContract"]["dataSource"] = deepcopy(_dict(source.get("data_sources")))
     action_schema = _dict(source.get("action_schema")).get("actions")
     _append_action_schema(contract, _dict(action_schema), source_widget_id="page.root")
@@ -1963,7 +1974,6 @@ def _assemble_ui_contract(
         fields_by_name[name].setdefault("name", name)
     _annotate_projected_semantics(model, list(fields_by_name.values()))
     widgets = []
-    component_keys = set()
     form_layout = _dict(_dict(ui.get("views")).get("form"))
     intake_autosave = _normalize_intake_autosave_policy(
         form_layout.get("autosave"),
@@ -2030,7 +2040,6 @@ def _assemble_ui_contract(
             layout_type=layout_type,
             model=model,
             form_subviews=form_subviews,
-            component_keys=component_keys,
             container_status=contract["statusContract"]["containerStatus"],
             widget_status=native_widget_status,
             context=form_modifier_record,
@@ -2089,7 +2098,6 @@ def _assemble_ui_contract(
             }
         ]
         for widget in container_tree[0]["children"][0]["widgetList"]:
-            component_keys.add(widget["componentKey"])
             contract["statusContract"]["widgetStatus"].append(_field_status(
                 next((row for row in fields if _text(row.get("name")) == _text(widget.get("fieldCode"))), {}),
                 widget["widgetId"],
@@ -2112,7 +2120,6 @@ def _assemble_ui_contract(
         for field in fields[:60]:
             widget = _field_widget(field, layout_type=layout_type)
             widgets.append(widget)
-            component_keys.add(widget["componentKey"])
             contract["statusContract"]["widgetStatus"].append(_field_status(field, widget["widgetId"]))
         container_tree = [
             {
@@ -2142,7 +2149,6 @@ def _assemble_ui_contract(
         source=source,
     )
     contract["layoutContract"]["containerTree"] = container_tree
-    contract["layoutContract"]["componentRegistry"] = _component_registry(component_keys or {_component_key_for_semantic(_DISPLAY_SEMANTIC)})
     collection_view_key = "tree" if view_type in {"tree", "list"} else view_type
     collection_view = _dict(_dict(ui.get("views")).get(collection_view_key))
     collection_presentation = _dict(collection_view.get("collection_presentation"))
@@ -2870,7 +2876,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         resolved_widget_type=widget_type,
         semantic_widget_type=_semantic_widget_type(native_widget or declared_widget, widget_type),
     )
-    component_key = widget_resolution["componentKey"]
+    semantic_type = widget_resolution["semantic"]
     provenance = widget_resolution["provenance"]
     capabilities = ["sortable", "filterable"] if layout_type == "table" else []
     if widget_type == "select":
@@ -2921,7 +2927,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         "fieldCode": field_name,
         "label": _text(field.get("string") or field.get("label"), field_name),
         "span": 12 if layout_type == "table" else 6,
-        "componentKey": component_key,
+        "semanticType": semantic_type,
         "capabilities": capabilities,
         "componentConfig": component_config,
         "fieldDescriptor": deepcopy(field),
@@ -3017,7 +3023,7 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
     out["label"] = label
     out["fieldInfo"] = field_info
     out["widget"] = widget["widgetType"]
-    out["componentKey"] = widget["componentKey"]
+    out["semanticType"] = widget["semanticType"]
     out["componentConfig"] = component_config
     out["widgetId"] = widget["widgetId"]
     native_locator = _text(field_source.get("native_locator"))
@@ -3115,7 +3121,7 @@ def _direct_field_widgets_from_nodes(
 
 def _project_legacy_native_alert(node: dict[str, Any]) -> dict[str, Any] | None:
     """Project Odoo legacy ``alert`` markup into an explicit feedback node."""
-    if node.get("componentKey"):
+    if node.get("semanticType"):
         return None
     attributes = _dict(node.get("attributes") or node.get("attrs"))
     classes = {_text(item) for item in _text(attributes.get("class")).split() if item}
@@ -3155,7 +3161,7 @@ def _project_legacy_native_alert(node: dict[str, Any]) -> dict[str, Any] | None:
     if isinstance(modifiers.get("invisible"), dict):
         modifiers["invisible"] = _normalize_feedback_condition(modifiers["invisible"])
         node["modifiers"] = modifiers
-    node["componentKey"] = "sc.feedback.message"
+    node["semanticType"] = "feedback_message"
     node["componentConfig"] = {
         "purpose": purpose,
         "contentRef": {"containerId": source_id},
@@ -3170,7 +3176,6 @@ def _normalize_native_layout_nodes(
     layout_type: str,
     model: str = "",
     form_subviews: dict[str, Any] | None = None,
-    component_keys: set[str],
     container_status: list[dict[str, Any]],
     widget_status: list[dict[str, Any]],
     context: dict[str, Any] | None = None,
@@ -3261,7 +3266,6 @@ def _normalize_native_layout_nodes(
                 normalized["widgetList"] = [widget]
             else:
                 normalized["widgetList"] = []
-            component_keys.add(widget["componentKey"])
             widget_status.append(_field_status(
                 widget_source,
                 widget["widgetId"],
@@ -3290,13 +3294,13 @@ def _normalize_native_layout_nodes(
             supported = (
                 identity_complete
                 and resolution.get("widgetStatus") == "ready"
-                and bool(resolution.get("componentKey"))
+                and bool(resolution.get("semanticType"))
             )
             projected_widget_status = "ready" if supported else "unsupported"
-            component_key = (
-                resolution.get("componentKey")
+            semantic_type = (
+                resolution.get("semanticType")
                 if supported
-                else _project_native_embedded_widget_contract("")["componentKey"]
+                else _project_native_embedded_widget_contract("")["semanticType"]
             )
             unsupported_reason = (
                 ""
@@ -3321,7 +3325,7 @@ def _normalize_native_layout_nodes(
             used_container_ids.add(container_id)
             node["containerId"] = container_id
             node["containerType"] = "widget"
-            node["componentKey"] = component_key
+            node["semanticType"] = semantic_type
             component_config: dict[str, Any] = {
                 "nativeWidget": widget_name,
                 "widgetStatus": projected_widget_status,
@@ -3360,7 +3364,6 @@ def _normalize_native_layout_nodes(
                 "projectionOnly": True,
                 "noBusinessFactAuthority": True,
             })
-            component_keys.add(component_key)
             container_status.append({
                 "containerId": container_id,
                 "visible": not bool(invisible),
@@ -3407,7 +3410,6 @@ def _normalize_native_layout_nodes(
             layout_type=layout_type,
             model=model,
             form_subviews=form_subviews,
-            component_keys=component_keys,
             container_status=container_status,
             widget_status=widget_status,
             context=context,
@@ -3442,8 +3444,6 @@ def _normalize_native_layout_nodes(
                         widget[source_name] = deepcopy(owner.get(source_name))
                 normalized_direct_widgets.append(widget)
             node["widgetList"] = normalized_direct_widgets
-            for widget in direct_widgets:
-                component_keys.add(widget["componentKey"])
         elif not isinstance(node.get("widgetList"), list):
             node["widgetList"] = []
         out.append(node)

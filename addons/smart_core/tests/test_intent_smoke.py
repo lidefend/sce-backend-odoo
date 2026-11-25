@@ -233,7 +233,13 @@ class TestIntentSmoke(HttpCase):
         token = (login_row.get("session") or {}).get("token") or login_row.get("token")
         self.assertTrue(token, login_data)
 
-        payload = {"intent": "system.init", "params": {}}
+        payload = {
+            "intent": "system.init",
+            "params": {
+                "client_type": "web_pc",
+                "accepted_contract_versions": ["2.7.x"],
+            },
+        }
         data = self._post_intent(payload, headers={"Authorization": f"Bearer {token}"})
         self.assertTrue(data.get("ok"), data)
         response_meta = data.get("meta") or {}
@@ -390,7 +396,14 @@ class TestIntentSmoke(HttpCase):
         token = (login_row.get("session") or {}).get("token") or login_row.get("token")
         self.assertTrue(token, login_data)
 
-        payload = {"intent": "system.init", "params": {"with": ["workspace_home"]}}
+        payload = {
+            "intent": "system.init",
+            "params": {
+                "client_type": "web_pc",
+                "accepted_contract_versions": ["2.7.x"],
+                "with": ["workspace_home"],
+            },
+        }
         data = self._post_intent(payload, headers={"Authorization": f"Bearer {token}"})
         self.assertTrue(data.get("ok"), data)
         row = data.get("data", {}) or {}

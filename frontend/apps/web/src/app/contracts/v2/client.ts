@@ -108,7 +108,7 @@ function applyCommonOptions(params: ContractV2Dictionary, options: ContractV2Loa
   if (options.previewRoleKey) params.preview_role_key = options.previewRoleKey;
   params.delivery_profile = 'full';
   params.client_type = 'web_pc';
-  params.accepted_contract_versions = ['2.0.x', '2.1.x', '2.2.x', '2.3.x', '2.4.x', '2.5.x', '2.6.x'];
+  params.accepted_contract_versions = ['2.7.x'];
   params.client_contract_capabilities = [...CONTRACT_V2_CLIENT_CAPABILITIES];
   return params;
 }

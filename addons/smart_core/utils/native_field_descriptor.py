@@ -48,4 +48,29 @@ def project_native_field_descriptor(
             out.pop("digits", None)
     if field_type == "monetary":
         out["currency_field"] = str(meta.get("currency_field") or "currency_id").strip()
+    for key in (
+        "change_default",
+        "definition_record",
+        "definition_record_field",
+        "group_operator",
+        "searchable",
+        "sortable",
+        "store",
+        "translate",
+        "trim",
+    ):
+        if key in meta:
+            out[key] = meta.get(key)
+    related = meta.get("related")
+    if isinstance(related, (list, tuple)):
+        related = [str(item).strip() for item in related if str(item).strip()]
+    elif isinstance(related, str) and related.strip():
+        related = [related.strip()]
+    else:
+        related = []
+    if related:
+        out["related"] = related
+    size = meta.get("size")
+    if isinstance(size, int) and size > 0:
+        out["size"] = size
     return out

@@ -579,7 +579,7 @@ class _TreeFormParserMixin:
                         occurrence['widget_semantics'] = widget_semantics
                     resolved_semantic = resolve_field_semantic(field_info, occurrence["widget"])
                     if resolved_semantic.get("semantic") == "percentage":
-                        occurrence["component_key"] = resolved_semantic["componentKey"]
+                        occurrence["semantic_type"] = "percentage"
                     selection = (field_info or {}).get("selection")
                     if isinstance(selection, (list, tuple)):
                         occurrence["selection"] = [
@@ -717,7 +717,7 @@ class _TreeFormParserMixin:
             schema['widget_semantics'] = semantics
         resolved_semantic = resolve_field_semantic(meta, widget)
         if resolved_semantic.get("semantic") == "percentage":
-            schema["component_key"] = resolved_semantic["componentKey"]
+            schema["semantic_type"] = "percentage"
         selection = meta.get('selection')
         if isinstance(selection, (list, tuple)):
             schema["selection"] = [

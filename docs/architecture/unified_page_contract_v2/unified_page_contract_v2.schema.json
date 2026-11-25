@@ -1621,7 +1621,7 @@
         },
         "contractVersion": {
           "type": "string",
-          "pattern": "^2\\.(0|1|2|3|4|5)\\.[0-9]+$"
+          "pattern": "^2\\.(0|1|2|3|4|5|6|7)\\.[0-9]+$"
         },
         "clientType": {
           "enum": [
@@ -1643,8 +1643,7 @@
         "layoutType",
         "adaptMode",
         "containerTree",
-        "layoutHints",
-        "componentRegistry"
+        "layoutHints"
       ],
       "properties": {
         "pageId": {
@@ -1679,12 +1678,6 @@
         },
         "layoutHints": {
           "type": "object"
-        },
-        "componentRegistry": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/$defs/componentRegistryEntry"
-          }
         },
         "listProfile": {
           "$ref": "#/$defs/listProfile"
@@ -2561,7 +2554,7 @@
         "widget": {
           "type": "string"
         },
-        "componentKey": {
+        "semanticType": {
           "type": "string"
         },
         "componentConfig": {
@@ -2677,7 +2670,7 @@
         "fieldCode",
         "label",
         "span",
-        "componentKey",
+        "semanticType",
         "capabilities",
         "componentConfig",
         "ownerContainerId"
@@ -2718,7 +2711,7 @@
           "minimum": 1,
           "maximum": 24
         },
-        "componentKey": {
+        "semanticType": {
           "$ref": "#/$defs/id"
         },
         "capabilities": {
@@ -3488,19 +3481,6 @@
         }
       }
     },
-    "componentRegistryEntry": {
-      "description": "A declared component identity and its version. How a component renders is a frontend concern, so no framework component name, per-client adapter or rendering fallback may appear here.",
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "version"
-      ],
-      "properties": {
-        "version": {
-          "type": "string"
-        }
-      }
-    },
     "statusContract": {
       "type": "object",
       "additionalProperties": false,
@@ -4227,14 +4207,14 @@
           "const": "smart_core.unified_page_contract_v2"
         },
         "schemaVersion": {
-          "const": "2.5.0"
+          "const": "2.7.0"
         },
         "schemaSha256": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         },
         "contractVersion": {
-          "const": "2.5.0"
+          "const": "2.7.0"
         },
         "normativeStatus": {
           "const": "stable"
