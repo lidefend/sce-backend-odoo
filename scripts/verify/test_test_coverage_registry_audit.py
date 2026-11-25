@@ -156,6 +156,40 @@ class ExplicitCoTagConsumerTest(unittest.TestCase):
                 self.assertIn('/' + bound['module'], selected.split(','))
                 self.assertNotIn(group, selected)
 
+    def test_workflow_contract_platform_has_an_exact_nonzero_owner(self):
+        from scripts.verify import test_coverage_registry_audit as audit
+
+        registry = {
+            row["group"]: row for row in audit.load_registry()["entries"]
+        }
+        entry = registry["workflow_contract_platform"]
+        self.assertEqual("on-demand", entry["status"])
+        self.assertEqual("class-selected", entry["dispose"])
+        self.assertEqual(
+            "make:verify.workflow_contract.platform.orm :: "
+            "/smart_core:TestWorkflowContractPlatform",
+            entry["gate"],
+        )
+        makefile = (audit.ROOT / "make/ci.mk").read_text(encoding="utf-8")
+        target = makefile.split("verify.workflow_contract.platform.orm:", 1)[1].split(
+            "\n\n", 1
+        )[0]
+        self.assertIn("local.test.test", target)
+        self.assertIn("MODULE=smart_core", target)
+        self.assertIn(
+            "TEST_TAGS=/smart_core:TestWorkflowContractPlatform",
+            target,
+        )
+        test_source = (
+            audit.ROOT
+            / "addons/smart_core/tests/test_workflow_contract_platform.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn('"workflow_contract_platform"', test_source)
+        imports = (
+            audit.ROOT / "addons/smart_core/tests/__init__.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("from . import test_workflow_contract_platform", imports)
+
 
 class TagTokenMatchingTest(unittest.TestCase):
     def test_module_qualified_expression_selects_tag(self) -> None:

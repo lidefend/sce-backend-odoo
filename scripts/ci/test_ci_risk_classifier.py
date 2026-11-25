@@ -105,6 +105,10 @@ class CIRiskClassifierTests(unittest.TestCase):
             with self.subTest(path=path):
                 result = classify([path], event_name="pull_request")
                 self.assertTrue(result.frontend_contract_diagnostic_required)
+                self.assertEqual(
+                    "standard" if path.startswith("frontend/") else "skip",
+                    result.frontend_mode,
+                )
                 self.assertEqual("true", result.outputs()["frontend_contract_diagnostic_required"])
         self.assertFalse(
             classify(

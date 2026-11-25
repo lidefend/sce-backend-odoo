@@ -1,0 +1,134 @@
+{
+  "schema_version": 2,
+  "baseline_sha": "032990188abea05a5d2ab81313136c431e5f89b3",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/VERIFY-CORRECTNESS-01.yaml",
+    ".agent/runs/VERIFY-CORRECTNESS-01/run.json",
+    ".github/workflows/frontend_release_gate.yml",
+    ".github/workflows/professional_quality_gate.yml",
+    "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+    "config/ci/path_ownership_v1.json",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/verify_correctness_escape_01_20261125.md",
+    "make/ci.mk",
+    "make/contract.mk",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/self_hosted_runner_cleanup.sh",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/test_ci_path_ownership.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_branch_governance_consistency_guard.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_test_coverage_registry_audit.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database, service, credential or remote write"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "P4 validation-control changes require their own static, workflow-contract and non-zero regression checks."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Workflow corrections become effective only on the exact candidate and must pass all four protected checks against the current target base."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or governed full audit",
+      "reason": "This implementation prepares a candidate; it does not claim a scheduled mainline or release qualification result."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "A shared target may be carried only when source ancestry, selected inputs, verifier authority, logs and environment identity remain valid."
+    }
+  },
+  "checks": {
+    "frontend_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/incremental_execution.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/frontend_release_gate.yml",
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "config/ci/path_ownership_v1.json"
+      ],
+      "kind": "offline"
+    },
+    "coverage_registry": {
+      "target": "verify.test.coverage.registry",
+      "inputs": [
+        "scripts/verify/test_coverage_registry.yaml",
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/verify/test_test_coverage_registry_audit.py",
+        "addons/smart_core/tests/test_workflow_contract_platform.py",
+        "addons/smart_core/tests/__init__.py",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json"
+      ],
+      "kind": "offline"
+    },
+    "branch_governance": {
+      "target": "verify.branch.governance.consistency",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/verify/branch_governance_consistency_guard.py",
+        "scripts/verify/test_branch_governance_consistency_guard.py",
+        "scripts/ops/local_quick_evidence.py",
+        "scripts/verify/test_local_quick_evidence.py"
+      ],
+      "kind": "offline"
+    },
+    "native_parser": {
+      "target": "verify.native_advisory.unit",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+        "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "make/contract.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_consumer": {
+      "target": "verify.unified_page_contract.v2.runtime",
+      "inputs": [
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Review and commit the clean candidate, then publish this exact HEAD through the governed PR lane and wait for the four required checks against the current main base.",
+  "id": "VERIFY-CORRECTNESS-01",
+  "branch": "fix/verify-correctness-escape-01-20261125",
+  "status": "verification_pending",
+  "goal": ".agent/goals/VERIFY-CORRECTNESS-01.yaml",
+  "record": "docs/ops/iterations/verify_correctness_escape_01_20261125.md"
+}

@@ -1823,6 +1823,14 @@ entries:
   gate: 'make:verify.workflow_contract.backend :: /TestWorkflowContractBackend (class selection)'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: workflow_contract_platform
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.workflow_contract.platform.orm :: /smart_core:TestWorkflowContractPlatform'
+  reason: 'Added by #996 and executed by the dedicated smart_core test-class entry; the ordinary
+    module suite remains additive, while test-file and selector changes now require the registry audit.'
 - group: workspace_processing_feedback
   kind: odoo_tag
   status: on-demand
