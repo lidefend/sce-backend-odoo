@@ -39,7 +39,8 @@
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "AGENTS.md",
     ".agent/context.yaml",
-    "docs/ops/codex_execution_allowlist.md"
+    "docs/ops/codex_execution_allowlist.md",
+    "scripts/ci/personal_data_false_positives.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -265,6 +266,7 @@
     "changed_orm_log": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/authorized-changed-orm-final.log",
     "local_iteration": ".runtime/frontend-dev-validation/executions/20261125T203144Z-2554244-644322999/receipt.json",
     "local_iteration_log": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/continue-iteration.log",
-    "freeze_prepare_log": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/freeze-prepare.log"
+    "freeze_prepare_log": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/freeze-prepare.log",
+    "public_scan_initial": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/public-scan.log"
   }
 }

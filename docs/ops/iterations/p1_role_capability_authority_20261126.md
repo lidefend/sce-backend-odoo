@@ -263,3 +263,11 @@ reviewed and only reflect the owned test/registry changes. Log:
 Remote main was read back at the unchanged baseline
 `487a3d8497cd89841e1954d164e0e11d79742d81`. Independent review and exact-head PR
 CI remain pending; author self-check is not independent review.
+
+Public scanning initially rejected the changed payment permission test blob
+`ed8f1aaa4953693e9d502bce2871a038524791a5` (PD003/RH018). A byte comparison
+against the previously reviewed `578ab14089ea852ce60f7fa96da3f27eec3f4b96`
+proves the only change is the entry-group reference; synthetic fixture values
+are unchanged. Added the exact rule/path/blob/classification exemption under
+the existing registry, with no wildcard or scan weakening. This P4 evidence
+change does not alter product or ORM test inputs.
