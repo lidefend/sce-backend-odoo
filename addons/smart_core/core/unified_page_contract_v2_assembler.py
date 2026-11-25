@@ -1408,7 +1408,7 @@ def _assert_no_frontend_implementation_identity(value: Any, path: str = "$") -> 
     opaque_value_keys = {
         "dataContract", "dataPatch", "dataMeta", "mainData", "datasets",
         "payload", "actionPayload", "context", "domain", "options", "optionsRaw",
-        "values", "value", "value_json", "valueJson",
+        "values", "value", "value_json", "valueJson", "default_vals",
     }
     if isinstance(value, list):
         for index, item in enumerate(value):

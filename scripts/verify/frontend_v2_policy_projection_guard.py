@@ -326,6 +326,8 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     # implementation identity. The decoder recognizes it only to stop the
     # structural scan at the business-value boundary.
     "value_json",
+    # Relation defaults are business values, not structural semantic declarations.
+    "default_vals",
     # Formal configuration provenance: schema separates draft id=0 from published ids.
     "source_kind",
     "change_set_preview",

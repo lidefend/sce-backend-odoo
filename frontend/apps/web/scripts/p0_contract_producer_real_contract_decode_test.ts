@@ -7,6 +7,11 @@ let strictDescriptorCount = 0;
 const formSnapshot = decodeContractV2Snapshot(formPayload);
 assert.equal(formSnapshot.pageInfo.contractVersion, '2.7.0');
 function assertNoWireComponentIdentity(value: unknown, path = '$'): void {
+  const opaqueValueKeys = new Set([
+    'dataContract', 'dataPatch', 'dataMeta', 'mainData', 'datasets',
+    'payload', 'actionPayload', 'context', 'domain', 'options', 'optionsRaw',
+    'values', 'value', 'value_json', 'valueJson', 'default_vals',
+  ]);
   if (Array.isArray(value)) {
     value.forEach((item, index) => assertNoWireComponentIdentity(item, `${path}[${index}]`));
     return;
@@ -17,6 +22,7 @@ function assertNoWireComponentIdentity(value: unknown, path = '$'): void {
       key !== 'componentKey' && key !== 'component_key' && key !== 'componentRegistry',
       `V2.7 wire leaked frontend implementation identity at ${path}.${key}`,
     );
+    if (opaqueValueKeys.has(key)) return;
     assertNoWireComponentIdentity(child, `${path}.${key}`);
   });
 }

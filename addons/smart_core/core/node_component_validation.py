@@ -47,7 +47,7 @@ _SOURCE_PROOF_KEYS = (
 _OPAQUE_BUSINESS_BRANCHES = frozenset({
     "dataContract", "dataPatch", "dataMeta", "mainData", "datasets",
     "payload", "actionPayload", "context", "domain", "options", "optionsRaw",
-    "values", "value", "value_json", "valueJson",
+    "values", "value", "value_json", "valueJson", "default_vals",
 })
 
 

@@ -97,6 +97,22 @@ class TestSceneHealthParams(unittest.TestCase):
         self.assertEqual(params["accepted_contract_versions"], ["2.7.x"])
         self.assertEqual(params["client_contract_capabilities"], [])
 
+    def test_explicit_camel_case_contract_identity_is_not_overwritten(self):
+        module = _load_handler()
+        handler = module.SceneHealthHandler(context={"trace_id": "trace"})
+
+        handler.handle(payload={"params": {
+            "clientType": "unknown_native",
+            "acceptedContractVersions": ["2.6.x"],
+            "clientContractCapabilities": [],
+        }})
+
+        params = _SystemInitHandler.last_payload["params"]
+        self.assertEqual(params["client_type"], "unknown_native")
+        self.assertEqual(params["accepted_contract_versions"], ["2.6.x"])
+        self.assertNotIn("clientType", params)
+        self.assertNotIn("acceptedContractVersions", params)
+
     def test_system_init_failure_is_propagated(self):
         module = _load_handler()
 

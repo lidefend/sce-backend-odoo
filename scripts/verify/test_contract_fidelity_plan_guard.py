@@ -217,6 +217,62 @@ class ContractVersionNegotiationTest(unittest.TestCase):
             {"page_block_data.v1"},
         )
 
+    def test_internal_helper_preserves_explicit_camel_case_refusals(self):
+        cases = (
+            {
+                "clientType": "web_pc",
+                "acceptedContractVersions": ["2.6.x"],
+            },
+            {
+                "clientType": "unknown_native",
+                "acceptedContractVersions": ["2.7.x"],
+            },
+        )
+        for params in cases:
+            with self.subTest(params=params):
+                normalized = NEGOTIATION_MODULE.with_internal_client_contract(params)
+                with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError):
+                    NEGOTIATION_MODULE.negotiate_payload(normalized)
+
+    def test_internal_helper_defaults_only_missing_declarations(self):
+        normalized = NEGOTIATION_MODULE.with_internal_client_contract({
+            "clientType": "wx_mini",
+            "acceptedContractVersions": ["2.7.x"],
+            "clientContractCapabilities": ["page_block_data.v1"],
+        })
+        self.assertEqual(normalized["client_type"], "wx_mini")
+        self.assertEqual(normalized["accepted_contract_versions"], ["2.7.x"])
+        self.assertEqual(
+            normalized["client_contract_capabilities"],
+            ["page_block_data.v1"],
+        )
+        self.assertNotIn("clientType", normalized)
+        self.assertNotIn("acceptedContractVersions", normalized)
+        self.assertEqual(
+            NEGOTIATION_MODULE.negotiate_payload(normalized)["clientType"],
+            "wx_mini",
+        )
+
+    def test_conflicting_snake_and_camel_declarations_fail_closed(self):
+        with self.assertRaisesRegex(
+            NEGOTIATION_MODULE.ContractNegotiationError,
+            "conflicting declarations",
+        ):
+            NEGOTIATION_MODULE.with_internal_client_contract({
+                "client_type": "web_pc",
+                "clientType": "wx_mini",
+                "accepted_contract_versions": ["2.7.x"],
+            })
+        with self.assertRaisesRegex(
+            NEGOTIATION_MODULE.ContractNegotiationError,
+            "conflicting declarations",
+        ):
+            NEGOTIATION_MODULE.negotiate_payload({
+                "client_type": "web_pc",
+                "clientType": "wx_mini",
+                "accepted_contract_versions": ["2.7.x"],
+            })
+
 
 class PageBlockDataContractTest(unittest.TestCase):
     def test_non_widget_business_value_preserves_raw_type_and_semantics(self):

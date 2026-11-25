@@ -309,7 +309,7 @@ function assertSemanticContractOnly(contract) {
   const opaqueValueKeys = new Set([
     'dataContract', 'dataPatch', 'dataMeta', 'mainData', 'datasets',
     'payload', 'actionPayload', 'context', 'domain', 'options', 'optionsRaw',
-    'values', 'value', 'value_json', 'valueJson',
+    'values', 'value', 'value_json', 'valueJson', 'default_vals',
   ]);
   const visit = (value, path = '$') => {
     if (Array.isArray(value)) {

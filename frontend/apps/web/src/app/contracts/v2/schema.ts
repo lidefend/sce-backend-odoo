@@ -3578,7 +3578,7 @@ function rejectFrontendImplementationIdentity(
   const opaqueValueKeys = new Set([
     'dataContract', 'dataPatch', 'dataMeta', 'mainData', 'datasets',
     'payload', 'actionPayload', 'context', 'domain', 'options', 'optionsRaw',
-    'values', 'value', 'value_json', 'valueJson',
+    'values', 'value', 'value_json', 'valueJson', 'default_vals',
   ]);
   if (Array.isArray(value)) {
     value.forEach((item, index) => rejectFrontendImplementationIdentity(item, issues, `${path}[${index}]`));

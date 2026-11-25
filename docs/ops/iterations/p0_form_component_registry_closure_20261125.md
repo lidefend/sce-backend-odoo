@@ -61,6 +61,31 @@ passed the real ORM money chain and strict decoding of 45 Form descriptors.
 - The V2.7 policy guard, generated component-driver inventory digest and
   remediation source hashes were reconciled to the final source state.
 
+## Independent Review Follow-up
+
+The first exact-head remote run (`31d4b086c318644dcef427836bf2583c12c34344`)
+passed `public_guard`, `frontend_release_gate`, and the completed frontend/managed
+ORM jobs, but failed one backend test and its downstream coverage aggregate.
+Review also found three remaining boundaries. The follow-up changes are:
+
+- The refund feedback HTTP assertion now reports exact JSON paths and value
+  types. It judges partner identity only in the feedback business payload,
+  patches and evaluation details; unrelated session, user and elapsed-time
+  scalars in the intent envelope cannot create a false identity leak.
+- `relationEntry.default_vals` is an opaque business-value branch in backend
+  implementation-identity scanning, backend semantic validation and frontend
+  strict decoding. Structural descriptors and unknown node semantics still fail.
+- Internal negotiation canonicalizes supported snake/camel aliases before
+  supplying defaults. Explicit camelCase versions and client identities remain
+  fail-closed; conflicting aliases are refused.
+- Changed-test selection resolves actual Odoo/unittest inheritance instead of
+  relying on a `Test` name prefix. Existing `SubmissionReadinessNoticeP1Tests`
+  and `SubmissionReadinessNoticeSuppressionTests` are selected, mixed changes
+  retain every ORM class, offline `unittest.TestCase` stays out of ORM routing,
+  and an unrecognized test base blocks the planner.
+- The assembled-contract cache identity is now `v123` with input digest
+  `3d7776d0af5f1841d6590cde846446793b4f096244e649b3368cd05521753d7a`.
+
 ## Runtime Alignment Correction
 
 The first browser retries exposed runtime evidence that initially looked like a
@@ -111,11 +136,11 @@ backend-only.
 
 Candidate identity:
 
-- Base/HEAD: `e940285aed4a9747931c26ec0a52283b5d296d14`
+- Base: `e940285aed4a9747931c26ec0a52283b5d296d14`
 - Branch: `fix/project-ledger-registry-closure-20261125`
-- Dirty candidate; not frozen or committed.
+- The exact follow-up HEAD is recorded by PR #1004 after commit.
 
-Complete affected local iteration:
+The first full affected iteration on `31d4b086` remains the parent-run evidence:
 
 - Receipt:
   `.runtime/frontend-dev-validation/executions/20261125T121530Z-3627665-224518041/receipt.json`
@@ -129,6 +154,27 @@ Complete affected local iteration:
 - `verify.smart_construction_core.module_baseline` and
   `verify.smart_core.close_02.module_baseline` are deferred to exact-head remote
   integration CI.
+
+The review follow-up uses the requested affected set rather than repeating that
+78-target iteration:
+
+- `verify.unified_page_contract.v2.assembler`: passed.
+- `verify.p0_contract_producer.p0a.backend_unit`: passed, 30 checks.
+- `verify.p0_contract_producer.design.unit`: passed.
+- `verify.node_component_validation.unit`: passed, 41 tests.
+- `verify.node_component_capabilities.unit` and
+  `verify.native_widget.provenance.unit`: passed.
+- `verify.p0_contract_producer.p0a.descriptor_conformance`: passed; 45 strict
+  descriptors decoded from the real Form.
+- `verify.frontend.typecheck.strict`, `verify.frontend.lint.src`,
+  `verify.frontend.contract_basis.enforce`, `verify.form_structure_authority_unification.unit`
+  and `verify.contract.structure_lock`: passed.
+- Changed-test selector and incremental planner tests: passed, 253 tests across
+  both registered units.
+- Refund feedback ORM: passed, 10 tests; refund feedback HttpCase: passed, 1
+  test, including the path-aware identity probe.
+- Real `projects.ledger` desktop and mobile browser rerun: passed after using the
+  documented `wutao` demo identity.
 
 Run-bound checks:
 
@@ -154,7 +200,7 @@ Representative passed checks:
 
 Not run:
 
-- Exact-head remote required CI: publication has not been performed.
+- The current follow-up HEAD has not yet been published.
 - Independent review: excluded by the owner's explicit instruction to publish
   the PR without waiting for it. This exclusion is not evidence of review.
 

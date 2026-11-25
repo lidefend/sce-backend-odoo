@@ -69,6 +69,14 @@ businessData.value_json = {
   componentKey: 'ordinary business data',
   componentRegistry: { business: 'value' },
 };
+(strictWidget.fieldDescriptor as Record<string, unknown>).relationEntry = {
+  default_vals: {
+    metadata: {
+      componentKey: 'ordinary business default',
+      semanticType: 'feedback_messsage',
+    },
+  },
+};
 decodeContractV2Snapshot(businessJson);
 
 const unknownNodeSemantic = clone(current);

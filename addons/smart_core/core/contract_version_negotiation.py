@@ -54,6 +54,27 @@ def _string_list(value: Any) -> list[str]:
     return sorted({_text(item) for item in source if _text(item)})
 
 
+def _alias_value(
+    params: dict[str, Any],
+    snake_name: str,
+    camel_name: str,
+) -> tuple[bool, Any]:
+    """Read one declaration while refusing conflicting wire aliases."""
+
+    snake_present = snake_name in params
+    camel_present = camel_name in params
+    if snake_present and camel_present and params[snake_name] != params[camel_name]:
+        raise ContractNegotiationError(
+            REASON_CONTRACT_VERSION_UNSUPPORTED,
+            f"conflicting declarations: {snake_name} and {camel_name}",
+        )
+    if snake_present:
+        return True, params[snake_name]
+    if camel_present:
+        return True, params[camel_name]
+    return False, None
+
+
 def accepted_minors(value: Any) -> tuple[int, ...]:
     """Return supported Contract V2 minor versions declared by the client."""
 
@@ -167,15 +188,25 @@ def with_internal_client_contract(
     """
 
     resolved = dict(params) if isinstance(params, dict) else {}
-    resolved.setdefault("client_type", _text(client_type) or INTERNAL_CLIENT_TYPE)
-    resolved.setdefault(
-        "accepted_contract_versions",
-        list(INTERNAL_ACCEPTED_CONTRACT_VERSIONS),
+    declarations = (
+        ("client_type", "clientType"),
+        ("accepted_contract_versions", "acceptedContractVersions"),
+        ("client_contract_capabilities", "clientContractCapabilities"),
     )
-    resolved.setdefault(
-        "client_contract_capabilities",
-        list(capabilities) if isinstance(capabilities, (list, tuple, set)) else [],
-    )
+    defaults = {
+        "client_type": _text(client_type) or INTERNAL_CLIENT_TYPE,
+        "accepted_contract_versions": list(INTERNAL_ACCEPTED_CONTRACT_VERSIONS),
+        "client_contract_capabilities": (
+            list(capabilities) if isinstance(capabilities, (list, tuple, set)) else []
+        ),
+    }
+    for snake_name, camel_name in declarations:
+        present, value = _alias_value(resolved, snake_name, camel_name)
+        if present:
+            resolved[snake_name] = value
+            resolved.pop(camel_name, None)
+        else:
+            resolved[snake_name] = defaults[snake_name]
     return resolved
 
 
@@ -189,20 +220,19 @@ def negotiate_payload(
     envelope = payload if isinstance(payload, dict) else {}
     params = envelope.get("params") if isinstance(envelope.get("params"), dict) else envelope
     source_headers = headers if isinstance(headers, dict) else {}
-    client_type = (
+    client_header = (
         source_headers.get("X-SC-Client-Type")
         or source_headers.get("x-sc-client-type")
-        or params.get("client_type")
-        or params.get("clientType")
+    )
+    _client_present, declared_client = _alias_value(params, "client_type", "clientType")
+    _versions_present, accepted_versions = _alias_value(
+        params, "accepted_contract_versions", "acceptedContractVersions",
+    )
+    _capabilities_present, capabilities = _alias_value(
+        params, "client_contract_capabilities", "clientContractCapabilities",
     )
     return negotiate_client_contract(
-        client_type=client_type,
-        accepted_contract_versions=(
-            params.get("accepted_contract_versions")
-            or params.get("acceptedContractVersions")
-        ),
-        client_contract_capabilities=(
-            params.get("client_contract_capabilities")
-            or params.get("clientContractCapabilities")
-        ),
+        client_type=client_header or declared_client,
+        accepted_contract_versions=accepted_versions,
+        client_contract_capabilities=capabilities,
     )

@@ -186,6 +186,16 @@ class NativeWidgetContractBridgeTest(unittest.TestCase):
             "componentKey": "ordinary business data",
             "componentRegistry": {"business": "value"},
         }
+        business_value["layoutContract"]["containerTree"][0]["children"][0]["widgetList"][0][
+            "fieldDescriptor"
+        ]["relationEntry"] = {
+            "default_vals": {
+                "metadata": {
+                    "componentKey": "ordinary business default",
+                    "componentRegistry": {"business": "default"},
+                },
+            },
+        }
         _assert_no_frontend_implementation_identity(business_value)
 
         business_patch = assemble_unified_page_patch_v2({

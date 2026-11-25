@@ -635,6 +635,22 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertIn("verify.business_config.unit", targets)
         self.assertNotIn("verify.changed_tests.orm", targets)
 
+    def test_non_test_prefix_orm_classes_keep_changed_orm_route(self):
+        paths = [
+            "addons/smart_core/tests/test_submission_readiness_notice_suppression.py",
+            "addons/smart_construction_core/tests/test_submission_readiness_notice_p1.py",
+        ]
+        for path in paths:
+            with self.subTest(path=path):
+                self.assertIn("verify.changed_tests.orm", select_iteration_targets([path]))
+        self.assertIn(
+            "verify.changed_tests.orm",
+            select_iteration_targets([
+                "addons/smart_core/tests/test_localized_display.py",
+                "addons/smart_core/tests/test_submission_readiness_notice_suppression.py",
+            ]),
+        )
+
     def test_production_change_keeps_owning_module_baseline(self):
         targets = select_iteration_targets([
             "addons/smart_core/handlers/business_config_change_set.py",

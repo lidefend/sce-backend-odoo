@@ -5,7 +5,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from test_record_error_proof import Record, REVIEW, trees
-from core.node_component_validation import validate_final_nodes
+from core.node_component_validation import validate_declared_semantics, validate_final_nodes
 from core.form_configuration_compiler import FormConfigurationError
 from core.unified_page_contract_v2_assembler import assemble_unified_page_contract_v2, _fingerprint
 from core.field_presentation_usage import assert_field_body_usage
@@ -61,6 +61,19 @@ class NodeValidationTests(unittest.TestCase):
         self.host['semanticType'] = 'feedback_messsage'
         self.host['componentConfig'] = {}
         self.reject('NODE_SEMANTIC_UNKNOWN')
+
+    def test_relation_default_business_semantic_is_not_a_node_declaration(self):
+        validate_declared_semantics({
+            "fieldDescriptor": {
+                "relationEntry": {
+                    "default_vals": {
+                        "metadata": {
+                            "semanticType": "feedback_messsage",
+                        },
+                    },
+                },
+            },
+        })
 
     def test_inactive_and_empty(self):
         self.host['componentConfig']['purpose'] = 'advisory'

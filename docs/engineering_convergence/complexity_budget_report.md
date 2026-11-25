@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `5372`
 - Files requiring split plan: `88`
-- Files above warning threshold: `165`
+- Files above warning threshold: `166`
 
 ## Split Plan Required
 
@@ -18,7 +18,7 @@ Generated from repository source files. This report is informational during the 
 | 5951 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5059 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 5037 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 5053 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 5028 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4844 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4685 | Python source | `scripts/verify/frontend_dev_incremental.py` |
@@ -183,7 +183,7 @@ Generated from repository source files. This report is informational during the 
 | 1062 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 1060 | Python source | `scripts/ops/agent_run_context.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
-| 1040 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
+| 1042 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 1038 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 1019 | Python source | `scripts/contract/snapshot_export.py` |
 | 1016 | Python source | `addons/smart_core/tests/test_platform_capability_explorer.py` |
@@ -222,6 +222,7 @@ Generated from repository source files. This report is informational during the 
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 875 | Python source | `addons/smart_core/core/node_component_validation.py` |
+| 865 | Python source | `addons/smart_construction_core/tests/test_company_project_refund_feedback.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 859 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
@@ -281,7 +282,7 @@ Generated from repository source files. This report is informational during the 
 | 5951 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5059 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 5037 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 5053 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 5028 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4844 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4685 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
