@@ -55,6 +55,16 @@ Stopped without deleting volumes:
 Historical `sc-backend-odoo-dev`, the active named tenant development stack, a
 separate UAT stack, MySQL and the public site service were preserved.
 
+## Integration and closeout
+
+- PR #1000 merged at `2026-11-25T01:04:55Z`.
+- Source HEAD: `4559a881f05442f1e3cde7604171b58430f130f1`.
+- Main merge commit: `da10143779c9f96afb165c30e7f74c51a1192657`.
+- The active-run binding is removed after the merged tooling result becomes
+  mainline history; the run remains as a completed historical record.
+- The source workspace returns to `main`. Pre-existing dirty worktrees, open PRs
+  and unmerged branches are excluded from this closeout.
+
 ## Exclusions
 
 No demo rebuild or seed, no database volume deletion, no production deployment.
