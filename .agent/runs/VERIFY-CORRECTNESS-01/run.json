@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "baseline_sha": "e940285aed4a9747931c26ec0a52283b5d296d14",
+  "baseline_sha": "fe1573b21c15c67d388eb7e1064561b41334b5c2",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/VERIFY-CORRECTNESS-01.yaml",
@@ -76,6 +76,8 @@
         "scripts/ci/ci_risk_classifier.py",
         "scripts/ci/test_ci_risk_classifier.py",
         "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ops/github_published_branch_sync.py",
+    "scripts/ops/test_github_published_branch_sync.py",
         "make/ci.mk",
         "make/frontend.mk",
         "config/ci/path_ownership_v1.json"

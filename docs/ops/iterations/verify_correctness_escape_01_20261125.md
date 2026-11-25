@@ -3,7 +3,7 @@
 ## Identity
 
 - Audit baseline: `main@032990188abea05a5d2ab81313136c431e5f89b3`
-- Integrated candidate base: `main@e940285aed4a9747931c26ec0a52283b5d296d14`
+- Integrated candidate base: `main@fe1573b21c15c67d388eb7e1064561b41334b5c2`
 - Candidate branch: `fix/verify-correctness-escape-01-20261125`
 - Layer: P4 verification and CI control plane
 - Environment: offline; no database, deployment or remote mutation
@@ -124,6 +124,14 @@ convergence steps passed, but the result-recording shell branch incorrectly
 required `frontend_mode=skip` when no diagnostic was requested. The branch is
 now a no-op after the already-validated standard outcome, and a focused workflow
 contract test executes the real recording script for that exact case.
+
+The second mainline update was `fe1573b21c15c67d388eb7e1064561b41334b5c2`
+(PR #1004, Contract V2.7). The published-candidate sync preserved history in
+merge commit `1f106acefc2fe66e7b28e03fdc3b373bf965250e`. The only semantic
+conflict was the standalone parser test: this batch adds the additive
+`open_form` regression, while main adds ORM field-capability projection and V2.7
+semantic identity. The committed union retains both. Generated-report conflicts
+remain invalidated until the final freeze preparation rebuilds them.
 
 ## Retained failure and recovery
 
