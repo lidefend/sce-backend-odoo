@@ -134,5 +134,3 @@ class TestRoleCapabilityAuthority(TransactionCase):
             menu = self.env.ref(menu_xmlid)
             expected = self.env.ref(f"smart_construction_core.group_sc_{entry_key}")
             self.assertEqual(menu.groups_id, expected, menu_xmlid)
-
-
