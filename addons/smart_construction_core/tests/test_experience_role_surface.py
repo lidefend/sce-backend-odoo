@@ -30,7 +30,7 @@ class TestExperienceRolePermissions(TransactionCase):
     def test_marker_and_login_rename_do_not_grant_business_permissions(self):
         group = self.env.ref('smart_construction_core.group_sc_role_experience')
         self.assertEqual(set(group.implied_ids.ids), {
-            self.env.ref('smart_construction_core.group_sc_internal_user').id,
+            self.env.ref('smart_construction_core.group_sc_cap_internal_identity').id,
             self.env.ref('smart_construction_core.group_sc_cap_entry_scope_full').id,
         })
         self.assertFalse(any(
@@ -51,6 +51,43 @@ class TestExperienceRolePermissions(TransactionCase):
         self.assertEqual(resolver.resolve(user.with_user(user).env)['role_code'], 'experience')
         user.groups_id = [(3, group.id)]
         self.assertNotEqual(resolver.resolve(user.with_user(user).env)['role_code'], 'experience')
+
+    def test_experience_keeps_native_business_acl_equal_to_plain_internal_identity(self):
+        base = self.env.ref('base.group_user')
+        role = self.env.ref('smart_construction_core.group_sc_role_experience')
+        bridge = self.env.ref('smart_construction_core.group_sc_cap_internal_identity')
+        internal = self.env.ref('smart_construction_core.group_sc_internal_user')
+        self.assertEqual(bridge.implied_ids, base)
+        self.assertFalse(self.env['ir.model.access'].search([('group_id', '=', bridge.id)]))
+        plain = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Plain identity ACL control', 'login': 'plain-identity-acl-control',
+            'groups_id': [(6, 0, [base.id])],
+        })
+        experience = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Experience ACL regression', 'login': 'experience-acl-regression',
+            'groups_id': [(6, 0, [role.id])],
+        })
+        self.assertNotIn(internal, experience.groups_id)
+        self.assertNotIn(self.env.ref('smart_core.group_smart_core_data_operator'), experience.groups_id)
+        models = set(self.env['ir.model.access'].search([
+            ('group_id', '=', internal.id), ('active', '=', True),
+        ]).mapped('model_id.model'))
+        required = {
+            'sc.labor.price', 'sc.equipment.price', 'sc.subcontract.price',
+            'sc.labor.request', 'sc.equipment.plan', 'sc.subcontract.request',
+        }
+        self.assertTrue(required <= models)
+        self.assertGreaterEqual(len(models), 21)
+        for model in sorted(models):
+            for operation in ('read', 'create', 'write', 'unlink'):
+                with self.subTest(model=model, operation=operation):
+                    actual = self.env[model].with_user(experience).check_access_rights(
+                        operation, raise_exception=False)
+                    expected = self.env[model].with_user(plain).check_access_rights(
+                        operation, raise_exception=False)
+                    self.assertEqual(actual, expected)
+                    if model in required:
+                        self.assertFalse(actual)
 
     def test_role_switch_keeps_actual_finance_permissions(self):
         marker = self.env.ref('smart_construction_core.group_sc_role_experience')

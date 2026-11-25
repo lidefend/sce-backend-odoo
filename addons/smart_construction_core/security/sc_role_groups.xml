@@ -5,7 +5,7 @@
             <field name="name">SC 角色 - 体验用户</field>
             <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
             <field name="implied_ids" eval="[(6, 0, [
-                ref('smart_construction_core.group_sc_internal_user')
+                ref('smart_construction_core.group_sc_cap_internal_identity')
             ])]"/>
             <field name="comment">体验身份标记；业务能力由另外分配的正式角色及原生访问规则决定。</field>
         </record>

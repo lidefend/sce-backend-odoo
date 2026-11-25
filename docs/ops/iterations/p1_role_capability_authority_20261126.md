@@ -271,3 +271,35 @@ proves the only change is the entry-group reference; synthetic fixture values
 are unchanged. Added the exact rule/path/blob/classification exemption under
 the existing registry, with no wildcard or scan weakening. This P4 evidence
 change does not alter product or ORM test inputs.
+
+## REQUEST_CHANGES remediation: preserve experience business authorization
+
+Independent review of `6a548785dbc1ca544f871235e7f607e19a855026` found that
+routing experience identity through `group_sc_internal_user` added P1 business
+ACLs despite unchanged entry closure. This was a genuine authorization regression.
+The role now uses `group_sc_cap_internal_identity`, which implies only
+`base.group_user` and owns no model ACL. The P1 module version is `17.0.0.188`.
+Entry visibility still flows through its existing explicit scope capabilities.
+
+New static and loaded-ORM assertions compare the complete non-entry closure with
+native internal identity. A real user carrying only the experience role is compared
+against a base.group_user-only control over every active ACL model granted to the
+industry internal group (at least 21), for read/create/write/unlink. Labor, equipment
+and subcontract prices plus request/plan models are explicitly required and denied.
+Neither the industry internal group nor data_operator may enter experience groups.
+
+Governed isolated ORM passed 14 methods with zero failures/errors. Receipt:
+`.runtime/test-baseline/1795641281717555660/receipt.json`; source, test surface and
+profile remained unchanged, and the transient application carrier is absent.
+Exact attempt: `sc_test_6b0769da09e2_cf54e9a34ec0`, project
+`sc-local-test-6b0769da09e2`, role `sc_test_odoo`. The runner rebuilt the changed
+synthetic template. This is disposable test evidence, not a persistent upgrade
+or deployment. No real business data or persistent database was modified.
+
+P1 owns this safety correction; P0, frontend and customer configuration remain
+excluded. Local checks cover the role graph, role consumers and the named ORM
+classes; owning-module baseline remains remote. Re-review and exact-head required
+CI remain pending. Following #1003 integration, use governed main synchronization
+and reconcile the two coverage-registry collisions against the actual merged Make
+entries; generated reports must be regenerated, not chosen by text conflict side.
+Rollback is the bounded source commit, never an assertion of database restoration.

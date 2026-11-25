@@ -127,6 +127,15 @@ class TestRoleCapabilityAuthority(TransactionCase):
             "full entry scope must compose all 14 scoped capabilities",
         )
 
+    def test_experience_non_entry_closure_is_only_native_internal_identity(self):
+        role = self.env.ref("smart_construction_core.group_sc_role_experience")
+        bridge = self.env.ref("smart_construction_core.group_sc_cap_internal_identity")
+        base = self.env.ref("base.group_user")
+        entry_scope = self._closure(self.env.ref(
+            "smart_construction_core.group_sc_cap_entry_scope_full"))
+        self.assertEqual(self._closure(role) - role - bridge - entry_scope, self._closure(base))
+        self.assertEqual(bridge.implied_ids, base)
+
     def test_rebound_menus_keep_their_entry_carrier(self):
         mapping_path = Path(__file__).resolve().parents[1] / "data/menu_entry_group_rebinding.json"
         mapping = json.loads(mapping_path.read_text(encoding="utf-8"))

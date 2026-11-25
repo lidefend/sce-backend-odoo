@@ -119,6 +119,22 @@ class RoleCapabilityGroupAuthorityGuardTest(unittest.TestCase):
             xmlid = f"smart_construction_core.{role}"
             self.assertEqual(closure(xmlid), expected_carriers, role)
 
+    def test_experience_non_entry_closure_has_no_business_capability(self):
+        graph = group_graph(manifest_group_xml_paths())
+        role = "smart_construction_core.group_sc_role_experience"
+        bridge = "smart_construction_core.group_sc_cap_internal_identity"
+        self.assertEqual(graph[bridge], {"base.group_user"})
+        seen, pending = set(), [role]
+        while pending:
+            node = pending.pop()
+            if node not in seen:
+                seen.add(node)
+                pending.extend(graph.get(node, ()))
+        non_entry = {node for node in seen if not any(
+            token in node for token in (".group_sc_entry_p", ".group_sc_cap_entry_scope_")
+        )}
+        self.assertEqual(non_entry, {role, bridge, "base.group_user"})
+
     def test_repository_acceptance_authority_matches_rebinding_fact(self):
         self.assertEqual(acceptance_role_authority_violations(), [])
 

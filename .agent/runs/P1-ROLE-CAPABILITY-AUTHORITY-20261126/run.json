@@ -255,8 +255,10 @@
       ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "Commit the prepared candidate, complete independent review and evidence archive, then publish the exact-head PR through the governed Make entry.",
+  "blockers": [
+    "Independent re-review required after the experience authorization correction; prior REQUEST_CHANGES remains in force."
+  ],
+  "next_exact_step": "Publish experience ACL remediation for re-review; after #1003 protected integration, governably sync main, reconcile duplicate registry ownership and generated evidence, and verify the new exact-head candidate.",
   "goal": ".agent/goals/P1-ROLE-CAPABILITY-AUTHORITY-20261126.yaml",
   "record": "docs/ops/iterations/p1_role_capability_authority_20261126.md",
   "evidence": {
@@ -267,6 +269,8 @@
     "local_iteration": ".runtime/frontend-dev-validation/executions/20261125T203144Z-2554244-644322999/receipt.json",
     "local_iteration_log": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/continue-iteration.log",
     "freeze_prepare_log": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/freeze-prepare.log",
-    "public_scan_initial": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/public-scan.log"
+    "public_scan_initial": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/public-scan.log",
+    "experience_acl_review": ".runtime/test-baseline/1795641281717555660/receipt.json",
+    "role_review_consumers": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/review-role-consumers.log"
   }
 }

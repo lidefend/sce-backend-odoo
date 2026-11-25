@@ -14,7 +14,7 @@
 
         <!-- =========================================================
              基础组：SC 内部用户
-             - 唯一负责 implied base.group_user
+             - 组合内部身份及业务数据操作能力
              - 默认组合业务发起能力
         ========================================================== -->
         <record id="group_sc_internal_user" model="res.groups">
@@ -24,6 +24,13 @@
                 ref('base.group_user'),
                 ref('smart_core.group_smart_core_data_operator')
             ])]"/>
+        </record>
+
+        <!-- Login identity only: no P1 model ACLs or data-operator grants. -->
+        <record id="group_sc_cap_internal_identity" model="res.groups">
+            <field name="name">SC 能力 - 内部登录身份</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+            <field name="implied_ids" eval="[(6, 0, [ref('base.group_user')])]"/>
         </record>
 
         <!-- Entry visibility is a capability, not a role identity.
