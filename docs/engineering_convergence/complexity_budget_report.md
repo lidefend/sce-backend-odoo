@@ -64,10 +64,10 @@ Generated from repository source files. This report is informational during the 
 | 1930 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1897 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
-| 1872 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1870 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1866 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
+| 1857 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1825 | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
 | 1819 | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1805 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
@@ -329,10 +329,10 @@ Generated from repository source files. This report is informational during the 
 | 1930 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1897 | split_plan_required | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
-| 1872 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1870 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1866 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
+| 1857 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1825 | split_plan_required | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
 | 1819 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1805 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |

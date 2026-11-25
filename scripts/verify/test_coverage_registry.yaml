@@ -1,20 +1,5 @@
 version: 1
 entries:
-- group: p0_contract_descriptor_conformance_evidence
-  kind: odoo_tag
-  status: on-demand
-  owner: platform-team
-  dispose: class-selected
-  gate: 'make:verify.p0_contract_producer.p0a.descriptor_conformance :: /smart_construction_core:TestP0ContractDescriptorConformanceEvidence'
-  reason: The descriptor evidence producer selects this ORM class through governed local.test and verifies the emitted contract. This registration does not claim a current successful execution.
-- group: workflow_contract_platform
-  kind: odoo_tag
-  status: unwired
-  owner: platform-team
-  dispose: class-selected
-  gate: 'make:verify.smart_core.close_02.module_baseline :: /smart_core:TestWorkflowContractPlatform'
-  reason: Included in the smart_core owning-module baseline; static tag discovery does not resolve module-wide selection. No standalone tag gate or current execution is claimed.
-  review_by: '2026-12-31'
 - group: role_capability_authority
   kind: odoo_tag
   status: unwired

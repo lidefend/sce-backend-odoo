@@ -303,3 +303,11 @@ CI remain pending. Following #1003 integration, use governed main synchronizatio
 and reconcile the two coverage-registry collisions against the actual merged Make
 entries; generated reports must be regenerated, not chosen by text conflict side.
 Rollback is the bounded source commit, never an assertion of database restoration.
+
+### Main integration after #1003
+
+Owner authorized #1003 merge and continued #1006 closeout. #1003 merged through protected Make entrypoint as d2e69f0e0e65fe1bb1d76947e612cca34d4e75ae after all required checks and exact-head product/demo/acceptance receipt passed. Governed published-branch sync appended that main to e409fca3c, producing 0e7d196d041d782577bfbfbefa86c006900352f3; three derived reports were resolved pending regeneration. Removed duplicate descriptor/workflow registry entries, retaining main's on-demand workflow entry bound to the new verify.workflow_contract.platform.orm target. Prior #1006 backend failures were V2.7 test-caller mismatches corrected by main. Preserve experience minimal identity bridge and all ACL/entry assertions.
+
+Local scope: role capability guards, entry/landing consumers, coverage registry, generated evidence. Previously passed 14 role ORM methods retain unchanged role source/test inputs; merged V2.7 caller fixes have #1003 remote evidence, while integrated #1006 remote checks remain mandatory. Scheduled release and deployment are excluded from this PR closeout. Original sync evidence: `.runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/main-sync.log`; original failed CI evidence retained as `remote-backend-failure.log`.
+
+Post-sync targeted checks passed: role capability authority, role exposure declaration, business entry universe, landing contract (35 tests), coverage registry (21 tests, 232 unique groups). Generated-evidence preparation passed. Logs: `sync-targeted.log`, `sync-freeze.log` in the existing runtime directory. Diff verification confirmed the experience role/security and two permission ORM test files unchanged from e409fca3c.

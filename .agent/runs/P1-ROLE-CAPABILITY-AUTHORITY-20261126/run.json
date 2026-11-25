@@ -3,7 +3,7 @@
   "id": "P1-ROLE-CAPABILITY-AUTHORITY-20261126",
   "branch": "fix/p1-role-capability-authority-20261126",
   "status": "verification_pending",
-  "baseline_sha": "487a3d8497cd89841e1954d164e0e11d79742d81",
+  "baseline_sha": "d2e69f0e0e65fe1bb1d76947e612cca34d4e75ae",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/P1-ROLE-CAPABILITY-AUTHORITY-20261126.yaml",
@@ -256,9 +256,9 @@
     }
   },
   "blockers": [
-    "Independent re-review required after the experience authorization correction; prior REQUEST_CHANGES remains in force."
+    "New exact-head integration and independent re-review required after main synchronization."
   ],
-  "next_exact_step": "Publish experience ACL remediation for re-review; after #1003 protected integration, governably sync main, reconcile duplicate registry ownership and generated evidence, and verify the new exact-head candidate.",
+  "next_exact_step": "Validate merged-main role/registry surfaces, publish updated #1006, verify all exact-head integration checks and retain independent review requirement.",
   "goal": ".agent/goals/P1-ROLE-CAPABILITY-AUTHORITY-20261126.yaml",
   "record": "docs/ops/iterations/p1_role_capability_authority_20261126.md",
   "evidence": {
