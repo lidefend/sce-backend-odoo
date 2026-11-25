@@ -5,7 +5,6 @@ import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mj
 const entryId = '\0workflow-disabled-reason-browser-entry';
 const reason = '先完成审批前置条件';
 const overflowReason = '当前记录不允许归档';
-const providerUrl = `/@fs${new URL('../../../packages/ui/src/components/SceneUiProvider.vue', import.meta.url).pathname}`;
 const server = await createServer({
   root: new URL('..', import.meta.url).pathname,
   logLevel: 'error',
@@ -23,7 +22,7 @@ const server = await createServer({
       if (id !== entryId) return undefined;
       return `
         import { createApp, defineComponent, h, ref } from 'vue';
-        import SceneUiProvider from ${JSON.stringify(providerUrl)};
+        import { SceneUiProvider } from '@sc/ui/form';
         import CanonicalActionBar from '/src/pages/contractForm/CanonicalActionBar.vue';
         import { provideActionExecutionIdentity } from '/src/pages/contractForm/actionInteractionState.ts';
         import '/src/styles/design-system.css';
@@ -122,7 +121,13 @@ try {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`http://127.0.0.1:${address.port}/__workflow_disabled_reason.html`);
     const bar = page.locator('[data-harness="workflow"] [data-canonical-action-bar]');
-    await bar.waitFor({ state: 'visible' });
+    await bar.waitFor({ state: 'visible' }).catch(async (error) => {
+      throw new Error(
+        `workflow harness did not render at width=${width}: ${error.message}; `
+        + `console=${JSON.stringify(errors)}; `
+        + `body=${JSON.stringify((await page.locator('body').innerText()).slice(0, 1000))}`,
+      );
+    });
     const denied = bar.locator('[data-action-key="approve"]');
     const trigger = bar.locator('[data-workflow-reason-trigger="approve"]');
     await trigger.waitFor({ state: 'visible' });

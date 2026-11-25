@@ -888,6 +888,7 @@ verify.p0_contract_producer.p0a.backend_unit: guard.prod.forbid
 		addons/smart_core/core/page_contracts_builder.py \
 		addons/smart_core/core/unified_page_contract_v2_assembler.py \
 		addons/smart_core/handlers/system_init.py \
+		addons/smart_core/handlers/scene_health.py \
 		addons/smart_core/handlers/ui_contract_v2.py \
 		addons/smart_construction_core/handlers/dashboard_company_enter.py \
 		addons/smart_construction_core/handlers/workspace_home_enter.py \
@@ -898,10 +899,13 @@ verify.p0_contract_producer.p0a.backend_unit: guard.prod.forbid
 		addons/smart_core/tests/test_native_widget_contract_bridge.py \
 		addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py \
 		addons/smart_core/tests/test_page_contracts_builder_boundaries.py
+	@python3 -m py_compile \
+		addons/smart_core/tests/test_scene_health_params.py
 	@python3 addons/smart_core/tests/test_contract_runtime_semantic_resolver.py
 	@python3 addons/smart_core/tests/test_native_widget_contract_bridge.py
 	@python3 addons/smart_core/tests/test_page_contracts_builder_boundaries.py
 	@python3 addons/smart_construction_core/tests/test_scene_block_schema_contract.py
+	@python3 addons/smart_core/tests/test_scene_health_params.py
 
 .PHONY: verify.p0_contract_producer.p0a.money verify.p0_contract_producer.p0a.descriptor_conformance verify.p0_contract_producer.p0a.browser
 verify.p0_contract_producer.p0a.money: guard.prod.forbid

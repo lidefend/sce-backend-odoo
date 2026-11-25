@@ -10,6 +10,8 @@ from pathlib import Path
 
 
 CORE_DIR = Path(__file__).resolve().parents[1] / "core"
+sys.path.insert(0, str(CORE_DIR.parent))
+from core.contract_runtime import semantic_resolver  # noqa: E402
 
 
 def _load_assembler():
@@ -274,35 +276,36 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "ACTION_VIEW_SCOPE_MISMATCH"):
             self.assembler._validate_action_view_scope(contract)
 
-    def test_business_value_component_keys_follow_field_metadata(self):
+    def test_business_value_semantics_follow_field_metadata(self):
         cases = (
-            ({"type": "monetary"}, "number", "sc.value.money"),
-            ({"type": "many2one", "relation": "res.currency"}, "select", "sc.relation.many2one"),
-            ({"type": "float"}, "percentage", "sc.value.percentage"),
-            ({"type": "selection"}, "statusbar", "sc.display.status"),
-            ({"type": "selection"}, "badge", "sc.display.status"),
-            ({"type": "float"}, "float_time", "sc.value.duration"),
-            ({"type": "many2one", "relation": "res.users"}, "select", "sc.relation.many2one"),
-            ({"type": "many2one", "relation": "res.company"}, "select", "sc.relation.many2one"),
-            ({"type": "many2one", "relation": "x.related"}, "select", "sc.relation.many2one"),
-            ({"type": "many2many", "relation": "x.related"}, "table", "sc.relation.many2many"),
-            ({"type": "many2many", "relation": "res.users"}, "table", "sc.relation.many2many"),
-            ({"type": "many2many", "relation": "res.users"}, "many2many_tags", "sc.select.tags"),
-            ({"type": "one2many", "relation": "x.line"}, "table", "sc.relation.table"),
+            ({"type": "monetary"}, "number", "money"),
+            ({"type": "many2one", "relation": "res.currency"}, "select", "relation"),
+            ({"type": "float"}, "percentage", "percentage"),
+            ({"type": "selection"}, "statusbar", "status"),
+            ({"type": "selection"}, "badge", "status"),
+            ({"type": "float"}, "float_time", "duration"),
+            ({"type": "many2one", "relation": "res.users"}, "select", "relation"),
+            ({"type": "many2one", "relation": "res.company"}, "select", "relation"),
+            ({"type": "many2one", "relation": "x.related"}, "select", "relation"),
+            ({"type": "many2many", "relation": "x.related"}, "table", "relation_collection"),
+            ({"type": "many2many", "relation": "res.users"}, "table", "relation_collection"),
+            ({"type": "many2many", "relation": "res.users"}, "many2many_tags", "tag_collection"),
+            ({"type": "one2many", "relation": "x.line"}, "table", "detail_collection"),
         )
         for descriptor, widget_type, expected in cases:
             with self.subTest(expected=expected):
-                self.assertEqual(self.assembler._component_key(widget_type, descriptor), expected)
+                self.assertEqual(semantic_resolver.semantic_of(widget_type, descriptor), expected)
                 widget = self.assembler._field_widget(
                     {"name": "value", "string": "Value", **descriptor, "widget": widget_type},
                     layout_type="form",
                 )
-                self.assertEqual(widget["componentKey"], expected)
+                self.assertEqual(widget["semanticType"], expected)
+                self.assertNotIn("componentKey", widget)
 
-    def test_business_value_component_keys_do_not_guess_from_field_names(self):
+    def test_business_value_semantics_do_not_guess_from_field_names(self):
         self.assertEqual(
-            self.assembler._component_key("number", {"name": "payment_percentage", "type": "float"}),
-            "sc.input.number",
+            semantic_resolver.semantic_of("number", {"name": "payment_percentage", "type": "float"}),
+            "number",
         )
 
     def test_json_field_declares_readable_display_instead_of_a_text_input(self):
@@ -321,7 +324,8 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                     layout_type="form",
                 )
                 self.assertEqual(widget["widgetType"], "display")
-                self.assertEqual(widget["componentKey"], "sc.display.text")
+                self.assertEqual(widget["semanticType"], "readable_value")
+                self.assertNotIn("componentKey", widget)
 
     def test_reference_field_declares_readable_display_instead_of_a_text_input(self):
         # A ``many2one_reference`` value is a (model, id) pair the client
@@ -342,7 +346,8 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                     layout_type="form",
                 )
                 self.assertEqual(widget["widgetType"], "display")
-                self.assertEqual(widget["componentKey"], "sc.display.text")
+                self.assertEqual(widget["semanticType"], "reference")
+                self.assertNotIn("componentKey", widget)
                 config = widget["componentConfig"]
                 # The declared type and the target-model authority survive; the
                 # widget is not disguised as text and not smuggled as a string.
@@ -350,13 +355,13 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                 self.assertEqual(config["model_field"], "sc_source_model")
                 self.assertEqual(config["referenceModelField"], "sc_source_model")
 
-    def test_reference_component_key_never_binds_a_text_input(self):
+    def test_reference_semantic_never_binds_an_editor_component(self):
         for field_type in ("many2one_reference", "reference"):
             for widget_type in ("input", field_type, "select", "number"):
                 with self.subTest(field_type=field_type, widget_type=widget_type):
                     self.assertEqual(
-                        self.assembler._component_key(widget_type, {"name": "src", "type": field_type}),
-                        "sc.display.text",
+                        semantic_resolver.semantic_of(widget_type, {"name": "src", "type": field_type}),
+                        "reference",
                     )
 
     def test_native_field_descriptor_carries_the_reference_target_model_only_when_declared(self):
@@ -472,7 +477,8 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
             layout_type="form",
         )
 
-        self.assertEqual(widget["componentKey"], "sc.unsupported.native_widget")
+        self.assertEqual(widget["semanticType"], "unsupported_native_widget")
+        self.assertNotIn("componentKey", widget)
         self.assertEqual(widget["componentConfig"]["nativeWidget"], "future_editor")
         self.assertEqual(
             widget["componentConfig"]["widgetProvenance"],
@@ -504,7 +510,7 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                 "source": "model_metadata_derived",
                 "native": "",
                 "node_widget": "input",
-                "component": "sc.input.text",
+                "semantic": "text",
                 "status": "not_applicable",
             },
             {
@@ -518,7 +524,7 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                 "source": "compatibility_default",
                 "native": "",
                 "node_widget": "input",
-                "component": "sc.input.text",
+                "semantic": "text",
                 "status": "not_applicable",
             },
             {
@@ -537,7 +543,7 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                 "source": "native_explicit",
                 "native": "future_editor",
                 "node_widget": "future_editor",
-                "component": "sc.unsupported.native_widget",
+                "semantic": "unsupported_native_widget",
                 "status": "unsupported",
             },
             {
@@ -556,7 +562,7 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                 "source": "native_explicit",
                 "native": "daterange",
                 "node_widget": "daterange",
-                "component": "sc.input.date",
+                "semantic": "date",
                 "status": "ready",
             },
         )
@@ -573,7 +579,8 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                 self.assertEqual(provenance["nativeWidget"], case["native"])
                 self.assertEqual(provenance["resolutionStatus"], case["status"])
                 self.assertEqual(config.get("nativeWidget", ""), case["native"])
-                self.assertEqual(node["componentKey"], case["component"])
+                self.assertEqual(node["semanticType"], case["semantic"])
+                self.assertNotIn("componentKey", node)
                 self.assertEqual(node["fieldInfo"]["widget"], case["node_widget"])
                 formal_source = self.assembler._field_source_with_node_info(
                     node,
@@ -584,7 +591,8 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                 formal_provenance = formal_widget["componentConfig"]["widgetProvenance"]
                 self.assertEqual(formal_provenance["widgetSource"], case["source"])
                 self.assertEqual(formal_provenance["nativeWidget"], case["native"])
-                self.assertEqual(formal_widget["componentKey"], case["component"])
+                self.assertEqual(formal_widget["semanticType"], case["semantic"])
+                self.assertNotIn("componentKey", formal_widget)
 
     def test_form_node_assembly_preserves_native_domain_in_existing_descriptor(self):
         raw = "[('project_id', '=', project_id)]"
@@ -721,10 +729,10 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         )
 
         nodes = contract["layoutContract"]["containerTree"]
-        self.assertEqual([node["componentKey"] for node in nodes], [
-            "sc.display.ribbon",
-            "sc.display.ribbon",
-            "sc.unsupported.native_node",
+        self.assertEqual([node["semanticType"] for node in nodes], [
+            "display_ribbon",
+            "display_ribbon",
+            "unsupported_native_node",
         ])
         self.assertEqual([node["nativeIdentity"]["kind"] for node in nodes], ["widget", "widget", "widget"])
         self.assertNotEqual(nodes[0]["nativeIdentity"]["occurrenceKey"], nodes[1]["nativeIdentity"]["occurrenceKey"])
@@ -736,11 +744,8 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         )
         self.assertEqual(nodes[2]["componentConfig"]["nativeWidget"], "sc_stage_requirements")
         self.assertTrue(all("fieldCode" not in node and "fieldDescriptor" not in node for node in nodes))
-        self.assertEqual(contract["layoutContract"]["componentRegistry"]["sc.display.ribbon"], {"version": "1.0.0"})
-        self.assertEqual(
-            contract["layoutContract"]["componentRegistry"]["sc.unsupported.native_node"],
-            {"version": "1.0.0"},
-        )
+        self.assertNotIn("componentRegistry", contract["layoutContract"])
+        self.assertTrue(all("componentKey" not in node for node in nodes))
 
         conflict_name = {
             "model": "project.project",
@@ -802,7 +807,7 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
             request_id="test.form.embedded.widget.missing_identity",
         )
         missing_widget = missing_contract["layoutContract"]["containerTree"][0]
-        self.assertEqual(missing_widget["componentKey"], "sc.unsupported.native_node")
+        self.assertEqual(missing_widget["semanticType"], "unsupported_native_node")
         self.assertEqual(missing_widget["componentConfig"]["widgetStatus"], "unsupported")
         self.assertEqual(
             missing_widget["componentConfig"]["reasonCode"],
@@ -810,7 +815,6 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         )
 
     def test_widget_projection_does_not_shadow_sibling_field_status(self):
-        component_keys = set()
         container_status = []
         widget_status = []
         nodes = self.assembler._normalize_native_layout_nodes(
@@ -834,7 +838,6 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
             ],
             {"name": {"name": "name", "type": "char", "string": "Name"}},
             layout_type="form",
-            component_keys=component_keys,
             container_status=container_status,
             widget_status=widget_status,
         )
@@ -842,7 +845,7 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertEqual(nodes[0]["componentConfig"]["widgetStatus"], "ready")
         self.assertEqual(nodes[1]["type"], "field")
         self.assertEqual(len(widget_status), 1)
-        self.assertIn("sc.display.ribbon", component_keys)
+        self.assertEqual(nodes[0]["semanticType"], "display_ribbon")
 
     def test_native_form_header_button_is_projected_as_root_business_action(self):
         contract = self.assembler.assemble_unified_page_contract_v2(
@@ -888,7 +891,7 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                         "containerType": "widget",
                         "name": "sc_stage_requirements",
                         "widget": "sc_stage_requirements",
-                        "componentKey": "sc.action.list",
+                        "semanticType": "action_list",
                         "componentConfig": {
                             "nativeWidget": "sc_stage_requirements",
                             "widgetStatus": "ready",
@@ -901,7 +904,6 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                         "occurrenceIndex": 1,
                         "children": [],
                     }],
-                    "componentRegistry": {"sc.action.list": {"version": "1.0.0"}},
                 },
                 "statusContract": {
                     "containerStatus": [{"containerId": "widget.stage", "visible": True, "disabled": False}],
@@ -959,7 +961,7 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
             hooks.call_extension_hook_first = lambda *_args, **_kwargs: {"widgets": {}}
             self.assembler._project_native_view_widget_payloads(missing, object())
             node = missing["layoutContract"]["containerTree"][0]
-            self.assertEqual(node["componentKey"], "sc.unsupported.native_node")
+            self.assertEqual(node["semanticType"], "unsupported_native_node")
             self.assertEqual(
                 node["componentConfig"]["reasonCode"],
                 "NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE",

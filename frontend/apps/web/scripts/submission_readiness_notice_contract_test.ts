@@ -15,6 +15,35 @@ import { ContractV2DecodeError, decodeContractV2Snapshot } from '../src/app/cont
 const READINESS_FIELD_ID = 'field.submission_readiness_display.occ.1';
 const READINESS_GROUP_ID = 'group.sc_project_submission_readiness';
 const LOCATOR = '/form[1]/sheet[1]/group[1]/field[1]';
+const VIEW_XMLID = 'demo.project_project_form';
+const CONTENT_HASH = 'a'.repeat(64);
+const STRUCTURE_KEY = `struct.v1.${'b'.repeat(24)}`;
+const OCCURRENCE_KEY = `occ.v1.${'c'.repeat(24)}`;
+
+function nativeIdentity(kind: 'field' | 'widget', name: string) {
+  return {
+    schemaVersion: '1.0.0',
+    model: 'project.project',
+    viewType: 'form',
+    viewId: 1001,
+    viewXmlId: VIEW_XMLID,
+    viewContentHash: CONTENT_HASH,
+    viewStructureKey: STRUCTURE_KEY,
+    crossEnvironmentStable: true,
+    kind,
+    name,
+    nativeLocator: LOCATOR,
+    occurrenceIndex: 1,
+    sourcePosition: kind === 'field' ? 1 : 2,
+    occurrenceKey: OCCURRENCE_KEY,
+    authoritative: true,
+    sourceAuthority: {
+      kind: 'ir.ui.view',
+      projectionOnly: true,
+      noBusinessFactAuthority: true,
+    },
+  };
+}
 
 function readinessFieldNode() {
   return {
@@ -29,6 +58,7 @@ function readinessFieldNode() {
     span: 12,
     nativeLocator: LOCATOR,
     occurrenceIndex: 1,
+    nativeIdentity: nativeIdentity('field', 'submission_readiness_display'),
     sourcePosition: 1,
     // The assembler hands this content to noticeContract; the body occurrence
     // is suppressed on the layout node only, not removed from children.
@@ -37,19 +67,27 @@ function readinessFieldNode() {
     children: [],
     widgetList: [{
       widgetId: READINESS_FIELD_ID,
-      widgetType: 'select',
+      widgetType: 'input',
       fieldCode: 'submission_readiness_display',
       label: '办理前检查',
       span: 12,
-      componentKey: 'sc.select.remote',
+      semanticType: 'text',
       capabilities: [],
       componentConfig: {
-        fieldType: 'text', native_locator: LOCATOR, occurrence_index: 1,
+        fieldType: 'char', native_locator: LOCATOR, occurrence_index: 1,
         source_position: 1, readonly: true, required: false,
       },
-      fieldDescriptor: { name: 'submission_readiness_display', type: 'text' },
+      fieldDescriptor: {
+        schemaVersion: '1.0.0',
+        fieldCode: 'submission_readiness_display',
+        label: '办理前检查',
+        fieldType: 'char',
+        widgetType: 'input',
+        semanticType: 'text',
+      },
       nativeLocator: LOCATOR,
       occurrenceIndex: 1,
+      nativeIdentity: nativeIdentity('field', 'submission_readiness_display'),
       sourcePosition: 1,
       ownerContainerId: READINESS_FIELD_ID,
     }],
@@ -61,11 +99,11 @@ function buildSnapshot() {
     pageInfo: {
       pageId: 'page.project.project.form', sceneKey: 'project.project.form', pageName: 'Project',
       model: 'project.project', viewType: 'form', layoutType: 'form', renderMode: 'governed',
-      contractVersion: '2.2.0', clientType: 'web_pc',
+      contractVersion: '2.7.0', clientType: 'web_pc',
     },
     layoutContract: {
       pageId: 'page.project.project.form', layoutType: 'form', adaptMode: 'pc',
-      layoutHints: { mobileColumns: 1 }, componentRegistry: {},
+      layoutHints: { mobileColumns: 1 },
       containerTree: [{
         containerId: READINESS_GROUP_ID,
         containerType: 'group',

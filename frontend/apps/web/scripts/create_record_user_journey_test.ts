@@ -32,7 +32,7 @@ console.log('[create_record_user_journey] unchanged relation payload: 4 cases PA
 // Exercise the real relation draft runtime: query text is not a saved value or
 // a deferred create request, even when the contract permits inline creation.
 {
-const relationDescriptor = { type: 'many2one', relation: 'x.related', relation_entry: {
+const relationDescriptor = { fieldType: 'many2one', relation: 'x.related', relationEntry: {
   can_read: true, can_create: true, inline_create: { enabled: true, create_on_no_match: true },
 } };
 const relationDraft: Record<string, unknown> = { owner_id: 17 };
@@ -102,7 +102,7 @@ console.log('[create-record-user-journey] PASS relation-intent-counterexamples=9
 // (which would look like a removed association to onchange and to the draft),
 // and it must be invalidated by an explicit relation write instead.
 {
-const relationDescriptor = { type: 'many2one', relation: 'x.related', relation_entry: {
+const relationDescriptor = { fieldType: 'many2one', relation: 'x.related', relationEntry: {
   can_read: true, can_create: true, inline_create: { enabled: true, create_on_no_match: true },
 } };
 const stagedDraft: Record<string, unknown> = { owner_id: 17 };
@@ -219,7 +219,7 @@ assert.equal((await validateEdit({ active: null })).ok, false, 'an absent requir
 console.log('[edit-required-validation] PASS cases=10');
 const v2ContractStore = {
   snapshot: {
-    pageInfo: { contractVersion: '2.2.0', pageId: 'x.document.create', clientType: 'web' },
+    pageInfo: { contractVersion: '2.7.0', pageId: 'x.document.create', clientType: 'web' },
     layoutContract: { containerTree: [] },
     actionContract: { actionRuleList: [] },
     dataContract: {
@@ -233,10 +233,25 @@ const v2ContractStore = {
     fieldCode: name,
     label: name,
     span: 6,
-    componentKey: 'sc.input.text',
+    semanticType: descriptor.type === 'many2one'
+      ? 'relation'
+      : descriptor.type === 'float'
+        ? 'number'
+        : 'text',
     capabilities: [],
     componentConfig: {},
-    fieldDescriptor: descriptor,
+    fieldDescriptor: {
+      schemaVersion: '1.0.0',
+      fieldCode: name,
+      label: name,
+      fieldType: descriptor.type,
+      widgetType: descriptor.type,
+      semanticType: descriptor.type === 'many2one'
+        ? 'relation'
+        : descriptor.type === 'float'
+          ? 'number'
+          : 'text',
+    },
   }]])),
 } as never;
 const query = {

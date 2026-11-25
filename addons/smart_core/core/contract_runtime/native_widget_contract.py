@@ -22,9 +22,10 @@ from __future__ import annotations
 from typing import Any
 
 from .semantic_resolver import (
-    component_key,
-    component_key_for_semantic,
     derive_semantic_match,
+    field_semantic_definition,
+    is_field_semantic,
+    is_node_semantic,
     resolve_native_view_widget,
 )
 
@@ -101,16 +102,19 @@ def project_native_field_widget_contract(
         else:
             semantic_type = native_semantic
 
-    resolved_component_key = (
-        component_key_for_semantic(semantic_type)
-        or component_key(widget_type, legacy)
-    )
+    if not is_field_semantic(semantic_type):
+        raise ValueError(f"CONTRACT_SEMANTIC_UNDECLARED: {semantic_type}")
+    definition = field_semantic_definition(semantic_type)
+    field_types = tuple(str(item) for item in definition.get("fieldTypes") or ())
+    if field_types and "*" not in field_types and normalized_field_type not in field_types:
+        raise ValueError(
+            f"CONTRACT_SEMANTIC_FIELD_TYPE_MISMATCH: {semantic_type}: {normalized_field_type}"
+        )
     return {
         "widgetType": widget_type,
         "nativeWidgetType": native,
         "canonicalWidgetType": canonical,
         "semanticType": semantic_type,
-        "componentKey": resolved_component_key,
     }
 
 
@@ -123,6 +127,9 @@ def project_native_embedded_widget_contract(widget_name: str = "") -> dict[str, 
     """
     normalized_widget_name = _text(widget_name).lower()
     resolution = resolve_native_view_widget(normalized_widget_name)
+    semantic_type = _text(resolution.get("semantic"))
+    if not is_node_semantic(semantic_type):
+        raise ValueError(f"CONTRACT_NODE_SEMANTIC_UNDECLARED: {semantic_type}")
     payload_required = resolution.get("payloadRequired") is True
     payload_schema = _text(resolution.get("payloadSchema"))
     if payload_required != bool(payload_schema):
@@ -132,7 +139,7 @@ def project_native_embedded_widget_contract(widget_name: str = "") -> dict[str, 
         )
     return {
         "nativeWidget": normalized_widget_name,
-        "componentKey": _text(resolution.get("component")),
+        "semanticType": semantic_type,
         "widgetStatus": _text(resolution.get("status")),
         "reasonCode": _text(resolution.get("reasonCode")),
         "payloadRequired": payload_required,

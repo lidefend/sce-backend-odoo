@@ -60,28 +60,12 @@ function snapshot(formStructureSurfaces?: unknown) {
     pageInfo: {
       pageId: 'page.x.document.form', sceneKey: 'x.document.form', pageName: 'Document',
       model: MODEL, viewType: 'form', layoutType: 'form', renderMode: 'governed',
-      contractVersion: '2.2.0', clientType: 'web_pc',
+      contractVersion: '2.7.0', clientType: 'web_pc',
     },
     layoutContract: {
       pageId: 'page.x.document.form', layoutType: 'form', adaptMode: 'pc',
       layoutHints: { mobileColumns: 1 },
-      componentRegistry: {
-        'sc.input.text': { version: '1.0' },
-      },
-      containerTree: [{
-        containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24,
-        children: [{
-          containerId: 'field.amount', containerType: 'field', type: 'field', name: 'amount', widgetId: 'field.amount',
-          fieldCode: 'amount', title: '', span: 12,
-          children: [], widgetList: [{
-            widgetId: 'field.amount', widgetType: 'input', fieldCode: 'amount', label: 'Amount', span: 12,
-            componentKey: 'sc.input.text', capabilities: [], componentConfig: { fieldType: 'char' },
-            fieldDescriptor: { name: 'amount', type: 'char' },
-            ownerContainerId: 'field.amount',
-          }],
-        }],
-        widgetList: [],
-      }],
+      containerTree: [],
     },
     actionContract: { actionRuleList: [], dependencyGraph: {} },
     statusContract: {
@@ -94,13 +78,11 @@ function snapshot(formStructureSurfaces?: unknown) {
         effectiveRecordCapabilities: { read: true, write: true, create: true, unlink: true, duplicate: true },
         effectiveRenderProfile: 'edit',
       },
-      widgetStatus: [
-        { widgetId: 'field.amount', visible: true, readonly: false, required: false, disabled: false, auth: 'edit' },
-      ],
+      widgetStatus: [],
       buttonStatus: [], containerStatus: [], selectorStatus: [],
     },
     dataContract: {
-      mainData: { amount: '1' }, tableRows: {}, relationRows: {},
+      mainData: {}, tableRows: {}, relationRows: {},
       dictData: {}, pagination: {}, dataSource: {}, dataMeta: {},
     },
     runtimeContract: {
@@ -111,7 +93,7 @@ function snapshot(formStructureSurfaces?: unknown) {
       etag: 'e', snapshotId: 's', traceId: 't', requestId: 'r', sourceType: 'ui.contract',
       lifecycle: {
         lifecycleVersion: '1', stage: 'sealed',
-        definition: { schemaId: 'v2', schemaVersion: '2', schemaSha256: 'schema', contractVersion: '2', normativeStatus: 'active' },
+        definition: { schemaId: 'v2', schemaVersion: '2.7.0', schemaSha256: 'schema', contractVersion: '2.7.0', normativeStatus: 'active' },
         generation: { generator: 'test', generatorVersion: '1', sourceType: 'test', sourceSha256: 'source' },
         runtime: { requestId: 'r', traceId: 't', clientType: 'web_pc', traceSource: 'test' },
         integrity: { algorithm: 'sha256', contractSha256: 'contract-sha' }, authority: {},

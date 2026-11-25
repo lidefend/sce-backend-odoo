@@ -44,6 +44,49 @@ def _contains_exact_identity_scalar(value, identity):
     return value == identity or (isinstance(value, str) and value == str(identity))
 
 
+def _exact_identity_hits(value, identity, identity_name, path="$"):
+    """Return exact identity matches with their JSON path and value type."""
+    if isinstance(value, dict):
+        return [
+            hit
+            for key, item in value.items()
+            for hit in _exact_identity_hits(item, identity, identity_name, f"{path}.{key}")
+        ]
+    if isinstance(value, (list, tuple)):
+        return [
+            hit
+            for index, item in enumerate(value)
+            for hit in _exact_identity_hits(item, identity, identity_name, f"{path}[{index}]")
+        ]
+    if value == identity or (isinstance(value, str) and value == str(identity)):
+        return [{
+            "identity": identity_name,
+            "path": path,
+            "type": type(value).__name__,
+        }]
+    return []
+
+
+def _feedback_identity_surface(body, label="body"):
+    """Return only the HTTP response areas owned by feedback evaluation.
+
+    The intent envelope also carries request, session, view and user protocol
+    identities. An unrelated scalar that happens to equal the partner's row id
+    is not partner-data leakage, so the envelope must not participate in this
+    assertion.
+    """
+    data = body.get("data") if isinstance(body.get("data"), dict) else {}
+    error = body.get("error") if isinstance(body.get("error"), dict) else {}
+    details = error.get("details") if isinstance(error.get("details"), dict) else {}
+    return {
+        f"{label}.data.feedback_evaluation": data.get("feedback_evaluation"),
+        f"{label}.data.patch": data.get("patch"),
+        f"{label}.data.modifiers_patch": data.get("modifiers_patch"),
+        f"{label}.data.line_patches": data.get("line_patches"),
+        f"{label}.error.details.feedback_evaluation": details.get("feedback_evaluation"),
+    }
+
+
 def _fixture(env):
     base_group = env.ref("base.group_user")
     finance_group = env.ref("smart_construction_core.group_sc_cap_finance_user")
@@ -94,7 +137,7 @@ class CompanyRefundFeedbackAssertions:
         rows = list(native_advisory.walk(contract["layoutContract"]["containerTree"]))
         hosts = [
             node for node, _parent in rows
-            if node.get("componentKey") == draft_feedback.COMPONENT_KEY
+            if node.get("semanticType") == draft_feedback.SEMANTIC_TYPE
         ]
         self.assertEqual(len(hosts), 1)
         host = hosts[0]
@@ -228,6 +271,45 @@ class TestCompanyProjectRefundFeedback(CompanyRefundFeedbackAssertions, Transact
             "sc.labor.usage", "sc.quality.acceptance", "sc.approval.policy",
         ])
 
+    def test_feedback_identity_check_excludes_protocol_envelope_ids(self):
+        body = {
+            "data": {
+                "session": {"uid": 17},
+                "user_id": {"id": 17},
+                "feedback_evaluation": {"status": "ready"},
+                "patch": {},
+            },
+            "meta": {"elapsed_ms": 17},
+        }
+        envelope_hits = _exact_identity_hits(body, 17, "partner.id")
+        self.assertEqual(
+            {hit["path"] for hit in envelope_hits},
+            {"$.data.session.uid", "$.data.user_id.id", "$.meta.elapsed_ms"},
+        )
+        surfaces = _feedback_identity_surface(body)
+        self.assertEqual(
+            {
+                hit
+                for value in surfaces.values()
+                for hit in _exact_identity_hits(value, 17, "partner.id")
+            },
+            set(),
+        )
+        body["data"]["feedback_evaluation"]["result"] = {"partner_id": 17}
+        feedback_hits = [
+            hit
+            for value in _feedback_identity_surface(body).values()
+            for hit in _exact_identity_hits(value, 17, "partner.id")
+        ]
+        self.assertEqual(
+            feedback_hits,
+            [{
+                "identity": "partner.id",
+                "path": "$.result.partner_id",
+                "type": "int",
+            }],
+        )
+
     def test_create_ui_contract_uses_request_local_feedback_proof(self):
         from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
 
@@ -242,7 +324,8 @@ class TestCompanyProjectRefundFeedback(CompanyRefundFeedbackAssertions, Transact
             "view_id": self.view.id,
             "view_type": "form",
             "render_profile": "create",
-            "client_type": "web_pc", "client_contract_capabilities": [
+            "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": [
                 "form.feedback.message.v1",
                 "form.feedback.draft.v1",
             ],
@@ -254,7 +337,7 @@ class TestCompanyProjectRefundFeedback(CompanyRefundFeedbackAssertions, Transact
         ))
         hosts = [
             node for node, _parent in rows
-            if node.get("componentKey") == draft_feedback.COMPONENT_KEY
+            if node.get("semanticType") == draft_feedback.SEMANTIC_TYPE
         ]
         self.assertEqual(len(hosts), 1)
         self.assertEqual(
@@ -538,7 +621,11 @@ class TestCompanyProjectRefundFeedbackHttp(
             or (((body.get("data") or {}).get("session") or {}).get("token"))
         )
         self.assertTrue(token, body.get("error"))
-        status, initialized = self.intent("system.init", {}, token=token)
+        status, initialized = self.intent("system.init", {
+            "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": [],
+        }, token=token)
         self.assertEqual(status, 200, initialized.get("error"))
         self.assertTrue(initialized.get("ok"), initialized.get("error"))
         return token
@@ -552,7 +639,8 @@ class TestCompanyProjectRefundFeedbackHttp(
                 "allowed_company_ids": [self.company.id],
                 "lang": "en_US",
             },
-            "client_type": "web_pc", "client_contract_capabilities": capabilities if capabilities is not None else [
+            "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": capabilities if capabilities is not None else [
                 "form.feedback.message.v1",
                 "form.feedback.draft.v1",
             ],
@@ -599,6 +687,7 @@ class TestCompanyProjectRefundFeedbackHttp(
 
     def test_real_http_presence_permissions_and_ordinary_onchange(self):
         cases = []
+        identity_probe = {"envelope_hits": [], "feedback_hits": []}
         model = self.model()
         _contract, host, _source = self.contract_parts(model)
         token = self.login(self.operator.login, self.password)
@@ -657,9 +746,24 @@ class TestCompanyProjectRefundFeedbackHttp(
                 "visible": False,
             })
         self.assertEqual(self.env[MODEL].search_count([]), before)
-        results = [described, selected, hidden]
-        self.assertFalse(_contains_exact_identity_scalar(results, self.partner.name))
-        self.assertFalse(_contains_exact_identity_scalar(results, self.partner.id))
+        identity_values = (
+            ("partner.name", self.partner.name),
+            ("partner.id", self.partner.id),
+        )
+        for label, body in (
+            ("described", described),
+            ("selected", selected),
+            ("hidden", hidden),
+        ):
+            for identity_name, identity in identity_values:
+                identity_probe["envelope_hits"].extend(
+                    _exact_identity_hits(body, identity, identity_name)
+                )
+                for path, surface in _feedback_identity_surface(body, label).items():
+                    identity_probe["feedback_hits"].extend(
+                        _exact_identity_hits(surface, identity, identity_name, path)
+                    )
+        self.assertFalse(identity_probe["feedback_hits"], identity_probe["feedback_hits"])
 
         status, missing = evaluate([
             {"field": "partner_id", "present": False},
@@ -732,6 +836,7 @@ class TestCompanyProjectRefundFeedbackHttp(
             "model": MODEL,
             "view_id": self.view.id,
             "cases": cases,
+            "identity_probe": identity_probe,
         }
         print(EVIDENCE_PREFIX + json.dumps(evidence, ensure_ascii=False, sort_keys=True))
 

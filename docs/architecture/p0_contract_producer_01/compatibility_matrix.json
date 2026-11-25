@@ -235,9 +235,25 @@
       "owner": "P4 design validation"
     },
     {
+      "id": "DESC-MONEY-FLOAT-VALID",
+      "consumer": "strict descriptor schema",
+      "payload": "float storage rendered with the native monetary widget and a declared currencyField",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
       "id": "DESC-PERCENT-VALID",
       "consumer": "strict descriptor schema",
       "payload": "valid percentage descriptor",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-CHAR-CAPABILITIES-VALID",
+      "consumer": "strict descriptor schema",
+      "payload": "native field management capabilities for a char field",
       "expectation": "valid",
       "evidence": "executed_schema_validation",
       "owner": "P4 design validation"

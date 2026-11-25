@@ -107,23 +107,23 @@ export function buildFormSectionFieldSchemas(
   options: BuildFormSectionFieldSchemasOptions,
 ): FormSectionFieldSchema[] {
   return fields.map((field) => {
-    const type = options.resolveFieldType(field.descriptor) || 'char';
     const descriptor = (field.descriptor || {}) as Record<string, unknown>;
+    const declaredType = options.resolveFieldType(field.descriptor) || 'char';
+    const semanticType = String(descriptor.semanticType || '').trim().toLowerCase();
+    const type = semanticType === 'money' ? 'monetary' : declaredType;
     const digits = ['float', 'monetary'].includes(type)
       ? normalizeDeclaredDigits(descriptor.digits)
       : undefined;
-    const currencyField = type === 'monetary'
-      ? String(descriptor.currency_field || 'currency_id').trim()
+    const currencyField = semanticType === 'money'
+      ? String(descriptor.currencyField || '').trim()
       : '';
     const currencyLabel = currencyField ? resolveCurrencyDisplayLabel(options.resolveRawValue(currencyField)) : '';
-    const descriptorWidget = field.descriptor && typeof field.descriptor === 'object'
-      ? String((field.descriptor as Record<string, unknown>).widget || '').trim()
-      : '';
-    const widget = String(field.widget || descriptorWidget || '').trim().toLowerCase();
+    const widget = String(field.widget || '').trim().toLowerCase();
     const semantics = field.widgetSemantics && typeof field.widgetSemantics === 'object' ? field.widgetSemantics : {};
     const readonlyEmptyText = typeof semantics.readonly_empty_text === 'string'
       ? semantics.readonly_empty_text.trim()
       : '';
+    const maxLength = Number(descriptor.size);
     const dateRangeEndField = widget === 'daterange' && String(semantics.kind || '').trim() === 'date_range'
       ? String(semantics.end_field || '').trim()
       : '';
@@ -191,6 +191,7 @@ export function buildFormSectionFieldSchemas(
       dateRangeEndField: dateRangeEndField || undefined,
       dateRangeEndInputValue: dateRangeEndField ? options.resolveInputValue(dateRangeEndField, type) : undefined,
       inputPlaceholder: options.resolveInputPlaceholder(field.label),
+      maxLength: Number.isInteger(maxLength) && maxLength > 0 ? maxLength : undefined,
       selectionOptions: options.resolveSelectionOptions(field.descriptor),
       relationOptions,
       one2manyPageSize: type === 'one2many'

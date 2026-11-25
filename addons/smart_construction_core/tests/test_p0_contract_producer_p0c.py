@@ -38,7 +38,7 @@ class TestP0ContractProducerP0C(TransactionCase):
         return {
             "params": {
                 "client_type": "web_pc",
-                "accepted_contract_versions": ["2.5.x", "2.6.x"],
+                "accepted_contract_versions": ["2.7.x"],
                 "client_contract_capabilities": capabilities,
             }
         }
@@ -224,19 +224,20 @@ class TestP0ContractProducerP0C(TransactionCase):
             ]["enabled"]
         )
 
-    def test_legacy_projection_has_no_action_carrier(self):
+    def test_v27_projection_honours_declared_action_carrier(self):
         result = WorkspaceHomeEnterHandler(self.env).handle({
             "params": {
                 "client_type": "web_pc",
-                "accepted_contract_versions": ["2.5.x"],
+                "accepted_contract_versions": ["2.7.x"],
                 "client_contract_capabilities": ["page_block_action.v1"],
             }
         })
         self.assertTrue(result["ok"], result)
         orchestration = result["data"]["page_orchestration"]
-        self.assertEqual(orchestration["contract_version"], "2.0.0")
-        self.assertNotIn("action_schema", orchestration)
-        self.assertNotIn("action_contract", orchestration)
+        self.assertEqual(orchestration["contract_version"], "2.1.0")
+        self.assertIn("action_schema", orchestration)
+        self.assertIn("action_contract", orchestration)
+        self.assertTrue(orchestration["action_contract"]["actionRuleList"])
 
     def test_action_patch_produces_correlated_feedback(self):
         patch = build_action_partial_update_v2(

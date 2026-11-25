@@ -675,6 +675,29 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
         )
 
+    def test_offline_unittest_change_selects_registered_unit_not_odoo_orm(self):
+        targets = select_iteration_targets([
+            "addons/smart_core/tests/test_business_config_surface.py",
+        ])
+        self.assertIn("verify.business_config.unit", targets)
+        self.assertNotIn("verify.changed_tests.orm", targets)
+
+    def test_non_test_prefix_orm_classes_keep_changed_orm_route(self):
+        paths = [
+            "addons/smart_core/tests/test_submission_readiness_notice_suppression.py",
+            "addons/smart_construction_core/tests/test_submission_readiness_notice_p1.py",
+        ]
+        for path in paths:
+            with self.subTest(path=path):
+                self.assertIn("verify.changed_tests.orm", select_iteration_targets([path]))
+        self.assertIn(
+            "verify.changed_tests.orm",
+            select_iteration_targets([
+                "addons/smart_core/tests/test_localized_display.py",
+                "addons/smart_core/tests/test_submission_readiness_notice_suppression.py",
+            ]),
+        )
+
     def test_production_change_keeps_owning_module_baseline(self):
         targets = select_iteration_targets([
             "addons/smart_core/handlers/business_config_change_set.py",
@@ -2577,6 +2600,48 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.unified_page_contract.v2.assembler", targets)
                 self.assertIn("verify.contract.entry_equivalence.guard", targets)
                 self.assertIn("verify.form_structure_authority_unification.unit", targets)
+
+    def test_contract_runtime_carriers_route_to_their_own_executors(self) -> None:
+        expected = {
+            "addons/smart_construction_core/core_extension_project_layout.py": [
+                "verify.unified_page_contract.v2.assembler",
+            ],
+            "addons/smart_core/core/record_error_proof.py": [
+                "verify.record_error_proof.unit",
+            ],
+            "addons/smart_core/tests/test_record_error_proof.py": [
+                "verify.record_error_proof.unit",
+            ],
+            "addons/smart_core/core/unified_page_contract_v2_client.py": [
+                "verify.unified_page_contract.v2.client",
+            ],
+            "scripts/verify/unified_page_contract_v2_client_guard.py": [
+                "verify.unified_page_contract.v2.client",
+            ],
+            "addons/smart_core/core/unified_page_contract_v2_runtime.py": [
+                "verify.unified_page_contract.v2.runtime",
+            ],
+            "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py": [
+                "verify.unified_page_contract.v2.runtime",
+            ],
+            "scripts/verify/unified_page_contract_v2_runtime_guard.py": [
+                "verify.unified_page_contract.v2.runtime",
+            ],
+        }
+        for path, targets in expected.items():
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), targets)
+
+    def test_retired_compatibility_tool_maps_to_the_current_contract_plan(self) -> None:
+        for path in (
+            "addons/smart_core/core/contract_version_compatibility.py",
+            "scripts/verify/test_contract_version_compatibility.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.contract_fidelity.plan.unit"],
+                )
 
     def test_native_role_and_personnel_changes_select_their_orm_owners(self) -> None:
         self.assertEqual(

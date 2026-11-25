@@ -1,5 +1,14 @@
 import assert from 'node:assert/strict';
-import { relationEntry, relationOptionsLimit, relationOptionsSearchLimit } from '../src/pages/contractForm/relationDescriptor';
+import {
+  relationCreateMode,
+  relationEntry,
+  relationInlineCreate,
+  relationOptionsLimit,
+  relationOptionsSearchLimit,
+  relationOptionsWithSelectedFallback,
+} from '../src/pages/contractForm/relationDescriptor';
+import { nativeNodeFieldDescriptor } from '../src/pages/contractForm/nativeLayoutUtils';
+import { resolveContractV2FormFieldMap } from '../src/app/contracts/v2/store';
 import { isContractGapError } from '../src/app/contract/contractGap';
 import type { ContractGapError } from '../src/app/contract/contractGap';
 
@@ -23,7 +32,7 @@ function descriptorWith(relationEntryShape: Record<string, unknown> | undefined)
     name: 'project_id',
     type: 'many2one',
     relation: 'project.project',
-    ...(relationEntryShape ? { relation_entry: relationEntryShape } : {}),
+    ...(relationEntryShape ? { relationEntry: relationEntryShape } : {}),
   } as never;
 }
 
@@ -61,6 +70,99 @@ assert.equal(
   relationOptionsSearchLimit(baselineEntry as Record<string, unknown>),
   DECLARED_SEARCH_LIMIT,
   'baseline: options_search_limit must equal the declared value, not a frontend constant',
+);
+checked += 1;
+
+const relationEntryContract = {
+  model: 'res.partner',
+  can_read: true,
+  can_create: true,
+  create_mode: 'quick',
+  options_limit: DECLARED_LIMIT,
+  options_search_limit: DECLARED_SEARCH_LIMIT,
+  inline_create: {
+    enabled: true,
+    create_on_no_match: true,
+    name_field: 'name',
+    match: 'exact_label',
+  },
+};
+const store = {
+  widgetsByFieldCode: new Map([
+    ['owner_id', {
+      widgetId: 'field.owner_id',
+      widgetType: 'many2one',
+      fieldCode: 'owner_id',
+      label: '负责人',
+      semanticType: 'relation',
+      componentConfig: {
+        fieldType: 'many2one',
+        relation: 'res.partner',
+        relationEntry: relationEntryContract,
+        widgetOptions: { color_field: 'color' },
+      },
+      fieldDescriptor: {
+        fieldCode: 'owner_id',
+        label: '负责人',
+        fieldType: 'many2one',
+        widgetType: 'many2one',
+        semanticType: 'relation',
+        relation: 'res.partner',
+        relationEntry: relationEntryContract,
+        widgetOptions: { color_field: 'color' },
+      },
+    }],
+  ]),
+} as never;
+const storeField = resolveContractV2FormFieldMap(store).owner_id;
+const storeEntry = relationEntry(storeField);
+assert.ok(storeEntry, 'store projection: canonical relationEntry must survive the Store field map');
+assert.equal(storeEntry.canRead, true, 'store projection: canRead must survive');
+assert.equal(storeEntry.canCreate, true, 'store projection: canCreate must survive');
+assert.equal(relationOptionsLimit(storeEntry as Record<string, unknown>), DECLARED_LIMIT);
+assert.equal(relationOptionsSearchLimit(storeEntry as Record<string, unknown>), DECLARED_SEARCH_LIMIT);
+assert.equal(relationCreateMode(storeField), 'quick', 'store projection: quick create must remain available');
+assert.equal(relationInlineCreate(storeField).enabled, true, 'store projection: inline create must remain available');
+assert.deepEqual(
+  relationOptionsWithSelectedFallback([], [42, '已有负责人']),
+  [{ id: 42, label: '#42' }],
+  'store projection: selected IDs without cached labels must retain a hydration fallback',
+);
+assert.equal(
+  Object.prototype.hasOwnProperty.call(storeField as object, 'relation_entry'),
+  false,
+  'store projection: the canonical map must not emit a duplicate snake_case relation entry',
+);
+checked += 1;
+
+// Native form nodes retain producer-side snake_case evidence. The boundary
+// adapter must normalize that evidence once, so a complete wire contract is not
+// misreported as a missing canonical relationEntry.
+const nativeDescriptor = nativeNodeFieldDescriptor({
+  name: 'project_id',
+  fieldInfo: {
+    name: 'project_id',
+    type: 'many2one',
+    relation: 'project.project',
+    relation_entry: {
+      model: 'project.project',
+      can_read: true,
+      options_limit: DECLARED_LIMIT,
+      options_search_limit: DECLARED_SEARCH_LIMIT,
+    },
+  },
+} as never, undefined, (name) => name);
+const nativeEntry = relationEntry(nativeDescriptor);
+assert.ok(nativeEntry, 'native adapter: producer evidence must normalize to canonical relationEntry');
+assert.equal(
+  relationOptionsLimit(nativeEntry as Record<string, unknown>),
+  DECLARED_LIMIT,
+  'native adapter: options_limit must survive normalization',
+);
+assert.equal(
+  Object.prototype.hasOwnProperty.call(nativeDescriptor as object, 'relation_entry'),
+  false,
+  'native adapter: the canonical descriptor boundary must not retain a duplicate snake_case carrier',
 );
 checked += 1;
 

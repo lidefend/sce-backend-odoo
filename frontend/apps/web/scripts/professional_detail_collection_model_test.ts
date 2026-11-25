@@ -332,7 +332,7 @@ const queryRuntime = createOne2manyColumnOptionsRuntime({
   relationModelFromDescriptor: relationFunctions.relationModel,
   ensureRelationFieldDescriptors: async () => {},
   one2manyRelationFieldDescriptor: () => ({ type: 'many2one', relation: 'x.account',
-    domain: "[('id', 'in', unknown_function())]", relation_entry: { can_read: true } }) as never,
+    domain: "[('id', 'in', unknown_function())]", relationEntry: { can_read: true } }) as never,
   one2manyFieldRows: () => [{ key: 'draft-1', values: {} }] as never,
   formData: {}, route: { query: {} },
   fetchRelationOptionsFromRuntime: async () => { networkCalls++; return []; },
@@ -369,7 +369,7 @@ const positiveRuntime = createOne2manyColumnOptionsRuntime({
   one2manyRelationFieldDescriptor: (_field: string, column: string) => column === 'company_id'
     ? { type: 'many2one', relation: 'res.company' }
     : { type: 'many2one', relation: 'x.account', domain: compiledRaw, domain_expression: compiledExpression,
-      relation_entry: { can_read: true, options_limit: 80, options_search_limit: 20 } },
+      relationEntry: { can_read: true, options_limit: 80, options_search_limit: 20 } },
   one2manyFieldRows: () => [{ key: 'draft-1', values: inlineValues }],
   parentFieldDescriptor: () => ({ type: 'many2one', relation: 'res.company' }),
   formData: { company_id: [1, 'Synthetic parent company'] }, route: { query: {} }, pickContractNavQuery: () => ({}),

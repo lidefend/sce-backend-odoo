@@ -138,9 +138,8 @@ class DeclarationAuthorityTest(unittest.TestCase):
             for field_code, semantic in fields.items():
                 with self.subTest(model=model, field=field_code):
                     self.assertTrue(
-                        semantic_resolver.component_key_for_semantic(semantic),
-                        f"declared semantic '{semantic}' is not registered, so the field would "
-                        "render through an unregistered key",
+                        semantic_resolver.is_field_semantic(semantic),
+                        f"declared semantic '{semantic}' is not a legal field semantic",
                     )
                     self.assertEqual(semantic, semantic.lower())
 
@@ -194,26 +193,19 @@ class NormalizerConsumptionTest(unittest.TestCase):
     def detail_node(self, contract: dict[str, Any]) -> dict[str, Any]:
         return contract["layoutContract"]["containerTree"][1]["widgetList"][0]
 
-    def test_declared_field_takes_the_registrys_component(self) -> None:
+    def test_declared_field_publishes_semantic_without_component(self) -> None:
         contract = self.payment_contract()
         self.normalize(contract, model=PAYMENT_MODEL, view_type="form")
         node = self.detail_node(contract)
-        expected = semantic_resolver.component_key_for_semantic(PAYMENT_DETAIL_SEMANTIC)
-        self.assertEqual(expected, node["componentKey"])
+        self.assertNotIn("componentKey", node)
         self.assertEqual(PAYMENT_DETAIL_SEMANTIC, node["fieldDescriptor"]["semanticType"])
-        self.assertEqual(expected, node["fieldDescriptor"]["componentKey"])
+        self.assertNotIn("componentKey", node["fieldDescriptor"])
         self.assertNotIn("semantic", node["fieldDescriptor"])
 
-    def test_declared_field_publishes_the_registry_identity(self) -> None:
+    def test_declared_field_does_not_publish_component_registry(self) -> None:
         contract = self.payment_contract()
         self.normalize(contract, model=PAYMENT_MODEL, view_type="form")
-        registry = contract["layoutContract"]["componentRegistry"]
-        self.assertEqual(
-            {semantic_resolver.component_key_for_semantic(PAYMENT_DETAIL_SEMANTIC): {
-                "version": semantic_resolver.COMPONENT_CONTRACT_VERSION,
-            }},
-            registry,
-        )
+        self.assertNotIn("componentRegistry", contract["layoutContract"])
 
     def test_vocabulary_is_merged_into_the_delivered_component_config(self) -> None:
         contract = self.payment_contract()
@@ -248,19 +240,15 @@ class NormalizerConsumptionTest(unittest.TestCase):
         contract = self.payment_contract()
         self.normalize(contract, model=PAYMENT_MODEL, view_type="form")
         self.assertEqual(
-            semantic_resolver.component_key_for_semantic(PAYMENT_DETAIL_SEMANTIC),
-            self.detail_node(contract)["componentKey"],
+            PAYMENT_DETAIL_SEMANTIC,
+            self.detail_node(contract)["semanticType"],
             "baseline did not apply the declaration, so the negative case proves nothing",
         )
 
         mutated = self.payment_contract()
         self.namespace["FIELD_SEMANTIC_DECLARATIONS"][PAYMENT_MODEL][PAYMENT_DETAIL_FIELD] = "sc.declared.by.nobody"
-        self.normalize(mutated, model=PAYMENT_MODEL, view_type="form")
-        node = self.detail_node(mutated)
-        self.assertEqual("sc.relation.table", node["componentKey"])
-        self.assertNotIn("semantic", node["fieldDescriptor"])
-        self.assertNotIn("semanticType", node["fieldDescriptor"])
-        self.assertNotIn("componentRegistry", mutated["layoutContract"])
+        with self.assertRaisesRegex(ValueError, "CONTRACT_SEMANTIC_UNDECLARED"):
+            self.normalize(mutated, model=PAYMENT_MODEL, view_type="form")
 
     def test_native_layout_node_keeps_identity_without_a_descriptor(self) -> None:
         """The node kind decides which properties the contract may carry.
@@ -287,9 +275,9 @@ class NormalizerConsumptionTest(unittest.TestCase):
         contract["layoutContract"]["containerTree"][1]["widgetList"].insert(0, native)
         self.normalize(contract, model=PAYMENT_MODEL, view_type="form")
         self.assertEqual(
-            semantic_resolver.component_key_for_semantic(PAYMENT_DETAIL_SEMANTIC),
-            native["componentKey"],
-            "the native layout node must still name the component it renders through",
+            PAYMENT_DETAIL_SEMANTIC,
+            native["semanticType"],
+            "the native layout node must retain semantic identity",
         )
         self.assertNotIn(
             "fieldDescriptor",
@@ -350,13 +338,13 @@ class NormalizerConsumptionTest(unittest.TestCase):
                 "widgetId": "field.settled_amount",
                 "widgetType": "input",
                 "fieldCode": "settled_amount",
-                "componentKey": semantic_resolver.component_key("input", {"ttype": "char"}),
+                "semanticType": "text",
                 "fieldDescriptor": {"name": "settled_amount", "type": "char"},
             }
         )
         self.assertEqual(
-            "sc.input.text",
-            contract["layoutContract"]["containerTree"][0]["widgetList"][1]["componentKey"],
+            "text",
+            contract["layoutContract"]["containerTree"][0]["widgetList"][1]["semanticType"],
             "baseline: without a declaration the field's own facts select the text input",
         )
 
@@ -368,15 +356,11 @@ class NormalizerConsumptionTest(unittest.TestCase):
             del declarations[PAYMENT_MODEL]["settled_amount"]
 
         node = contract["layoutContract"]["containerTree"][0]["widgetList"][1]
-        self.assertEqual(semantic_resolver.component_key_for_semantic("money"), node["componentKey"])
-        self.assertEqual("sc.value.money", node["componentKey"])
+        self.assertEqual("money", node["semanticType"])
+        self.assertNotIn("componentKey", node)
         self.assertEqual("money", node["fieldDescriptor"]["semanticType"])
         self.assertNotIn("semantic", node["fieldDescriptor"])
-        self.assertIn(
-            "sc.value.money",
-            contract["layoutContract"]["componentRegistry"],
-            "the declared field's identity must be published to the frontend registry",
-        )
+        self.assertNotIn("componentRegistry", contract["layoutContract"])
 
     def test_payment_attachment_relation_receives_its_declared_p1_role(self) -> None:
         contract = {

@@ -69,7 +69,7 @@ class TestFeedbackEvaluationRtHttp(HttpCase):
         self.review_patch.start()
         self.view = self.env.ref(VIEW)
         contract, _proof = draft_feedback._assemble_contract(self.model, self.view.id)
-        host = self._find_component(contract, draft_feedback.COMPONENT_KEY)
+        host = self._find_component(contract, draft_feedback.SEMANTIC_TYPE)
         self.container_id = host["containerId"]
 
     def tearDown(self):
@@ -86,7 +86,7 @@ class TestFeedbackEvaluationRtHttp(HttpCase):
         matches = []
         def walk(nodes):
             for node in nodes:
-                if node.get("componentKey") == key:
+                if node.get("semanticType") == key:
                     matches.append(node)
                 walk(node.get("children") or [])
         walk(contract["layoutContract"]["containerTree"])
@@ -126,7 +126,11 @@ class TestFeedbackEvaluationRtHttp(HttpCase):
         data = body.get("data") or {}
         token = data.get("token") or ((data.get("session") or {}).get("token"))
         self.assertTrue(token)
-        status, initialized = self._intent("system.init", token=token)
+        status, initialized = self._intent("system.init", {
+            "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": [],
+        }, token=token)
         self.assertEqual(status, 200, initialized.get("error"))
         self.assertTrue(initialized.get("ok"), initialized.get("error"))
         return token

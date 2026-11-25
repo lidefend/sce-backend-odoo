@@ -5,6 +5,7 @@ from typing import Any
 from types import SimpleNamespace
 
 from ..core.form_structure_authority import assert_role_form_permissions_only
+from ..core.contract_version_negotiation import with_internal_client_contract
 
 from odoo import fields
 from odoo.exceptions import AccessError, ValidationError
@@ -169,6 +170,7 @@ class _ChangeSetBase(BaseIntentHandler):
     def _compile_form_item(
         self, item, preview_token=None, *, rollback=False,
         client_type=None, client_contract_capabilities=None,
+        accepted_contract_versions=None,
     ):
         """Verify the actual final contract, never equate storage with runtime."""
         spec = (((item.draft_payload or {}).get("view_orchestration") or {}).get("views") or {}).get("form") or {}
@@ -180,14 +182,21 @@ class _ChangeSetBase(BaseIntentHandler):
             raise AccessError("表单预览必须使用当前已认证角色；不可用角色字符串代替目标权限身份。")
         if not item.action_id or not item.view_id:
             raise ValidationError("结构配置必须绑定正式action和view。")
-        params = {"op": "model", "model": item.model, "action_id": item.action_id,
-                  "view_type": "form", "render_profile": "create"}
+        params = with_internal_client_contract(
+            {
+                "op": "model",
+                "model": item.model,
+                "action_id": item.action_id,
+                "view_type": "form",
+                "render_profile": "create",
+            },
+            client_type=client_type,
+            capabilities=client_contract_capabilities,
+        )
         if preview_token:
             params["view_id"] = item.view_id
-        if client_type is not None:
-            params["client_type"] = client_type
-        if client_contract_capabilities is not None:
-            params["client_contract_capabilities"] = client_contract_capabilities
+        if accepted_contract_versions is not None:
+            params["accepted_contract_versions"] = accepted_contract_versions
         if preview_token:
             params.update(preview_token=preview_token, preview_role_key=owner_role)
         result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle(params)
@@ -434,6 +443,7 @@ class BusinessConfigChangeSetPreviewHandler(BusinessConfigChangeSetValidateHandl
                     item, token,
                     client_type=params.get("client_type"),
                     client_contract_capabilities=params.get("client_contract_capabilities"),
+                    accepted_contract_versions=params.get("accepted_contract_versions"),
                 )
                 for item in record.item_ids
             ]
@@ -640,6 +650,7 @@ class BusinessConfigChangeSetPublishHandler(_ChangeSetBase):
                         item,
                         client_type=params.get("client_type"),
                         client_contract_capabilities=params.get("client_contract_capabilities"),
+                        accepted_contract_versions=params.get("accepted_contract_versions"),
                     )
                     post_publish_hash = self._current_hash(item)
                     verification = {"published_content_verified": True, "final_contract_verification": final_contract,
@@ -738,6 +749,7 @@ class BusinessConfigChangeSetRollbackHandler(_ChangeSetBase):
                     rollback=True,
                     client_type=params.get("client_type"),
                     client_contract_capabilities=params.get("client_contract_capabilities"),
+                    accepted_contract_versions=params.get("accepted_contract_versions"),
                 )
                 for item in record.item_ids
             ]

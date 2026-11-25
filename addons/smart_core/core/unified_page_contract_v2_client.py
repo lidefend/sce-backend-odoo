@@ -120,7 +120,6 @@ def trim_unified_page_contract_v2(
     trim_meta["delivered"]["widgets"] = _count_widgets(layout["containerTree"])
     trim_meta["omitted"]["containers"] = max(0, trim_meta["original"]["containers"] - trim_meta["delivered"]["containers"])
     trim_meta["omitted"]["widgets"] = max(0, trim_meta["original"]["widgets"] - trim_meta["delivered"]["widgets"])
-    layout["componentRegistry"] = _trim_component_registry(_dict(layout.get("componentRegistry")), client)
     out["layoutContract"] = layout
 
     delivered_widget_ids = set(_collect_widget_ids(layout.get("containerTree")))
@@ -195,22 +194,6 @@ def _trim_widget(row: dict[str, Any]) -> dict[str, Any]:
     # the delivery face must not rewrite a widget's declared width or inject a
     # CSS-level full-width instruction per terminal.
     return row
-
-
-def _trim_component_registry(registry: dict[str, Any], client_type: str) -> dict[str, Any]:
-    """Keep every declared component identity; never select a renderer.
-
-    The client-trimmed contract used to name the framework component per client
-    (``ElInput`` / ``WxInput`` / ``H5Input``) and pre-select one.  How a field
-    renders is a frontend decision, not a delivery fact, so no client may
-    receive a rendering adapter here.
-    """
-    out: dict[str, Any] = {}
-    for key, row in registry.items():
-        if not isinstance(row, dict):
-            continue
-        out[key] = {"version": _text(row.get("version")) or "1.0"}
-    return out
 
 
 def _count_containers(rows: Any) -> int:
@@ -364,15 +347,15 @@ def collect_semantic_signature(contract: dict[str, Any]) -> dict[str, list[str]]
     containers: list[str] = []
     widgets: list[str] = []
     fields: list[str] = []
-    component_keys: list[str] = []
-    _collect_layout_signature(layout.get("containerTree"), containers, widgets, fields, component_keys)
+    semantic_types: list[str] = []
+    _collect_layout_signature(layout.get("containerTree"), containers, widgets, fields, semantic_types)
     return {
         "pageId": [_text(_dict(payload.get("pageInfo")).get("pageId"))],
         "sceneKey": [_text(_dict(payload.get("pageInfo")).get("sceneKey"))],
         "containerId": sorted(containers),
         "widgetId": sorted(widgets),
         "fieldCode": sorted(fields),
-        "componentKey": sorted(component_keys),
+        "semanticType": sorted(semantic_types),
         "actionId": sorted(
             _text(row.get("actionId"))
             for row in _list(action.get("actionRuleList"))
@@ -392,7 +375,7 @@ def collect_semantic_signature(contract: dict[str, Any]) -> dict[str, list[str]]
     }
 
 
-def _collect_layout_signature(rows: Any, containers: list[str], widgets: list[str], fields: list[str], component_keys: list[str]) -> None:
+def _collect_layout_signature(rows: Any, containers: list[str], widgets: list[str], fields: list[str], semantic_types: list[str]) -> None:
     for row in _list(rows):
         if not isinstance(row, dict):
             continue
@@ -405,9 +388,9 @@ def _collect_layout_signature(rows: Any, containers: list[str], widgets: list[st
                 widgets.append(_text(widget.get("widgetId")))
             if _text(widget.get("fieldCode")):
                 fields.append(_text(widget.get("fieldCode")))
-            if _text(widget.get("componentKey")):
-                component_keys.append(_text(widget.get("componentKey")))
-        _collect_layout_signature(row.get("children"), containers, widgets, fields, component_keys)
+            if _text(widget.get("semanticType")):
+                semantic_types.append(_text(widget.get("semanticType")))
+        _collect_layout_signature(row.get("children"), containers, widgets, fields, semantic_types)
 
 
 def find_client_semantic_drift(matrix: dict[str, dict[str, Any]]) -> list[str]:

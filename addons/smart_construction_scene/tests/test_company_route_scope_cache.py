@@ -21,6 +21,41 @@ class TestCompanyRouteScopeCache(TransactionCase):
             "sc.core.extension_modules", "smart_construction_core,smart_construction_scene"
         )
 
+    def test_scene_package_export_propagates_system_init_failure(self):
+        from odoo.addons.smart_core.handlers import system_init
+        from odoo.addons.smart_construction_scene.services.scene_package_service import (
+            ScenePackageService,
+        )
+
+        captured = {}
+
+        class _FailingSystemInit:
+            def __init__(self, *args, **kwargs):
+                captured["payload"] = kwargs.get("payload")
+
+            def handle(self, payload=None, ctx=None):
+                captured["payload"] = payload
+                return {
+                    "ok": False,
+                    "error": {
+                        "code": 409,
+                        "message": "contract identity rejected",
+                        "reason_code": "CONTRACT_VERSION_UNSUPPORTED",
+                    },
+                }
+
+        with patch.object(system_init, "SystemInitHandler", _FailingSystemInit):
+            with self.assertRaisesRegex(ValueError, "contract identity rejected"):
+                ScenePackageService(self.env).export_package(
+                    "protocol-export",
+                    "1.0.0",
+                )
+
+        params = captured["payload"]["params"]
+        self.assertEqual(params["client_type"], "web_pc")
+        self.assertEqual(params["accepted_contract_versions"], ["2.7.x"])
+        self.assertEqual(params["client_contract_capabilities"], [])
+
     def test_scene_state_is_not_a_second_route_authority(self):
         policy = self.env["sc.product.policy"]
         authority = {
@@ -344,7 +379,12 @@ class TestCompanyRouteScopeCache(TransactionCase):
         self.assertEqual(admitted.role_surface["landing_scene_key"], "workspace.home")
         self.assertEqual(admitted.role_surface["landing_path"], "/s/workspace.home")
         from odoo.addons.smart_core.handlers.system_init import SystemInitHandler
-        startup = SystemInitHandler(env).handle({"params": {"with_preload": True, "product_key": "construction.standard"}})
+        startup = SystemInitHandler(env).handle({"params": {
+            "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
+            "with_preload": True,
+            "product_key": "construction.standard",
+        }})
         self.assertTrue(startup.ok)
         self.assertEqual(startup.data["role_surface"]["landing_scene_key"], "workspace.home")
         self.assertEqual(startup.data["default_route"]["scene_key"], "workspace.home")

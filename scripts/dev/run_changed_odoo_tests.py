@@ -35,6 +35,7 @@ def plan(root: Path) -> dict[str, list[str]]:
             relative.startswith("tests/")
             and Path(relative).name.startswith("test_")
             and relative.endswith(".py")
+            and changed_odoo_tests.odoo_test_classes(root / path)
         ):
             test_modules.add(module)
         elif (

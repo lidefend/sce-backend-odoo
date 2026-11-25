@@ -592,10 +592,10 @@ async function navigateEntry(page, navTarget) {
   const ancestors = await leaf.evaluate((element) => {
     const rows = [];
     for (let parent = element.parentElement; parent; parent = parent.parentElement) {
-      if (parent.matches?.('li.t-submenu[data-navigation-key]')) {
+      if (parent.matches?.('[data-navigation-key][aria-expanded]')) {
         rows.push({
           key: parent.getAttribute('data-navigation-key'),
-          opened: parent.classList.contains('t-is-opened'),
+          opened: parent.getAttribute('aria-expanded') === 'true',
         });
       }
     }
@@ -603,7 +603,9 @@ async function navigateEntry(page, navTarget) {
   });
   for (const ancestor of ancestors) {
     if (ancestor.opened) continue;
-    const row = page.locator(`li[data-navigation-key="${ancestor.key}"] > .t-menu__item`).first();
+    const row = page.locator(
+      `[data-navigation-key="${ancestor.key}"] [data-navigation-toggle="submenu"]`,
+    ).first();
     await row.waitFor({ state: 'visible', timeout: 5000 });
     await row.click();
     await sleep(200);
@@ -1389,7 +1391,7 @@ async function deniedRoleNavigations(roles) {
 }
 
 async function dismissTransientDialogs(page) {
-  const dialog = page.locator('.t-dialog__position:visible, [role="dialog"]:visible').first();
+  const dialog = page.locator('[role="dialog"]:visible').first();
   if (!(await dialog.count())) return;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     await page.keyboard.press('Escape').catch(() => {});

@@ -6,21 +6,22 @@ The caller supplies the authoritative pre-extension tree, never a wire proof.
 from copy import deepcopy
 
 from .contract_lifecycle import payload_sha256
+from .contract_runtime.semantic_registry_generated import FIELD_SEMANTICS, NODE_SEMANTICS
 from .form_configuration_compiler import FormConfigurationError
 from .record_error_proof import validate_record_errors, _context
 
-FEEDBACK = "sc.feedback.message"
-ANCHOR = "sc.navigation.anchor"
-RIBBON = "sc.display.ribbon"
-INSIGHT_SUMMARY = "sc.insight.summary"
-ACTION_LIST = "sc.action.list"
-UNSUPPORTED_NATIVE_NODE = "sc.unsupported.native_node"
+FEEDBACK = "feedback_message"
+ANCHOR = "navigation_anchor"
+RIBBON = "display_ribbon"
+INSIGHT_SUMMARY = "insight_summary"
+ACTION_LIST = "action_list"
+UNSUPPORTED_NATIVE_NODE = "unsupported_native_node"
 KEYS = frozenset({FEEDBACK, ANCHOR, RIBBON, INSIGHT_SUMMARY, ACTION_LIST, UNSUPPORTED_NATIVE_NODE})
 SCALARS = frozenset({"char", "text", "boolean", "integer", "float", "monetary", "selection", "date", "datetime"})
 NODE_VALIDATION_PROOF_SCHEMA = "node-component-validation-proof/v1"
 _NODE_PROOF_KEYS = (
     "containerId",
-    "componentKey",
+    "semanticType",
     "componentConfig",
     "modifiers",
     "attributes",
@@ -43,10 +44,65 @@ _SOURCE_PROOF_KEYS = (
     "attributes",
     "children",
 )
+_OPAQUE_BUSINESS_BRANCHES = frozenset({
+    "dataContract", "dataPatch", "dataMeta", "mainData", "datasets",
+    "payload", "actionPayload", "context", "domain", "options", "optionsRaw",
+    "values", "value", "value_json", "valueJson", "default_vals",
+})
 
 
 def fail(code, path):
     raise FormConfigurationError(code, path)
+
+
+def _semantic_declaration_objects(value, path="$"):
+    if isinstance(value, list):
+        for index, item in enumerate(value):
+            yield from _semantic_declaration_objects(item, f"{path}[{index}]")
+        return
+    if not isinstance(value, dict):
+        return
+    if "semanticType" in value:
+        yield value, path
+    for key, child in value.items():
+        if key in _OPAQUE_BUSINESS_BRANCHES:
+            continue
+        yield from _semantic_declaration_objects(child, f"{path}.{key}")
+
+
+def _is_field_semantic_position(node):
+    node_type = str(node.get("type") or node.get("containerType") or "").strip().lower()
+    if node_type == "field":
+        return True
+    if node_type:
+        return False
+    return bool(
+        node.get("fieldDescriptor")
+        or node.get("widgetType")
+        or node.get("fieldType")
+        or node.get("fieldCode")
+    )
+
+
+def validate_declared_semantics(contract):
+    """Validate semantic identity and applicability before implementation lookup."""
+
+    for node, path in _semantic_declaration_objects(contract):
+        semantic_type = node.get("semanticType")
+        if type(semantic_type) is not str or not semantic_type:
+            fail("NODE_SEMANTIC_MISSING", path + ".semanticType")
+        if _is_field_semantic_position(node):
+            if semantic_type in NODE_SEMANTICS:
+                fail("NODE_SEMANTIC_CONTEXT_INVALID", path + ".semanticType")
+            if semantic_type not in FIELD_SEMANTICS:
+                fail("NODE_SEMANTIC_UNKNOWN", path + ".semanticType")
+            if FIELD_SEMANTICS[semantic_type].get("appliesTo") != "field":
+                fail("NODE_SEMANTIC_CONTEXT_INVALID", path + ".semanticType")
+            continue
+        if semantic_type in FIELD_SEMANTICS:
+            fail("NODE_SEMANTIC_CONTEXT_INVALID", path + ".semanticType")
+        if semantic_type not in NODE_SEMANTICS:
+            fail("NODE_SEMANTIC_UNKNOWN", path + ".semanticType")
 
 
 def _valid_payload_source(value):
@@ -79,11 +135,11 @@ def _valid_action_row(value):
     )
 
 
-def _valid_node_payload(component_key, config):
+def _valid_node_payload(semantic_type, config):
     payload = config.get("payload")
     if not isinstance(payload, dict) or not _valid_payload_source(config.get("payloadSourceAuthority")):
         return False
-    if component_key == INSIGHT_SUMMARY:
+    if semantic_type == INSIGHT_SUMMARY:
         return bool(
             config.get("payloadSchema") == "insight_summary.v1"
             and set(payload) == {"tone", "title", "message", "detail"}
@@ -92,7 +148,7 @@ def _valid_node_payload(component_key, config):
             and isinstance(payload.get("message"), str)
             and isinstance(payload.get("detail"), str)
         )
-    if component_key == ACTION_LIST:
+    if semantic_type == ACTION_LIST:
         items = payload.get("items")
         return bool(
             config.get("payloadSchema") == "action_list.v1"
@@ -119,7 +175,7 @@ def walk(nodes, path="layoutContract.containerTree"):
 
 
 def has_components(contract):
-    return any(node.get("componentKey") in KEYS for node, _ in
+    return any(node.get("semanticType") in KEYS for node, _ in
                walk((contract.get("layoutContract") or {}).get("containerTree", [])))
 
 
@@ -127,7 +183,7 @@ def validate_delivered_references(contract):
     """Supplement pre-trim validation: trimming may not leave dangling refs."""
     rows = list(walk((contract.get("layoutContract") or {}).get("containerTree", [])))
     for node, path in rows:
-        key = node.get("componentKey")
+        key = node.get("semanticType")
         if key == FEEDBACK:
             ref = node["componentConfig"]["contentRef"]["containerId"]
             unique(rows, ref, path)
@@ -513,13 +569,13 @@ def validate_final_nodes(
     collect_proof=False,
 ):
     """Validate all declarations before modifying visibility. Re-run per request."""
+    validate_declared_semantics(contract)
     tree = (contract.get("layoutContract") or {}).get("containerTree", [])
     rows, originals = list(walk(tree)), list(walk(native_tree))
-    declarations = [(node, path) for node, path in rows if node.get("componentKey") in KEYS]
+    declarations = [(node, path) for node, path in rows if node.get("semanticType") in KEYS]
     if not declarations:
         return {"schema": NODE_VALIDATION_PROOF_SCHEMA, "scope": "", "declarations": {}} if collect_proof else None
     from .unified_page_contract_v2_assembler import _evaluate_action_modifier
-    from .contract_runtime.semantic_resolver import component_registration
     page = contract.get("pageInfo") or {}
     if page.get("viewType") != "form":
         fail("FEEDBACK_CONFIG_INVALID", "pageInfo.viewType")
@@ -550,16 +606,9 @@ def validate_final_nodes(
             "declarations": emitted_declarations,
         }
 
-    def register_declared_components():
-        registry = contract["layoutContract"].setdefault("componentRegistry", {})
-        for node, _ in declarations:
-            registration = component_registration(node["componentKey"])
-            registry[node["componentKey"]] = {"version": registration["version"]}
-
     for node, path in declarations:
-        key, config = node["componentKey"], node.get("componentConfig")
+        key, config = node["semanticType"], node.get("componentConfig")
         unique(rows, node.get("containerId"), path)
-        component_registration(key)
         if key in {RIBBON, INSIGHT_SUMMARY, ACTION_LIST, UNSUPPORTED_NATIVE_NODE}:
             required = {
                 "nativeWidget",
@@ -785,14 +834,12 @@ def validate_final_nodes(
                 },
             }
     if draft_only:
-        register_declared_components()
         return collected_proof() if collect_proof else None
     if not evaluate_runtime:
         if needed:
             check_fact_access(record, needed, "layoutContract.feedback")
         if native_needed:
             check_native_fact_access(record, native_needed, "layoutContract.feedback")
-        register_declared_components()
         return collected_proof() if collect_proof else None
     facts = read_facts(record, needed, "layoutContract.feedback") if needed else {}
     native_facts = read_native_facts(record, native_needed, "layoutContract.feedback") if native_needed else {}
@@ -825,5 +872,4 @@ def validate_final_nodes(
             for status in statuses:
                 if status.get("containerId") == node["containerId"]:
                     status["visible"] = False
-    register_declared_components()
     return collected_proof() if collect_proof else None

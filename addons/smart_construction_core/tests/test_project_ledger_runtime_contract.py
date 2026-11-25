@@ -37,6 +37,7 @@ class TestProjectLedgerRuntimeContract(TransactionCase):
             "view_type": "form",
             "render_profile": "edit",
             "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
         }
         if action_id:
             params["action_id"] = int(action_id)
@@ -161,6 +162,7 @@ class TestProjectLedgerRuntimeContract(TransactionCase):
             "view_type": "form",
             "render_profile": "edit",
             "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
         }
         if action_id:
             params["action_id"] = int(action_id)

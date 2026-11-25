@@ -20,7 +20,7 @@ const fieldTypes = {
 };
 const v2ContractStore = {
   snapshot: {
-    pageInfo: { contractVersion: '2.2.0', pageId: 'x.document.create', clientType: 'web' },
+    pageInfo: { contractVersion: '2.7.0', pageId: 'x.document.create', clientType: 'web' },
     layoutContract: { containerTree: [] },
     actionContract: { actionRuleList: [] },
     dataContract: {
@@ -41,10 +41,29 @@ const v2ContractStore = {
     fieldCode: name,
     label: name,
     span: 6,
-    componentKey: 'sc.input.text',
+    semanticType: type === 'many2one'
+      ? 'relation'
+      : type === 'boolean'
+        ? 'boolean'
+        : type === 'integer'
+          ? 'number'
+          : 'text',
     capabilities: [],
     componentConfig: {},
-    fieldDescriptor: { name, type },
+    fieldDescriptor: {
+      schemaVersion: '1.0.0',
+      fieldCode: name,
+      label: name,
+      fieldType: type,
+      widgetType: type,
+      semanticType: type === 'many2one'
+        ? 'relation'
+        : type === 'boolean'
+          ? 'boolean'
+          : type === 'integer'
+            ? 'number'
+            : 'text',
+    },
   }]])),
 } as never;
 const routeQuery = {

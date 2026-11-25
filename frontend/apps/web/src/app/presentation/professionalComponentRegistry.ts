@@ -14,6 +14,7 @@ import {
   rendererSupportsContractVersion,
 } from './rendererProtocolVersion';
 import type { Component } from 'vue';
+import { frontendCapabilityGap } from '../contract/contractGap';
 
 /**
  * The readiness vocabulary is projected from the contract declaration; this
@@ -398,14 +399,20 @@ export type ContractProfessionalComponentResolutionInput = ProfessionalComponent
   contractRegistryEntry: unknown;
 };
 
+export type ContractSemanticComponentResolutionInput = Omit<
+  ProfessionalComponentResolutionInput,
+  'componentKey'
+> & {
+  semanticType: string;
+};
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
 
-// How a component renders is a frontend decision.  The contract declares the
-// component identity and its version; it must never name a framework component,
-// pre-select a per-client adapter or offer a rendering fallback, because that
-// would give the product a second, driftable component vocabulary.
+// How a semantic is rendered is a frontend decision. The contract declares the
+// semantic identity and payload constraints; it must never name a framework
+// component, pre-select a per-client adapter or offer a rendering fallback.
 const CONTRACT_FORBIDDEN_RENDER_KEYS = ['adapter', 'selectedAdapter', 'selected_adapter', 'fallback'] as const;
 
 function contractComponentBinding(input: ContractProfessionalComponentResolutionInput) {
@@ -506,4 +513,33 @@ export function resolveContractProfessionalComponent(
   if (!entry) throw new Error(`PROFESSIONAL_COMPONENT_UNREGISTERED:${input.componentKey}`);
   const local = resolveRegistrationEntry(entry, input, false);
   return Object.freeze({ ...local, ...contractComponentBinding(input) });
+}
+
+export function resolveContractSemanticComponent(
+  input: ContractSemanticComponentResolutionInput,
+): ProfessionalComponentResolution {
+  const semanticType = String(input.semanticType || '').trim().toLowerCase();
+  const componentKey = componentKeyForSemantic(semanticType);
+  if (!componentKey) {
+    throw frontendCapabilityGap({
+      semanticType,
+      fieldType: input.fieldType,
+      presentationMode: input.presentationMode,
+      missing: `frontend.implementation.${semanticType || '(missing semantic)'}`,
+      requiredImplementationLayer: 'P0:frontend:implementation_registry',
+    }, `前端没有语义 ${semanticType || '(missing)'} 的可用实现`);
+  }
+  const registration = professionalComponentRegistry.get(componentKey)
+    || industryRegistrations.get(componentKey);
+  if (!registration) {
+    throw frontendCapabilityGap({
+      semanticType,
+      fieldType: input.fieldType,
+      presentationMode: input.presentationMode,
+      missing: `frontend.implementation.${semanticType}`,
+      requiredImplementationLayer: 'P0:frontend:implementation_registry',
+    }, `前端语义 ${semanticType} 没有已注册实现`);
+  }
+  const local = resolveRegistrationEntry(registration, { ...input, componentKey }, false);
+  return Object.freeze({ ...local, contractVersion: input.pageContractVersion });
 }

@@ -24,7 +24,7 @@ EXPECTED = {
     "nativeActionSearch": "viewId viewXmlId authority profileRef",
     "nativeActionReadinessAxis": "status reasonCodes",
     "pageInfo": "pageId sceneKey pageName model viewType layoutType renderMode contractVersion clientType deliveryProfile",
-    "layoutContract": "pageId layoutType adaptMode containerTree layoutHints componentRegistry listProfile activityProfile graphProfile pivotProfile",
+    "layoutContract": "pageId layoutType adaptMode containerTree layoutHints listProfile activityProfile graphProfile pivotProfile",
     "activityProfile": (
         "activityTypeSlots deadlineSlots assigneeSlots fieldOccurrences nativeAttrs nodeOccurrences template "
         "templateQwebPresent actions actionCount sourceAuthority"
@@ -40,16 +40,15 @@ EXPECTED = {
     "container": "containerId containerType title span styleToken zone type name label string children widgetList",
     "nativeLayoutNode": (
         "type name string label title text displayLabel semanticTitle semanticAnchor containerId containerType span "
-        "styleToken zone widgetId fieldCode nativeLocator occurrenceIndex sourcePosition widget componentKey componentConfig "
+        "styleToken zone widgetId fieldCode nativeLocator occurrenceIndex sourcePosition widget semanticType componentConfig "
         "fieldInfo filename nolabel attributes modifiers action badge buttonType readonly required invisible "
         "column_invisible domain context options visible cols columns col class className fieldSize size formStructure "
         "formStructureRole sourceAuthority nativeIdentity children widgetList fields"
     ),
     "widget": (
-        "widgetId widgetType fieldCode label span componentKey capabilities componentConfig ownerContainerId "
+        "widgetId widgetType fieldCode label span semanticType capabilities componentConfig ownerContainerId "
         "nativeLocator occurrenceIndex sourcePosition nativeIdentity fieldDescriptor formStructureRole"
     ),
-    "componentRegistryEntry": "version",
     "statusContract": "globalStatus containerStatus widgetStatus buttonStatus selectorStatus",
     "containerStatus": "containerId visible disabled reasonCode",
     "widgetStatus": "widgetId visible readonly required disabled placeholder auth reasonCode",
@@ -217,7 +216,6 @@ CONSUMERS = {
     "container": "contractFormPresenter.presentNode",
     "nativeLayoutNode": "contractFormPresenter / canonicalNativeFormBridge / NativeFormTreeRenderer",
     "widget": "contractFormPresenter.fieldFromWidget / canonicalFormRenderer",
-    "componentRegistryEntry": "professionalComponentRegistry",
     "statusContract": "ContractV2 store / contractFormPresenter",
     "containerStatus": "contractFormPresenter.presentNode",
     "widgetStatus": "contractFormPresenter.fieldFromWidget",

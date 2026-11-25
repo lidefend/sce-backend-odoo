@@ -1,0 +1,51 @@
+schema_version: 1
+
+goal:
+  id: P0-FORM-COMPONENT-REGISTRY-CLOSURE-20261125
+  title: "Contract V2.7: separate semantic contract from renderer implementation"
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: Contract V2.7 semantic specification, production, negotiation, decoding and frontend implementation resolution
+  module:
+    - smart_core
+    - frontend
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Remove frontend component selection from the backend contract. The backend
+    declares structure, field and node semantics, constraints, permissions,
+    actions pending frontend implementation, while the frontend alone maps
+    semantic identities to renderers and reports implementation capability gaps.
+  why_here:
+    - The ownership violation spans the semantic specification, generator,
+      backend assembler, node validation, frontend strict decoder and contract
+      version negotiation.
+    - The runtime contract is a P0 product fact shared by every surface and
+      terminal.
+  why_not_elsewhere:
+    - The project form view and model facts are valid.
+    - The frontend implementation table owns Vue components and renderer
+      versions; the backend must not import or validate that implementation
+      vocabulary.
+  blast_radius:
+    - Contract V2.7 semantic/component schemas and negotiation.
+    - Backend field/node semantic production and node business validation.
+    - Frontend decoding, implementation resolution, error attribution and form
+      rendering.
+    - Current snapshots, generated carriers, cache identities and proof versions.
+    - Real projects.ledger list-to-form navigation.
+  acceptance:
+    - Backend production can validate a complete semantic contract without
+      loading any frontend implementation registry.
+    - V2.7 contracts contain no component-key or component-registry facts.
+    - Semantic validity is independent from whether a frontend renderer exists.
+    - A missing frontend implementation is reported as a frontend capability gap.
+    - Strict V2.7 decoding preserves all descriptor, occurrence and action checks.
+    - The project form uses semantic-driven frontend rendering and the real
+      wutao user journey opens the row form without a contract-gap stop.
+    - The browser acceptance binds its row-entry assertion to the actual
+      projects.ledger action contract.
+  exclusions:
+    - No model-specific frontend fallback.
+    - No project view or industry business-model redesign.
+    - No database, fixture, deployment or product-data mutation.
+  rollback: Revert this branch; deployment remains unchanged until integration.

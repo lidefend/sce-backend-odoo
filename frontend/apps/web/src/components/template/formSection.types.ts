@@ -84,6 +84,7 @@ export type FormSectionFieldSchema = {
   dateRangeEndInputValue?: string | number | boolean | null;
 
   inputPlaceholder?: string;
+  maxLength?: number;
   selectionOptions?: TemplateSelectOption[];
   relationOptions?: TemplateSelectOption[];
 

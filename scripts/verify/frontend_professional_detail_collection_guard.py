@@ -124,7 +124,9 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     # the assembler would re-create the private second vocabulary the registry
     # replaced, so the authority check follows the declaration.
     semantic_declaration = read_text("contracts/registry/semantic.yaml")
-    component_declaration = read_text("contracts/registry/component.yaml")
+    implementation_declaration = read_text(
+        "frontend/apps/web/src/app/presentation/implementation_registry.yaml"
+    )
     carrier = read_text("addons/smart_core/core/contract_runtime/semantic_registry_generated.py")
     project_layout = read_text("addons/smart_construction_core/core_extension_project_layout.py")
     example = read_text("docs/architecture/unified_page_contract_v2/examples/nested_form_relation.json")
@@ -132,20 +134,20 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection registry authority is incomplete")
     if "field_types: [one2many]" not in semantic_declaration:
         failures.append("one2many is not declared as a detail collection field type")
-    if "sc.relation.table" not in component_declaration:
-        failures.append("detail collection component authority is not declared")
-    if "'detail_collection': 'sc.relation.table'" not in carrier:
-        failures.append("runtime carrier does not project one2many to the detail collection authority")
+    if "detail_collection:" not in implementation_declaration or "sc.relation.table" not in implementation_declaration:
+        failures.append("frontend detail collection implementation is not declared")
+    if "'detail_collection'" not in carrier:
+        failures.append("runtime semantic carrier does not declare detail_collection")
     if "contract_runtime.semantic_resolver" not in assembler:
         failures.append("assembler does not resolve component keys through the contract registry")
-    if '"componentKey": "sc.table.data"' in project_layout:
-        failures.append("project layout extension still emits legacy sc.table.data component keys")
-    if '"sc.relation.table"' not in project_layout or '"sc.relation.many2many"' not in project_layout:
-        failures.append("project layout extension does not register formal relation component keys")
-    if '"componentKey": "sc.table.relation"' in example or '"sc.table.relation": {' in example:
-        failures.append("nested form relation example still uses legacy sc.table.relation authority")
-    if '"componentKey": "sc.relation.table"' not in example or '"sc.relation.table": {' not in example:
-        failures.append("nested form relation example does not document formal sc.relation.table authority")
+    if '"componentKey"' in project_layout:
+        failures.append("project layout extension publishes frontend component identity")
+    if 'semantic_type = "detail_collection"' not in project_layout:
+        failures.append("project layout extension does not publish detail_collection semantics")
+    if '"componentKey"' in example:
+        failures.append("nested form relation example publishes frontend component identity")
+    if '"semanticType": "detail_collection"' not in example:
+        failures.append("nested form relation example does not publish detail_collection semantics")
     for marker in (
         'data-semantic-component="ProfessionalDetailCollectionControl"', 'data-professional-field-family="detail-collection"', ':data-row-count', ':data-column-count',
         ':data-can-create', ':data-can-inline-edit', ':data-removed-row-count', ':data-validation-visible', ':data-summary-present',

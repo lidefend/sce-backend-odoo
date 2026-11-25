@@ -441,11 +441,15 @@ export function resolveContractV2FieldDescriptorMap(
     if (!code) return;
     const config = asDict(widget.componentConfig);
     const descriptor = asDict(widget.fieldDescriptor);
-    const fieldType = asText(config.fieldType || descriptor.ttype || descriptor.type);
+    const uiUsage = asText(descriptor.uiUsage);
+    const normalizedUiUsage: 'fact' | 'interaction' | undefined = uiUsage === 'fact' || uiUsage === 'interaction'
+      ? uiUsage
+      : undefined;
+    const fieldType = asText(config.fieldType || descriptor.fieldType);
     const relation = asText(config.relation || descriptor.relation);
-    const relationField = asText(config.relationField || descriptor.relation_field);
-    const relationEntry = asDict(config.relationEntry || descriptor.relation_entry);
-    const widgetOptions = asDict(config.widgetOptions || descriptor.widget_options);
+    const relationField = asText(config.relationField || descriptor.relationField);
+    const relationEntry = asDict(config.relationEntry || descriptor.relationEntry);
+    const widgetOptions = asDict(config.widgetOptions || descriptor.widgetOptions);
     const subview = asDict(config.subview || descriptor.subview);
     const formStructureRoleCandidate = asDict(widget.formStructureRole || config.formStructureRole || descriptor.formStructureRole);
     const roleName = asText(formStructureRoleCandidate.role);
@@ -461,10 +465,11 @@ export function resolveContractV2FieldDescriptorMap(
       } : undefined;
     out[code] = {
       fieldCode: code,
-      label: asText(widget.label || descriptor.string) || code,
+      label: asText(widget.label || descriptor.label) || code,
       fieldType,
       widgetType: asText(widget.widgetType),
-      componentKey: asText(widget.componentKey),
+      componentKey: asText(descriptor.componentKey),
+      semanticType: asText(widget.semanticType || descriptor.semanticType),
       ...(typeof (config.required ?? descriptor.required) === 'boolean' ? { required: Boolean(config.required ?? descriptor.required) } : {}),
       ...(typeof (config.readonly ?? descriptor.readonly) === 'boolean' ? { readonly: Boolean(config.readonly ?? descriptor.readonly) } : {}),
       ...(typeof (config.invisible ?? descriptor.invisible) === 'boolean' ? { invisible: Boolean(config.invisible ?? descriptor.invisible) } : {}),
@@ -473,7 +478,7 @@ export function resolveContractV2FieldDescriptorMap(
       ...(selectionPairs(config.selection ?? descriptor.selection)
         ? { selection: selectionPairs(config.selection ?? descriptor.selection) }
         : {}),
-      ...(descriptor.domain_expression !== undefined ? { domainExpression: descriptor.domain_expression } : {}),
+      ...(descriptor.domainExpression !== undefined ? { domainExpression: descriptor.domainExpression } : {}),
       ...(Object.prototype.hasOwnProperty.call(config, 'domain') ? { domain: config.domain }
         : Object.prototype.hasOwnProperty.call(descriptor, 'domain') ? { domain: descriptor.domain } : {}),
       ...(Object.prototype.hasOwnProperty.call(config, 'context') ? { context: config.context }
@@ -482,6 +487,19 @@ export function resolveContractV2FieldDescriptorMap(
       ...(Object.keys(widgetOptions).length ? { widgetOptions } : {}),
       ...(Object.keys(subview).length ? { subview } : {}),
       ...(asText(config.filename) ? { filename: asText(config.filename) } : {}),
+      ...(asText(descriptor.help) ? { help: asText(descriptor.help) } : {}),
+      ...(normalizedUiUsage ? { uiUsage: normalizedUiUsage } : {}),
+      ...(typeof descriptor.changeDefault === 'boolean' ? { changeDefault: descriptor.changeDefault } : {}),
+      ...(asText(descriptor.definitionRecord) ? { definitionRecord: asText(descriptor.definitionRecord) } : {}),
+      ...(asText(descriptor.definitionRecordField) ? { definitionRecordField: asText(descriptor.definitionRecordField) } : {}),
+      ...(asText(descriptor.groupOperator) ? { groupOperator: asText(descriptor.groupOperator) } : {}),
+      ...(typeof descriptor.searchable === 'boolean' ? { searchable: descriptor.searchable } : {}),
+      ...(typeof descriptor.sortable === 'boolean' ? { sortable: descriptor.sortable } : {}),
+      ...(typeof descriptor.store === 'boolean' ? { store: descriptor.store } : {}),
+      ...(typeof descriptor.translate === 'boolean' ? { translate: descriptor.translate } : {}),
+      ...(typeof descriptor.trim === 'boolean' ? { trim: descriptor.trim } : {}),
+      ...(Array.isArray(descriptor.related) && descriptor.related.length ? { related: descriptor.related } : {}),
+      ...(Number.isInteger(descriptor.size) && Number(descriptor.size) > 0 ? { size: Number(descriptor.size) } : {}),
       ...(asText(config.semanticType) ? { semanticType: asText(config.semanticType) } : {}),
       ...(asText(config.surfaceRole) ? { surfaceRole: asText(config.surfaceRole) } : {}),
       ...(typeof config.technical === 'boolean' ? { technical: config.technical } : {}),
@@ -504,10 +522,11 @@ export function toContractV2FormFieldDescriptor(row: ContractV2FieldDescriptor):
     ...(row.relation ? { relation: row.relation } : {}),
     ...(row.relationField ? { relation_field: row.relationField } : {}),
     ...(row.selection ? { selection: row.selection } : {}),
-    ...(row.relationEntry ? { relation_entry: row.relationEntry } : {}),
-    ...(row.widgetOptions ? { widget_options: row.widgetOptions } : {}),
+    ...(row.relationEntry ? { relationEntry: row.relationEntry } : {}),
+    ...(row.widgetOptions ? { widgetOptions: row.widgetOptions } : {}),
     ...(row.subview ? { subview: row.subview } : {}),
     ...(row.filename ? { filename: row.filename } : {}),
+    ...(row.help ? { help: row.help } : {}),
     ...(row.domain !== undefined ? { domain: row.domain } : {}),
     ...(row.domainExpression !== undefined ? { domain_expression: row.domainExpression } : {}),
     ...(row.context !== undefined ? { context: row.context } : {}),

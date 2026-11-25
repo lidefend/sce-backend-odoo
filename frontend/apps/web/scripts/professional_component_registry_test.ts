@@ -10,6 +10,7 @@ import {
   registerIndustryRendererExtensions,
   resolveIndustryRendererForField,
   resolveContractProfessionalComponent,
+  resolveContractSemanticComponent,
   resolveProfessionalComponent,
   resolveProfessionalComponentRegistration,
   resolveSemanticRegistration,
@@ -50,6 +51,35 @@ const ready = resolveProfessionalComponent({
 });
 assert.equal(ready.readiness, 'ready');
 assert.equal(ready.renderer, 'ProfessionalBaseFieldControl');
+const semanticResolved = resolveContractSemanticComponent({
+  semanticType: 'text',
+  fieldType: 'char',
+  pageContractVersion: '2.7.0',
+  presentationMode: 'task',
+  renderProfile: 'edit',
+});
+assert.equal(semanticResolved.componentKey, 'sc.input.text');
+assert.equal(semanticResolved.renderer, 'ProfessionalBaseFieldControl');
+try {
+  resolveContractSemanticComponent({
+    semanticType: 'future_contract_semantic',
+    fieldType: 'char',
+    pageContractVersion: '2.7.0',
+    presentationMode: 'task',
+    renderProfile: 'edit',
+  });
+  assert.fail('a lawful semantic without a frontend implementation must fail closed');
+} catch (error) {
+  assert.equal((error as Error).name, 'FrontendCapabilityGapError');
+  assert.deepEqual((error as Error & { defect?: Record<string, unknown> }).defect, {
+    kind: 'frontend_capability_gap',
+    semanticType: 'future_contract_semantic',
+    fieldType: 'char',
+    presentationMode: 'task',
+    missing: 'frontend.implementation.future_contract_semantic',
+    requiredImplementationLayer: 'P0:frontend:implementation_registry',
+  });
+}
 const contractBound = resolveContractProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
   pageContractVersion: '2.2.0',
@@ -60,14 +90,18 @@ assert.equal(contractBound.contractVersion, '1.0');
 assert.equal(contractBound.renderer, 'ProfessionalBaseFieldControl');
 assert.equal(contractBound.pageContractVersion, '2.2.0');
 assert.equal(contractBound.rendererVersion, '1.0.0');
-assert.equal(contractBound.supportedContractVersion, '>=2.0.0 <2.7.0');
+assert.equal(contractBound.supportedContractVersion, '>=2.0.0 <2.8.0');
 assert.equal(resolveContractProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
   pageContractVersion: '2.6.0', clientType: 'web_pc', contractRegistryEntry: { version: '1.0' },
 }).renderer, 'ProfessionalBaseFieldControl');
-assert.throws(() => resolveContractProfessionalComponent({
+assert.equal(resolveContractProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
   pageContractVersion: '2.7.0', clientType: 'web_pc', contractRegistryEntry: { version: '1.0' },
+}).renderer, 'ProfessionalBaseFieldControl');
+assert.throws(() => resolveContractProfessionalComponent({
+  componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
+  pageContractVersion: '3.0.0', clientType: 'web_pc', contractRegistryEntry: { version: '1.0' },
 }), /PROFESSIONAL_COMPONENT_CONTRACT_VERSION_UNSUPPORTED/);
 assert.throws(() => resolveContractProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
@@ -105,7 +139,7 @@ const paymentRow = {
   readiness: 'ready',
   renderer: paymentRenderer,
   rendererVersion: '1.0.0',
-  supportedContractVersion: '>=2.0.0 <2.7.0',
+  supportedContractVersion: '>=2.0.0 <2.8.0',
   requiredCapabilities: [FORM_RELATION_ONE2MANY_CAPABILITY],
 } as const;
 const dummyIndustryComponent = {} as never;
@@ -182,7 +216,7 @@ assert.equal(resolveIndustryRendererForField({
   componentKey: paymentRow.componentKey,
   componentRenderer: paymentRenderer,
   fieldType: 'one2many',
-  pageContractVersion: '2.7.0',
+  pageContractVersion: '3.0.0',
   presentationMode: 'task',
   renderProfile: 'edit',
   capabilities: [FORM_RELATION_ONE2MANY_CAPABILITY],
@@ -441,13 +475,13 @@ assert.throws(() => resolveProfessionalComponentRegistration(testRegistry, {
   componentKey: restricted.componentKey, fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
   capabilities: [],
 }), /PROFESSIONAL_COMPONENT_CAPABILITY_MISSING/);
-assert.equal(restricted.supportedContractVersion, '>=2.0.0 <2.7.0');
+assert.equal(restricted.supportedContractVersion, '>=2.0.0 <2.8.0');
 assert.equal(rendererSupportsContractVersion(restricted.supportedContractVersion, '2.6.0'), true);
-assert.equal(rendererSupportsContractVersion(restricted.supportedContractVersion, '2.7.0'), false);
+assert.equal(rendererSupportsContractVersion(restricted.supportedContractVersion, '2.7.0'), true);
 assert.throws(() => resolveProfessionalComponentRegistration(testRegistry, {
   componentKey: restricted.componentKey,
   fieldType: 'char',
-  pageContractVersion: '2.7.0',
+  pageContractVersion: '3.0.0',
   presentationMode: 'task',
   renderProfile: 'edit',
   capabilities: ['relation.read'],
@@ -479,7 +513,7 @@ assert.throws(() => resolveProfessionalComponent({
   renderProfile: 'edit',
 }), /PROFESSIONAL_COMPONENT_UNREGISTERED:sc\.unsupported\.native_widget/);
 
-assert.equal(professionalComponentRegistrations.length, 27);
+assert.equal(professionalComponentRegistrations.length, 28);
 const registeredRenderers: ReadonlySet<string> = new Set<string>(PROFESSIONAL_COMPONENT_RENDERERS);
 const everyFieldType = [
   'char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'boolean',

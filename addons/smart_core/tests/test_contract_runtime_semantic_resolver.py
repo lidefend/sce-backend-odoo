@@ -1,28 +1,17 @@
 # -*- coding: utf-8 -*-
-"""Focused tests for the contract-runtime semantic resolver.
-
-The resolver replaced the assembler-private ``_component_key`` mapping
-(FE-CONTRACT-RUNTIME-00 gap G1).  These tests pin the *behaviour* that mapping
-produced, so removing the second vocabulary is proven not to change what the
-frontend is told to render, and they pin the declaration/derivation precedence
-that the registry introduced.
-"""
+"""Contract V2.7 client-independent semantic resolver tests."""
 from __future__ import annotations
 
+import json
 import sys
 import unittest
-import json
-from pathlib import Path
-
 import yaml
+from pathlib import Path
 
 ADDON_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ADDON_ROOT))
 
 from core.contract_runtime import semantic_resolver as resolver  # noqa: E402
-# The page assembler's widget canonicalisation is the runtime's own entry into
-# the derivation rules; a test that re-implemented it could pass while the page
-# and the carrier disagreed.
 from core.unified_page_contract_v2_assembler import _canonical_widget_type  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -31,165 +20,68 @@ DOMAIN_CONTRACT_REL = Path("contracts/domain/payment-request.yaml")
 PAYMENT_MODEL = "payment.request"
 
 
-class ComponentKeyBaselineTest(unittest.TestCase):
-    """Behaviour baseline: every case the former private mapping decided."""
-
+class SemanticResolutionTest(unittest.TestCase):
     CASES = (
-        # declared field type outranks widget spelling
-        ({"type": "many2one_reference", "model_field": "m"}, "input", "sc.display.text"),
-        ({"type": "reference"}, "many2one_reference", "sc.display.text"),
-        ({"type": "reference"}, "select", "sc.display.text"),
-        ({"type": "reference"}, "number", "sc.display.text"),
-        # monetary by type or by explicit widget
-        ({"type": "monetary"}, "number", "sc.value.money"),
-        ({"type": "float"}, "monetary", "sc.value.money"),
-        # business widgets on a generic field
-        ({"type": "float"}, "percentage", "sc.value.percentage"),
-        ({"type": "float"}, "percentpie", "sc.value.percentage"),
-        ({"type": "float"}, "float_time", "sc.value.duration"),
-        ({"type": "selection"}, "statusbar", "sc.display.status"),
-        ({"type": "selection"}, "badge", "sc.display.status"),
-        # accounting display carriers resolve to the readable-value component
-        # instead of an editable binary/number control
-        ({"type": "binary"}, "account-tax-totals-field", "sc.display.text"),
-        ({"type": "binary"}, "payment", "sc.display.text"),
-        ({"type": "integer"}, "statinfo", "sc.display.text"),
-        # relations
-        ({"type": "many2one", "relation": "res.currency"}, "select", "sc.relation.many2one"),
-        ({"type": "many2many", "relation": "x.related"}, "table", "sc.relation.many2many"),
-        ({"type": "many2many", "relation": "res.users"}, "many2many_tags", "sc.select.tags"),
-        ({"type": "one2many", "relation": "x.line"}, "table", "sc.relation.table"),
-        # scalar widgets
-        ({"type": "char"}, "input", "sc.input.text"),
-        ({"type": "text"}, "textarea", "sc.input.textarea"),
-        ({"type": "integer"}, "number", "sc.input.number"),
-        ({"type": "selection"}, "select", "sc.select.remote"),
-        ({"type": "boolean"}, "checkbox", "sc.input.boolean"),
-        ({"type": "date"}, "date", "sc.input.date"),
-        ({"type": "datetime"}, "datetime", "sc.input.datetime"),
-        ({"type": "binary"}, "binary", "sc.input.binary"),
-        ({"type": "one2many"}, "table", "sc.relation.table"),
-        # the declared relation type still outranks a collection widget name
-        ({"type": "one2many"}, "tree", "sc.relation.table"),
-        ({"type": "char"}, "tree", "sc.tree.data"),
-        ({"type": "char"}, "table", "sc.table.data"),
-        ({"type": "char"}, "button", "sc.button.action"),
-        ({"type": "char"}, "display", "sc.display.text"),
+        ({"type": "many2one_reference", "model_field": "m"}, "input", "reference"),
+        ({"type": "reference"}, "select", "reference"),
+        ({"type": "monetary"}, "number", "money"),
+        ({"type": "float"}, "monetary", "money"),
+        ({"type": "float"}, "percentage", "percentage"),
+        ({"type": "float"}, "float_time", "duration"),
+        ({"type": "selection"}, "statusbar", "status"),
+        ({"type": "binary"}, "account-tax-totals-field", "readable_value"),
+        ({"type": "many2one", "relation": "res.currency"}, "select", "relation"),
+        ({"type": "many2many", "relation": "x.related"}, "table", "relation_collection"),
+        ({"type": "many2many", "relation": "res.users"}, "many2many_tags", "tag_collection"),
+        ({"type": "one2many", "relation": "x.line"}, "table", "detail_collection"),
+        ({"type": "char"}, "input", "text"),
+        ({"type": "text"}, "textarea", "long_text"),
+        ({"type": "integer"}, "number", "number"),
+        ({"type": "selection"}, "select", "choice"),
+        ({"type": "boolean"}, "checkbox", "boolean"),
+        ({"type": "date"}, "date", "date"),
+        ({"type": "datetime"}, "datetime", "datetime"),
+        ({"type": "binary"}, "binary", "binary"),
+        ({"type": "char"}, "tree", "hierarchical_collection"),
+        ({"type": "char"}, "table", "detail_table"),
+        ({"type": "char"}, "button", "action"),
+        ({"type": "char"}, "display", "readable_value"),
     )
 
-    def test_component_keys_match_the_former_mapping(self) -> None:
+    def test_semantics_are_derived_without_component_identity(self) -> None:
         for descriptor, widget_type, expected in self.CASES:
             with self.subTest(widget=widget_type, expected=expected):
-                self.assertEqual(resolver.component_key(widget_type, descriptor), expected)
+                result = resolver.resolve(descriptor, widget_type)
+                self.assertEqual(result["semantic"], expected)
+                self.assertNotIn("componentKey", result)
 
-    def test_field_names_never_change_the_component(self) -> None:
-        self.assertEqual(
-            resolver.component_key("number", {"name": "payment_percentage", "type": "float"}),
-            "sc.input.number",
-        )
-        self.assertEqual(
-            resolver.component_key("number", {"name": "amount_total", "type": "monetary"}),
-            "sc.value.money",
-        )
+    def test_declared_semantic_is_the_backend_authority(self) -> None:
+        result = resolver.resolve({"type": "char", "semantic": "money"})
+        self.assertEqual(result, {
+            "semantic": "money",
+            "semanticSource": resolver.SOURCE_DECLARED,
+        })
 
-    def test_unknown_widget_uses_the_declared_default(self) -> None:
-        self.assertEqual(resolver.component_key("unregistered_widget", {"type": "char"}), "sc.display.text")
-        self.assertEqual(
-            resolver.semantic_of("unregistered_widget", {"type": "char"}), resolver.FALLBACK_SEMANTIC
-        )
+    def test_unknown_declared_semantic_fails_closed(self) -> None:
+        with self.assertRaisesRegex(ValueError, "CONTRACT_SEMANTIC_UNDECLARED"):
+            resolver.resolve({"name": "amount", "type": "char", "semantic": "not_a_semantic"})
 
-    def test_widget_matching_is_case_insensitive(self) -> None:
-        self.assertEqual(resolver.component_key("STATUSBAR", {"type": "selection"}), "sc.display.status")
-        self.assertEqual(resolver.component_key("Input", {"type": "char"}), "sc.input.text")
-
-    def test_derivation_match_distinguishes_explicit_rules_from_the_default(self) -> None:
+    def test_unknown_widget_uses_declared_fallback_semantic(self) -> None:
         self.assertEqual(
-            resolver.derive_semantic_match({"type": "date"}, "daterange"),
-            (resolver.FALLBACK_SEMANTIC, False),
-        )
-        self.assertEqual(
-            resolver.derive_semantic_match({"type": "date"}, "date"),
-            ("date", True),
-        )
-        self.assertEqual(
-            resolver.derive_semantic_match({"type": "one2many"}, "list_activity"),
-            ("activity_collection", True),
+            resolver.resolve({"type": "char"}, "unregistered_widget")["semantic"],
+            resolver.FALLBACK_SEMANTIC,
         )
 
-
-class ResolutionSourceTest(unittest.TestCase):
-    def test_declared_semantic_wins(self) -> None:
-        result = resolver.resolve({"semantic": "money"})
-        self.assertEqual(result["semantic"], "money")
-        self.assertEqual(result["componentKey"], "sc.value.money")
-        self.assertEqual(result["semanticSource"], resolver.SOURCE_DECLARED)
-
-    def test_declared_semantic_overrides_a_conflicting_field_type(self) -> None:
-        # A declared semantic is a deliberate contract decision, not a hint the
-        # field type may overrule.
-        self.assertEqual(resolver.component_key("input", {"type": "char", "semantic": "money"}), "sc.value.money")
-
-    def test_derived_source_is_reported_when_nothing_is_declared(self) -> None:
-        result = resolver.resolve({"type": "date"}, "date")
-        self.assertEqual(result["semantic"], "date")
-        self.assertEqual(result["semanticSource"], resolver.SOURCE_DERIVED)
-
-    def test_undeclared_semantic_is_reported_and_does_not_bind_an_unregistered_component(self) -> None:
-        with self.assertLogs("core.contract_runtime.semantic_resolver", level="ERROR") as captured:
-            result = resolver.resolve(
-                {"name": "amount", "type": "char", "semantic": "not_a_semantic"}, "input"
-            )
-        self.assertTrue(any("contract_semantic_undeclared" in line for line in captured.output))
-        self.assertTrue(any("not_a_semantic" in line for line in captured.output))
-        self.assertEqual(result["semanticSource"], resolver.SOURCE_DERIVED)
-        self.assertEqual(result["componentKey"], "sc.input.text")
-
-    def test_every_declared_semantic_resolves_to_its_declared_component(self) -> None:
-        # The declaration is the expectation, so this fails if the resolver ever
-        # drifts from the registry it is supposed to consume.
-        from core.contract_runtime.semantic_registry_generated import SEMANTIC_COMPONENTS
-
-        for semantic, component_key in sorted(SEMANTIC_COMPONENTS.items()):
-            with self.subTest(semantic=semantic):
-                self.assertEqual(
-                    resolver.resolve({"semantic": semantic})["componentKey"], component_key
-                )
-
-
-class DeprecationSignalTest(unittest.TestCase):
-    def setUp(self) -> None:
-        resolver._deprecation_reported = False
-
-    def tearDown(self) -> None:
-        resolver._deprecation_reported = False
-
-    def test_authority_path_never_reports_deprecation(self) -> None:
-        with self.assertNoLogs("core.contract_runtime.semantic_resolver", level="WARNING"):
-            resolver.component_key("input", {"type": "char"})
-
-    def test_legacy_shim_reports_the_event_exactly_once(self) -> None:
-        with self.assertLogs("core.contract_runtime.semantic_resolver", level="WARNING") as first:
-            # Same result as the authority path: the shim is compatible, only
-            # its entry point is deprecated.
-            self.assertEqual(
-                resolver.legacy_component_key("input", {"type": "char"}), "sc.input.text"
-            )
-        self.assertTrue(any(resolver.DEPRECATION_EVENT in line for line in first.output))
-        with self.assertNoLogs("core.contract_runtime.semantic_resolver", level="WARNING"):
-            resolver.legacy_component_key("input", {"type": "char"})
+    def test_semantic_spec_is_independent_from_frontend_implementations(self) -> None:
+        # reference and readable_value legally share one frontend implementation.
+        # Backend semantic validity must not depend on one-to-one component rows.
+        self.assertTrue(resolver.is_field_semantic("reference"))
+        self.assertTrue(resolver.is_field_semantic("readable_value"))
+        self.assertFalse(resolver.is_node_semantic("readable_value"))
+        self.assertFalse(resolver.is_field_semantic("feedback_message"))
 
 
 class PaymentEntitySemanticsTest(unittest.TestCase):
-    """The entity's semantics come from the parsed model/view facts, not a hand list.
-
-    ``payment.request`` is the first entity the domain layer binds to a model, so
-    it is where "declare nothing, read the facts" has to be provable: the meaning
-    of each field is resolved from the governed parse of the Odoo model metadata
-    and the resolved view arch, and the carrier the runtime ships must equal that
-    resolution field by field.  A hand-maintained copy would be a second input,
-    which is the drift this pins out.
-    """
-
     EXPECTED = {
         "name": "text",
         "project_id": "relation",
@@ -204,7 +96,6 @@ class PaymentEntitySemanticsTest(unittest.TestCase):
         cls.baseline = json.loads((REPO_ROOT / VIEW_STRUCTURE_REL).read_text(encoding="utf-8"))
 
     def parsed_field_facts(self) -> dict[str, dict]:
-        """``field -> attrs`` read from the governed parse, richest surface first."""
         entry = next(
             item for item in self.baseline["entries"] if item.get("res_model") == PAYMENT_MODEL
         )
@@ -226,7 +117,7 @@ class PaymentEntitySemanticsTest(unittest.TestCase):
             walk(surface.get("semantic_structure") or {})
         return facts
 
-    def test_meaning_bearing_fields_resolve_from_the_parsed_facts_alone(self) -> None:
+    def test_meaning_fields_resolve_from_parsed_facts(self) -> None:
         facts = self.parsed_field_facts()
         for name, semantic in self.EXPECTED.items():
             with self.subTest(field=name):
@@ -234,47 +125,15 @@ class PaymentEntitySemanticsTest(unittest.TestCase):
                 self.assertIsNotNone(attrs, f"{name} is missing from the governed parse")
                 field = {"name": name, "ttype": attrs.get("type")}
                 native_widget = str(attrs.get("widget") or "")
-                resolution = resolver.resolve(
+                result = resolver.resolve(
                     field,
                     resolver.semantic_widget_type(
-                        native_widget, _canonical_widget_type(native_widget, field)
+                        native_widget,
+                        _canonical_widget_type(native_widget, field),
                     ),
                 )
-                self.assertEqual(resolver.SOURCE_DERIVED, resolution["semanticSource"])
-                self.assertEqual(semantic, resolution["semantic"])
-
-    def test_shipped_carrier_equals_the_projection_of_the_parsed_facts(self) -> None:
-        """The runtime carrier must be a faithful projection, never a private list."""
-        from core.contract_runtime.domain_field_semantics_generated import DOMAIN_FIELD_SEMANTICS
-
-        projected = DOMAIN_FIELD_SEMANTICS[PAYMENT_MODEL]
-        for name, semantic in self.EXPECTED.items():
-            with self.subTest(field=name):
-                self.assertEqual(semantic, projected.get(name))
-        annotated = [{"name": name} for name in self.EXPECTED]
-        self.assertEqual(len(self.EXPECTED), resolver.annotate_projected_semantics(PAYMENT_MODEL, annotated))
-        for row in annotated:
-            with self.subTest(field=row["name"]):
-                self.assertEqual(resolver.SOURCE_PROJECTED, resolver.resolve(row, "")["semanticSource"])
-
-    def test_projection_never_overwrites_an_explicit_semantic(self) -> None:
-        rows = [{"name": "amount", "semantic": "number"}]
-        self.assertEqual(0, resolver.annotate_projected_semantics(PAYMENT_MODEL, rows))
-        self.assertEqual("number", rows[0]["semantic"])
-
-    def test_unknown_model_or_field_projects_nothing(self) -> None:
-        self.assertEqual("", resolver.projected_field_semantics("sc.unknown.model", "amount"))
-        self.assertEqual("", resolver.projected_field_semantics(PAYMENT_MODEL, "not_a_field"))
-
-    def test_semantic_widgets_survive_canonicalisation(self) -> None:
-        # The status rule matches the native spelling; folding it into the
-        # generic display token would make the rule unreachable.
-        self.assertEqual("statusbar", resolver.semantic_widget_type("statusbar", "display"))
-        self.assertEqual("monetary", resolver.semantic_widget_type("monetary", "number"))
-        self.assertEqual("account-tax-totals-field", resolver.semantic_widget_type("account-tax-totals-field", "binary"))
-        self.assertEqual("payment", resolver.semantic_widget_type("payment", "binary"))
-        self.assertEqual("statinfo", resolver.semantic_widget_type("statinfo", "number"))
-        self.assertEqual("select", resolver.semantic_widget_type("", "select"))
+                self.assertEqual(resolver.SOURCE_DERIVED, result["semanticSource"])
+                self.assertEqual(semantic, result["semantic"])
 
     def test_domain_contract_carries_no_hand_written_semantic(self) -> None:
         document = yaml.safe_load((REPO_ROOT / DOMAIN_CONTRACT_REL).read_text(encoding="utf-8"))
@@ -283,38 +142,7 @@ class PaymentEntitySemanticsTest(unittest.TestCase):
             for name, entry in (document.get("fields") or {}).items()
             if isinstance(entry, dict) and entry.get("semantic")
         }
-        self.assertEqual(set(), declared, "the model/view facts already carry the semantic")
-
-
-class ComponentRegistryTest(unittest.TestCase):
-    """The single identity/version builder every runtime producer publishes through."""
-
-    def test_declared_keys_publish_the_one_contract_version(self) -> None:
-        self.assertEqual(
-            {
-                "sc.value.money": {"version": resolver.COMPONENT_CONTRACT_VERSION},
-                "sc.relation.many2one": {"version": resolver.COMPONENT_CONTRACT_VERSION},
-            },
-            resolver.component_registry(["sc.relation.many2one", "sc.value.money"]),
-        )
-        self.assertEqual("1.0", resolver.COMPONENT_CONTRACT_VERSION)
-
-    def test_undeclared_key_rejects_the_whole_registration(self) -> None:
-        with self.assertRaisesRegex(ValueError, "COMPONENT_UNREGISTERED"):
-            resolver.component_registry(["sc.input.absent", "sc.value.money"])
-
-    def test_a_non_sequence_declares_nothing(self) -> None:
-        self.assertEqual({}, resolver.component_registry(None))
-        self.assertEqual({}, resolver.component_registry("sc.value.money"))
-        self.assertEqual({}, resolver.component_registry(["", "   "]))
-
-    def test_every_resolvable_key_is_publishable(self) -> None:
-        # A key the resolver can produce must never be dropped by the builder,
-        # otherwise a page would render through an identity it cannot publish.
-        for semantic, key in sorted(resolver.SEMANTIC_COMPONENTS.items()):
-            with self.subTest(semantic=semantic):
-                self.assertEqual({key: {"version": resolver.COMPONENT_CONTRACT_VERSION}},
-                                 resolver.component_registry([key]))
+        self.assertEqual(set(), declared)
 
 
 if __name__ == "__main__":

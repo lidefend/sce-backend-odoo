@@ -1,0 +1,75 @@
+# Frontend implementation registry.
+#
+# This file owns renderer selection. The backend contract owns semantic meaning,
+# field/node applicability, constraints and payload protocols; it never imports
+# this table and does not publish component identity.
+registry: implementation
+
+defaults:
+  renderer_version: "1.0.0"
+  contract_version: ">=2.0.0 <2.8.0"
+  capabilities: []
+  presentation_modes: [task, workspace]
+  render_profiles: [create, edit, readonly]
+  readiness: ready
+
+type_directed_renderer: FormSectionField
+
+renderers:
+  - FormSectionField
+  - ProfessionalBaseFieldControl
+  - ProfessionalBusinessValueControl
+  - ProfessionalRelationFieldControl
+  - ProfessionalDetailCollectionControl
+  - PaymentSettlementDetailCollectionControl
+
+capability_providers:
+  form.relation.one2many: FormSection.relationAdapter
+
+implementations:
+  text: {component_key: sc.input.text, renderer: FormSectionField}
+  long_text: {component_key: sc.input.textarea, renderer: FormSectionField}
+  number: {component_key: sc.input.number, renderer: FormSectionField}
+  boolean: {component_key: sc.input.boolean, renderer: FormSectionField}
+  choice: {component_key: sc.select.remote, renderer: FormSectionField}
+  binary: {component_key: sc.input.binary, renderer: FormSectionField}
+  reference: {component_key: sc.display.text, renderer: FormSectionField}
+  readable_value: {component_key: sc.display.text, renderer: FormSectionField}
+  date: {component_key: sc.input.date, renderer: FormSectionField}
+  datetime: {component_key: sc.input.datetime, renderer: FormSectionField}
+  duration: {component_key: sc.value.duration, renderer: ProfessionalBusinessValueControl}
+  money: {component_key: sc.value.money, renderer: ProfessionalBusinessValueControl}
+  percentage: {component_key: sc.value.percentage, renderer: ProfessionalBusinessValueControl}
+  status: {component_key: sc.display.status, renderer: ProfessionalBusinessValueControl}
+  relation: {component_key: sc.relation.many2one, renderer: ProfessionalRelationFieldControl}
+  relation_collection: {component_key: sc.relation.many2many, renderer: ProfessionalRelationFieldControl}
+  tag_collection: {component_key: sc.select.tags, renderer: ProfessionalRelationFieldControl}
+  detail_collection: {component_key: sc.relation.table, renderer: ProfessionalDetailCollectionControl}
+  activity_collection: {component_key: sc.relation.activity, renderer: ProfessionalDetailCollectionControl}
+  detail_table: {component_key: sc.table.data, renderer: FormSectionField}
+  hierarchical_collection: {component_key: sc.tree.data, renderer: FormSectionField}
+  action: {component_key: sc.button.action, renderer: FormSectionField}
+  credential_entry: {component_key: sc.auth.credential_entry, renderer: FormSectionField}
+  secret_confirmation: {component_key: sc.auth.secret_confirmation, renderer: FormSectionField}
+  challenge_status: {component_key: sc.auth.challenge_status, renderer: FormSectionField}
+  one_time_secret:
+    component_key: sc.auth.one_time_secret
+    renderer: FormSectionField
+    readiness: fail_closed
+  support_action: {component_key: sc.auth.support_action, renderer: FormSectionField}
+  payment_settlement_detail_collection:
+    component_key: sc.payment.settlement_detail_collection
+    renderer: PaymentSettlementDetailCollectionControl
+    capabilities: [form.relation.one2many]
+  unsupported_native_widget:
+    component_key: sc.unsupported.native_widget
+    renderer: FormSectionField
+    readiness: fail_closed
+
+node_implementations:
+  feedback_message: {component_key: sc.feedback.message}
+  navigation_anchor: {component_key: sc.navigation.anchor}
+  display_ribbon: {component_key: sc.display.ribbon}
+  insight_summary: {component_key: sc.insight.summary}
+  action_list: {component_key: sc.action.list}
+  unsupported_native_node: {component_key: sc.unsupported.native_node}

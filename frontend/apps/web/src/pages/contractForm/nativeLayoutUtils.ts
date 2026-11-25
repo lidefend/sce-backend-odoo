@@ -1118,18 +1118,27 @@ export function nativeNodeFieldDescriptor(
   const context = fieldInfo.context !== undefined
     ? fieldInfo.context
     : (fallback as Record<string, unknown> | undefined)?.context;
-  const relationEntry = fieldInfo.relation_entry !== undefined
-    ? fieldInfo.relation_entry
-    : (fallback as Record<string, unknown> | undefined)?.relation_entry;
-  const widgetOptions = fieldInfo.widget_options !== undefined
-    ? fieldInfo.widget_options
-    : (fieldInfo.options !== undefined
-      ? fieldInfo.options
-      : ((fallback as Record<string, unknown> | undefined)?.widget_options
-        ?? (fallback as Record<string, unknown> | undefined)?.options));
+  const fallbackRecord = fallback as Record<string, unknown> | undefined;
+  const relationEntry = fieldInfo.relationEntry !== undefined
+    ? fieldInfo.relationEntry
+    : (fieldInfo.relation_entry !== undefined
+      ? fieldInfo.relation_entry
+      : (fallbackRecord?.relationEntry ?? fallbackRecord?.relation_entry));
+  const widgetOptions = fieldInfo.widgetOptions !== undefined
+    ? fieldInfo.widgetOptions
+    : (fieldInfo.widget_options !== undefined
+      ? fieldInfo.widget_options
+      : (fieldInfo.options !== undefined
+        ? fieldInfo.options
+        : (fallbackRecord?.widgetOptions ?? fallbackRecord?.widget_options ?? fallbackRecord?.options)));
+  const normalizedFallback = fallback
+    ? Object.fromEntries(Object.entries(fallback).filter(([key]) => (
+      key !== 'relation_entry' && key !== 'widget_options'
+    )))
+    : {};
   const filename = String(fieldInfo.filename || node.filename || fallback?.filename || '').trim();
   return {
-    ...(fallback || {}),
+    ...normalizedFallback,
     ...(name ? { name } : {}),
     ...(label ? { string: label } : {}),
     ...(type ? { type, ttype: type } : {}),
@@ -1141,8 +1150,8 @@ export function nativeNodeFieldDescriptor(
     ...(widget ? { widget } : {}),
     ...(domain !== undefined ? { domain } : {}),
     ...(context !== undefined ? { context } : {}),
-    ...(relationEntry !== undefined ? { relation_entry: relationEntry } : {}),
-    ...(widgetOptions !== undefined ? { widget_options: widgetOptions } : {}),
+    ...(relationEntry !== undefined ? { relationEntry } : {}),
+    ...(widgetOptions !== undefined ? { widgetOptions } : {}),
     ...(filename ? { filename } : {}),
   } as FieldDescriptor;
 }

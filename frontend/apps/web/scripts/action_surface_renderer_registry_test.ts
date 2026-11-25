@@ -197,11 +197,11 @@ const activityProfile = {
 const activityCarrierPayload = {
   pageInfo: {
     pageId: 'page.x.activity', sceneKey: 'x.activity', pageName: 'Activities', model: 'x.activity',
-    viewType: 'activity', layoutType: 'activity', renderMode: 'governed', contractVersion: '2.0.0', clientType: 'web_pc',
+    viewType: 'activity', layoutType: 'activity', renderMode: 'governed', contractVersion: '2.7.0', clientType: 'web_pc',
   },
   layoutContract: {
     pageId: 'page.x.activity', layoutType: 'activity', adaptMode: 'pc', containerTree: [],
-    layoutHints: { density: 'compact' }, componentRegistry: {},
+    layoutHints: { density: 'compact' },
     listProfile: { collection_presentation: { semantic: 'activity' } },
     activityProfile,
   },
@@ -220,7 +220,7 @@ const activityCarrierPayload = {
     sourceType: 'ui.contract',
     lifecycle: {
       lifecycleVersion: '1', stage: 'sealed',
-      definition: { schemaId: 'v2', schemaVersion: '2', schemaSha256: 'schema', contractVersion: '2', normativeStatus: 'active' },
+      definition: { schemaId: 'v2', schemaVersion: '2.7.0', schemaSha256: 'schema', contractVersion: '2.7.0', normativeStatus: 'active' },
       generation: { generator: 'test', generatorVersion: '1', sourceType: 'ui.contract', sourceSha256: 'source' },
       runtime: { requestId: 'activity-request', traceId: 'activity-trace', clientType: 'web_pc', traceSource: 'test' },
       integrity: { algorithm: 'sha256', contractSha256: 'activity-contract-sha' }, authority: {},

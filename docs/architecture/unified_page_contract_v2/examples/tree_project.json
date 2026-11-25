@@ -7,7 +7,7 @@
     "viewType": "tree",
     "layoutType": "tree",
     "renderMode": "governed",
-    "contractVersion": "2.5.0",
+    "contractVersion": "2.7.0",
     "clientType": "web_pc"
   },
   "layoutContract": {
@@ -29,7 +29,6 @@
             "fieldCode": "project_tree",
             "label": "Project Tree",
             "span": 12,
-            "componentKey": "sc.tree.data",
             "capabilities": [
               "tree-expand",
               "filterable"
@@ -37,17 +36,13 @@
             "componentConfig": {
               "dataKey": "project_tree"
             },
-            "ownerContainerId": "main.structure"
+            "ownerContainerId": "main.structure",
+            "semanticType": "hierarchical_collection"
           }
         ]
       }
     ],
-    "layoutHints": {},
-    "componentRegistry": {
-      "sc.tree.data": {
-        "version": "1.0"
-      }
-    }
+    "layoutHints": {}
   },
   "statusContract": {
     "globalStatus": {
@@ -135,14 +130,14 @@
       "stage": "runtime_delivery",
       "definition": {
         "schemaId": "smart_core.unified_page_contract_v2",
-        "schemaVersion": "2.5.0",
-        "schemaSha256": "c5c961d3bd141f40231b39e1c8c7182b53537cc84d66bc4273a1936288e64f65",
-        "contractVersion": "2.5.0",
+        "schemaVersion": "2.7.0",
+        "schemaSha256": "4075e4fe443c2d4c4a5e7e581b1c14ff03a1c6edf69669d6b8b0e0d98d05a8c6",
+        "contractVersion": "2.7.0",
         "normativeStatus": "stable"
       },
       "generation": {
         "generator": "documentation.example",
-        "generatorVersion": "2.5.0",
+        "generatorVersion": "2.7.0",
         "sourceType": "ui.contract",
         "sourceSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
       },
@@ -154,7 +149,7 @@
       },
       "integrity": {
         "algorithm": "sha256",
-        "contractSha256": "cb3a2a42ff915b362c5679767089ba063cfc5a9870d7b4f135ecf003650da8da"
+        "contractSha256": "bc559598060926d4a401214a97ab1c9a11491965fb14ead987769c03e716e393"
       },
       "authority": {
         "kind": "documentation_example",

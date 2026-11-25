@@ -219,12 +219,13 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
 
   function extractColumnSchemaFromContract(contract: unknown): Dict[] {
     const store = contract as ContractV2NormalizedStore | null;
+    const descriptors = resolveContractV2FieldDescriptorMap(store);
     return resolveContractV2FieldWidgets(store).map((widget) => ({
       name: widget.fieldCode,
       label: widget.label,
       string: widget.label,
       widget: widget.widgetType,
-      componentKey: widget.componentKey,
+      componentKey: descriptors[widget.fieldCode]?.componentKey || '',
       ...(widget.componentConfig || {}),
     }));
   }

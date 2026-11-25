@@ -221,9 +221,9 @@ const actionOnlyCapabilities = decodeContractCarrierCapabilities({
   status: 'current',
   clientType: 'web_pc',
   compatibilityMode: 'page_block_action_v1',
-  acceptedContractVersions: ['2.5.x', '2.6.x'],
+  acceptedContractVersions: ['2.7.x'],
   clientContractCapabilities: ['page_block_action.v1'],
-  contractVersion: '2.6.0',
+  contractVersion: '2.7.0',
   pageOrchestrationVersion: '2.1.0',
   carriers: {
     'page_block_data.v1': { schemaVersion: '1.0.0', enabled: false },
@@ -238,9 +238,9 @@ const leakedAction = structuredClone({
   status: 'current',
   clientType: 'web_pc',
   compatibilityMode: 'page_block_data_v1',
-  acceptedContractVersions: ['2.5.x', '2.6.x'],
+  acceptedContractVersions: ['2.7.x'],
   clientContractCapabilities: ['page_block_data.v1'],
-  contractVersion: '2.6.0',
+  contractVersion: '2.7.0',
   pageOrchestrationVersion: '2.1.0',
   carriers: {
     'page_block_data.v1': { schemaVersion: '1.0.0', enabled: true },

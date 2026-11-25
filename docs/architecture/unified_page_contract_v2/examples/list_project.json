@@ -7,7 +7,7 @@
     "viewType": "list",
     "layoutType": "table",
     "renderMode": "governed",
-    "contractVersion": "2.5.0",
+    "contractVersion": "2.7.0",
     "clientType": "web_pc"
   },
   "layoutContract": {
@@ -29,7 +29,6 @@
             "fieldCode": "project_rows",
             "label": "Projects",
             "span": 12,
-            "componentKey": "sc.table.data",
             "capabilities": [
               "sortable",
               "filterable",
@@ -39,18 +38,14 @@
             "componentConfig": {
               "dataKey": "project_rows"
             },
-            "ownerContainerId": "main.table"
+            "ownerContainerId": "main.table",
+            "semanticType": "detail_table"
           }
         ]
       }
     ],
     "layoutHints": {
       "density": "compact"
-    },
-    "componentRegistry": {
-      "sc.table.data": {
-        "version": "1.0"
-      }
     },
     "listProfile": {
       "columns": [
@@ -194,14 +189,14 @@
       "stage": "runtime_delivery",
       "definition": {
         "schemaId": "smart_core.unified_page_contract_v2",
-        "schemaVersion": "2.5.0",
-        "schemaSha256": "c5c961d3bd141f40231b39e1c8c7182b53537cc84d66bc4273a1936288e64f65",
-        "contractVersion": "2.5.0",
+        "schemaVersion": "2.7.0",
+        "schemaSha256": "4075e4fe443c2d4c4a5e7e581b1c14ff03a1c6edf69669d6b8b0e0d98d05a8c6",
+        "contractVersion": "2.7.0",
         "normativeStatus": "stable"
       },
       "generation": {
         "generator": "documentation.example",
-        "generatorVersion": "2.5.0",
+        "generatorVersion": "2.7.0",
         "sourceType": "ui.contract",
         "sourceSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
       },
@@ -213,7 +208,7 @@
       },
       "integrity": {
         "algorithm": "sha256",
-        "contractSha256": "2b5c2360abe6bbfd8763b5ef32f07c850feea6097b52597e47c8eef15f57d7ed"
+        "contractSha256": "b0477108b88b4ee0639929be245d31e152a5aa186bb939eb231e57905990f8d0"
       },
       "authority": {
         "kind": "documentation_example",

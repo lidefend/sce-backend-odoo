@@ -50,7 +50,6 @@ def field_descriptor(
     label: str,
     field_type: str,
     widget_type: str,
-    component_key: str,
     semantic_type: str,
     **semantics: Any,
 ) -> dict[str, Any]:
@@ -60,7 +59,6 @@ def field_descriptor(
         "label": _text(label),
         "fieldType": _text(field_type),
         "widgetType": _text(widget_type),
-        "componentKey": _text(component_key),
         "semanticType": _text(semantic_type),
     }
     for key, value in semantics.items():
@@ -75,7 +73,6 @@ def currency_field_descriptor(*, field_code: str, label: str = "币种") -> dict
         label=label,
         field_type="many2one",
         widget_type="many2one",
-        component_key="sc.relation.many2one",
         semantic_type="relation",
         relation="res.currency",
     )
