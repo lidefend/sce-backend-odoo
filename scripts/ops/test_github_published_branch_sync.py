@@ -8,9 +8,6 @@ from generated_evidence_paths import GENERATED_EVIDENCE_PATH_SET
 from gitee_published_branch_sync import git, out, sync, CONFIRM
 from github_published_branch_sync import (
     INDEX,
-    PARSER_CONTRACT_TEST_MARKERS,
-    PARSER_CONTRACT_TEST_PATH,
-    PARSER_MAIN_MARKERS,
     REPORTS,
     SYNC_TOOL_PATH,
     merge_index,
@@ -68,13 +65,11 @@ class GithubSyncTests(unittest.TestCase):
         git(self.root, 'init', '-b', 'main')
         git(self.root, 'config', 'user.email', 'test@example.invalid')
         git(self.root, 'config', 'user.name', 'Test')
-        for path in REPORTS | {INDEX, SYNC_TOOL_PATH, PARSER_CONTRACT_TEST_PATH}:
+        for path in REPORTS | {INDEX, SYNC_TOOL_PATH}:
             p = self.root / path
             p.parent.mkdir(parents=True, exist_ok=True)
             if path == INDEX:
                 content = json.dumps(index(base='base'))
-            elif path == PARSER_CONTRACT_TEST_PATH:
-                content = 'class Test:\n    # conflict anchor\n    pass\n'
             else:
                 content = 'base\n'
             p.write_text(content)
@@ -85,11 +80,6 @@ class GithubSyncTests(unittest.TestCase):
         (self.root / INDEX).write_text(json.dumps(index(base='base', ours='ours')))
         for path in REPORTS:
             (self.root / path).write_text('ours\n')
-        (self.root / PARSER_CONTRACT_TEST_PATH).write_text(
-            'class Test:\n'
-            + '\n'.join(f'    # {marker}' for marker in PARSER_CONTRACT_TEST_MARKERS)
-            + '\n'
-        )
         (self.root / SYNC_TOOL_PATH).write_text(
             Path(__file__).with_name('github_published_branch_sync.py').read_text(encoding='utf-8')
         )
@@ -99,11 +89,6 @@ class GithubSyncTests(unittest.TestCase):
         (self.root / INDEX).write_text(json.dumps(index(base='base', theirs='theirs')))
         for path in REPORTS:
             (self.root / path).write_text('theirs\n')
-        (self.root / PARSER_CONTRACT_TEST_PATH).write_text(
-            'class Test:\n'
-            + '\n'.join(f'    # {marker}' for marker in PARSER_MAIN_MARKERS)
-            + '\n'
-        )
         (self.root / SYNC_TOOL_PATH).write_text('theirs\n')
         self.main = self.commit()
         git(self.root, 'push', 'origin', 'main')
@@ -129,13 +114,10 @@ class GithubSyncTests(unittest.TestCase):
         self.assertTrue(result['generated_reports_refresh_required'])
         self.assertEqual(
             set(result['resolved_conflicts']),
-            REPORTS | {INDEX, SYNC_TOOL_PATH, PARSER_CONTRACT_TEST_PATH},
+            REPORTS | {INDEX, SYNC_TOOL_PATH},
         )
         for report in REPORTS:
             self.assertEqual((self.root / report).read_text(), 'ours\n')
-        parser = (self.root / PARSER_CONTRACT_TEST_PATH).read_text()
-        for marker in PARSER_CONTRACT_TEST_MARKERS:
-            self.assertIn(marker, parser)
         self.assertEqual(out(self.root, 'ls-remote', 'origin', 'refs/heads/fix/test').split()[0], self.head)
         self.assertEqual(out(self.root, 'status', '--porcelain'), '')
 
@@ -162,6 +144,37 @@ class GithubSyncTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, 'unapproved'):
             self.run_sync(apply=True, confirm=CONFIRM)
         self.assertEqual(out(self.root, 'rev-parse', 'HEAD'), self.head)
+        self.assertEqual(out(self.root, 'status', '--porcelain'), '')
+
+    def test_parser_test_conflict_never_auto_selects_candidate(self):
+        path = 'addons/smart_core/tests/test_native_view_parser_surfaces.py'
+        parser = self.root / path
+        parser.parent.mkdir(parents=True, exist_ok=True)
+        candidate_text = (
+            'class TestParser:\n'
+            '    def test_candidate_open_form_assertion(self):\n'
+            '        pass\n'
+        )
+        parser.write_text(candidate_text, encoding='utf-8')
+        self.head = self.commit()
+        git(self.root, 'push', 'origin', 'fix/test')
+
+        git(self.root, 'switch', 'main')
+        parser.parent.mkdir(parents=True, exist_ok=True)
+        parser.write_text(
+            'class TestParser:\n'
+            '    def test_main_field_projection_assertion(self):\n'
+            '        pass\n',
+            encoding='utf-8',
+        )
+        self.main = self.commit()
+        git(self.root, 'push', 'origin', 'main')
+        git(self.root, 'switch', 'fix/test')
+
+        with self.assertRaisesRegex(RuntimeError, 'unapproved'):
+            self.run_sync(apply=True, confirm=CONFIRM)
+        self.assertEqual(out(self.root, 'rev-parse', 'HEAD'), self.head)
+        self.assertEqual(parser.read_text(encoding='utf-8'), candidate_text)
         self.assertEqual(out(self.root, 'status', '--porcelain'), '')
 
     def test_remote_drift_during_resolution_aborts(self):

@@ -12,15 +12,6 @@ URLS = {'https://github.com/lidefend/sce-backend-odoo.git', 'git@github.com:lide
 INDEX = '.agent/active-runs.json'
 REPORTS = set(GENERATED_EVIDENCE_PATH_SET)
 SYNC_TOOL_PATH = 'scripts/ops/github_published_branch_sync.py'
-PARSER_CONTRACT_TEST_PATH = 'addons/smart_core/tests/test_native_view_parser_surfaces.py'
-PARSER_CONTRACT_TEST_MARKERS = (
-    'test_tree_open_form_is_additive_and_respects_open_form_view',
-    'self.assertEqual(tree["row_actions"][1]["trigger"], "row_click")',
-    'test_native_field_capabilities_are_projected_from_orm_metadata',
-    'self.assertEqual(occurrence["semantic_type"], "percentage")',
-    'self.assertEqual(schema["semantic_type"], "percentage")',
-)
-PARSER_MAIN_MARKERS = PARSER_CONTRACT_TEST_MARKERS[2:]
 
 
 def merge_index(base, ours, theirs):
@@ -56,23 +47,10 @@ def validate_sync_tool_resolution(text):
         raise RuntimeError('published-sync tool resolution lost canonical generated-evidence authority')
 
 
-def resolve_parser_contract_test_union(root, path):
-    """Accept a reviewed additive union of independent parser assertions."""
-    ours = git(root, 'show', ':2:' + path).stdout
-    theirs = git(root, 'show', ':3:' + path).stdout
-    if any(marker not in theirs for marker in PARSER_MAIN_MARKERS):
-        raise RuntimeError('parser main-side assertions missing during union')
-    if any(marker not in ours for marker in PARSER_CONTRACT_TEST_MARKERS):
-        raise RuntimeError('parser candidate-side union assertions missing')
-    if any(marker in ours for marker in ('<<<<<<<', '=======', '>>>>>>>')):
-        raise RuntimeError('parser union contains conflict markers')
-    return ours
-
-
 def resolve_metadata(root):
     paths = set(out(root, 'diff', '--name-only', '--diff-filter=U').splitlines())
     if not paths or not paths <= REPORTS | {
-            INDEX, SYNC_TOOL_PATH, PARSER_CONTRACT_TEST_PATH}:
+            INDEX, SYNC_TOOL_PATH}:
         raise RuntimeError('unapproved merge conflict; original candidate restored')
     # Compute every resolution before changing the index; only regular files.
     results = {}
@@ -86,8 +64,6 @@ def resolve_metadata(root):
         elif path == SYNC_TOOL_PATH:
             results[path] = git(root, 'show', ':2:' + path).stdout
             validate_sync_tool_resolution(results[path])
-        elif path == PARSER_CONTRACT_TEST_PATH:
-            results[path] = resolve_parser_contract_test_union(root, path)
         else:
             # Intermediate merge only: publication preflight requires regeneration.
             results[path] = git(root, 'show', ':2:' + path).stdout

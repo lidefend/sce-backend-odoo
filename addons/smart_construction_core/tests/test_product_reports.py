@@ -41,7 +41,14 @@ class TestProductReports(TransactionCase):
                 with self.subTest(action=action_key, view_type=view_type):
                     response = UiContractV2Handler(env, su_env=env["ir.model"].sudo().env).handle({
                         "op": "action_open", "action_id": action.id, "view_type": view_type,
-                        "contract_surface": "user",
+                        "contract_surface": "user", "client_type": "web_pc",
+                        "accepted_contract_versions": ["2.7.x"],
+                        "client_contract_capabilities": [
+                            "view.form.v1",
+                            "view.tree.v1",
+                            "view.pivot.v1",
+                            "view.graph.v1",
+                        ],
                     })
                     response = response.to_legacy_dict() if hasattr(response, "to_legacy_dict") else response
                     self.assertTrue(response.get("ok"), response)

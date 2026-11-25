@@ -7,6 +7,33 @@
     ".agent/runs/VERIFY-CORRECTNESS-01/run.json",
     ".github/workflows/frontend_release_gate.yml",
     ".github/workflows/professional_quality_gate.yml",
+    "addons/smart_construction_bundle/tests/test_missing_record_contract.py",
+    "addons/smart_construction_bundle/tests/test_startup_performance_contract.py",
+    "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_contract_execution_component_profile.py",
+    "addons/smart_construction_core/tests/test_contract_handling_page_policy.py",
+    "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_data_permission_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_invoice_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_light_forms_configuration_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_patch_b_read_aggregate_security.py",
+    "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_policy_document_capability.py",
+    "addons/smart_construction_core/tests/test_product_reports.py",
+    "addons/smart_construction_core/tests/test_project_initiation_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_project_structure_component_profile.py",
+    "addons/smart_construction_core/tests/test_receipt_income_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+    "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_tax_filing_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_user_feedback_business_views.py",
+    "addons/smart_core/tests/test_native_occurrence_contract_integration.py",
+    "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
+    "addons/smart_core/tests/test_user_view_preference_runtime_orm.py",
     "addons/smart_core/tests/test_native_view_parser_surfaces.py",
     "config/ci/path_ownership_v1.json",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
@@ -31,8 +58,8 @@
     "scripts/verify/test_test_coverage_registry_audit.py"
   ],
   "environment": {
-    "kind": "offline",
-    "authority": "existing local Make tools; no database, service, credential or remote write"
+    "kind": "runtime",
+    "authority": "existing local Make tools; sc-local-test/sc_test disposable synthetic profile only; no persistent database, service, credential or remote write"
   },
   "verification_responsibility": {
     "local_targeted": {
@@ -139,8 +166,10 @@
       "kind": "offline"
     }
   },
-  "blockers": [],
-  "next_exact_step": "Review and commit the clean candidate, then publish this exact HEAD through the governed PR lane and wait for the four required checks against the current main base.",
+  "blockers": [
+    "latest main advanced to 487a3d8497cd89841e1954d164e0e11d79742d81; a governed candidate synchronization and post-sync revalidation are required"
+  ],
+  "next_exact_step": "Commit the corrected verification and V2.7 test migration, synchronize the published branch to main@487a3d8497cd89841e1954d164e0e11d79742d81 through the governed entry, rerun affected checks, then publish the aligned exact HEAD.",
   "id": "VERIFY-CORRECTNESS-01",
   "branch": "fix/verify-correctness-escape-01-20261125",
   "status": "verification_pending",

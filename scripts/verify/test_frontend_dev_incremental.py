@@ -3933,7 +3933,79 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.assertEqual(0, result["returncode"])
         self.assertEqual(0, result["testCount"])
         self.assertTrue(result["explicitZeroTestEvidence"])
+        self.assertIn("zero collected tests", result["statusReason"])
+
+    def test_all_skipped_test_target_is_not_executed_success(self) -> None:
+        self.root.joinpath("Makefile").write_text(
+            self.root.joinpath("Makefile").read_text(encoding="utf-8")
+            + "verify.skipped.unit:\n"
+            "\t@printf 'Ran 1 test in 0.001s\\n\\nOK (skipped=1)\\n'\n",
+            encoding="utf-8",
+        )
+        result = incremental._run_make_target(
+            "verify.skipped.unit",
+            self.root,
+            self.root / "skipped-unit.log",
+        )
+        self.assertEqual("failed", result["status"])
+        self.assertEqual(0, result["testCount"])
+        self.assertEqual(1, result["testCollectedCount"])
+        self.assertEqual(1, result["testSkippedCount"])
+        self.assertTrue(result["allTestsSkippedEvidence"])
+        self.assertIn("skipped every", result["statusReason"])
+
+    def test_naked_pass_is_not_nonzero_test_execution_evidence(self) -> None:
+        self.root.joinpath("Makefile").write_text(
+            self.root.joinpath("Makefile").read_text(encoding="utf-8")
+            + "verify.naked-pass.unit:\n"
+            "\t@printf 'PASS\\n'\n",
+            encoding="utf-8",
+        )
+        result = incremental._run_make_target(
+            "verify.naked-pass.unit",
+            self.root,
+            self.root / "naked-pass-unit.log",
+        )
+        self.assertEqual("failed", result["status"])
+        self.assertEqual(0, result["testCount"])
+        self.assertEqual("none", result["testExecutionEvidence"])
         self.assertIn("zero executed tests", result["statusReason"])
+
+    def test_nonzero_final_test_summary_passes(self) -> None:
+        self.root.joinpath("Makefile").write_text(
+            self.root.joinpath("Makefile").read_text(encoding="utf-8")
+            + "verify.nonzero.unit:\n"
+            "\t@printf 'Ran 2 tests in 0.001s\\n\\nOK\\n'\n",
+            encoding="utf-8",
+        )
+        result = incremental._run_make_target(
+            "verify.nonzero.unit",
+            self.root,
+            self.root / "nonzero-unit.log",
+        )
+        self.assertEqual("passed", result["status"])
+        self.assertEqual(2, result["testCount"])
+        self.assertEqual(2, result["testCollectedCount"])
+        self.assertEqual(0, result["testSkippedCount"])
+
+    def test_nested_zero_test_diagnostic_does_not_override_outer_result(self) -> None:
+        self.root.joinpath("Makefile").write_text(
+            self.root.joinpath("Makefile").read_text(encoding="utf-8")
+            + "verify.wrapped-zero.unit:\n"
+            f"\t@PYTHONPATH={ROOT} python3 -m unittest "
+            "scripts.verify.test_frontend_dev_incremental."
+            "IncrementalExecutionTest."
+            "test_zero_test_target_fails_even_when_make_exits_zero\n",
+            encoding="utf-8",
+        )
+        result = incremental._run_make_target(
+            "verify.wrapped-zero.unit",
+            self.root,
+            self.root / "wrapped-zero-unit.log",
+        )
+        self.assertEqual("passed", result["status"])
+        self.assertEqual(1, result["testCount"])
+        self.assertEqual("unittest-summary", result["testSummarySource"])
 
     def test_static_target_does_not_need_a_fabricated_test_count(self) -> None:
         self.root.joinpath("Makefile").write_text(
@@ -4792,6 +4864,40 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
             second["sourceReceipt"],
             ".runtime/frontend-dev-validation/executions/first/receipt.json",
         )
+
+    def test_registry_audit_invalidated_by_selector_change_executes_and_fails(self) -> None:
+        planner = self.root / "scripts/ci/backend_impact_plan.py"
+        planner.parent.mkdir(parents=True)
+        planner.write_text("VERSION = 1\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.root), "commit", "-qm", "planner"],
+            check=True,
+        )
+        self.paths.append("scripts/ci/backend_impact_plan.py")
+
+        first = self._execute("registry-first", interrupted=False)
+        self.assertEqual(first["_code"], 0)
+        self.assertIn("verify.test.coverage.registry", first["_calls"])
+
+        planner.write_text("VERSION = 2\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.root), "commit", "-qm", "planner change"],
+            check=True,
+        )
+        second = self._execute(
+            "registry-second",
+            interrupted=False,
+            failed_target="verify.test.coverage.registry",
+        )
+
+        self.assertEqual(second["_code"], 1)
+        self.assertEqual(second["status"], "failed")
+        self.assertIn("verify.test.coverage.registry", second["_calls"])
+        self.assertIn("verify.ci.workflow.contract", second["_calls"])
+        self.assertNotIn("verify.frontend.lint.src", second["_calls"])
+        self.assertIn("verify.frontend.lint.src", second["reusedTargets"])
 
     def test_new_unrelated_target_does_not_rerun_passed_business_targets(self) -> None:
         self.paths = ["frontend/apps/web/src/NewSurface.vue"]

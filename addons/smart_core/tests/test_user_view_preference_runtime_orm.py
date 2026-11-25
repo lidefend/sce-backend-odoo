@@ -56,10 +56,17 @@ class TestUserViewPreferenceRuntime(TransactionCase):
     def _profile_with_columns(payload):
         """Locate the declared list profile inside a ui.contract.v2 payload."""
         found = []
+        list_profile = (payload.get("layoutContract") or {}).get("listProfile")
+        if isinstance(list_profile, dict) and isinstance(list_profile.get("columns"), list):
+            found.append(list_profile)
 
         def walk(node):
             if isinstance(node, dict):
-                if isinstance(node.get("columns"), list) and isinstance(node.get("preference_policy"), dict):
+                if isinstance(node.get("listProfile"), dict):
+                    found.append(node["listProfile"])
+                if isinstance(node.get("columns"), list) and isinstance(
+                    node.get("preference_policy"), dict
+                ):
                     found.append(node)
                 for value in node.values():
                     walk(value)
@@ -211,7 +218,14 @@ class TestUserViewPreferenceRuntime(TransactionCase):
     # ------------------------------- requirement 4: applied exactly once
     def test_server_never_applies_a_stored_order_to_the_declared_contract(self):
         handler = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env)
-        params = {"op": "model", "model": "res.partner", "view_type": "list"}
+        params = {
+            "op": "model",
+            "model": "res.partner",
+            "view_type": "list",
+            "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": ["view.form.v1", "view.tree.v1"],
+        }
 
         before = handler.handle(dict(params))
         before = before.to_legacy_dict() if hasattr(before, "to_legacy_dict") else before

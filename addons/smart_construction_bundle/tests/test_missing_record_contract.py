@@ -22,6 +22,7 @@ class TestMissingRecordContract(TransactionCase):
                     **authority, 'record_id': absent_id,
                     'view_type': 'form', 'render_profile': 'readonly', 'contract_surface': 'user',
                     'source_mode': 'backend_internal', 'delivery_profile': 'full', 'client_type': 'web_pc',
+                    'accepted_contract_versions': ['2.7.x'],
                 }
                 result = UiContractV2Handler(self.env, su_env=self.env).handle(params)
                 result = result.to_legacy_dict() if hasattr(result, 'to_legacy_dict') else result
@@ -33,5 +34,7 @@ class TestMissingRecordContract(TransactionCase):
         result = UiContractV2Handler(self.env, su_env=self.env).handle({
             'op': 'action_open', 'action_id': action.id, 'model': 'res.partner',
             'record_id': self.env.user.partner_id.id, 'view_type': 'form',
+            'client_type': 'web_pc',
+            'accepted_contract_versions': ['2.7.x'],
         })
         self.assertEqual(result.code, 400)

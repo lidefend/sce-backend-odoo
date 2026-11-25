@@ -173,6 +173,8 @@ class TestDataPermissionNativeLowcode(TransactionCase):
             "op": "model", "model": model, "action_id": action.id,
             "view_id": self.env.ref("smart_construction_core.%s" % view_xmlid).id,
             "view_type": "form", "render_profile": render_profile,
+            "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": ["view.form.v1", "view.tree.v1"],
         })
         result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
         self.assertTrue(result.get("ok", True), result.get("error"))

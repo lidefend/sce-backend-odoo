@@ -3435,7 +3435,7 @@ def invalidated_targets_since_receipt(
     )
     if receipt_head == current_identity.get("head") or same_runtime_identity:
         return set()
-    return set(select_targets(_paths_since(root, receipt_head)))
+    return set(select_iteration_targets(_paths_since(root, receipt_head)))
 
 
 def resumable_receipt_results(
@@ -4220,36 +4220,70 @@ def target_execution_kind(target: str) -> str:
     return "command"
 
 
-TEST_COUNT_PATTERNS = (
-    re.compile(r"(?im)^Ran (\d+) tests? in "),
-    re.compile(r"(?im)^# tests (\d+)\s*$"),
-    re.compile(r"(?im)\bof (\d+) tests?\b"),
-    re.compile(r"(?im)\b(\d+) passed\b"),
+UNITTEST_SUMMARY_PATTERN = re.compile(r"(?im)^Ran (\d+) tests? in [^\n]*$")
+UNITTEST_FAILURE_PATTERN = re.compile(r"(?im)^FAILED\b")
+UNITTEST_SUCCESS_PATTERN = re.compile(r"(?im)^OK\b")
+UNITTEST_SKIP_PATTERN = re.compile(r"\bskipped=(\d+)\b", re.IGNORECASE)
+GENERIC_TEST_SUMMARY_PATTERNS = (
     re.compile(
-        r"(?im)\b(?:cases|checks|assertions|count|scenarios|tests)=(\d+)\b"
+        r"(?im)^.*\b(?:PASS|PASSED|OK)\b.*"
+        r"\b(?:cases|checks|assertions|count|scenarios|tests)=(\d+)\b.*$"
     ),
-)
-TEST_PASS_MARKER = re.compile(
-    r"(?im)\b(?:PASS|PASSED)\b|all assertions passed"
+    re.compile(r"(?im)^\s*(\d+)\s+(?:cases|checks|assertions|tests?)\s+passed\b.*$"),
+    re.compile(r"(?im)^# tests (\d+)\s*$"),
 )
 
 
 def test_execution_metrics(output: str) -> dict:
-    """Extract observable test counts without treating exit zero as proof."""
-    counts: list[int] = []
-    for pattern in TEST_COUNT_PATTERNS:
-        counts.extend(int(value) for value in pattern.findall(output))
-    positive_marker = bool(TEST_PASS_MARKER.search(output))
+    """Read the final attributable runner summary, not incidental log text."""
+    unittest_summaries = list(UNITTEST_SUMMARY_PATTERN.finditer(output))
+    if unittest_summaries:
+        summary = unittest_summaries[-1]
+        collected = int(summary.group(1))
+        tail = output[summary.end():]
+        failure = UNITTEST_FAILURE_PATTERN.search(tail)
+        success = UNITTEST_SUCCESS_PATTERN.search(tail)
+        summary_status = (
+            "failed"
+            if failure and (not success or failure.start() < success.start())
+            else "ok"
+            if success
+            else "unknown"
+        )
+        skip_match = UNITTEST_SKIP_PATTERN.search(tail)
+        skipped = min(int(skip_match.group(1)), collected) if skip_match else 0
+        executed = max(collected - skipped, 0)
+        evidence_source = "unittest-summary"
+    else:
+        candidates: list[tuple[int, int]] = []
+        for pattern in GENERIC_TEST_SUMMARY_PATTERNS:
+            candidates.extend(
+                (match.start(), int(match.group(1)))
+                for match in pattern.finditer(output)
+            )
+        if candidates:
+            _, collected = max(candidates)
+            skipped = 0
+            executed = collected
+            summary_status = "ok"
+            evidence_source = "runner-summary"
+        else:
+            collected = 0
+            skipped = 0
+            executed = 0
+            summary_status = "unknown"
+            evidence_source = "none"
     return {
-        "testCount": sum(counts),
-        "testCountObservations": len(counts),
-        "explicitZeroTestEvidence": any(count == 0 for count in counts),
+        "testCount": executed,
+        "testCollectedCount": collected,
+        "testSkippedCount": skipped,
+        "testCountObservations": 1 if evidence_source != "none" else 0,
+        "testSummaryStatus": summary_status,
+        "testSummarySource": evidence_source,
+        "explicitZeroTestEvidence": evidence_source != "none" and collected == 0,
+        "allTestsSkippedEvidence": collected > 0 and executed == 0,
         "testExecutionEvidence": (
-            "count"
-            if counts and any(count > 0 for count in counts)
-            else "marker"
-            if positive_marker
-            else "none"
+            evidence_source if executed > 0 else "none"
         ),
     }
 
@@ -4319,15 +4353,22 @@ def _run_make_target(target: str, root: Path, log_path: Path) -> dict:
         no_test_execution = (
             execution_kind == "test"
             and (
-                metrics["explicitZeroTestEvidence"]
+                metrics["testSummaryStatus"] == "failed"
+                or metrics["explicitZeroTestEvidence"]
+                or metrics["allTestsSkippedEvidence"]
+                or metrics["testCount"] <= 0
                 or metrics["testExecutionEvidence"] == "none"
             )
         )
         if no_test_execution:
             status = "failed"
             status_reason = (
-                "test target produced no executed-test evidence"
-                if not metrics["explicitZeroTestEvidence"]
+                "test target reported a failed final runner summary"
+                if metrics["testSummaryStatus"] == "failed"
+                else "test target reported zero collected tests"
+                if metrics["explicitZeroTestEvidence"]
+                else "test target skipped every collected test"
+                if metrics["allTestsSkippedEvidence"]
                 else "test target reported zero executed tests"
             )
         else:

@@ -148,7 +148,9 @@ class TestContractHandlingPagePolicy(TransactionCase):
             for profile in ("create", "readonly"):
                 with self.subTest(model=model_name, profile=profile):
                     params = {"model": model_name, "view_type": "form", "action_id": action.id,
-                              "menu_id": menu.id, "client_type": "web_pc", "render_profile": profile}
+                              "menu_id": menu.id, "client_type": "web_pc",
+                              "accepted_contract_versions": ["2.7.x"],
+                              "render_profile": profile}
                     if profile == "create":
                         params["record_id"] = "new"
                     result = handler.handle(params)
@@ -229,7 +231,10 @@ class TestSettlementNativeStructure(TransactionCase):
             context = safe_eval(action.context or "{}", {"context": {}})
             for profile in ("create", "readonly"):
                 params = {"op": "model", "model": "sc.settlement.order", "view_type": "form",
-                          "action_id": action.id, "context": context, "render_profile": profile}
+                          "action_id": action.id, "context": context,
+                          "client_type": "web_pc",
+                          "accepted_contract_versions": ["2.7.x"],
+                          "render_profile": profile}
                 if profile == "create":
                     params["record_id"] = "new"
                 result = handler.handle(params)
