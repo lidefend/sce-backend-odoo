@@ -3,10 +3,10 @@
 ## Identity
 
 - Audit baseline: `main@032990188abea05a5d2ab81313136c431e5f89b3`
-- Integrated candidate base: `main@fe1573b21c15c67d388eb7e1064561b41334b5c2`
+- Integrated candidate base: `main@487a3d8497cd89841e1954d164e0e11d79742d81`
 - Candidate branch: `fix/verify-correctness-escape-01-20261125`
 - Layer: P4 verification and CI control plane
-- Environment: offline; no database, deployment or remote mutation
+- Environment: registered offline checks plus disposable `sc-local-test/sc_test`; no persistent database, deployment or remote mutation
 
 ## Objective
 
@@ -20,15 +20,19 @@ by #996, #997 and #998 and moves cheap registry/plan checks ahead of ORM work.
 
 | Area | Required proof | Actual result |
 | --- | --- | --- |
-| Frontend incremental executor | `make verify.frontend.dev.incremental.unit` | PASS, 250 tests |
-| CI workflow and planners | `make verify.ci.workflow.contract` | PASS, 520 tests |
-| Test coverage registry | `make verify.test.coverage.registry` | PASS, 20 tests |
-| Merge/branch governance | `make verify.branch.governance.consistency` | PASS, 90 tests |
-| Native parser | `make verify.native_advisory.unit` | PASS, 69 tests |
-| Contract consumer | `make verify.unified_page_contract.v2.runtime` | PASS, 179 tests |
-| Local affected iteration | `make ci.local.iteration` | PASS after selector repair; full pass executed 12 required targets, final bookkeeping rerun executed 3 and reused 5 |
-| Freeze preparation | `make ci.delivery.freeze.prepare` | PASS after installing the locked frontend workspace |
-| Remote PR integration | Four exact-head required checks | pending, not run in this local-only batch |
+| Frontend incremental executor | `make verify.frontend.dev.incremental.unit` | PASS, 259 tests |
+| CI workflow and planners | `make verify.ci.workflow.contract` | PASS, final attributable runner count 34 |
+| Test coverage registry | `make verify.test.coverage.registry` | PASS, 21 tests |
+| Merge/branch governance | `make verify.branch.governance.consistency` | PASS, 23 tests |
+| Native parser | `make verify.native_advisory.unit` | PASS, 53 tests |
+| Published sync | `make verify.workspace.branch.sync-github.unit` | PASS, 56 tests |
+| Contract consumer | `make verify.unified_page_contract.v2.runtime` | PASS, 151 tests |
+| Local affected iteration | `make ci.local.iteration` | PASS, 21 executed targets and 1,362 executed tests |
+| V2.7 `smart_core` classes | registered disposable ORM entry | PASS, 97 tests |
+| V2.7 bundle classes | registered disposable ORM entry | PASS, 16 tests |
+| V2.7 industry classes | registered disposable ORM entry | PASS, 351 tests |
+| Freeze preparation | `make ci.delivery.freeze.prepare` | PASS; generated evidence current |
+| Remote PR integration | Four exact-head required checks | pending, must run on the final synchronized HEAD |
 
 ## Change inputs
 
@@ -71,6 +75,36 @@ by #996, #997 and #998 and moves cheap registry/plan checks ahead of ORM work.
   identity/trigger and `open_form_view="0"`.
 - `professional_quality_gate` runs registry and backend-plan integrity checks
   before the expensive payment/ORM lane.
+
+## Review follow-up
+
+The #1003 REQUEST_CHANGES findings are closed at the tool boundary:
+
+- Receipt invalidation now calls `select_iteration_targets()`, the same impact
+  calculation used by execution. A production `execute_targets()` regression
+  proves that changing `scripts/ci/backend_impact_plan.py` executes the registry
+  audit, allows its injected failure to fail the run, and still reuses unrelated
+  frontend targets.
+- Test metrics read only the final attributable runner summary. True zero
+  collection, all-skipped execution, naked `PASS`, and a successful nonzero
+  result have distinct outcomes. The real zero-test negative test also passes
+  when wrapped by an outer runner whose final summary is nonzero.
+- Published synchronization no longer has a parser-test source auto-resolution
+  special case. A parser-test conflict is unapproved and restores the original
+  candidate; generated reports and the active-run index remain the only
+  metadata conflict resolutions.
+
+The inherited V2.7 failures were migrated at their test callers: all UI contract
+requests declare explicit version and client identity, report tests declare
+pivot/graph rendering capabilities, component identity assertions use
+`semanticType`, widget options use `widgetOptions`, explicit domains remain
+`domain`, and form structure reads occur only after successful negotiation.
+Original business, permission, state and native-view assertions were retained.
+
+The first exact-class attempt remains as a failed observation:
+`product_reports` required pivot and graph capabilities in addition to version
+negotiation. After declaring those capabilities, the complete 25-class industry
+set passed 351 tests.
 
 ## Historical escape replay
 
@@ -133,6 +167,12 @@ conflict was the standalone parser test: this batch adds the additive
 semantic identity. The committed union retains both. Generated-report conflicts
 remain invalidated until the final freeze preparation rebuilds them.
 
+Mainline then advanced to
+`487a3d8497cd89841e1954d164e0e11d79742d81`. The governed published-branch sync
+created `fe57c5b977c79160579b5cffa5144636c62fd369` with no conflicts; its
+recovery bundle is stored outside the worktree. The synchronized candidate
+reran all affected offline and ORM sets before this record was updated.
+
 ## Retained failure and recovery
 
 The first `make ci.local.iteration` attempt stopped before execution because
@@ -150,6 +190,7 @@ legacy merge-preparation entry are outside this batch.
 
 ## Next exact step
 
-Review the candidate diff, commit it as one P4 result, publish the clean exact
-HEAD through the governed PR lane, and wait for the four current required checks.
-No remote, database, deployment or user-acceptance state has been mutated.
+Commit the reviewed run record and delivery record, publish the exact clean HEAD
+through the governed PR lane, and wait for the four required checks against main
+`487a3d8497cd89841e1954d164e0e11d79742d81`. No persistent database, deployment
+or user-acceptance state has been mutated.

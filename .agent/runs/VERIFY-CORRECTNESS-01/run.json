@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "baseline_sha": "fe1573b21c15c67d388eb7e1064561b41334b5c2",
+  "baseline_sha": "487a3d8497cd89841e1954d164e0e11d79742d81",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/VERIFY-CORRECTNESS-01.yaml",
@@ -58,8 +58,8 @@
     "scripts/verify/test_test_coverage_registry_audit.py"
   ],
   "environment": {
-    "kind": "runtime",
-    "authority": "existing local Make tools; sc-local-test/sc_test disposable synthetic profile only; no persistent database, service, credential or remote write"
+    "kind": "offline",
+    "authority": "existing local Make tools for registered offline checks; disposable sc-local-test/sc_test receipts are recorded separately; no persistent database, service, credential or remote write"
   },
   "verification_responsibility": {
     "local_targeted": {
@@ -166,10 +166,8 @@
       "kind": "offline"
     }
   },
-  "blockers": [
-    "latest main advanced to 487a3d8497cd89841e1954d164e0e11d79742d81; a governed candidate synchronization and post-sync revalidation are required"
-  ],
-  "next_exact_step": "Commit the corrected verification and V2.7 test migration, synchronize the published branch to main@487a3d8497cd89841e1954d164e0e11d79742d81 through the governed entry, rerun affected checks, then publish the aligned exact HEAD.",
+  "blockers": [],
+  "next_exact_step": "Commit the reviewed run record and delivery record, publish that exact clean HEAD through the governed PR lane, and wait for the four required checks.",
   "id": "VERIFY-CORRECTNESS-01",
   "branch": "fix/verify-correctness-escape-01-20261125",
   "status": "verification_pending",
