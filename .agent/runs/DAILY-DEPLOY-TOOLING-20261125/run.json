@@ -2,7 +2,7 @@
   "schema_version": 2,
   "id": "DAILY-DEPLOY-TOOLING-20261125",
   "branch": "fix/daily-deploy-tooling-20261125",
-  "status": "verification_pending",
+  "status": "completed",
   "baseline_sha": "94d6bdb20c0e7f26a97d5df8dba69846f5b01e73",
   "scope": [
     ".agent/active-runs.json",
@@ -96,7 +96,7 @@
       "receipt": ".runtime/frontend-dev-validation/executions/20261125T003609Z-3316543-59377295/receipt.json"
     }
   },
-  "next_exact_step": "Run affected local validation, commit, publish exact-head PR and complete required CI.",
+  "next_exact_step": "Merged as PR #1000; keep the merged topic branch only until governed workspace closeout removes it.",
   "goal": ".agent/goals/DAILY-DEPLOY-TOOLING-20261125.yaml",
   "record": "docs/ops/iterations/daily_deploy_tooling_20261125.md"
 }

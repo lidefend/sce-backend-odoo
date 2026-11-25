@@ -3,7 +3,7 @@ schema_version: 1
 goal:
   id: DAILY-DEPLOY-TOOLING-20261125
   title: Harden local platform and daily frontend deployment entries
-  status: active
+  status: completed
   formal_product_layer: P4 ops delivery tool
   layer_target: existing local platform lifecycle and daily frontend build aligner
   module:
