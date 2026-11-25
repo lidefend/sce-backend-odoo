@@ -68,6 +68,9 @@ def run(root: Path, selection: dict[str, list[str]]) -> int:
         capture_output=True,
         check=True,
     ).stdout.strip()
+    total = 0
+    reused = 0
+    executed = 0
     for module, tags in selection.items():
         current_test_surface = test_surface_fingerprint(root, module)
         reusable = reusable_receipt(
@@ -78,11 +81,14 @@ def run(root: Path, selection: dict[str, list[str]]) -> int:
             test_surface_fingerprint=current_test_surface,
         )
         if reusable:
+            count = receipt_count(root, reusable)
             print(
                 f"[changed-tests] REUSE module={module} classes={len(tags)} "
-                f"receipt={reusable}",
+                f"tests={count} receipt={reusable}",
                 flush=True,
             )
+            total += count
+            reused += 1
             continue
         command = [
             "make",
@@ -103,7 +109,46 @@ def run(root: Path, selection: dict[str, list[str]]) -> int:
         result = subprocess.run(command, cwd=root, env=env, check=False)
         if result.returncode:
             return result.returncode
+        receipt = reusable_receipt(
+            root,
+            module,
+            tags,
+            head=current_head,
+            test_surface_fingerprint=current_test_surface,
+        )
+        if not receipt:
+            print(
+                f"[changed-tests] BLOCKED module={module} "
+                "passed execution has no attributable nonzero receipt",
+                file=sys.stderr,
+            )
+            return 2
+        count = receipt_count(root, receipt)
+        print(
+            f"[changed-tests] EXECUTED module={module} classes={len(tags)} "
+            f"tests={count} receipt={receipt}",
+            flush=True,
+        )
+        total += count
+        executed += 1
+    if total <= 0:
+        print("[changed-tests] BLOCKED no executed tests", file=sys.stderr)
+        return 2
+    print(
+        f"[changed-tests] PASS tests={total} modules={len(selection)} "
+        f"reused={reused} executed={executed}",
+        flush=True,
+    )
     return 0
+
+
+def receipt_count(root: Path, relative: str) -> int:
+    """Read one passed receipt's positive execution count."""
+    receipt = json.loads((root / relative).read_text(encoding="utf-8"))
+    count = receipt.get("count")
+    if receipt.get("status") != "passed" or type(count) is not int or count <= 0:
+        raise ValueError(f"invalid changed-test receipt: {relative}")
+    return count
 
 
 def reusable_receipt(

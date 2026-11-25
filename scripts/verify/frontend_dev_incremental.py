@@ -4237,8 +4237,18 @@ GENERIC_TEST_SUMMARY_PATTERNS = (
 def test_execution_metrics(output: str) -> dict:
     """Read the final attributable runner summary, not incidental log text."""
     unittest_summaries = list(UNITTEST_SUMMARY_PATTERN.finditer(output))
-    if unittest_summaries:
-        summary = unittest_summaries[-1]
+    generic_candidates: list[tuple[int, int]] = []
+    for pattern in GENERIC_TEST_SUMMARY_PATTERNS:
+        generic_candidates.extend(
+            (match.start(), int(match.group(1)))
+            for match in pattern.finditer(output)
+        )
+    unittest_candidate = unittest_summaries[-1] if unittest_summaries else None
+    generic_candidate = max(generic_candidates) if generic_candidates else None
+    if unittest_candidate is not None and (
+        generic_candidate is None or unittest_candidate.start() > generic_candidate[0]
+    ):
+        summary = unittest_candidate
         collected = int(summary.group(1))
         tail = output[summary.end():]
         failure = UNITTEST_FAILURE_PATTERN.search(tail)
@@ -4254,25 +4264,18 @@ def test_execution_metrics(output: str) -> dict:
         skipped = min(int(skip_match.group(1)), collected) if skip_match else 0
         executed = max(collected - skipped, 0)
         evidence_source = "unittest-summary"
+    elif generic_candidate is not None:
+        _, collected = generic_candidate
+        skipped = 0
+        executed = collected
+        summary_status = "ok"
+        evidence_source = "runner-summary"
     else:
-        candidates: list[tuple[int, int]] = []
-        for pattern in GENERIC_TEST_SUMMARY_PATTERNS:
-            candidates.extend(
-                (match.start(), int(match.group(1)))
-                for match in pattern.finditer(output)
-            )
-        if candidates:
-            _, collected = max(candidates)
-            skipped = 0
-            executed = collected
-            summary_status = "ok"
-            evidence_source = "runner-summary"
-        else:
-            collected = 0
-            skipped = 0
-            executed = 0
-            summary_status = "unknown"
-            evidence_source = "none"
+        collected = 0
+        skipped = 0
+        executed = 0
+        summary_status = "unknown"
+        evidence_source = "none"
     return {
         "testCount": executed,
         "testCollectedCount": collected,

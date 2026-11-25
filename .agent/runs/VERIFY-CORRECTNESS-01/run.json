@@ -49,12 +49,14 @@
     "scripts/ci/test_ci_path_ownership.py",
     "scripts/ci/test_ci_risk_classifier.py",
     "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/dev/run_changed_odoo_tests.py",
     "scripts/ops/github_published_branch_sync.py",
     "scripts/ops/test_github_published_branch_sync.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_branch_governance_consistency_guard.py",
     "scripts/verify/test_coverage_registry.yaml",
     "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_run_changed_odoo_tests.py",
     "scripts/verify/test_test_coverage_registry_audit.py"
   ],
   "environment": {
@@ -167,7 +169,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the reviewed run record and delivery record, publish that exact clean HEAD through the governed PR lane, and wait for the four required checks.",
+  "next_exact_step": "Commit the reviewed aggregate-summary correction and records, publish that exact clean HEAD, and wait for the four required checks.",
   "id": "VERIFY-CORRECTNESS-01",
   "branch": "fix/verify-correctness-escape-01-20261125",
   "status": "verification_pending",

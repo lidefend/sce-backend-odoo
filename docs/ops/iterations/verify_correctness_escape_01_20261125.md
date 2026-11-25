@@ -20,14 +20,14 @@ by #996, #997 and #998 and moves cheap registry/plan checks ahead of ORM work.
 
 | Area | Required proof | Actual result |
 | --- | --- | --- |
-| Frontend incremental executor | `make verify.frontend.dev.incremental.unit` | PASS, 259 tests |
+| Frontend incremental executor | `make verify.frontend.dev.incremental.unit` | PASS, 260 tests |
 | CI workflow and planners | `make verify.ci.workflow.contract` | PASS, final attributable runner count 34 |
 | Test coverage registry | `make verify.test.coverage.registry` | PASS, 21 tests |
 | Merge/branch governance | `make verify.branch.governance.consistency` | PASS, 23 tests |
 | Native parser | `make verify.native_advisory.unit` | PASS, 53 tests |
 | Published sync | `make verify.workspace.branch.sync-github.unit` | PASS, 56 tests |
 | Contract consumer | `make verify.unified_page_contract.v2.runtime` | PASS, 151 tests |
-| Local affected iteration | `make ci.local.iteration` | PASS, 21 executed targets and 1,362 executed tests |
+| Local affected iteration | `make ci.local.iteration` | PASS, 18 executed targets and 1,357 executed tests |
 | V2.7 `smart_core` classes | registered disposable ORM entry | PASS, 97 tests |
 | V2.7 bundle classes | registered disposable ORM entry | PASS, 16 tests |
 | V2.7 industry classes | registered disposable ORM entry | PASS, 351 tests |
@@ -93,6 +93,11 @@ The #1003 REQUEST_CHANGES findings are closed at the tool boundary:
   special case. A parser-test conflict is unapproved and restores the original
   candidate; generated reports and the active-run index remain the only
   metadata conflict resolutions.
+- `verify.changed_tests.orm` now emits one final aggregate summary containing
+  the positive test counts from its actual or reused module receipts. The
+  executor compares final summary positions from every supported runner, so an
+  outer aggregate supersedes inner summaries without allowing a naked pass
+  marker or zero execution to succeed.
 
 The inherited V2.7 failures were migrated at their test callers: all UI contract
 requests declare explicit version and client identity, report tests declare
@@ -105,6 +110,11 @@ The first exact-class attempt remains as a failed observation:
 `product_reports` required pivot and graph capabilities in addition to version
 negotiation. After declaring those capabilities, the complete 25-class industry
 set passed 351 tests.
+
+A publish-preflight rerun then exposed the aggregate-summary gap above. After
+adding the final `PASS tests=466 modules=3` summary,
+`verify.changed_tests.orm` passed with 16 bundle, 353 industry and 97 smart-core
+tests.
 
 ## Historical escape replay
 
@@ -190,7 +200,7 @@ legacy merge-preparation entry are outside this batch.
 
 ## Next exact step
 
-Commit the reviewed run record and delivery record, publish the exact clean HEAD
-through the governed PR lane, and wait for the four required checks against main
+Commit the aggregate-summary correction and reviewed records, publish the exact
+clean HEAD through the governed PR lane, and wait for the four required checks against main
 `487a3d8497cd89841e1954d164e0e11d79742d81`. No persistent database, deployment
 or user-acceptance state has been mutated.

@@ -4007,6 +4007,15 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.assertEqual(1, result["testCount"])
         self.assertEqual("unittest-summary", result["testSummarySource"])
 
+    def test_final_aggregate_summary_supersedes_inner_runner_summaries(self) -> None:
+        metrics = incremental.test_execution_metrics(
+            "Ran 1 test in 0.001s\n\nOK\n"
+            "[changed-tests] PASS tests=17 modules=3 reused=2 executed=1\n"
+        )
+        self.assertEqual(17, metrics["testCount"])
+        self.assertEqual(17, metrics["testCollectedCount"])
+        self.assertEqual("runner-summary", metrics["testSummarySource"])
+
     def test_static_target_does_not_need_a_fabricated_test_count(self) -> None:
         self.root.joinpath("Makefile").write_text(
             self.root.joinpath("Makefile").read_text(encoding="utf-8")
