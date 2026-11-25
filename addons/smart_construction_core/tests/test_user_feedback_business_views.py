@@ -32,6 +32,9 @@ class TestUserFeedbackBusinessViews(BusinessTransactionCase):
         menu = self.env.ref("smart_construction_core.menu_sc_customer_partner")
         view = self.env.ref("smart_construction_core.view_sc_customer_partner_form")
         result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+            "accepted_contract_versions": ["2.7.x"],
+            "client_type": "web_pc",
+            "client_contract_capabilities": [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, "view.form.v1", "view.tree.v1"],
             "op": "model", "model": "res.partner", "action_id": menu.action.id,
             "menu_id": menu.id, "view_type": "form", "render_profile": "create",
             "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"],
@@ -79,12 +82,17 @@ class TestUserFeedbackBusinessViews(BusinessTransactionCase):
         menu = self.env.ref("smart_construction_core.menu_sc_customer_partner")
         for profile in ("edit", "readonly"):
             result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+                "accepted_contract_versions": ["2.7.x"],
+                "client_type": "web_pc",
+                "client_contract_capabilities": [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, "view.form.v1", "view.tree.v1"],
                 "op": "model", "model": "res.partner", "action_id": menu.action.id,
                 "menu_id": menu.id, "record_id": partner.id, "view_type": "form", "render_profile": profile,
                 "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"],
                 "client_contract_capabilities": ["view.form.v1", "view.tree.v1"],
             })
-            data = (result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result)["data"]
+            envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+            self.assertTrue(envelope.get("ok", True), envelope.get("error"))
+            data = envelope["data"]
             self.assertEqual(data["formStructureContract"]["structureAuthority"], "container_tree")
             sheet = next(node for node in data["layoutContract"]["containerTree"] if node["type"] == "sheet")
             self.assertEqual([node["label"] for node in sheet["children"]],
@@ -2630,7 +2638,7 @@ class TestUserFeedbackBusinessViews(BusinessTransactionCase):
             "company_id": self.env.company.id, "company_ids": [(6, 0, self.env.company.ids)],
             "groups_id": [(6, 0, [self.env.ref(xmlid).id for xmlid in (
                 "base.group_user", "smart_construction_core.group_sc_role_finance_manager",
-                "smart_construction_core.group_sc_entry_p02",
+                "smart_construction_core.group_sc_cap_entry_scope_p02",
             )])],
         })
         self.env["sc.product.policy"].sync_construction_menu_product_policies()
@@ -2785,6 +2793,7 @@ class TestFormalFormLowcode(BusinessTransactionCase):
 
         def contract(**extra):
             result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+                "accepted_contract_versions": ["2.7.x"],
                 "op": "model", "model": action.res_model, "action_id": action.id,
                 "view_id": 0, "view_type": "form", "render_profile": "create",
                 "client_type": "web_pc", "accepted_contract_versions": ["2.7.x"], "client_contract_capabilities": [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, "view.form.v1", "view.tree.v1"], **extra,

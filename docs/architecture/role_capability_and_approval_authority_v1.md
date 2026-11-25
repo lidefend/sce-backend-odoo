@@ -115,6 +115,29 @@ ACL / 记录规则 / 字段 / 菜单 / 动作 → 角色组
 | OCA Tier 审批运行态 | 已具备 |
 | 业务模型只声明 Profile | 部分实现，存量模型仍需逐业务迁移 |
 
+### 入口可见性能力桥接（2026-11-26）
+
+正式权限链统一为：
+
+```text
+角色组
+  -> 入口可见性能力组
+  -> 通用入口载体组
+  -> 菜单/动作
+```
+
+- `group_sc_cap_entry_scope_pNN` 是入口可见性能力，不承载业务身份。
+- `group_sc_entry_pNN` 是通用入口载体，只被对应的
+  `group_sc_cap_entry_scope_pNN`引用，不再被角色组直接引用。
+- `group_sc_cap_entry_scope_full` 组合全部入口可见性能力，由业务全功能、
+  业务配置管理员和体验身份按各自能力链取得。
+- 角色组可以选择多个能力组，但不得直接引用入口载体、原生技术组、ACL、
+  记录规则、字段、菜单或动作组。
+- 升级数据文件会显式移除历史 `角色组 -> group_sc_entry_pNN` 边，再建立
+  `角色组 -> 入口可见性能力 -> 入口载体` 边；同一角色配置下的最终入口闭包
+  保持不变。
+- `verify.role_capability_group_authority.unit` 锁定上述方向和入口闭包等价性。
+
 静态盘点结果：
 
 - 49 个业务模型已声明 `tier.validation` 并接入 `sc.approval.policy`；

@@ -1722,13 +1722,13 @@ def ensure_fixture(env) -> Dict[str, Any]:
         [
             "smart_construction_core.group_sc_cap_project_read",
             "smart_construction_core.group_sc_cap_business_initiator",
-            "smart_construction_core.group_sc_entry_p01",
+            "smart_construction_core.group_sc_cap_entry_scope_p01",
             # Read-only entry visibility for the project overview (menu 382)
             # so this member can open the form while still lacking any submit
             # capability. Submit access only depends on
             # group_sc_cap_project_user/manager/super_admin, never on an entry
             # group, so this grants no escalation.
-            "smart_construction_core.group_sc_entry_p11",
+            "smart_construction_core.group_sc_cap_entry_scope_p11",
         ],
     )
     pm = _user(
@@ -1739,7 +1739,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
         [company_a],
         [
             "smart_construction_core.group_sc_role_project_manager",
-            "smart_construction_core.group_sc_entry_p01",
+            "smart_construction_core.group_sc_cap_entry_scope_p01",
         ],
     )
     contract_operator = _user(

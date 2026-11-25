@@ -1,0 +1,38 @@
+schema_version: 1
+
+goal:
+  id: P1-ROLE-CAPABILITY-AUTHORITY-20261126
+  title: "Separate role identity from entry visibility through capabilities"
+  status: active
+  formal_product_layer: P1 construction industry standard product
+  layer_target: role, capability and entry-visibility authority graph
+  module:
+    - smart_construction_core
+  standard_vs_user_specific: construction_industry_standard
+  objective: >-
+    Remove direct role-identity implications of entry visibility groups and
+    enforce the standard chain role group -> capability group -> entry
+    visibility carrier -> native menu/action authorization.
+  why_here:
+    - Construction role, capability and entry-security defaults are P1 product facts.
+    - The current direct role-to-entry edges violate the agreed authorization direction.
+  why_not_elsewhere:
+    - P0 must not own construction industry roles.
+    - P2 and P3 must not repair a standard product permission-model defect.
+    - P4 may verify the graph but must not become its long-term authority.
+  blast_radius:
+    - Fourteen generic entry visibility carriers.
+    - Role groups and capability groups consumed by role surface discovery.
+    - 68 cross-domain menu rebindings and affected role-surface tests.
+  acceptance:
+    - No role group directly implies an entry visibility carrier.
+    - Every entry visibility carrier is reached through an explicit capability group.
+    - Capability groups never imply role identity groups.
+    - Existing effective role-to-entry closure is unchanged for the same assigned capabilities and roles.
+    - Static guard, focused tests, affected ORM tests and remote module baseline all pass.
+  exclusions:
+    - No customer-specific role decisions.
+    - No ACL/model/business-state redesign.
+    - No frontend behavior change.
+    - No persistent database migration before a separately confirmed migration plan.
+  rollback: Revert this branch and restore the prior group implications from the base SHA.

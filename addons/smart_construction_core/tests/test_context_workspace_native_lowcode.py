@@ -291,7 +291,7 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
             user.groups_id = [(4, self.env.ref(xmlid).id) for xmlid in (
                 "smart_construction_core.group_sc_cap_business_initiator",
                 "smart_construction_core.group_sc_cap_finance_read",
-                "smart_construction_core.group_sc_entry_p03",
+                "smart_construction_core.group_sc_cap_entry_scope_p03",
             )]
         project = self.env["project.project"].create({
             "name": project_name,
@@ -315,6 +315,7 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
         result = UiContractV2Handler(
             self.env, su_env=self.env["ir.model"].sudo().env
         ).handle({
+            "accepted_contract_versions": ["2.7.x"],
             "op": "model", "model": action.res_model, "action_id": action.id,
             "view_id": self.view_ref_id(view_id),
             "view_type": "form", "render_profile": "create",
@@ -1024,7 +1025,7 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
             "smart_construction_core.group_sc_cap_project_user",
             "smart_construction_core.group_sc_cap_business_initiator",
             "smart_construction_core.group_sc_cap_finance_read",
-            "smart_construction_core.group_sc_entry_p03",
+            "smart_construction_core.group_sc_cap_entry_scope_p03",
         ])
         self.assertEqual(surface.get("role_code"), "project_member")
         carrier_menu = self.ref("menu_sc_product_team_loan_deduction_v1").id
@@ -1350,6 +1351,7 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
         from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
         action = self.ref(action_key)
         result = UiContractV2Handler(env, su_env=env["ir.model"].sudo().env).handle({
+            "accepted_contract_versions": ["2.7.x"],
             "op": "model", "model": action.res_model, "action_id": action.id,
             "view_id": self.view_ref_id(view_key), "view_type": "form",
             "render_profile": "create",

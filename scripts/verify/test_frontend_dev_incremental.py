@@ -2181,6 +2181,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.frontend.navigation_policy.unit",
                 "verify.frontend.role_surface_exposure_declaration.guard",
+                "verify.role_capability_group_authority.unit",
                 "verify.role_surface.landing.contract.unit",
                 "verify.workflow_action_semantics.guard",
             ],
@@ -2311,6 +2312,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.frontend.role_surface_exposure_declaration.guard",
                 "verify.product.menu.contract_v1.guard",
                 "verify.product_center.policy.unit",
+                "verify.role_capability_group_authority.unit",
                 "verify.role_surface.landing.contract.unit",
                 "verify.workflow_action_semantics.guard",
             ],
@@ -2319,6 +2321,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_operation_entry_paths_select_navigation_and_role_surface(self) -> None:
         for path in (
             "addons/smart_construction_core/security/sc_role_entry_groups.xml",
+            "addons/smart_construction_core/security/sc_discover_entry_groups.xml",
             "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
         ):
             with self.subTest(path=path):
@@ -2326,7 +2329,20 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     [
                         "verify.frontend.navigation_shell.unit",
+                        "verify.role_capability_group_authority.unit",
                         "verify.role_surface.landing.contract.unit",
+                    ],
+                )
+        for path in (
+            "addons/smart_construction_core/data/menu_entry_group_rebinding.json",
+            "docs/product/frontend_business_entry_acceptance_v1.csv",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    [
+                        "verify.frontend.business_entry.matrix.universe",
+                        "verify.role_capability_group_authority.unit",
                     ],
                 )
 
@@ -2908,12 +2924,14 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_construction_core/security/sc_capability_groups.xml": [
                 "verify.frontend.navigation_policy.unit",
                 "verify.frontend.role_surface_exposure_declaration.guard",
+                "verify.role_capability_group_authority.unit",
                 "verify.role_surface.landing.contract.unit",
                 "verify.workflow_action_semantics.guard",
             ],
             "addons/smart_construction_core/core_extension_actor_roles.py": [
                 "verify.frontend.navigation_policy.unit",
                 "verify.frontend.role_surface_exposure_declaration.guard",
+                "verify.role_capability_group_authority.unit",
                 "verify.role_surface.landing.contract.unit",
                 "verify.workflow_action_semantics.guard",
             ],

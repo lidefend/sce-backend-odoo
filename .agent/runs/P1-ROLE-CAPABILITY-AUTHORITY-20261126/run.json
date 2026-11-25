@@ -1,0 +1,276 @@
+{
+  "schema_version": 2,
+  "id": "P1-ROLE-CAPABILITY-AUTHORITY-20261126",
+  "branch": "fix/p1-role-capability-authority-20261126",
+  "status": "verification_pending",
+  "baseline_sha": "d2e69f0e0e65fe1bb1d76947e612cca34d4e75ae",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P1-ROLE-CAPABILITY-AUTHORITY-20261126.yaml",
+    ".agent/runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/run.json",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/security/sc_capability_groups.xml",
+    "addons/smart_construction_core/security/sc_entry_groups.xml",
+    "addons/smart_construction_core/security/sc_role_entry_groups.xml",
+    "addons/smart_construction_core/security/sc_discover_entry_groups.xml",
+    "addons/smart_construction_core/security/sc_role_groups.xml",
+    "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+    "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_experience_role_surface.py",
+    "addons/smart_construction_core/tests/test_role_capability_authority_orm.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "addons/smart_construction_core/tests/test_p1_funding_authority.py",
+    "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+    "addons/smart_construction_core/tests/test_user_feedback_business_views.py",
+    "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py",
+    "addons/smart_construction_bundle/tests/test_workspace_role_routes.py",
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
+    "scripts/verify/role_capability_group_authority_guard.py",
+    "scripts/verify/test_role_capability_group_authority_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "make/frontend.mk",
+    "docs/architecture/role_capability_and_approval_authority_v1.md",
+    "docs/audit/scene_role_surface_consistency_report.md",
+    "docs/ops/iterations/p1_role_capability_authority_20261126.md",
+    "docs/product/frontend_business_entry_acceptance_v1.csv",
+    "scripts/verify/test_coverage_registry.yaml",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "AGENTS.md",
+    ".agent/context.yaml",
+    "docs/ops/codex_execution_allowlist.md",
+    "scripts/ci/personal_data_false_positives.json"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Owner explicitly authorized disposable isolated tests on 2026-11-26; governed worktree-scoped local.test only. Persistent database migration excluded."
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "verify.role_capability_group_authority.unit, verify.changed_tests.orm and affected local iteration checks",
+      "reason": "Validate affected static guards and targeted ORM in governed disposable local.test databases under standing owner authority."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI including smart_construction_core module baseline",
+      "reason": "Permission graph changes affect existing ORM test families and must run against the exact integrated candidate."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "This is an incremental P1 candidate, not release qualification."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "No frontend or shared runtime contract consumer changes are part of this source iteration."
+    }
+  },
+  "checks": {
+    "role_capability_group_authority_unit": {
+      "target": "verify.role_capability_group_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/role_capability_group_authority_guard.py",
+        "scripts/verify/test_role_capability_group_authority_guard.py",
+        "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+        "addons/smart_construction_core/__manifest__.py",
+        "addons/smart_construction_core/data/menu_entry_group_rebinding.json",
+        "addons/smart_construction_core/security",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_dev_incremental_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ]
+    },
+    "role_surface_exposure": {
+      "target": "verify.frontend.role_surface_exposure_declaration.guard",
+      "kind": "offline",
+      "inputs": [
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "addons/smart_construction_core/security/sc_capability_groups.xml",
+        "scripts/verify/role_surface_exposure_declaration_guard.py",
+        "scripts/verify/test_role_surface_exposure_declaration_guard.py"
+      ]
+    },
+    "matrix_universe": {
+      "target": "verify.frontend.business_entry.matrix.universe",
+      "kind": "offline",
+      "inputs": [
+        "config/product_scenario_organization_v1.json",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/business_entry_matrix_universe_guard.py",
+        "scripts/verify/test_business_entry_matrix_universe_guard.py",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py"
+      ]
+    },
+    "native_authority": {
+      "target": "verify.nav01.native_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/fact_layer_authority_guard.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/security"
+      ]
+    },
+    "targeted_orm": {
+      "target": "verify.changed_tests.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/security",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+        "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_experience_role_surface.py",
+        "addons/smart_construction_core/tests/test_p1_funding_authority.py",
+        "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+        "addons/smart_construction_core/tests/test_role_capability_authority_orm.py",
+        "addons/smart_construction_core/tests/test_user_feedback_business_views.py",
+        "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py",
+        "addons/smart_construction_bundle/tests/test_workspace_role_routes.py",
+        "scripts/dev/run_changed_odoo_tests.py",
+        "scripts/dev/changed_odoo_tests.py",
+        "scripts/dev/local_test_inputs.py",
+        "scripts/dev/local_test_runner.py",
+        "make/dev.mk",
+        "scripts/ci/orm_result_guard.sh",
+        "addons/smart_construction_core/__manifest__.py"
+      ]
+    },
+    "permission_truth_orm": {
+      "target": "verify.daily.permission_truth.capability.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_core",
+        "addons/smart_construction_core",
+        "addons/smart_construction_scene",
+        "scripts/dev",
+        "make/dev_test.mk",
+        "make/dev.mk",
+        "Makefile",
+        "scripts/ci/orm_result_guard.sh",
+        "addons/smart_construction_core/__manifest__.py",
+        "scripts/dev/local_test_inputs.py"
+      ]
+    },
+    "extension_lifecycle_orm": {
+      "target": "verify.extension.lifecycle.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_core",
+        "scripts/dev",
+        "make/ci.mk",
+        "make/dev.mk",
+        "Makefile",
+        "scripts/ci/orm_result_guard.sh",
+        "addons/smart_construction_core/__manifest__.py",
+        "scripts/dev/local_test_inputs.py"
+      ]
+    },
+    "payment_boundary_orm": {
+      "target": "verify.payment.authorization_boundary.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core",
+        "scripts/dev",
+        "make/guards.mk",
+        "make/dev.mk",
+        "Makefile",
+        "scripts/ci/orm_result_guard.sh",
+        "addons/smart_construction_core/__manifest__.py",
+        "scripts/dev/local_test_inputs.py"
+      ]
+    },
+    "workspace_entry_orm": {
+      "target": "verify.workspace.entry_authority.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_core",
+        "addons/smart_construction_core",
+        "addons/smart_construction_bundle",
+        "scripts/dev",
+        "make/dev.mk",
+        "make/dev.mk",
+        "Makefile",
+        "scripts/ci/orm_result_guard.sh",
+        "addons/smart_construction_core/__manifest__.py",
+        "scripts/dev/local_test_inputs.py"
+      ]
+    },
+    "core_module_baseline": {
+      "target": "verify.smart_construction_core.module_baseline",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_core",
+        "addons/smart_construction_core",
+        "scripts/dev",
+        "make/ci.mk",
+        "make/dev.mk",
+        "Makefile",
+        "scripts/ci/orm_result_guard.sh",
+        "addons/smart_construction_core/__manifest__.py",
+        "scripts/dev/local_test_inputs.py"
+      ]
+    },
+    "lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "kind": "offline",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_coverage_registry.yaml",
+        "make",
+        "Makefile"
+      ]
+    },
+    "coverage_registry": {
+      "target": "verify.test.coverage.registry",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/verify/test_test_coverage_registry_audit.py",
+        "scripts/verify/test_coverage_registry.yaml",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json",
+        "addons",
+        "demo_addons",
+        "make",
+        ".github/workflows",
+        "scripts/ci"
+      ]
+    }
+  },
+  "blockers": [
+    "New exact-head integration and independent re-review required after main synchronization."
+  ],
+  "next_exact_step": "Validate merged-main role/registry surfaces, publish updated #1006, verify all exact-head integration checks and retain independent review requirement.",
+  "goal": ".agent/goals/P1-ROLE-CAPABILITY-AUTHORITY-20261126.yaml",
+  "record": "docs/ops/iterations/p1_role_capability_authority_20261126.md",
+  "evidence": {
+    "focused_role_orm": ".runtime/test-baseline/1795637553697716498/receipt.json",
+    "bundle_changed_orm": ".runtime/test-baseline/1795637880079058733/receipt.json",
+    "core_changed_orm": ".runtime/test-baseline/1795638216346755241/receipt.json",
+    "changed_orm_log": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/authorized-changed-orm-final.log",
+    "local_iteration": ".runtime/frontend-dev-validation/executions/20261125T203144Z-2554244-644322999/receipt.json",
+    "local_iteration_log": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/continue-iteration.log",
+    "freeze_prepare_log": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/freeze-prepare.log",
+    "public_scan_initial": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/public-scan.log",
+    "experience_acl_review": ".runtime/test-baseline/1795641281717555660/receipt.json",
+    "role_review_consumers": ".runtime/agent-runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/review-role-consumers.log"
+  }
+}

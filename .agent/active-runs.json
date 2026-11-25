@@ -191,6 +191,7 @@
     "fix/scheduled-full-baseline-remediation-20261124": ".agent/runs/SCHEDULED-FULL-BASELINE-REMEDIATION-20261124/run.json",
     "fix/project-ledger-registry-closure-20261125": ".agent/runs/P0-FORM-COMPONENT-REGISTRY-CLOSURE-20261125/run.json",
     "fix/backend-iteration-lane-closure-20261124": ".agent/runs/BACKEND-ITERATION-LANE-CLOSURE-20261124/run.json",
-    "fix/feedback-node-semantic-filter-20261126": ".agent/runs/P0-FEEDBACK-FIELD-NODE-SEMANTIC-FILTER-20261126/run.json"
+    "fix/feedback-node-semantic-filter-20261126": ".agent/runs/P0-FEEDBACK-FIELD-NODE-SEMANTIC-FILTER-20261126/run.json",
+    "fix/p1-role-capability-authority-20261126": ".agent/runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/run.json"
   }
 }

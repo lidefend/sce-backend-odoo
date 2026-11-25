@@ -1734,10 +1734,23 @@ RULES = (
     )),
     Rule((
         "addons/smart_construction_core/security/sc_role_entry_groups.xml",
+        "addons/smart_construction_core/security/sc_discover_entry_groups.xml",
+        "addons/smart_construction_core/security/sc_entry_groups.xml",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
         "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+        "scripts/verify/role_capability_group_authority_guard.py",
+        "scripts/verify/test_role_capability_group_authority_guard.py",
     ), (
+        "verify.role_capability_group_authority.unit",
         "verify.frontend.navigation_shell.unit",
         "verify.role_surface.landing.contract.unit",
+    )),
+    Rule((
+        "addons/smart_construction_core/data/menu_entry_group_rebinding.json",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+    ), (
+        "verify.role_capability_group_authority.unit",
+        "verify.frontend.business_entry.matrix.universe",
     )),
     Rule((
         "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
@@ -2150,6 +2163,7 @@ RULES = (
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
         "scripts/verify/test_role_surface_exposure_declaration_guard.py",
     ), (
+        "verify.role_capability_group_authority.unit",
         "verify.role_surface.landing.contract.unit",
         "verify.frontend.role_surface_exposure_declaration.guard",
         "verify.frontend.navigation_policy.unit",

@@ -1,5 +1,13 @@
 version: 1
 entries:
+- group: role_capability_authority
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.changed_tests.orm :: /smart_construction_core:TestRoleCapabilityAuthority'
+  reason: Dynamic changed-test selection includes this class and remote owning-module coverage remains required. Static tag discovery cannot attest dynamic selection; no ORM execution is claimed.
+  review_by: '2026-12-31'
 - group: acceptance_business_scene_lifecycle
   kind: odoo_tag
   status: on-demand

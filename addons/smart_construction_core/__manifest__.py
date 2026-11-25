@@ -2,7 +2,7 @@
 # pyright: reportUnusedExpression=false
 {
     'name': 'Smart Construction Core',
-    'version': '17.0.0.186',
+    'version': '17.0.0.188',
     'summary': 'Core module for construction enterprise management (Architecture 2.0)',
     'author': 'Leedefend',
     'depends': [
@@ -41,13 +41,12 @@
 
         # 安全
         'security/sc_groups.xml',
-        'security/sc_capability_groups.xml',
         'security/sc_entry_groups.xml',
+        'security/sc_capability_groups.xml',
         'security/contract_settlement_capability_bridge.xml',
         'security/sc_role_groups.xml',
         'security/runtime_user_permission_groups.xml',
         'security/sc_role_entry_groups.xml',
-        'security/sc_discover_entry_groups.xml',
         'security/sc_model_records.xml',
         'security/ir.model.access.csv',
         'security/sc_record_rules.xml',

@@ -104,6 +104,11 @@ data_policy:
     odoo_demo: false
     synthetic_fixture: true
     disposable: true
+    execution_authority: standing_owner_authorization
+    per_attempt_confirmation_required: false
+    governed_entrypoints_required: true
+    includes: [installation, module_upgrade, seed_replay, fixture_rebuild, migration_dry_run, test_template_preparation]
+    excludes: [persistent_databases, real_business_data, release_snapshot_refresh, deployment]
     purpose: deterministic_unit_and_integration_verification
   acceptance:
     odoo_demo: false
