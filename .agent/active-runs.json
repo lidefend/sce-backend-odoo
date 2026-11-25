@@ -78,6 +78,7 @@
     "fix/clear-dangling-run-binding-20261118": ".agent/runs/FE-RUN-BINDING-INVARIANT-REPAIR-20261118/run.json",
     "fix/daily-acceptance-demo-profile-20261019": ".agent/runs/ACCEPTANCE-EVIDENCE-LAYER-REUSE-20261019/run.json",
     "fix/daily-entry-cookie-session-scope-20261019": ".agent/runs/DAILY-ENTRY-COOKIE-SESSION-SCOPE-20261019/run.json",
+    "fix/daily-deploy-tooling-20261125": ".agent/runs/DAILY-DEPLOY-TOOLING-20261125/run.json",
     "fix/daily-entry-registry-closure-20261018": ".agent/runs/DAILY-ENTRY-REGISTRY-CLOSURE-20261018/run.json",
     "fix/daily-main-namespace-delivery-20261103": ".agent/runs/NAV01-DAILY-DEPLOY-20261103/run.json",
     "fix/daily-permission-truth-20261022": ".agent/runs/DAILY-PERMISSION-TRUTH-CLOSURE-20261022/run.json",

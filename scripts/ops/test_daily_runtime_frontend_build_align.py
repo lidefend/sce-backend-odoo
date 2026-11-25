@@ -189,6 +189,8 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
         for token in (
             "verify.frontend.build",
             "frontend_build_fingerprint.sh",
+            "NODE_OPTIONS",
+            "--max-old-space-size=1536",
             "FRONTEND_BUILD_SHA256",
             "build-info.json",
             "SC_DEPLOY_ENV",
@@ -363,6 +365,21 @@ class DailyRuntimeFrontendBuildAlignTests(unittest.TestCase):
         ):
             with self.assertRaisesRegex(build_module.BuildError, "worktree is not clean"):
                 call_align()
+
+    def test_align_retains_remote_failure_evidence_and_stderr(self) -> None:
+        completed = mock.Mock(
+            returncode=1,
+            stdout=evidence(status="BLOCKED", build_tail="heap or build detail"),
+            stderr=b"BLOCKED governed frontend build failed",
+        )
+        with mock.patch.dict(os.environ, CONFIRM), mock.patch.object(
+            build_module, "run", return_value=completed
+        ):
+            with self.assertRaises(build_module.BuildError) as raised:
+                call_align()
+        self.assertIn("governed frontend build failed", str(raised.exception))
+        self.assertIn("build_tail", str(raised.exception))
+        self.assertIn("heap or build detail", str(raised.exception))
 
 
 if __name__ == "__main__":

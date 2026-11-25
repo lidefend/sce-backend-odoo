@@ -59,6 +59,7 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
                 "sync",
                 "frontend-build",
                 "duty-refresh",
+                "duty-upgrade",
                 "align-demo",
                 "align-platform",
                 "published-face",
@@ -93,33 +94,49 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
             "REFRESH_DAILY_RUNTIME_DUTY_STACK_AND_APPLICATION",
         )
         self.assertEqual(
-            [step.variables["DAILY_RUNTIME_DUTY"] for step in steps[3:5]],
+            steps[3].target,
+            "daily.runtime.database.duty.upgrade",
+        )
+        self.assertEqual(
+            steps[3].environment["SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE"],
+            "UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES",
+        )
+        self.assertEqual(
+            steps[3].variables["DAILY_RUNTIME_DATABASE_DUTY_SELECTION"],
+            "demo platform_control",
+        )
+        self.assertTrue(
+            steps[3].variables["DAILY_RUNTIME_DATABASE_DUTY_UPGRADE_REPORT"]
+            .endswith("/duty-upgrade.json")
+        )
+        self.assertEqual(
+            [step.variables["DAILY_RUNTIME_DUTY"] for step in steps[4:6]],
             ["demo", "platform_control"],
         )
         self.assertTrue(
-            steps[3].variables["DAILY_RUNTIME_SOURCE_REVISION_BASE_URL"].endswith("/t/demo")
+            steps[4].variables["DAILY_RUNTIME_SOURCE_REVISION_BASE_URL"].endswith("/t/demo")
         )
         self.assertTrue(
-            steps[4].variables["DAILY_RUNTIME_SOURCE_REVISION_BASE_URL"].endswith("/platform-admin")
+            steps[5].variables["DAILY_RUNTIME_SOURCE_REVISION_BASE_URL"].endswith("/platform-admin")
         )
         self.assertEqual(
-            [step.variables["DAILY_RUNTIME_DEPLOY_ENV"] for step in steps[3:5]],
+            [step.variables["DAILY_RUNTIME_DEPLOY_ENV"] for step in steps[4:6]],
             ["daily", "daily"],
         )
         self.assertEqual(
-            steps[7].target,
+            steps[8].target,
             "daily.runtime.build_identity.record",
         )
         self.assertEqual(
-            steps[7].environment["CONFIRM_DAILY_RUNTIME_BUILD_IDENTITY_RECORD"],
+            steps[8].environment["CONFIRM_DAILY_RUNTIME_BUILD_IDENTITY_RECORD"],
             "RECORD_EXACT_DAILY_RUNTIME_BUILD_IDENTITY",
         )
         self.assertEqual(
-            steps[8].target,
+            steps[9].target,
             "verify.daily.runtime.build_identity",
         )
         self.assertTrue(
-            steps[8].variables["DAILY_RUNTIME_BUILD_IDENTITY_REPORT"].endswith(
+            steps[9].variables["DAILY_RUNTIME_BUILD_IDENTITY_REPORT"].endswith(
                 "/build-identity-verification.json"
             )
         )
@@ -311,6 +328,7 @@ class DailyRuntimeReleaseOrchestrationTest(unittest.TestCase):
         self.assertEqual(
             [
                 "duty-refresh",
+                "duty-upgrade",
                 "align-demo",
                 "align-platform",
                 "published-face",

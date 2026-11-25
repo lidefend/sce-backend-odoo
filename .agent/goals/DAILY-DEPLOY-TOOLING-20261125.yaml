@@ -1,0 +1,41 @@
+schema_version: 1
+
+goal:
+  id: DAILY-DEPLOY-TOOLING-20261125
+  title: Harden local platform and daily frontend deployment entries
+  status: active
+  formal_product_layer: P4 ops delivery tool
+  layer_target: existing local platform lifecycle and daily frontend build aligner
+  module:
+    - scripts/dev
+    - scripts/ops
+    - scripts/verify
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Let the local platform-control lifecycle rebind an existing private env file
+    to the current source worktree and upgrade smart_core without deleting its
+    volumes; bound the daily remote Vite heap so exact-head builds do not OOM;
+    preserve remote failure evidence for diagnosis.
+  why_here:
+    - Both defects are deployment-tool defects discovered during an owner-authorized deployment.
+    - They affect lifecycle identity and build execution, not product contracts or business semantics.
+  why_not_elsewhere:
+    - Do not rebuild or delete the local platform database.
+    - Do not change Odoo models, contracts, ACLs or demo data.
+    - Do not bypass the governed local platform or daily release entries.
+  blast_radius:
+    - local sc-local-platform env binding and smart_core upgrade action
+    - daily remote frontend build memory policy and failure evidence
+    - daily release step ordering from refresh through declared-module upgrade
+  acceptance:
+    - Existing platform credentials and database identity remain unchanged.
+    - Existing platform env rebinds source root, source revision and frontend directory.
+    - Platform upgrade uses Odoo -u rather than volume deletion or -i.
+    - Daily frontend build passes a bounded NODE_OPTIONS heap.
+    - Remote build failures retain stderr and structured build-tail evidence.
+    - Daily release runs the declared-module upgrade before publication.
+  exclusions:
+    - No database rebuild or seed.
+    - No product contract or business-state change.
+    - No production deployment.
+  rollback: Revert this branch; deployed runtime can remain on the verified main SHA.

@@ -82,6 +82,30 @@ def default_target_env(source_env):
     return Path(source_env).resolve().parent / ".env.local.platform"
 
 
+def rewrite_env_values(target_env, values):
+    """Update non-secret deployment identity while preserving credentials."""
+    rows = Path(target_env).read_text(encoding="utf-8").splitlines()
+    pending = dict(values)
+    rewritten = []
+    for row in rows:
+        if "=" not in row or row.lstrip().startswith("#"):
+            rewritten.append(row)
+            continue
+        key = row.split("=", 1)[0]
+        if key in pending:
+            rewritten.append(f"{key}={pending.pop(key)}")
+        else:
+            rewritten.append(row)
+    rewritten.extend(f"{key}={value}" for key, value in pending.items())
+    target = Path(target_env)
+    old_umask = os.umask(0o077)
+    try:
+        target.write_text("\n".join(rewritten) + "\n", encoding="utf-8")
+    finally:
+        os.umask(old_umask)
+    target.chmod(0o600)
+
+
 def prepare_env(*, declaration, source_env, target_env):
     source_env = Path(source_env).resolve()
     target_env = Path(target_env).resolve()
@@ -102,6 +126,13 @@ def prepare_env(*, declaration, source_env, target_env):
                     f"LOCAL_PLATFORM_ENV_IDENTITY_MISMATCH:{key}:"
                     f"{target.get(key, '')}"
                 )
+        revision = run(["git", "rev-parse", "HEAD"]).stdout.strip()
+        rewrite_env_values(target_env, {
+            "SC_PRODUCT_ROOT": str(ROOT),
+            "SC_SOURCE_REVISION": revision,
+            "SC_DEPLOY_ENV": "local",
+            "FRONTEND_DIST_DIR": str(ROOT / "frontend/apps/web/dist-clean"),
+        })
         return target_env
     if not source.get("SC_ENTRY_SHARED_SECRET"):
         raise RuntimeError("LOCAL_PLATFORM_ENTRY_SECRET_MISSING")
@@ -308,6 +339,37 @@ def install_module(declaration, env_file):
     )
 
 
+def upgrade_module(declaration, env_file):
+    env = parse_env(env_file)
+    render_config(declaration, env_file)
+    compose(
+        declaration,
+        env_file,
+        "run",
+        "--rm",
+        "--no-deps",
+        "--entrypoint",
+        "/usr/bin/odoo",
+        "odoo",
+        "--config=/var/lib/odoo/odoo.conf",
+        "-d",
+        declaration["database"],
+        "--db_host=db",
+        "--db_port=5432",
+        "--db_user=" + env["DB_USER"],
+        "--db_password=" + env["DB_PASSWORD"],
+        "--addons-path=/usr/lib/python3/dist-packages/odoo/addons,"
+        "/mnt/source-addons,/mnt/demo-addons,/mnt/customer-addons",
+        "-u",
+        declaration["module"],
+        "--without-demo=all",
+        "--no-http",
+        "--workers=0",
+        "--max-cron-threads=0",
+        "--stop-after-init",
+    )
+
+
 def health(declaration, env_file):
     ensure_database(declaration, env_file)
     module_state = psql(
@@ -358,7 +420,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "action",
-        choices=("prepare", "up", "install", "health", "down", "rebuild", "shell"),
+        choices=(
+            "prepare", "up", "install", "upgrade", "health", "down", "rebuild",
+            "shell",
+        ),
     )
     parser.add_argument("--source-env", required=True)
     parser.add_argument("--target-env", default="")
@@ -398,6 +463,17 @@ def main():
         compose(declaration, env_file, "up", "-d", "--wait", "db", "redis")
         ensure_database(declaration, env_file)
         install_module(declaration, env_file)
+        compose(declaration, env_file, "up", "-d", "--wait", "odoo")
+        health(declaration, env_file)
+        return
+    if args.action == "upgrade":
+        if os.environ.get("CONFIRM_LOCAL_PLATFORM_UPGRADE") != (
+            "UPGRADE_LOCAL_PLATFORM_CONTROL"
+        ):
+            raise RuntimeError("LOCAL_PLATFORM_UPGRADE_CONFIRMATION_REQUIRED")
+        compose(declaration, env_file, "up", "-d", "--wait", "db", "redis")
+        ensure_database(declaration, env_file)
+        upgrade_module(declaration, env_file)
         compose(declaration, env_file, "up", "-d", "--wait", "odoo")
         health(declaration, env_file)
         return
