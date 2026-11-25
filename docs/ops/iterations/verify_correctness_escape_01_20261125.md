@@ -291,3 +291,9 @@ Its regex now accepts whitespace while retaining exactly three required rules an
 all behavioral assertions. Both novalidate assertions likewise accept whitespace.
 The final activation producer passed, completing 30/30 reconciled target results.
 The failed original/direct and first adapted runs are retained as diagnostic logs.
+
+### Follow-up: public history fixture registration
+
+Exact candidate 58024e373 failed public_guard run 45703420008 on RH018 for payment permission fixture blob ed8f1aaa4953693e9d502bce2871a038524791a5. Trusted-base history covers public refs, including the product branch; this is not a new business-data value in the CI diff. Compared to registered blob 578ab14089ea852ce60f7fa96da3f27eec3f4b96, its only change replaces the p02 entry group reference with its capability scope. Synthetic fixture values are unchanged. Register the same exact path/rule/blob exception already present in #1006; no wildcard exemption or scanner weakening. Original failed remote log: `.runtime/agent-runs/VERIFY-CORRECTNESS-01/review-public-guard-failure.log`. New remote exact-head checks remain required.
+
+Follow-up validation passed: 18 parallel scanner tests, 9 personal-data tests, 37 history-guard tests; explicit trusted-base history scan passed (9,524 blobs, no sensitive values recorded). Logs: `review-fixture-unit.log`, `review-fixture-history.log` under the same runtime run directory. Registration-only delta leaves the previously verified executor/producer inputs unchanged.

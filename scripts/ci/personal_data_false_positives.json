@@ -332,6 +332,13 @@
     },
     {
       "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+      "blob_id": "ed8f1aaa4953693e9d502bce2871a038524791a5",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_fixture_values_unchanged_from_reviewed_578ab140_after_entry_capability_group_reference_change"
+    },
+    {
+      "rule_id": "PD003",
       "path": "demo_addons/smart_construction_demo/data/scenario/s69_payment_ledger_surface/10_payment_ledger_records.xml",
       "blob_id": "3f646ea3a1a019d7d6e8dfbc2ca5e60e5f9b81ac",
       "classification": "BANK_ACCOUNT_PATTERN",
