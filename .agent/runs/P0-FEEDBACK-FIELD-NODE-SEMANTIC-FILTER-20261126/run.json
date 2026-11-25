@@ -2,7 +2,7 @@
   "schema_version": 2,
   "id": "P0-FEEDBACK-FIELD-NODE-SEMANTIC-FILTER-20261126",
   "branch": "fix/feedback-node-semantic-filter-20261126",
-  "status": "active",
+  "status": "verification_pending",
   "baseline_sha": "fe1573b21c15c67d388eb7e1064561b41334b5c2",
   "scope": [
     ".agent/active-runs.json",
@@ -71,7 +71,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the focused fix, rebuild and rebind sc-local-dev to this candidate, then run the wutao projects.ledger row-to-Form browser acceptance.",
+  "next_exact_step": "Publish the clean branch and verify the four required checks on its exact PR HEAD.",
   "goal": ".agent/goals/P0-FEEDBACK-FIELD-NODE-SEMANTIC-FILTER-20261126.yaml",
   "record": "docs/ops/iterations/p0_feedback_field_node_semantic_filter_20261126.md"
 }

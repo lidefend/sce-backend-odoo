@@ -53,8 +53,27 @@ matching the real project Form contract.
 - `make verify.frontend.typecheck.strict`: passed.
 - `make verify.frontend.lint.src`: passed with the existing three warnings in
   `frontend/packages/ui` and zero errors.
+- `make ci.local.iteration`: passed, including strict typecheck and the affected
+  frontend/governance set. The planner did not select the two explicitly
+  declared run checks, so they were also executed directly.
 - `git diff --check`: passed.
-- Real browser replay: pending candidate commit and local runtime rebind.
+- Candidate runtime: `sc-local-dev` / `sc_dev_demo`, source
+  `d31758e727f81d6a3fc1c83b08c4cc43e8f3e825`, frontend fingerprint
+  `3fcdeb3b310946dd383a129002970059b5727cc9bf7f61452e036156351e179f`.
+- `P0A_LOGIN=wutao P0A_PASSWORD=123456 make
+  verify.p0_contract_producer.p0a.browser`: passed on desktop and mobile.
+
+The browser report records the same row and Form identity on both viewports:
+
+- clicked record `4`;
+- Form state `ok`;
+- model `project.project`;
+- action `590`;
+- menu `382`;
+- strict Contract V2 decode of 45 descriptors;
+- no page errors;
+- the only console errors are the five intentionally exercised 409
+  `CONTRACT_VERSION_UNSUPPORTED` negative cases.
 
 ## Exclusions
 
