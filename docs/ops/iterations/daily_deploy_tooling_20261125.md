@@ -52,8 +52,8 @@ Stopped without deleting volumes:
 - Four-month-old release and user-data rehearsal containers.
 - A 140-day-old remote Vite development server on port 5174.
 
-Historical `sc-backend-odoo-dev`, tenant baosheng, core035 UAT, MySQL and the
-public site service were preserved.
+Historical `sc-backend-odoo-dev`, the active named tenant development stack, a
+separate UAT stack, MySQL and the public site service were preserved.
 
 ## Exclusions
 
