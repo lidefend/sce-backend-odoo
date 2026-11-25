@@ -40,6 +40,7 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/verify_correctness_escape_01_20261125.md",
+    "demo_addons/smart_construction_demo/tests/test_startup_metadata_performance.py",
     "make/ci.mk",
     "make/contract.mk",
     "scripts/ci/backend_impact_plan.py",
@@ -169,7 +170,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the reviewed aggregate-summary correction and records, publish that exact clean HEAD, and wait for the four required checks.",
+  "next_exact_step": "Commit the reviewed demo V2.7 migration and records, publish the exact clean HEAD, rerun the four required checks, then close the backend iteration chain.",
   "id": "VERIFY-CORRECTNESS-01",
   "branch": "fix/verify-correctness-escape-01-20261125",
   "status": "verification_pending",

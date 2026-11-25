@@ -27,7 +27,7 @@ by #996, #997 and #998 and moves cheap registry/plan checks ahead of ORM work.
 | Native parser | `make verify.native_advisory.unit` | PASS, 53 tests |
 | Published sync | `make verify.workspace.branch.sync-github.unit` | PASS, 56 tests |
 | Contract consumer | `make verify.unified_page_contract.v2.runtime` | PASS, 151 tests |
-| Local affected iteration | `make ci.local.iteration` | PASS, 18 executed targets and 1,357 executed tests |
+| Local affected iteration | `make ci.local.iteration` | PASS, 17 executed targets and 989 executed tests |
 | V2.7 `smart_core` classes | registered disposable ORM entry | PASS, 97 tests |
 | V2.7 bundle classes | registered disposable ORM entry | PASS, 16 tests |
 | V2.7 industry classes | registered disposable ORM entry | PASS, 351 tests |
@@ -116,6 +116,15 @@ adding the final `PASS tests=466 modules=3` summary,
 `verify.changed_tests.orm` passed with 16 bundle, 353 industry and 97 smart-core
 tests.
 
+The required backend-iteration close lane then found three inherited demo tests
+that still read the old object-shaped `SystemInitHandler` response. The tests
+now unpack either the canonical dict response or the legacy object, declare the
+same explicit V2.7 client identity, and retain their response-equivalence and
+SQL-count assertions. A local execution is intentionally `not_run`: the demo
+module's own guard rejects the disposable `sc_test` database and requires an
+authorized demo environment. The exact-head remote demo lane is the owning
+proof.
+
 ## Historical escape replay
 
 | Original change | Replayed paths | Required newly selected target | Result |
@@ -200,7 +209,8 @@ legacy merge-preparation entry are outside this batch.
 
 ## Next exact step
 
-Commit the aggregate-summary correction and reviewed records, publish the exact
-clean HEAD through the governed PR lane, and wait for the four required checks against main
-`487a3d8497cd89841e1954d164e0e11d79742d81`. No persistent database, deployment
-or user-acceptance state has been mutated.
+Commit the reviewed demo V2.7 migration and records, publish the exact clean
+HEAD through the governed PR lane, rerun the four required checks against main
+`487a3d8497cd89841e1954d164e0e11d79742d81`, and close the backend iteration
+chain. No persistent database, deployment or user-acceptance state has been
+mutated.
