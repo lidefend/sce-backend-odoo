@@ -20,7 +20,7 @@ function snapshot(widget: Record<string, unknown>) {
       viewType: 'form',
       layoutType: 'form',
       renderMode: 'governed',
-      contractVersion: '2.4.0',
+      contractVersion: '2.7.0',
       clientType: 'web_pc',
     },
     layoutContract: {
@@ -36,7 +36,6 @@ function snapshot(widget: Record<string, unknown>) {
         widgetList: [widget],
       }],
       layoutHints: {},
-      componentRegistry: {},
     },
     statusContract: {
       globalStatus: { pageVisible: true, pageAuth: 'edit' },
@@ -67,9 +66,9 @@ function snapshot(widget: Record<string, unknown>) {
         stage: 'sealed',
         definition: {
           schemaId: 'v2',
-          schemaVersion: '2',
+          schemaVersion: '2.7.0',
           schemaSha256: 'schema',
-          contractVersion: '2.4.0',
+          contractVersion: '2.7.0',
           normativeStatus: 'active',
         },
         generation: {
@@ -98,7 +97,7 @@ function widget(overrides: Record<string, unknown> = {}) {
     fieldCode: 'amount',
     label: 'Amount',
     span: 12,
-    componentKey: 'sc.input.text',
+    semanticType: 'text',
     capabilities: [],
     componentConfig: {
       fieldType: 'char',
@@ -111,6 +110,14 @@ function widget(overrides: Record<string, unknown> = {}) {
         resolutionStatus: 'not_applicable',
         reasonCode: '',
       },
+    },
+    fieldDescriptor: {
+      schemaVersion: '1.0.0',
+      fieldCode: 'amount',
+      label: 'Amount',
+      fieldType: 'char',
+      widgetType: 'input',
+      semanticType: 'text',
     },
     ownerContainerId: 'main.form',
     ...overrides,
@@ -125,7 +132,7 @@ assert.equal(
 
 const explicit = decodeContractV2Snapshot(snapshot(widget({
   widgetType: 'date',
-  componentKey: 'sc.input.date',
+  semanticType: 'date',
   componentConfig: {
     fieldType: 'date',
     nativeWidget: 'daterange',
@@ -139,16 +146,25 @@ const explicit = decodeContractV2Snapshot(snapshot(widget({
       reasonCode: '',
     },
   },
+  fieldDescriptor: {
+    schemaVersion: '1.0.0',
+    fieldCode: 'amount',
+    label: 'Amount',
+    fieldType: 'date',
+    widgetType: 'date',
+    semanticType: 'date',
+    temporal: { kind: 'date', timezoneAuthority: 'not_applicable' },
+  },
 })));
 assert.equal(
   explicit.layoutContract.containerTree[0].widgetList[0].componentConfig.widgetProvenance.nativeWidget,
   'daterange',
 );
 assert.equal(explicit.layoutContract.containerTree[0].widgetList[0].widgetType, 'date');
-assert.equal(explicit.layoutContract.containerTree[0].widgetList[0].componentKey, 'sc.input.date');
+assert.equal(explicit.layoutContract.containerTree[0].widgetList[0].semanticType, 'date');
 
 const unsupported = decodeContractV2Snapshot(snapshot(widget({
-  componentKey: 'sc.unsupported.native_widget',
+  semanticType: 'unsupported_native_widget',
   componentConfig: {
     fieldType: 'char',
     nativeWidget: 'future_editor',
@@ -161,6 +177,14 @@ const unsupported = decodeContractV2Snapshot(snapshot(widget({
       resolutionStatus: 'unsupported',
       reasonCode: 'NATIVE_WIDGET_UNRECOGNIZED',
     },
+  },
+  fieldDescriptor: {
+    schemaVersion: '1.0.0',
+    fieldCode: 'amount',
+    label: 'Amount',
+    fieldType: 'char',
+    widgetType: 'input',
+    semanticType: 'unsupported_native_widget',
   },
 })));
 assert.equal(
@@ -184,7 +208,7 @@ for (const invalid of [
     },
   }),
   widget({
-    componentKey: 'sc.unsupported.native_widget',
+    semanticType: 'unsupported_native_widget',
     componentConfig: {
       widgetProvenance: {
         nativeWidget: 'future_editor',
@@ -195,6 +219,14 @@ for (const invalid of [
         resolutionStatus: 'unsupported',
         reasonCode: '',
       },
+    },
+    fieldDescriptor: {
+      schemaVersion: '1.0.0',
+      fieldCode: 'amount',
+      label: 'Amount',
+      fieldType: 'char',
+      widgetType: 'input',
+      semanticType: 'unsupported_native_widget',
     },
   }),
   widget({

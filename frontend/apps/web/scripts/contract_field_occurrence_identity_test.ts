@@ -26,6 +26,40 @@ import { dispatchTemplateFieldChange } from '../src/components/template/fieldCha
 import { toContractFormDriverFieldChange } from '../src/components/template/contractFormDriverField';
 import type { LayoutNode } from '../src/pages/contractForm/types';
 
+const AMOUNT_LOCATOR = '//form/sheet/group/field[@name="amount"]';
+const VIEW_XMLID = 'demo.document_form';
+
+function nativeIdentity(
+  kind: 'field' | 'widget',
+  name: string,
+  occurrenceIndex: number,
+  sourcePosition: number,
+  keyDigit: string,
+) {
+  return {
+    schemaVersion: '1.0.0',
+    model: 'x.document',
+    viewType: 'form',
+    viewId: 1001,
+    viewXmlId: VIEW_XMLID,
+    viewContentHash: 'a'.repeat(64),
+    viewStructureKey: `struct.v1.${'b'.repeat(24)}`,
+    crossEnvironmentStable: true,
+    kind,
+    name,
+    nativeLocator: AMOUNT_LOCATOR,
+    occurrenceIndex,
+    sourcePosition,
+    occurrenceKey: `occ.v1.${keyDigit.repeat(24)}`,
+    authoritative: true,
+    sourceAuthority: {
+      kind: 'ir.ui.view',
+      projectionOnly: true,
+      noBusinessFactAuthority: true,
+    },
+  };
+}
+
 // ---------------------------------------------------------------------------
 // A real contract that renders the same field `amount` twice: the read-only
 // summary occurrence `field.amount` and the editable detail occurrence
@@ -36,39 +70,45 @@ function contractSnapshot(amountReadonly: boolean, amountDetailReadonly: boolean
     pageInfo: {
       pageId: 'page.x.document.form', sceneKey: 'x.document.form', pageName: 'Document',
       model: 'x.document', viewType: 'form', layoutType: 'form', renderMode: 'governed',
-      contractVersion: '2.2.0', clientType: 'web_pc',
+      contractVersion: '2.7.0', clientType: 'web_pc',
     },
     layoutContract: {
       pageId: 'page.x.document.form', layoutType: 'form', adaptMode: 'pc',
       layoutHints: { mobileColumns: 1 },
-      componentRegistry: {
-        'sc.input.text': { version: '1.0' },
-        'sc.relation.many2one': { version: '1.0' },
-      },
       containerTree: [{
         containerId: 'section.identity', containerType: 'group', type: 'group', title: 'Identity', span: 24, columns: 2,
         children: [
           {
             containerId: 'field.amount', containerType: 'field', type: 'field', name: 'amount', widgetId: 'field.amount', fieldCode: 'amount', title: '', span: 12,
-            nativeLocator: '//form/sheet/group/field[@name="amount"]', occurrenceIndex: 1, sourcePosition: 0,
+            nativeLocator: AMOUNT_LOCATOR, occurrenceIndex: 1, sourcePosition: 0,
+            nativeIdentity: nativeIdentity('field', 'amount', 1, 0, '1'),
             children: [], widgetList: [{
               widgetId: 'field.amount', widgetType: 'input', fieldCode: 'amount', label: 'Amount', span: 12,
-              componentKey: 'sc.input.text', capabilities: [],
-              componentConfig: { fieldType: 'char', native_locator: '//form/sheet/group/field[@name="amount"]', occurrence_index: 1, source_position: 0 },
-              fieldDescriptor: { name: 'amount', type: 'char' },
-              nativeLocator: '//form/sheet/group/field[@name="amount"]', occurrenceIndex: 1, sourcePosition: 0,
+              semanticType: 'text', capabilities: [],
+              componentConfig: { fieldType: 'char', native_locator: AMOUNT_LOCATOR, occurrence_index: 1, source_position: 0 },
+              fieldDescriptor: {
+                schemaVersion: '1.0.0', fieldCode: 'amount', label: 'Amount',
+                fieldType: 'char', widgetType: 'input', semanticType: 'text',
+              },
+              nativeLocator: AMOUNT_LOCATOR, occurrenceIndex: 1, sourcePosition: 0,
+              nativeIdentity: nativeIdentity('field', 'amount', 1, 0, '1'),
               ownerContainerId: 'field.amount',
             }],
           },
           {
             containerId: 'field.amount.occ.detail', containerType: 'field', type: 'field', name: 'amount', widgetId: 'field.amount.occ.detail', fieldCode: 'amount', title: '', span: 12,
-            nativeLocator: '//form/sheet/group/field[@name="amount"]', occurrenceIndex: 2, sourcePosition: 1,
+            nativeLocator: AMOUNT_LOCATOR, occurrenceIndex: 2, sourcePosition: 1,
+            nativeIdentity: nativeIdentity('field', 'amount', 2, 1, '2'),
             children: [], widgetList: [{
               widgetId: 'field.amount.occ.detail', widgetType: 'input', fieldCode: 'amount', label: 'Amount (detail)', span: 12,
-              componentKey: 'sc.input.text', capabilities: [],
-              componentConfig: { fieldType: 'char', native_locator: '//form/sheet/group/field[@name="amount"]', occurrence_index: 2, source_position: 1 },
-              fieldDescriptor: { name: 'amount', type: 'char' },
-              nativeLocator: '//form/sheet/group/field[@name="amount"]', occurrenceIndex: 2, sourcePosition: 1,
+              semanticType: 'text', capabilities: [],
+              componentConfig: { fieldType: 'char', native_locator: AMOUNT_LOCATOR, occurrence_index: 2, source_position: 1 },
+              fieldDescriptor: {
+                schemaVersion: '1.0.0', fieldCode: 'amount', label: 'Amount (detail)',
+                fieldType: 'char', widgetType: 'input', semanticType: 'text',
+              },
+              nativeLocator: AMOUNT_LOCATOR, occurrenceIndex: 2, sourcePosition: 1,
+              nativeIdentity: nativeIdentity('field', 'amount', 2, 1, '2'),
               ownerContainerId: 'field.amount.occ.detail',
             }],
           },
@@ -76,8 +116,12 @@ function contractSnapshot(amountReadonly: boolean, amountDetailReadonly: boolean
             containerId: 'field.owner_id', containerType: 'field', type: 'field', name: 'owner_id', widgetId: 'field.owner_id', fieldCode: 'owner_id', title: '', span: 12,
             children: [], widgetList: [{
               widgetId: 'field.owner_id', widgetType: 'relation', fieldCode: 'owner_id', label: 'Owner', span: 12,
-              componentKey: 'sc.relation.many2one', capabilities: [], componentConfig: { fieldType: 'many2one' },
-              fieldDescriptor: { name: 'owner_id', type: 'many2one', relation: 'x.related' },
+              semanticType: 'relation', capabilities: [], componentConfig: { fieldType: 'many2one' },
+              fieldDescriptor: {
+                schemaVersion: '1.0.0', fieldCode: 'owner_id', label: 'Owner',
+                fieldType: 'many2one', widgetType: 'relation', semanticType: 'relation',
+                relation: 'x.related',
+              },
               ownerContainerId: 'field.owner_id',
             }],
           },
@@ -123,7 +167,7 @@ function contractSnapshot(amountReadonly: boolean, amountDetailReadonly: boolean
       etag: 'e', snapshotId: 's', traceId: 't', requestId: 'r', sourceType: 'ui.contract',
       lifecycle: {
         lifecycleVersion: '1', stage: 'sealed',
-        definition: { schemaId: 'v2', schemaVersion: '2', schemaSha256: 'schema', contractVersion: '2', normativeStatus: 'active' },
+        definition: { schemaId: 'v2', schemaVersion: '2.7.0', schemaSha256: 'schema', contractVersion: '2.7.0', normativeStatus: 'active' },
         generation: { generator: 'test', generatorVersion: '1', sourceType: 'test', sourceSha256: 'source' },
         runtime: { requestId: 'r', traceId: 't', clientType: 'web_pc', traceSource: 'test' },
         integrity: { algorithm: 'sha256', contractSha256: 'contract-sha' }, authority: {},
@@ -173,7 +217,7 @@ function createRuntime(overrides: Record<string, unknown> = {}) {
     pendingInlineCreateFields: ref<string[]>([]),
     formFields: { value: {
       amount: { name: 'amount', type: 'char' },
-      owner_id: { name: 'owner_id', type: 'many2one', relation: 'x.related', relation_entry: { can_read: true, can_create: true, inline_create: { enabled: true, create_on_no_match: true } } },
+      owner_id: { name: 'owner_id', type: 'many2one', relation: 'x.related', relationEntry: { can_read: true, can_create: true, inline_create: { enabled: true, create_on_no_match: true } } },
     } },
     model: { value: 'x.document' }, recordId: { value: 501 }, rights: { value: { write: true } },
     formData, originalValues: { value: { amount: '1', owner_id: 17 } },
@@ -311,7 +355,7 @@ function createRuntime(overrides: Record<string, unknown> = {}) {
   const { runtime, inlineCreates } = createRuntime();
   await runtime.commitMany2oneInline('owner_id', {
     type: 'many2one', relation: 'x.related',
-    relation_entry: { can_read: true, can_create: true, inline_create: { enabled: true, create_on_no_match: true } },
+    relationEntry: { can_read: true, can_create: true, inline_create: { enabled: true, create_on_no_match: true } },
   } as never, 'Staged on writable position', 'field.owner_id');
   await runtime.resolvePendingInlineRelationCreates();
   assert.deepEqual(inlineCreates, ['Staged on writable position'], 'a writable occurrence may apply its create result');
@@ -319,7 +363,7 @@ function createRuntime(overrides: Record<string, unknown> = {}) {
   const flip = createRuntime();
   await flip.runtime.commitMany2oneInline('owner_id', {
     type: 'many2one', relation: 'x.related',
-    relation_entry: { can_read: true, can_create: true, inline_create: { enabled: true, create_on_no_match: true } },
+    relationEntry: { can_read: true, can_create: true, inline_create: { enabled: true, create_on_no_match: true } },
   } as never, 'Staged then readonly', 'field.owner_id.occ.gone');
   await flip.runtime.resolvePendingInlineRelationCreates();
   assert.deepEqual(flip.inlineCreates, [], 'a position whose identity no longer resolves must not apply its result');

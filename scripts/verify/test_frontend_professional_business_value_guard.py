@@ -37,16 +37,16 @@ class ProfessionalBusinessValueGuardTests(unittest.TestCase):
         )
 
     def test_missing_runtime_carrier_key_fails(self):
-        """The vocabulary must survive the projection from the declaration."""
+        """Semantic vocabulary must survive the backend projection."""
 
         def read_text(path):
             value = (self._root() / path).read_text(encoding="utf-8")
             if path.endswith("contract_runtime/semantic_registry_generated.py"):
-                return value.replace("'sc.value.money'", "'sc.value.removed'")
+                return value.replace("'money':", "'money_removed':")
             return value
 
         failures = validate(read_text)
-        self.assertTrue(any("runtime carrier is missing business value key" in item for item in failures), failures)
+        self.assertTrue(any("runtime carrier is missing business value semantic money" in item for item in failures), failures)
 
     def test_assembler_bypassing_the_registry_fails(self):
         def read_text(path):
@@ -57,7 +57,7 @@ class ProfessionalBusinessValueGuardTests(unittest.TestCase):
 
         failures = validate(read_text)
         self.assertTrue(
-            any("does not resolve component keys through the contract registry" in item for item in failures),
+            any("does not resolve field semantics through the independent semantic specification" in item for item in failures),
             failures,
         )
 

@@ -8,6 +8,17 @@
     ".agent/active-runs.json",
     ".agent/goals/P0-FORM-COMPONENT-REGISTRY-CLOSURE-20261125.yaml",
     ".agent/runs/P0-FORM-COMPONENT-REGISTRY-CLOSURE-20261125/run.json",
+    "frontend/apps/web/scripts/action_surface_renderer_registry_test.ts",
+    "frontend/apps/web/scripts/contract_field_occurrence_identity_test.ts",
+    "frontend/apps/web/scripts/contract_v2_runtime_policy_test.ts",
+    "frontend/apps/web/scripts/form_structure_surface_contract_test.ts",
+    "frontend/apps/web/scripts/native_action_contract_consumption_test.ts",
+    "frontend/apps/web/scripts/native_widget_provenance_test.ts",
+    "frontend/apps/web/scripts/submission_readiness_notice_contract_test.ts",
+    "frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
+    "scripts/verify/business_entry_matrix_browser.mjs",
+    "scripts/verify/frontend_professional_business_value_guard.py",
+    "scripts/verify/test_frontend_professional_business_value_guard.py",
     "addons/smart_construction_core/core_extension.py",
     "addons/smart_construction_core/core_extension_contract_normalizers.py",
     "addons/smart_construction_core/core_extension_project_layout.py",
@@ -273,8 +284,10 @@
       ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "Commit the feedback semantic consumer fix, update existing PR #1004 through the governed entrypoint, then verify its required checks on the exact HEAD.",
+  "blockers": [
+    "PR #1004 at 14f0f6f75306593c77ff6a808098aedbbc04b4e8 failed frontend_release_gate because a V2.7 consumer test still declared 2.2.0 and componentRegistry; merge_policy_gate failed as a dependency cascade. The fixture correction is locally validated but not yet published."
+  ],
+  "next_exact_step": "Commit and publish the clean exact candidate, then verify the four required checks on its new exact HEAD.",
   "goal": ".agent/goals/P0-FORM-COMPONENT-REGISTRY-CLOSURE-20261125.yaml",
   "record": "docs/ops/iterations/p0_form_component_registry_closure_20261125.md"
 }
