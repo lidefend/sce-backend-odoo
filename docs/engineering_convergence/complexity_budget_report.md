@@ -125,6 +125,7 @@ Generated from repository source files. This report is informational during the 
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1336 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
 | 1329 | XML data/view | `addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml` |
+| 1323 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1317 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
 | 1317 | Python source | `addons/smart_core/core/view_orchestrator.py` |
@@ -132,7 +133,6 @@ Generated from repository source files. This report is informational during the 
 | 1306 | TypeScript source | `frontend/apps/web/src/app/releaseOperatorActionContract.ts` |
 | 1299 | Python source | `addons/smart_core/tests/test_backend_semantic_copy_supply.py` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
-| 1288 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1284 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
 | 1275 | Python source | `scripts/audit/native_scene_inventory.py` |
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |

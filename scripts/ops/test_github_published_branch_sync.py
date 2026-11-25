@@ -8,6 +8,9 @@ from generated_evidence_paths import GENERATED_EVIDENCE_PATH_SET
 from gitee_published_branch_sync import git, out, sync, CONFIRM
 from github_published_branch_sync import (
     INDEX,
+    PARSER_CONTRACT_TEST_MARKERS,
+    PARSER_CONTRACT_TEST_PATH,
+    PARSER_MAIN_MARKERS,
     REPORTS,
     SYNC_TOOL_PATH,
     merge_index,
@@ -65,10 +68,16 @@ class GithubSyncTests(unittest.TestCase):
         git(self.root, 'init', '-b', 'main')
         git(self.root, 'config', 'user.email', 'test@example.invalid')
         git(self.root, 'config', 'user.name', 'Test')
-        for path in REPORTS | {INDEX, SYNC_TOOL_PATH}:
+        for path in REPORTS | {INDEX, SYNC_TOOL_PATH, PARSER_CONTRACT_TEST_PATH}:
             p = self.root / path
             p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_text(json.dumps(index(base='base')) if path == INDEX else 'base\n')
+            if path == INDEX:
+                content = json.dumps(index(base='base'))
+            elif path == PARSER_CONTRACT_TEST_PATH:
+                content = 'class Test:\n    # conflict anchor\n    pass\n'
+            else:
+                content = 'base\n'
+            p.write_text(content)
         self.commit()
         git(self.root, 'init', '--bare', self.remote)
         git(self.root, 'remote', 'add', 'origin', self.remote)
@@ -76,6 +85,11 @@ class GithubSyncTests(unittest.TestCase):
         (self.root / INDEX).write_text(json.dumps(index(base='base', ours='ours')))
         for path in REPORTS:
             (self.root / path).write_text('ours\n')
+        (self.root / PARSER_CONTRACT_TEST_PATH).write_text(
+            'class Test:\n'
+            + '\n'.join(f'    # {marker}' for marker in PARSER_CONTRACT_TEST_MARKERS)
+            + '\n'
+        )
         (self.root / SYNC_TOOL_PATH).write_text(
             Path(__file__).with_name('github_published_branch_sync.py').read_text(encoding='utf-8')
         )
@@ -85,6 +99,11 @@ class GithubSyncTests(unittest.TestCase):
         (self.root / INDEX).write_text(json.dumps(index(base='base', theirs='theirs')))
         for path in REPORTS:
             (self.root / path).write_text('theirs\n')
+        (self.root / PARSER_CONTRACT_TEST_PATH).write_text(
+            'class Test:\n'
+            + '\n'.join(f'    # {marker}' for marker in PARSER_MAIN_MARKERS)
+            + '\n'
+        )
         (self.root / SYNC_TOOL_PATH).write_text('theirs\n')
         self.main = self.commit()
         git(self.root, 'push', 'origin', 'main')
@@ -108,9 +127,15 @@ class GithubSyncTests(unittest.TestCase):
         self.assertEqual(out(self.root, 'show', '-s', '--format=%P', 'HEAD'), self.head+' '+self.main)
         self.assertEqual(json.loads((self.root / INDEX).read_text()), index(base='base', ours='ours', theirs='theirs'))
         self.assertTrue(result['generated_reports_refresh_required'])
-        self.assertEqual(set(result['resolved_conflicts']), REPORTS | {INDEX, SYNC_TOOL_PATH})
+        self.assertEqual(
+            set(result['resolved_conflicts']),
+            REPORTS | {INDEX, SYNC_TOOL_PATH, PARSER_CONTRACT_TEST_PATH},
+        )
         for report in REPORTS:
             self.assertEqual((self.root / report).read_text(), 'ours\n')
+        parser = (self.root / PARSER_CONTRACT_TEST_PATH).read_text()
+        for marker in PARSER_CONTRACT_TEST_MARKERS:
+            self.assertIn(marker, parser)
         self.assertEqual(out(self.root, 'ls-remote', 'origin', 'refs/heads/fix/test').split()[0], self.head)
         self.assertEqual(out(self.root, 'status', '--porcelain'), '')
 
