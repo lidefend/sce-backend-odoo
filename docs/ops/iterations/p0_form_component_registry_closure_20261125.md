@@ -86,6 +86,63 @@ Review also found three remaining boundaries. The follow-up changes are:
 - The assembled-contract cache identity is now `v123` with input digest
   `3d7776d0af5f1841d6590cde846446793b4f096244e649b3368cd05521753d7a`.
 
+## Post-Merge Revalidation Correction
+
+After the original tree entered main, revalidation on the updated branch
+exposed a remaining V2.7 consumer:
+
+- `useDraftFeedbackEvaluation` still discovered feedback hosts through
+  `componentKey`, while V2.7 contracts carry only `semanticType`. Dynamic
+  feedback therefore produced no presentation in the full frontend release
+  lane.
+- The protocol test fixture also still declared the old structural component
+  identity.
+
+The fixture now declares `semanticType: feedback_message`, and the dynamic
+consumer resolves that semantic through the frontend implementation registry.
+`verify.frontend.feedback_evaluation.unit` now passes, including atomic
+presentation, stale-response isolation and relation-presence cases.
+
+### Exact-Head Remote Follow-up
+
+The remote follow-up for
+`14f0f6f75306593c77ff6a808098aedbbc04b4e8` completed with:
+
+- `public_guard`: passed.
+- `professional_quality_gate`: passed.
+- `frontend_release_gate`: failed in
+  `verify.frontend.native_action_contract_consumption.unit` because the test
+  fixture still declared contract `2.2.0` and `layoutContract.componentRegistry`.
+- `merge_policy_gate`: failed only because the exact-head
+  `frontend_release_gate.yml` producer failed.
+
+The owning failure is a P4 test-fixture migration defect, not a product
+regression: the strict V2.7 decoder correctly rejected the old fixture. The
+affected frontend test inputs now declare V2.7 semantic fields and native
+occurrence identity, and the action, field-occurrence, runtime-policy, form
+surface, widget provenance and submission-readiness fixtures are aligned in the
+same bounded test-only change.
+
+Focused local results:
+
+- `verify.frontend.native_action_contract_consumption.unit`: passed, 7 cases.
+- `verify.frontend.action_surface_renderer_registry.unit`: passed.
+- `verify.frontend.professional_business_value.unit`: passed with all 8 guard
+  tests, 23 model tests and the desktop/mobile browser assertions.
+- `verify.frontend.contract_field_occurrence_identity.unit`: passed.
+- Native widget provenance, form structure surface and V2.7 runtime policy:
+  passed.
+- Submission-readiness contract and the native form action browser test:
+  passed at desktop `1440` and mobile `390`.
+- `verify.frontend.pr.unit`: passed in full.
+- `verify.frontend.business_entry.evidence_scope.unit`: passed, including the
+  132-entry universe and 76 evidence-scope tests.
+- `make ci.local.iteration`: passed, executing all 13 required
+  frontend/governance targets for the registered dirty scope.
+
+The corrected candidate has not yet been published. The remote result above
+belongs to `14f0f6f75` and must not be attributed to the next commit.
+
 ## Runtime Alignment Correction
 
 The first browser retries exposed runtime evidence that initially looked like a
@@ -136,7 +193,7 @@ backend-only.
 
 Candidate identity:
 
-- Base: `e940285aed4a9747931c26ec0a52283b5d296d14`
+- Base/main: `5b2724b1b56da295526f3b9e74e73f986a739085`
 - Branch: `fix/project-ledger-registry-closure-20261125`
 - The exact follow-up HEAD is recorded by PR #1004 after commit.
 
@@ -175,6 +232,11 @@ The review follow-up uses the requested affected set rather than repeating that
   test, including the path-aware identity probe.
 - Real `projects.ledger` desktop and mobile browser rerun: passed after using the
   documented `wutao` demo identity.
+- `verify.frontend.feedback_evaluation.unit`,
+  `verify.frontend.typecheck.strict`, `verify.frontend.lint.src`,
+  `verify.frontend.contract_basis.enforce` and
+  `verify.form_structure_authority_unification.unit`: passed for the
+  post-merge semantic-consumer correction.
 
 Run-bound checks:
 
@@ -200,7 +262,8 @@ Representative passed checks:
 
 Not run:
 
-- The current follow-up HEAD has not yet been published.
+- The corrected fixture-alignment commit has not yet been published, so no
+  remote result exists for it.
 - Independent review: excluded by the owner's explicit instruction to publish
   the PR without waiting for it. This exclusion is not evidence of review.
 

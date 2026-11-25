@@ -47,7 +47,7 @@ function actionContractPayload() {
       viewType: 'tree',
       layoutType: 'tree',
       renderMode: 'governed',
-      contractVersion: '2.5.0',
+      contractVersion: '2.7.0',
       clientType: 'web_pc',
     },
     layoutContract: {
@@ -56,7 +56,6 @@ function actionContractPayload() {
       adaptMode: 'pc',
       containerTree: [],
       layoutHints: {},
-      componentRegistry: {},
       listProfile: {},
     },
     statusContract: {
@@ -150,9 +149,9 @@ function actionContractPayload() {
         stage: 'sealed',
         definition: {
           schemaId: 'unified_page_contract_v2',
-          schemaVersion: '2.5.0',
+          schemaVersion: '2.7.0',
           schemaSha256: 'schema',
-          contractVersion: '2.5.0',
+          contractVersion: '2.7.0',
           normativeStatus: 'active',
         },
         generation: {

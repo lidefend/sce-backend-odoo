@@ -112,8 +112,8 @@ console.log('[contract_v2_runtime_policy_test] native action view capabilities c
 
 const previewSnapshot = {
   pageInfo: { pageId: 'preview.form', sceneKey: 'preview.form', pageName: 'Preview', model: 'x.preview',
-    viewType: 'form', layoutType: 'form', renderMode: 'governed', contractVersion: '2.2.0', clientType: 'web_pc' },
-  layoutContract: { pageId: 'preview.form', layoutType: 'form', adaptMode: 'pc', containerTree: [], layoutHints: {}, componentRegistry: {} },
+    viewType: 'form', layoutType: 'form', renderMode: 'governed', contractVersion: '2.7.0', clientType: 'web_pc' },
+  layoutContract: { pageId: 'preview.form', layoutType: 'form', adaptMode: 'pc', containerTree: [], layoutHints: {} },
   statusContract: { globalStatus: { pageVisible: true, pageAuth: 'read' }, containerStatus: [], widgetStatus: [], buttonStatus: [], selectorStatus: [] },
   actionContract: { actionRuleList: [], dependencyGraph: {} },
   dataContract: { mainData: {}, tableRows: {}, relationRows: {}, dictData: {}, pagination: {}, dataSource: {}, dataMeta: {} },
@@ -121,7 +121,7 @@ const previewSnapshot = {
   meta: { etag: 'test', snapshotId: 'test', traceId: 'test', requestId: 'test', sourceType: 'test',
     lifecycle: {
       lifecycleVersion: '1', stage: 'sealed',
-      definition: { schemaId: 'v2', schemaVersion: '2', schemaSha256: 'schema', contractVersion: '2', normativeStatus: 'active' },
+      definition: { schemaId: 'v2', schemaVersion: '2.7.0', schemaSha256: 'schema', contractVersion: '2.7.0', normativeStatus: 'active' },
       generation: { generator: 'test', generatorVersion: '1', sourceType: 'test', sourceSha256: 'source' },
       runtime: { requestId: 'test', traceId: 'test', clientType: 'web_pc', traceSource: 'test' },
       integrity: { algorithm: 'sha256', contractSha256: 'contract' }, authority: {},
@@ -154,7 +154,27 @@ console.log('[contract_v2_runtime_policy_test] preview provenance cases=4 passed
 
 const unnamedTree = decodeContractV2Snapshot({ ...previewSnapshot, layoutContract: {
   ...previewSnapshot.layoutContract, containerTree: [{ containerId: 'native.group', containerType: 'group', type: 'group',
-    name: '', title: 'Group', span: 24, nativeLocator: '/form/group[2]', occurrenceIndex: 2, children: [], widgetList: [] }],
+    name: '', title: 'Group', span: 24,
+    nativeLocator: '/form/group[2]', occurrenceIndex: 2,
+    nativeIdentity: {
+      schemaVersion: '1.0.0',
+      model: 'x.preview',
+      viewType: 'form',
+      viewId: 1001,
+      viewXmlId: 'demo.preview_form',
+      viewContentHash: 'a'.repeat(64),
+      viewStructureKey: `struct.v1.${'b'.repeat(24)}`,
+      crossEnvironmentStable: true,
+      kind: 'container',
+      name: 'native.group',
+      nativeLocator: '/form/group[2]',
+      occurrenceIndex: 2,
+      sourcePosition: 2,
+      occurrenceKey: `occ.v1.${'c'.repeat(24)}`,
+      authoritative: true,
+      sourceAuthority: { kind: 'ir.ui.view', projectionOnly: true, noBusinessFactAuthority: true },
+    },
+    children: [], widgetList: [] }],
 } }).layoutContract.containerTree;
 const { bindNode } = await import('../src/pages/contractForm/boundFormConfiguration');
 assert.equal(bindNode(unnamedTree[0]).expected.name, '', 'decode -> designer must preserve the unnamed native occurrence');
@@ -235,7 +255,7 @@ console.log('[contract_v2_runtime_policy_test] page access policy cases=6 passed
 const composedSnapshot = decodeContractV2Snapshot({
   ...previewSnapshot,
   fieldOwnership: { 'field.name': { ownerSlotRef: 'slot:identity', ownerGroupRef: 'group:identity' } },
-  pageComposition: { class: 'formal', diagnostics: [], schemaVersion: '2.2.0', permissionSemanticsPreserved: true },
+  pageComposition: { class: 'formal', diagnostics: [], schemaVersion: '2.7.0', permissionSemanticsPreserved: true },
 });
 assert.deepEqual(
   composedSnapshot.fieldOwnership,

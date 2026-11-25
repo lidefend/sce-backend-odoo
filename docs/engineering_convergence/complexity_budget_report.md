@@ -76,7 +76,7 @@ Generated from repository source files. This report is informational during the 
 | 1752 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1730 | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1721 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
-| 1713 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
+| 1715 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1693 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1676 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1657 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
@@ -340,7 +340,7 @@ Generated from repository source files. This report is informational during the 
 | 1752 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1730 | split_plan_required | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1721 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
-| 1713 | split_plan_required | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
+| 1715 | split_plan_required | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1693 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1676 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
 | 1657 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |

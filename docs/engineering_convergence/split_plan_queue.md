@@ -82,7 +82,7 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 1752 | Frontend owner | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P2 | 1730 | DevOps owner | `scripts/verify/system_performance_baseline.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1721 | Construction backend owner | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
-| P2 | 1713 | DevOps owner | `scripts/verify/business_entry_matrix_browser.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
+| P2 | 1715 | DevOps owner | `scripts/verify/business_entry_matrix_browser.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1693 | Frontend owner | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P2 | 1657 | DevOps owner | `scripts/verify/test_frontend_standard_preview.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1654 | Frontend owner | `frontend/apps/web/src/views/SceneView.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |

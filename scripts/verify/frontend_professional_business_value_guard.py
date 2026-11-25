@@ -16,27 +16,28 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     # authority is the generated carrier (same rule as the component-registry guard).
     generated = read_text("frontend/apps/web/src/app/presentation/semantic_registry.generated.ts")
     assembler = read_text("addons/smart_core/core/unified_page_contract_v2_assembler.py")
-    # The component vocabulary is declared once, in the contract registry, and
-    # projected into the runtime carrier.  The assembler used to hold a private
-    # copy of these keys; requiring a literal here would re-create that second
-    # vocabulary, so the authority moved with the declaration.
-    declaration = read_text("contracts/registry/component.yaml")
+    # Renderer implementation keys are frontend-owned in V2.7. The backend
+    # semantic declaration remains the meaning authority, while this registry is
+    # projected into the runtime carrier for implementation resolution.
+    declaration = read_text("frontend/apps/web/src/app/presentation/implementation_registry.yaml")
     carrier = read_text("addons/smart_core/core/contract_runtime/semantic_registry_generated.py")
     money = read_text("frontend/apps/web/src/components/design-system/ScMoney.vue")
     accessibility = read_text("frontend/apps/web/src/styles/accessibility.css")
-    keys = (
-        "sc.value.money", "sc.value.percentage", "sc.display.status",
-        "sc.value.duration",
+    values = (
+        ("money", "sc.value.money"),
+        ("percentage", "sc.value.percentage"),
+        ("status", "sc.display.status"),
+        ("duration", "sc.value.duration"),
     )
-    for key in keys:
+    for semantic_type, key in values:
         if key not in declaration:
             failures.append(f"business value declaration is incomplete for {key}")
-        if key not in carrier:
-            failures.append(f"runtime carrier is missing business value key {key}")
+        if f"'{semantic_type}':" not in carrier:
+            failures.append(f"runtime carrier is missing business value semantic {semantic_type}")
         if key not in model or key not in generated:
             failures.append(f"frontend business value authority is incomplete for {key}")
     if "contract_runtime.semantic_resolver" not in assembler:
-        failures.append("assembler does not resolve component keys through the contract registry")
+        failures.append("assembler does not resolve field semantics through the independent semantic specification")
     for marker in (
         'data-professional-field-family="business-value"', ':data-business-value-kind',
         ':data-presentation-mode', ':data-render-profile', ':data-control-state',
