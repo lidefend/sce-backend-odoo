@@ -95,11 +95,16 @@ function draftHosts(store: ContractV2NormalizedStore | null): FeedbackHost[] {
   return nodes.flatMap((host) => {
     const config = object(host.componentConfig);
     const evaluation = object(config.evaluation);
-    const semanticType = text(host.semanticType);
-    if (!semanticType || resolveNodeSemanticImplementation(semanticType) !== 'sc.feedback.message'
-      || config.purpose !== 'advisory'
+    // Field nodes carry field semantics such as `text`; only a node that
+    // explicitly declares the draft-feedback capability is a feedback host.
+    // Resolve node semantics after this structural filter so valid field
+    // semantics are never sent through the node implementation registry.
+    if (config.purpose !== 'advisory'
       || evaluation.capability !== FEEDBACK_DRAFT_CAPABILITY
       || evaluation.visibilityOwner !== 'feedback_evaluation') return [];
+    const semanticType = text(host.semanticType);
+    if (!semanticType) return [];
+    if (resolveNodeSemanticImplementation(semanticType) !== 'sc.feedback.message') return [];
     const sourceId = text(object(config.contentRef).containerId);
     const source = byId.get(sourceId);
     const authority = object(source?.sourceAuthority || source?.source_authority);
