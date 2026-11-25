@@ -60,12 +60,6 @@ _ACTION_SOURCE_VIEW_TYPES = {
     "native_list_row_action": "tree",
     "native_kanban_row_action": "kanban",
 }
-_NATIVE_NODE_PAYLOAD_SCHEMAS = {
-    "sc.insight.summary": "insight_summary.v1",
-    "sc.action.list": "action_list.v1",
-}
-
-
 def source_authority_contract() -> dict[str, Any]:
     return build_source_authority_contract(
         kind=SOURCE_KIND,
@@ -1505,7 +1499,16 @@ def _project_native_view_widget_payloads(contract: dict[str, Any], env: Any) -> 
         for row in _list(rows):
             if not isinstance(row, dict):
                 continue
-            if row.get("type") == "widget" and row.get("componentKey") in _NATIVE_NODE_PAYLOAD_SCHEMAS:
+            config = _dict(row.get("componentConfig"))
+            widget_name = _text(
+                config.get("nativeWidget") or row.get("widget") or row.get("name")
+            )
+            resolution = _project_native_embedded_widget_contract(widget_name)
+            if (
+                row.get("type") == "widget"
+                and resolution.get("payloadRequired") is True
+                and row.get("componentKey") == resolution.get("componentKey")
+            ):
                 nodes.append(row)
             visit(row.get("children"))
 
@@ -1524,7 +1527,13 @@ def _project_native_view_widget_payloads(contract: dict[str, Any], env: Any) -> 
                 "componentKey": _text(node.get("componentKey")),
                 "title": _text(node.get("title") or node.get("label")),
                 "options": deepcopy(_dict(node.get("componentConfig")).get("options")),
-                "payloadSchema": _NATIVE_NODE_PAYLOAD_SCHEMAS[_text(node.get("componentKey"))],
+                "payloadSchema": _project_native_embedded_widget_contract(
+                    _text(
+                        _dict(node.get("componentConfig")).get("nativeWidget")
+                        or node.get("widget")
+                        or node.get("name")
+                    )
+                )["payloadSchema"],
             }
             for node in nodes
         ],
@@ -1549,7 +1558,14 @@ def _project_native_view_widget_payloads(contract: dict[str, Any], env: Any) -> 
     for node in nodes:
         container_id = _text(node.get("containerId"))
         occurrence_key = _text(_dict(node.get("nativeIdentity")).get("occurrenceKey"))
-        expected_schema = _NATIVE_NODE_PAYLOAD_SCHEMAS[_text(node.get("componentKey"))]
+        resolution = _project_native_embedded_widget_contract(
+            _text(
+                _dict(node.get("componentConfig")).get("nativeWidget")
+                or node.get("widget")
+                or node.get("name")
+            )
+        )
+        expected_schema = _text(resolution.get("payloadSchema"))
         row = _dict(response.get(occurrence_key))
         valid = bool(
             occurrence_key
@@ -3311,6 +3327,8 @@ def _normalize_native_layout_nodes(
                 "widgetStatus": projected_widget_status,
                 "identityComplete": identity_complete,
             }
+            if supported and resolution.get("payloadRequired") is True:
+                component_config["payloadSchema"] = resolution["payloadSchema"]
             options_raw = node.get("options_raw", attributes.get("options"))
             options_resolution = _text(node.get("options_resolution")).lower()
             native_options_raw = attributes.get("options")

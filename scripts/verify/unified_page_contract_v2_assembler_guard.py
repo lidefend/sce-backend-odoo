@@ -29,7 +29,7 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v113"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v116"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
 ASSEMBLED_CACHE_MODULE = "addons/smart_core/utils/load_contract_response_cache.py"
 ASSEMBLED_CACHE_INPUTS = (
@@ -70,6 +70,7 @@ ASSEMBLED_CACHE_INPUTS = (
     # The assembler resolves component keys through the contract registry, so the
     # resolver and its generated carrier决定 assembled contract 的组件键。它们是运行时
     # 输入，必须一并纳入指纹；否则声明改动会留下被缓存的旧装配。
+    "addons/smart_core/core/contract_runtime/native_widget_contract.py",
     "addons/smart_core/core/contract_runtime/semantic_resolver.py",
     "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
     # The resolver also annotates a field with the entity semantics projected out
@@ -89,7 +90,7 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/utils/contract_governance_list_surface.py",
     "addons/smart_core/utils/contract_governance_user_surface.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "1dd7f8000e03fddcd503172953f16a6887d72f2d54134e5436dba17ea8b02e2e"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "c3d60f1165aa1db2c43a5bfcf823b9c957267f129cf0cec5c8d4018281c39835"
 
 # Cache layers are deliberately separated:
 #   * dynamic per-request computation owns record facts, permission verdicts and

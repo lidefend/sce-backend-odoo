@@ -15,7 +15,12 @@
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
     "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    "contracts/registry/registry.schema.json",
+    "contracts/registry/semantic.yaml",
+    "contracts/generated/contract_structure_fingerprint.json",
+    "scripts/contract/generate_semantic_registry.py",
     "addons/smart_core/core/contract_runtime/native_widget_contract.py",
+    "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
     "addons/smart_core/core/contract_runtime/semantic_resolver.py",
     "addons/smart_core/core/unified_page_contract_v2_assembler.py",
     "addons/smart_core/handlers/ui_contract_v2.py",
@@ -23,12 +28,16 @@
     "addons/smart_core/tests/test_contract_runtime_semantic_resolver.py",
     "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
     "make/frontend.mk",
+    "make/ci.mk",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "scripts/verify/test_unified_page_contract_v2_assembler_guard.py",
+    "scripts/verify/test_node_component_registry.py",
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/p0_contract_producer_descriptor_evidence.py",
     "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
     "frontend/apps/web/scripts/p0_contract_producer_browser_acceptance.cjs",
+    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
     "frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts"
   ],
   "environment": {
@@ -64,9 +73,27 @@
       "target": "verify.p0_contract_producer.p0a.backend_unit",
       "kind": "offline",
       "inputs": [
+        "addons/smart_core/core/contract_runtime/native_widget_contract.py",
+        "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
         "addons/smart_core/core/contract_runtime/semantic_resolver.py",
         "addons/smart_core/core/unified_page_contract_v2_assembler.py",
-        "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py"
+        "addons/smart_core/tests/test_native_widget_contract_bridge.py",
+        "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
+        "make/ci.mk",
+        "make/frontend.mk"
+      ]
+    },
+    "registry_payload_contract": {
+      "target": "verify.semantic.registry.lint",
+      "kind": "offline",
+      "inputs": [
+        "contracts/registry/registry.schema.json",
+        "contracts/registry/semantic.yaml",
+        "scripts/contract/generate_semantic_registry.py",
+        "scripts/verify/test_node_component_registry.py",
+        "addons/smart_core/core/contract_runtime/native_widget_contract.py",
+        "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts"
       ]
     },
     "consumer_contract": {
@@ -74,20 +101,24 @@
       "kind": "offline",
       "inputs": [
         "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
-        "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts"
+        "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts"
       ]
     },
     "real_project_form_decode": {
       "target": "verify.p0_contract_producer.p0a.descriptor_conformance",
       "kind": "offline",
       "inputs": [
+        "addons/smart_core/core/contract_runtime/native_widget_contract.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
         "scripts/verify/p0_contract_producer_descriptor_evidence.py",
         "frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts"
       ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the validated P0 contract bridge and publish the exact-head PR.",
+  "next_exact_step": "Commit the review remediation and publish the updated exact-head PR.",
   "goal": ".agent/goals/P0-CONTRACT-DESCRIPTOR-CONFORMANCE-20261125.yaml",
   "record": "docs/ops/iterations/p0_contract_descriptor_conformance_20261125.md"
 }

@@ -143,6 +143,17 @@ def render_rule(rule: dict) -> str:
     return "    {" + ", ".join(parts) + "}"
 
 
+def native_view_widget_payload_contract(entry: dict, widget_name: str) -> tuple[bool, str]:
+    payload_required = bool(entry.get("payload_required"))
+    payload_schema = str(entry.get("payload_schema") or "").strip()
+    if payload_required != bool(payload_schema):
+        raise SystemExit(
+            f"[generate-semantic-registry] FAIL: native View widget {widget_name!r} "
+            "must declare payload_schema exactly when payload_required is true"
+        )
+    return payload_required, payload_schema
+
+
 def render(semantic: dict, component: dict, *, version: int) -> str:
     validate_component_registry(component)
     derivation = semantic.get("derivation") or {}
@@ -240,15 +251,21 @@ def render(semantic: dict, component: dict, *, version: int) -> str:
                 "requires reason_code"
             )
         if widget_name != "<default>":
+            payload_required, payload_schema = native_view_widget_payload_contract(
+                entry,
+                widget_name,
+            )
             native_view_widget_rows.append(
                 "    {name!r}: {{'component': {component!r}, 'status': {status!r}, "
-                "'reasonCode': {reason!r}, 'payloadRequired': {payload_required!r}}},"
+                "'reasonCode': {reason!r}, 'payloadRequired': {payload_required!r}, "
+                "'payloadSchema': {payload_schema!r}}},"
                 .format(
                     name=widget_name,
                     component=component_key,
                     status=status,
                     reason=str(entry.get("reason_code") or ""),
-                    payload_required=bool(entry.get("payload_required")),
+                    payload_required=payload_required,
+                    payload_schema=payload_schema,
                 )
             )
     default_widget_component = str(native_view_widget_default["component"])
@@ -499,6 +516,8 @@ def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT
     )
     native_view_widgets = semantic.get("native_view_widgets") or {}
     native_view_widget_default = semantic.get("native_view_widget_default") or {}
+    for name, entry in sorted(native_view_widgets.items()):
+        native_view_widget_payload_contract(entry or {}, name)
     native_view_widget_lines = "\n".join(
         "  {name!r}: {{component: {component!r}, status: {status!r}, reasonCode: {reason!r}, payloadRequired: {payload_required}}},"
         .format(

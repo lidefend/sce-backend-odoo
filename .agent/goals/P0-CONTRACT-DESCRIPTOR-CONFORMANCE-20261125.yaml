@@ -29,6 +29,10 @@ goal:
     - Date and datetime descriptors use their canonical semantic and temporal meaning.
     - The full project ledger form contract decodes without ContractGapError.
     - A matrix test covers native widget semantic derivation beyond daterange.
+    - Embedded widget payload requirements and schemas are declared once in the
+      semantic registry and consumed through the same P0 bridge.
+    - Assembled-contract cache inputs include every runtime dependency used by
+      the bridge.
     - List row actions still publish complete record_entry targets.
   exclusions:
     - No P1 project view redesign.

@@ -162,7 +162,7 @@ def resolve_native_widget(native_widget: str = "") -> dict[str, str]:
     }
 
 
-def resolve_native_view_widget(widget_name: str = "") -> dict[str, str]:
+def resolve_native_view_widget(widget_name: str = "") -> dict[str, Any]:
     """Resolve one embedded Form widget to its declared node component."""
     normalized = _text(widget_name).lower()
     entry = NATIVE_VIEW_WIDGET_COMPONENTS.get(normalized) or NATIVE_VIEW_WIDGET_DEFAULT
@@ -171,6 +171,7 @@ def resolve_native_view_widget(widget_name: str = "") -> dict[str, str]:
         "status": _text(entry.get("status")).lower(),
         "reasonCode": _text(entry.get("reasonCode")),
         "payloadRequired": entry.get("payloadRequired") is True,
+        "payloadSchema": _text(entry.get("payloadSchema")),
     }
 
 

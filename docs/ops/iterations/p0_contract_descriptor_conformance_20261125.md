@@ -102,3 +102,38 @@ the actual product contract tree and entry path.
 but its bundled identity-architecture audit rejects any dirty product source;
 that historical clean-tree assertion is not evidence about this candidate and
 is not counted as a product failure.
+
+## Independent review remediation
+
+The first independent review found two merge-blocking evidence/ownership gaps:
+
+- `native_widget_contract.py` was not part of the assembled-contract cache
+  input fingerprint, so changing only the bridge could leave a stale contract
+  in cache.
+- embedded-node payload requirements were still split between the bridge and
+  an assembler-local schema map; `payloadRequired` was not the authority used
+  to collect payloads.
+
+The remediation:
+
+- adds the bridge to `ASSEMBLED_CACHE_INPUTS`, bumps the assembled-contract
+  cache version and adds a focused guard unit test;
+- declares `payload_schema` in `contracts/registry/semantic.yaml`, generates it
+  into the backend carrier, and rejects payload-required declarations without
+  a schema;
+- makes the bridge return `payloadSchema` and fails closed on inconsistent
+  payload declarations;
+- removes `_NATIVE_NODE_PAYLOAD_SCHEMAS` from the assembler so payload schema
+  selection comes only from the semantic registry through the P0 bridge;
+- adds the bridge, bridge tests, real ORM evidence test and generated registry
+  carrier to the run check inputs;
+- corrects the run's next action.
+
+Review remediation verification:
+
+- assembled-cache input membership and digest-change negative test: PASS;
+- semantic registry/payload contract suite: 128 tests passed;
+- producer bridge suite: 37 tests passed;
+- frontend contract consumer suite: 80 tests passed;
+- real project form ORM-to-TypeScript decoder suite: 2 tests passed;
+- `make ci.local.iteration`: PASS with 21 affected targets.

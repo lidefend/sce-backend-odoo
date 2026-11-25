@@ -123,10 +123,18 @@ def project_native_embedded_widget_contract(widget_name: str = "") -> dict[str, 
     """
     normalized_widget_name = _text(widget_name).lower()
     resolution = resolve_native_view_widget(normalized_widget_name)
+    payload_required = resolution.get("payloadRequired") is True
+    payload_schema = _text(resolution.get("payloadSchema"))
+    if payload_required != bool(payload_schema):
+        raise ValueError(
+            "native View widget payload contract must declare payload_schema "
+            "exactly when payload_required is true"
+        )
     return {
         "nativeWidget": normalized_widget_name,
         "componentKey": _text(resolution.get("component")),
         "widgetStatus": _text(resolution.get("status")),
         "reasonCode": _text(resolution.get("reasonCode")),
-        "payloadRequired": resolution.get("payloadRequired") is True,
+        "payloadRequired": payload_required,
+        "payloadSchema": payload_schema,
     }

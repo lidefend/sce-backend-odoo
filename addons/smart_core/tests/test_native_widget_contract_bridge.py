@@ -92,16 +92,24 @@ class NativeWidgetContractBridgeTest(unittest.TestCase):
         self.assertEqual(ribbon["widgetStatus"], "ready")
         self.assertEqual(ribbon["componentKey"], "sc.display.ribbon")
         self.assertFalse(ribbon["payloadRequired"])
+        self.assertEqual(ribbon["payloadSchema"], "")
 
         insight = project_native_embedded_widget_contract("sc_insight_banner")
         self.assertEqual(insight["widgetStatus"], "ready")
         self.assertEqual(insight["componentKey"], "sc.insight.summary")
         self.assertTrue(insight["payloadRequired"])
+        self.assertEqual(insight["payloadSchema"], "insight_summary.v1")
+
+        actions = project_native_embedded_widget_contract("sc_next_actions")
+        self.assertTrue(actions["payloadRequired"])
+        self.assertEqual(actions["payloadSchema"], "action_list.v1")
 
         unsupported = project_native_embedded_widget_contract("unknown_embedded_widget")
         self.assertEqual(unsupported["widgetStatus"], "unsupported")
         self.assertEqual(unsupported["componentKey"], "sc.unsupported.native_node")
         self.assertEqual(unsupported["reasonCode"], "NATIVE_VIEW_WIDGET_UNSUPPORTED")
+        self.assertFalse(unsupported["payloadRequired"])
+        self.assertEqual(unsupported["payloadSchema"], "")
 
 
 if __name__ == "__main__":

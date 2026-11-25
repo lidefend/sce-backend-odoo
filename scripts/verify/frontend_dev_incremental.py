@@ -722,6 +722,8 @@ RULES = (
     Rule((
         "contracts/registry.yaml",
         "contracts/registry/component.yaml",
+        "contracts/registry/registry.schema.json",
+        "contracts/registry/semantic.yaml",
         "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
         "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
         "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
@@ -2571,6 +2573,7 @@ RULES = (
     )),
     Rule((
         "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+        "scripts/verify/test_unified_page_contract_v2_assembler_guard.py",
     ), (
         "verify.unified_page_contract.v2.assembler",
     )),
