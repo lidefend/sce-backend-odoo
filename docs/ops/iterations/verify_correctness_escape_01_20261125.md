@@ -2,7 +2,8 @@
 
 ## Identity
 
-- Baseline: `main@032990188abea05a5d2ab81313136c431e5f89b3`
+- Audit baseline: `main@032990188abea05a5d2ab81313136c431e5f89b3`
+- Integrated candidate base: `main@e940285aed4a9747931c26ec0a52283b5d296d14`
 - Candidate branch: `fix/verify-correctness-escape-01-20261125`
 - Layer: P4 verification and CI control plane
 - Environment: offline; no database, deployment or remote mutation
@@ -92,6 +93,20 @@ workspace had not installed `node_modules/.bin/esbuild`. This was an environment
 prerequisite only. `make fe.install` restored the lockfile-matched workspace;
 the unchanged freeze-preparation entry then passed and refreshed only the
 expected complexity and split-plan reports.
+
+## Mainline synchronization
+
+After the first candidate commit `bffa24cdeec6b04d2e336d1ef4527d9469458f9f`,
+`origin/main` advanced from the audit baseline to
+`e940285aed4a9747931c26ec0a52283b5d296d14` through PR #1002. The governed
+`workspace.branch.sync-main` entry rebased the responsibility commit onto that
+mainline and rebuilt generated evidence in
+`d1b9a9fc995d11598fa77111e5270ca6fff70188`.
+
+Mainline PR #1002 also changes native-widget contract selection and the
+semantic registry, so all validation whose declared inputs intersect those
+files must be rerun against the new candidate. The previous receipts remain
+historical evidence and are not asserted as current.
 
 ## Retained failure and recovery
 

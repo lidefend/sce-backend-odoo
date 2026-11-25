@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "baseline_sha": "032990188abea05a5d2ab81313136c431e5f89b3",
+  "baseline_sha": "e940285aed4a9747931c26ec0a52283b5d296d14",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/VERIFY-CORRECTNESS-01.yaml",
