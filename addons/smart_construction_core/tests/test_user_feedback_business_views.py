@@ -2626,7 +2626,7 @@ class TestUserFeedbackBusinessViews(BusinessTransactionCase):
             "company_id": self.env.company.id, "company_ids": [(6, 0, self.env.company.ids)],
             "groups_id": [(6, 0, [self.env.ref(xmlid).id for xmlid in (
                 "base.group_user", "smart_construction_core.group_sc_role_finance_manager",
-                "smart_construction_core.group_sc_entry_p02",
+                "smart_construction_core.group_sc_cap_entry_scope_p02",
             )])],
         })
         self.env["sc.product.policy"].sync_construction_menu_product_policies()

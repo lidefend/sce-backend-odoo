@@ -29,10 +29,14 @@ class TestExperienceRoleContract(TransactionCase):
 class TestExperienceRolePermissions(TransactionCase):
     def test_marker_and_login_rename_do_not_grant_business_permissions(self):
         group = self.env.ref('smart_construction_core.group_sc_role_experience')
-        self.assertEqual(set(group.implied_ids.ids), {self.env.ref('base.group_user').id} | {
-            self.env.ref('smart_construction_core.group_sc_entry_p%02d' % n).id
-            for n in range(1, 15)
+        self.assertEqual(set(group.implied_ids.ids), {
+            self.env.ref('smart_construction_core.group_sc_internal_user').id,
+            self.env.ref('smart_construction_core.group_sc_cap_entry_scope_full').id,
         })
+        self.assertFalse(any(
+            group_xmlid.startswith('smart_construction_core.group_sc_entry_p')
+            for group_xmlid in group.implied_ids.get_external_id().values()
+        ))
         self.assertTrue(group.sc_assignable_user_permission)
         user = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'Role test', 'login': 'arbitrary-role-name', 'email': 'role@invalid.local',
@@ -116,7 +120,7 @@ class TestExperienceCapabilityAuthority(TransactionCase):
         # The shipped experience role implies entry discovery groups. Hold that
         # authority constant to test identity changes independently of discovery.
         user.groups_id = [(4, self.env.ref(
-            'smart_construction_core.group_sc_entry_p%02d' % n).id) for n in range(1, 15)]
+            'smart_construction_core.group_sc_cap_entry_scope_p%02d' % n).id) for n in range(1, 15)]
         before = facts()
         self.assertTrue(before)
         marker = self.env.ref('smart_construction_core.group_sc_role_experience')

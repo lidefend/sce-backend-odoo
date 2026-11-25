@@ -1,0 +1,130 @@
+{
+  "schema_version": 2,
+  "id": "P1-ROLE-CAPABILITY-AUTHORITY-20261126",
+  "branch": "fix/p1-role-capability-authority-20261126",
+  "status": "verification_pending",
+  "baseline_sha": "487a3d8497cd89841e1954d164e0e11d79742d81",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P1-ROLE-CAPABILITY-AUTHORITY-20261126.yaml",
+    ".agent/runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/run.json",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/security/sc_capability_groups.xml",
+    "addons/smart_construction_core/security/sc_entry_groups.xml",
+    "addons/smart_construction_core/security/sc_role_entry_groups.xml",
+    "addons/smart_construction_core/security/sc_discover_entry_groups.xml",
+    "addons/smart_construction_core/security/sc_role_groups.xml",
+    "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+    "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_experience_role_surface.py",
+    "addons/smart_construction_core/tests/test_p1_funding_authority.py",
+    "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+    "addons/smart_construction_core/tests/test_user_feedback_business_views.py",
+    "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py",
+    "addons/smart_construction_bundle/tests/test_workspace_role_routes.py",
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
+    "scripts/verify/role_capability_group_authority_guard.py",
+    "scripts/verify/test_role_capability_group_authority_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "make/frontend.mk",
+    "docs/architecture/role_capability_and_approval_authority_v1.md",
+    "docs/audit/scene_role_surface_consistency_report.md",
+    "docs/ops/iterations/p1_role_capability_authority_20261126.md",
+    "docs/product/frontend_business_entry_acceptance_v1.csv"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source, static guards and pure focused tests; no database or service access"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "verify.role_capability_group_authority.unit and affected existing focused tests",
+      "reason": "Prove the group graph direction, affected role-surface consumers and syntactic validity without a database migration."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI including smart_construction_core module baseline",
+      "reason": "Permission graph changes affect existing ORM test families and must run against the exact integrated candidate."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "This is an incremental P1 candidate, not release qualification."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "No frontend or shared runtime contract consumer changes are part of this source iteration."
+    }
+  },
+  "checks": {
+    "role_capability_group_authority_unit": {
+      "target": "verify.role_capability_group_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/role_capability_group_authority_guard.py",
+        "scripts/verify/test_role_capability_group_authority_guard.py",
+        "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+        "addons/smart_construction_core/__manifest__.py",
+        "addons/smart_construction_core/data/menu_entry_group_rebinding.json",
+        "addons/smart_construction_core/security",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_dev_incremental_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ]
+    },
+    "role_surface_exposure": {
+      "target": "verify.frontend.role_surface_exposure_declaration.guard",
+      "kind": "offline",
+      "inputs": [
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "addons/smart_construction_core/security/sc_capability_groups.xml",
+        "scripts/verify/role_surface_exposure_declaration_guard.py",
+        "scripts/verify/test_role_surface_exposure_declaration_guard.py"
+      ]
+    },
+    "matrix_universe": {
+      "target": "verify.frontend.business_entry.matrix.universe",
+      "kind": "offline",
+      "inputs": [
+        "config/product_scenario_organization_v1.json",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/business_entry_matrix_universe_guard.py",
+        "scripts/verify/test_business_entry_matrix_universe_guard.py",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py"
+      ]
+    },
+    "native_authority": {
+      "target": "verify.nav01.native_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/fact_layer_authority_guard.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/security"
+      ]
+    }
+  },
+  "blockers": [
+    "Runtime validation is pending explicit owner confirmation of the module replay plan, including target database, rollback/recovery and pre/post group-closure readback."
+  ],
+  "next_exact_step": "Request confirmation for either an isolated local.test module replay or the sc_dev_demo 17.0.0.187 upgrade using the declared pre/post role-to-entry closure assertions and rollback method.",
+  "goal": ".agent/goals/P1-ROLE-CAPABILITY-AUTHORITY-20261126.yaml",
+  "record": "docs/ops/iterations/p1_role_capability_authority_20261126.md"
+}

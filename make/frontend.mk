@@ -1126,7 +1126,7 @@ verify.frontend.console.guard: guard.prod.forbid
 verify.frontend.standard_list_scroll_contract.guard: guard.prod.forbid
 	@python3 scripts/verify/frontend_standard_list_scroll_contract_guard.py
 
-.PHONY: verify.frontend.delivery_hardening.guard verify.frontend.delivery_hardening.inventory verify.frontend.navigation_policy.unit verify.frontend.release_navigation_policy.guard verify.frontend.evidence_bundle.unit verify.frontend.role_surface_exposure_declaration.guard
+.PHONY: verify.frontend.delivery_hardening.guard verify.frontend.delivery_hardening.inventory verify.frontend.navigation_policy.unit verify.frontend.release_navigation_policy.guard verify.frontend.evidence_bundle.unit verify.frontend.role_surface_exposure_declaration.guard verify.role_capability_group_authority.unit
 verify.frontend.delivery_hardening.guard: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_probe_toolchain_guard scripts.verify.test_error_state_contract
 	@python3 scripts/verify/test_frontend_delivery_hardening_guard.py
@@ -1139,6 +1139,12 @@ verify.frontend.delivery_hardening.inventory: guard.prod.forbid
 verify.frontend.role_surface_exposure_declaration.guard: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_role_surface_exposure_declaration_guard.py
 	@python3 scripts/verify/role_surface_exposure_declaration_guard.py
+
+verify.role_capability_group_authority.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/role_capability_group_authority_guard.py scripts/verify/test_role_capability_group_authority_guard.py addons/smart_construction_core/tests/test_business_category_entry_policy.py
+	@python3 -m unittest scripts.verify.test_role_capability_group_authority_guard
+	@python3 addons/smart_construction_core/tests/test_business_category_entry_policy.py
+	@python3 scripts/verify/role_capability_group_authority_guard.py
 
 verify.frontend.navigation_policy.unit: guard.prod.forbid verify.frontend.role_surface_exposure_declaration.guard
 	@python3 -m unittest scripts/verify/test_frontend_release_navigation_policy_guard.py
@@ -1491,6 +1497,7 @@ verify.frontend.playwright_vendor_coupling.guard: guard.prod.forbid
 verify.frontend.quick.gate: verify.frontend.j13_required_value_semantics.unit verify.frontend.canonical_form_presenter.unit verify.frontend.hierarchy_command_authority.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.contract_field_occurrence_identity.unit verify.frontend.contract_form_save_failure_recovery.unit verify.frontend.contract_error_business_ownership.unit verify.frontend.standard_form_composition.unit verify.frontend.adopted_form_engine_decision.unit verify.frontend.adopted_form_validation_identity.unit verify.frontend.standard_collection_composition.unit verify.frontend.standard_shell_composition.unit verify.frontend.native_section_navigation.unit verify.frontend.native_collaboration_presentation.unit verify.frontend.cross_model_action_navigation.unit verify.frontend.contract_render_profile.unit verify.frontend.collection_status_presentation.unit
 verify.frontend.quick.gate: verify.frontend.playwright_vendor_coupling.guard
 verify.frontend.quick.gate: verify.frontend.business_entry.evidence_scope.unit
+verify.frontend.quick.gate: verify.role_capability_group_authority.unit
 verify.frontend.quick.gate: verify.frontend.presentation.lane.unit
 verify.frontend.quick.gate: guard.prod.forbid verify.frontend.workspace_content_alignment.guard verify.frontend.page_identity verify.frontend.contract_header_action.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.relation_entry.contract_guard verify.frontend.relation_read_closure.guard verify.frontend.modifiers_runtime.guard verify.frontend.onchange_roundtrip.guard verify.frontend.onchange_contract_schema.guard verify.frontend.onchange_line_patch.guard verify.frontend.x2many_command_semantic.guard verify.frontend.x2many_inline_edit.guard verify.contract.subviews.guard verify.frontend.view_type_render_coverage.guard verify.frontend.view_type_contract_semantic.guard verify.frontend.search_groupby_savedfilters.guard verify.frontend.saved_search_capability.unit verify.frontend.record_denied_reason.unit verify.frontend.contract_record_action_state.unit verify.frontend.group_summary_runtime.guard verify.frontend.grouped_rows_runtime.guard verify.frontend.grouped_pagination_semantic.guard verify.frontend.grouped_pagination_semantic_drift.guard verify.frontend.grouped_contract_consistency.guard verify.frontend.grouped_drift_summary.baseline.guard verify.frontend.typecheck.strict verify.frontend.build
 	@echo "[OK] verify.frontend.quick.gate done"

@@ -33,7 +33,7 @@ class TestTeamLoanDeductionWorkspace(BusinessTransactionCase):
             "smart_construction_core.group_sc_cap_project_user",
         )
         # Native entry exposure and data capability are separate prerequisites.
-        self.project_user.groups_id |= self.env.ref("smart_construction_core.group_sc_entry_p03")
+        self.project_user.groups_id |= self.env.ref("smart_construction_core.group_sc_cap_entry_scope_p03")
         self.finance_manager = self._user(
             "team_entry_finance_manager",
             "smart_construction_core.group_sc_cap_finance_manager",
@@ -92,7 +92,7 @@ class TestTeamLoanDeductionWorkspace(BusinessTransactionCase):
         self.assertIn(("project_id", "=", self.project.id), account_values["domain"])
 
     def test_data_capability_alone_does_not_grant_workspace_entry(self):
-        self.project_user.groups_id -= self.env.ref("smart_construction_core.group_sc_entry_p03")
+        self.project_user.groups_id -= self.env.ref("smart_construction_core.group_sc_cap_entry_scope_p03")
         self.assertTrue(self.project_user.has_group("smart_construction_core.group_sc_cap_project_user"))
         workspace = self.env["sc.team.loan.deduction.workspace"].with_user(self.project_user).create(
             {"project_id": self.project.id, "partner_id": self.partner.id})

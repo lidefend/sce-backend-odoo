@@ -262,7 +262,7 @@ class TestPaymentDomainPermissionIsolation(BusinessTransactionCase):
         before = self.env["ir.ui.menu"].with_user(self.finance_user)._visible_menu_ids()
         self.assertNotIn(menu_ids[0], before)
         self.finance_user.write({"groups_id": [
-            (4, self.env.ref("smart_construction_core.group_sc_entry_p02").id),
+            (4, self.env.ref("smart_construction_core.group_sc_cap_entry_scope_p02").id),
         ]})
         finance_visible = self.env["ir.ui.menu"].with_user(self.finance_user)._visible_menu_ids()
         ordinary_visible = self.env["ir.ui.menu"].with_user(self.ordinary_user)._visible_menu_ids()

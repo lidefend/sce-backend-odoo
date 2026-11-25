@@ -101,7 +101,7 @@ class TestPublishedRoleReplacementMenus(BusinessTransactionCase):
                     # Keep the capability-only principal; entry visibility is a separate grant.
                     menu = self.env.ref("smart_construction_core.menu_sc_p1_daily_contract")
                     self.assertNotIn(menu.id, self.env["ir.ui.menu"].with_user(actor)._visible_menu_ids())
-                    actor.write({"groups_id": [(4, self.env.ref("smart_construction_core.group_sc_entry_p06").id)]})
+                    actor.write({"groups_id": [(4, self.env.ref("smart_construction_core.group_sc_cap_entry_scope_p06").id)]})
                 actor_env = self.env(user=actor)
                 native = MenuFactService(actor_env).export_visible_menu_facts()
                 resolver = IdentityResolver(actor_env)

@@ -291,7 +291,7 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
             user.groups_id = [(4, self.env.ref(xmlid).id) for xmlid in (
                 "smart_construction_core.group_sc_cap_business_initiator",
                 "smart_construction_core.group_sc_cap_finance_read",
-                "smart_construction_core.group_sc_entry_p03",
+                "smart_construction_core.group_sc_cap_entry_scope_p03",
             )]
         project = self.env["project.project"].create({
             "name": project_name,
@@ -1023,7 +1023,7 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
             "smart_construction_core.group_sc_cap_project_user",
             "smart_construction_core.group_sc_cap_business_initiator",
             "smart_construction_core.group_sc_cap_finance_read",
-            "smart_construction_core.group_sc_entry_p03",
+            "smart_construction_core.group_sc_cap_entry_scope_p03",
         ])
         self.assertEqual(surface.get("role_code"), "project_member")
         carrier_menu = self.ref("menu_sc_product_team_loan_deduction_v1").id

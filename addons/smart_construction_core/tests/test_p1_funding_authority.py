@@ -379,7 +379,7 @@ class TestP1FundingAuthority(BusinessTransactionCase):
             # Model capabilities do not independently grant a formal entry.
             funding_menu = self.env.ref("smart_construction_core.menu_sc_funding_plan_summary")
             self.assertNotIn(funding_menu.id, self.env["ir.ui.menu"].with_user(user)._visible_menu_ids())
-            user.write({"groups_id": [(4, self.env.ref("smart_construction_core.group_sc_entry_p04").id)]})
+            user.write({"groups_id": [(4, self.env.ref("smart_construction_core.group_sc_cap_entry_scope_p04").id)]})
             visible_menu_ids = self.env["ir.ui.menu"].with_user(user)._visible_menu_ids()
             loaded_menus = self.env["ir.ui.menu"].with_user(user).load_menus(False)
             for menu in menus:
