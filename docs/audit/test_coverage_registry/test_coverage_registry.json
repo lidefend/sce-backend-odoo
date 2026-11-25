@@ -4,8 +4,8 @@
   "counts": {
     "odoo_tags": 231,
     "gated": 5,
-    "on_demand": 89,
-    "unwired": 137,
+    "on_demand": 90,
+    "unwired": 136,
     "odoo_tag_declarations": 468,
     "gated_declarations": 107,
     "uncovered_declarations": 361,
@@ -3146,14 +3146,18 @@
     },
     {
       "group": "workflow_contract_platform",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_core/tests/test_workflow_contract_platform.py"
       ],
       "owner": "platform-team",
-      "evidence": []
+      "evidence": [
+        "make:verify.workflow_contract.platform.orm :: /TestWorkflowContractPlatform (class selection)",
+        "scripts/verify/test_test_coverage_registry_audit.py :: /TestWorkflowContractPlatform (class selection)"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "workspace_processing_feedback",
