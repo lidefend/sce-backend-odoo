@@ -164,6 +164,7 @@ def plan_steps(
     bundle_report = report_root / "bundle-sync.json"
     build_report = report_root / "frontend-build.json"
     refresh_report = report_root / "duty-refresh.json"
+    upgrade_report = report_root / "duty-upgrade.json"
     demo_align_report = report_root / "source-revision-demo.json"
     platform_align_report = report_root / "source-revision-platform.json"
     face_report = report_root / "published-face.json"
@@ -234,6 +235,22 @@ def plan_steps(
             environment={
                 "SC_CONFIRM_DAILY_RUNTIME_DUTY_REFRESH":
                     "REFRESH_DAILY_RUNTIME_DUTY_STACK_AND_APPLICATION",
+            },
+        ),
+        Step(
+            key="duty-upgrade",
+            target="daily.runtime.database.duty.upgrade",
+            variables={
+                **common,
+                "DAILY_RUNTIME_EXPECTED_SHA": identity.expected_sha,
+                "DAILY_RUNTIME_DATABASE_DUTY_SELECTION": "demo platform_control",
+                "DAILY_RUNTIME_DATABASE_DUTY_DECLARATION_DIGEST": args.declaration_digest,
+                "DAILY_RUNTIME_ENTRY_DECLARATION_DIGEST": args.entry_digest,
+                "DAILY_RUNTIME_DATABASE_DUTY_UPGRADE_REPORT": str(upgrade_report),
+            },
+            environment={
+                "SC_CONFIRM_DAILY_RUNTIME_DUTY_UPGRADE":
+                    "UPGRADE_DAILY_RUNTIME_DUTY_DECLARED_MODULES",
             },
         ),
         Step(

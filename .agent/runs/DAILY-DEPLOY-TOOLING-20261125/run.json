@@ -1,0 +1,102 @@
+{
+  "schema_version": 2,
+  "id": "DAILY-DEPLOY-TOOLING-20261125",
+  "branch": "fix/daily-deploy-tooling-20261125",
+  "status": "verification_pending",
+  "baseline_sha": "94d6bdb20c0e7f26a97d5df8dba69846f5b01e73",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DAILY-DEPLOY-TOOLING-20261125.yaml",
+    ".agent/runs/DAILY-DEPLOY-TOOLING-20261125/run.json",
+    "docs/ops/iterations/daily_deploy_tooling_20261125.md",
+    "scripts/dev/local_platform_control.py",
+    "scripts/verify/test_local_platform_control.py",
+    "scripts/ops/daily_runtime_frontend_build_align.py",
+    "scripts/ops/test_daily_runtime_frontend_build_align.py",
+    "scripts/ops/daily_runtime_release_orchestration.py",
+    "scripts/ops/test_daily_runtime_release_orchestration.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tests plus already authorized deployment readbacks"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Validate local platform lifecycle and daily frontend build tool behavior."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The changes alter deployment tooling consumed by exact-head daily release lanes."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "This is an incremental P4 correction, not release qualification."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Shared tooling tests must bind the same run identity."
+    }
+  },
+  "checks": {
+    "local_platform_tooling": {
+      "target": "verify.local.development_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/dev/local_platform_control.py",
+        "scripts/verify/test_local_platform_control.py",
+        "make/dev.mk"
+      ]
+    },
+    "daily_frontend_tooling": {
+      "target": "verify.daily.runtime.frontend.build",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/daily_runtime_frontend_build_align.py",
+        "scripts/ops/test_daily_runtime_frontend_build_align.py",
+        "make/codex.mk"
+      ]
+    },
+    "daily_release_orchestration": {
+      "target": "verify.daily.runtime.release_orchestration.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/daily_runtime_release_orchestration.py",
+        "scripts/ops/test_daily_runtime_release_orchestration.py",
+        "make/codex.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "results": {
+    "local_platform_tooling": {
+      "status": "passed",
+      "test_count": 72,
+      "log": ".runtime/agent-runs/DAILY-DEPLOY-TOOLING-20261125/local_platform_tooling.log"
+    },
+    "daily_frontend_tooling": {
+      "status": "passed",
+      "test_count": 26,
+      "log": ".runtime/agent-runs/DAILY-DEPLOY-TOOLING-20261125/daily_frontend_tooling.log"
+    },
+    "daily_release_orchestration": {
+      "status": "passed",
+      "test_count": 57,
+      "log": ".runtime/agent-runs/DAILY-DEPLOY-TOOLING-20261125/daily_release_orchestration.log"
+    },
+    "local_iteration": {
+      "status": "passed",
+      "target_count": 2,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261125T003609Z-3316543-59377295/receipt.json"
+    }
+  },
+  "next_exact_step": "Run affected local validation, commit, publish exact-head PR and complete required CI.",
+  "goal": ".agent/goals/DAILY-DEPLOY-TOOLING-20261125.yaml",
+  "record": "docs/ops/iterations/daily_deploy_tooling_20261125.md"
+}

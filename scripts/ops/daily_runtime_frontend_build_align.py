@@ -245,6 +245,10 @@ def run_make(*args):
         "SC_SOURCE_REVISION": expected_sha,
         "SC_DEPLOY_ENV": deployment_env,
         "SC_BUILD_TIME": built_at,
+        # The daily host is a shared 7.4 GiB runtime. Vite's default heap can
+        # make the kernel OOM-kill a build that succeeds under a bounded heap.
+        # This is a build-mechanism limit, not a product declaration.
+        "NODE_OPTIONS": "--max-old-space-size=1536",
     }
     result = subprocess.run(
         ["make", *args], cwd=root, text=True, env=environment,
@@ -512,6 +516,29 @@ def run(command: list[str]) -> subprocess.CompletedProcess[bytes]:
     )
 
 
+def remote_failure_message(result: subprocess.CompletedProcess[bytes]) -> str:
+    stderr = result.stderr.decode(errors="replace").strip()
+    stdout = result.stdout.decode(errors="replace").strip()
+    evidence_payload = None
+    for line in reversed(stdout.splitlines()):
+        try:
+            candidate = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(candidate, dict):
+            evidence_payload = candidate
+            break
+    details = [stderr] if stderr else []
+    if evidence_payload:
+        for key in ("build_tail", "fingerprint_tail", "restart_tail"):
+            value = str(evidence_payload.get(key) or "").strip()
+            if value:
+                details.append(f"{key}:\n{value}")
+    if details:
+        return "\n".join(details)
+    return stdout
+
+
 def align(
     expected_sha: str,
     ssh_host: str,
@@ -563,11 +590,10 @@ def align(
     ]
     result = run(command)
     if result.returncode:
-        message = (
-            result.stderr.decode(errors="replace").strip()
-            or result.stdout.decode(errors="replace").strip()
+        raise BuildError(
+            "remote daily frontend build failed: "
+            + remote_failure_message(result)[:3000]
         )
-        raise BuildError(f"remote daily frontend build failed: {message[:1000]}")
     try:
         evidence = json.loads(result.stdout.decode().splitlines()[-1])
     except (IndexError, json.JSONDecodeError) as exc:
