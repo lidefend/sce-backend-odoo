@@ -67,7 +67,7 @@ Generated from repository source files. This report is informational during the 
 | 1870 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1866 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
-| 1841 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
+| 1849 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1825 | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
 | 1819 | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1805 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
@@ -330,7 +330,7 @@ Generated from repository source files. This report is informational during the 
 | 1870 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1866 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
-| 1841 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
+| 1849 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1825 | split_plan_required | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
 | 1819 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1805 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |

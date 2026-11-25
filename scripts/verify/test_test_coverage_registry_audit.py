@@ -190,6 +190,38 @@ class ExplicitCoTagConsumerTest(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("from . import test_workflow_contract_platform", imports)
 
+    def test_descriptor_conformance_evidence_has_an_exact_nonzero_owner(self):
+        from scripts.verify import test_coverage_registry_audit as audit
+
+        registry = {
+            row["group"]: row for row in audit.load_registry()["entries"]
+        }
+        entry = registry["p0_contract_descriptor_conformance_evidence"]
+        self.assertEqual("on-demand", entry["status"])
+        self.assertEqual("class-selected", entry["dispose"])
+        self.assertEqual(
+            "make:verify.p0_contract_producer.p0a.descriptor_conformance :: "
+            "p0_contract_descriptor_conformance_evidence",
+            entry["gate"],
+        )
+        makefile = (audit.ROOT / "make/frontend.mk").read_text(encoding="utf-8")
+        target = makefile.split(
+            "verify.p0_contract_producer.p0a.descriptor_conformance:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn(
+            "scripts/verify/p0_contract_producer_descriptor_evidence.py",
+            target,
+        )
+        evidence = (
+            audit.ROOT
+            / "scripts/verify/p0_contract_producer_descriptor_evidence.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "TEST_TAGS=p0_contract_descriptor_conformance_evidence",
+            evidence,
+        )
+        self.assertIn("int(receipt.get(\"count\") or 0) < 1", evidence)
+
 
 class TagTokenMatchingTest(unittest.TestCase):
     def test_module_qualified_expression_selects_tag(self) -> None:

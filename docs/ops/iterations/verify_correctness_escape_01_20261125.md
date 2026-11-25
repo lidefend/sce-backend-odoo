@@ -108,6 +108,16 @@ semantic registry, so all validation whose declared inputs intersect those
 files must be rerun against the new candidate. The previous receipts remain
 historical evidence and are not asserted as current.
 
+The first post-sync local iteration then found a new instance of the same
+escaped-dependency class: PR #1002 declared
+`p0_contract_descriptor_conformance_evidence` without a coverage-registry
+disposition. The new selector correctly surfaced it before publication. The
+tag is now bound to
+`make verify.p0_contract_producer.p0a.descriptor_conformance`; that target's
+real isolated ORM run passed one test with `ORM_RESULT_GUARD=PASS`, followed by
+the real-contract decoder check with 45 strict descriptors. The complete local
+iteration then passed all 13 required targets.
+
 ## Retained failure and recovery
 
 The first `make ci.local.iteration` attempt stopped before execution because

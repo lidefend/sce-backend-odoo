@@ -1783,8 +1783,10 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "scripts/verify/p0_contract_producer_descriptor_evidence.py :: p0_contract_descriptor_conformance_evidence"
-      ]
+        "scripts/verify/p0_contract_producer_descriptor_evidence.py :: p0_contract_descriptor_conformance_evidence",
+        "scripts/verify/test_test_coverage_registry_audit.py :: p0_contract_descriptor_conformance_evidence"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "p0_contract_producer_p0a",
