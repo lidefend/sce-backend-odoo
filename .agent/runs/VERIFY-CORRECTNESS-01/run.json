@@ -76,6 +76,8 @@
         "scripts/ci/ci_risk_classifier.py",
         "scripts/ci/test_ci_risk_classifier.py",
         "scripts/ci/test_ci_risk_workflow_contract.py",
+        "make/ci.mk",
+        "make/frontend.mk",
         "config/ci/path_ownership_v1.json"
       ],
       "kind": "offline"
