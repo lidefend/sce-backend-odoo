@@ -126,7 +126,11 @@ class TestFeedbackEvaluationRtHttp(HttpCase):
         data = body.get("data") or {}
         token = data.get("token") or ((data.get("session") or {}).get("token"))
         self.assertTrue(token)
-        status, initialized = self._intent("system.init", token=token)
+        status, initialized = self._intent("system.init", {
+            "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": [],
+        }, token=token)
         self.assertEqual(status, 200, initialized.get("error"))
         self.assertTrue(initialized.get("ok"), initialized.get("error"))
         return token

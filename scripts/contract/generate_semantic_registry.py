@@ -528,6 +528,10 @@ def render_frontend_registry(implementation: dict, *, version: int, root: Path =
         f"  {semantic_type!r}: Object.freeze([{', '.join(repr(item) for item in field_types)}]),"
         for semantic_type, field_types in sorted(semantic_field_types.items())
     )
+    node_semantics = semantic.get("node_semantics") or {}
+    node_semantic_lines = ", ".join(
+        repr(semantic_type) for semantic_type in sorted(node_semantics)
+    )
     native_widgets = semantic.get("native_widgets") or {}
     native_widget_lines = "\n".join(
         "  {name!r}: {{status: {status!r}, reasonCode: {reason!r}}},"
@@ -565,6 +569,9 @@ def render_frontend_registry(implementation: dict, *, version: int, root: Path =
         + "\nexport const SEMANTIC_FIELD_TYPES: Readonly<Record<string, readonly string[]>> = Object.freeze({\n"
         + semantic_field_type_lines
         + "\n});\n"
+        + "\nexport const NODE_SEMANTICS: ReadonlySet<string> = new Set(["
+        + node_semantic_lines
+        + "]);\n"
         + "\nexport type NativeWidgetStatus = 'ready' | 'fallback' | 'unsupported';\n"
         + "\nexport const NATIVE_WIDGET_REGISTRY: Readonly<Record<string, "
         + "{status: NativeWidgetStatus; reasonCode: string}>> = Object.freeze({\n"

@@ -3,6 +3,7 @@ import time
 from datetime import datetime
 
 from ..core.base_handler import BaseIntentHandler
+from ..core.contract_version_negotiation import with_internal_client_contract
 from ..core.request_params import parse_bool, parse_non_negative_int, parse_positive_int
 from ..governance.scene_drift_engine import build_scene_health_payload
 from .system_init import SystemInitHandler
@@ -81,6 +82,7 @@ class SceneHealthHandler(BaseIntentHandler):
         params = payload.get("params") if isinstance(payload, dict) else None
         if not isinstance(params, dict):
             params = payload if isinstance(payload, dict) else {}
+        params = with_internal_client_contract(params)
         ts0 = time.time()
 
         init_handler = SystemInitHandler(
@@ -91,7 +93,27 @@ class SceneHealthHandler(BaseIntentHandler):
             payload={"params": params},
         )
         init_result = init_handler.handle(payload={"params": params}, ctx=ctx)
-        init_data = init_result.get("data") if isinstance(init_result, dict) else {}
+        init_ok = init_result.ok if hasattr(init_result, "ok") else init_result.get("ok")
+        if not init_ok:
+            error = init_result.error if hasattr(init_result, "error") else init_result.get("error")
+            error = error if isinstance(error, dict) else {}
+            code = error.get("code") or 502
+            try:
+                code = int(code)
+            except (TypeError, ValueError):
+                code = 502
+            return self._err(
+                code,
+                "场景健康检查上游初始化失败：%s"
+                % str(error.get("message") or error.get("reason_code") or "system.init failed"),
+            )
+        init_data = (
+            init_result.data
+            if hasattr(init_result, "data")
+            else init_result.get("data")
+            if isinstance(init_result, dict)
+            else {}
+        )
         if not isinstance(init_data, dict):
             init_data = {}
 

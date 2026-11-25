@@ -1405,6 +1405,11 @@ def _upgrade_contract_v2_field_descriptors(
 
 def _assert_no_frontend_implementation_identity(value: Any, path: str = "$") -> None:
     """Backend V2.7 contract may not publish renderer/component identities."""
+    opaque_value_keys = {
+        "dataContract", "dataPatch", "dataMeta", "mainData", "datasets",
+        "payload", "actionPayload", "context", "domain", "options", "optionsRaw",
+        "values", "value", "value_json", "valueJson",
+    }
     if isinstance(value, list):
         for index, item in enumerate(value):
             _assert_no_frontend_implementation_identity(item, f"{path}[{index}]")
@@ -1416,6 +1421,8 @@ def _assert_no_frontend_implementation_identity(value: Any, path: str = "$") -> 
             raise ValueError(
                 f"CONTRACT_V27_FRONTEND_IMPLEMENTATION_IDENTITY:{path}.{key}"
             )
+        if key in opaque_value_keys:
+            continue
         _assert_no_frontend_implementation_identity(child, f"{path}.{key}")
 
 

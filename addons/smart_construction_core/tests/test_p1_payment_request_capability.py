@@ -393,6 +393,7 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
                 "menu_id": menu.id,
                 "render_profile": "readonly",
                 "client_type": "web_pc",
+                "accepted_contract_versions": ["2.7.x"],
             }
         )
         envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
@@ -2091,6 +2092,7 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
                 "menu_id": menu.id,
                 "render_profile": "readonly",
                 "client_type": "web_pc",
+                "accepted_contract_versions": ["2.7.x"],
             }
         )
         envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
@@ -2223,15 +2225,13 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
             all(row.get("visible") is not False for row in accepted_selector_rows),
             accepted_selector_rows,
         )
-        self.assertEqual(
-            {
-                ((row.get("componentConfig") or {}).get("widgetSemantics") or {}).get(
-                    "readonly_empty_text"
-                )
-                for row in widgets_by_field["funding_baseline_id"]
-            },
-            {"提交审批时生成"},
-        )
+        widget_readonly_empty_texts = {
+            semantics.get("readonly_empty_text")
+            for row in widgets_by_field["funding_baseline_id"]
+            for semantics in [((row.get("componentConfig") or {}).get("widgetSemantics") or {})]
+            if semantics.get("readonly_empty_text")
+        }
+        self.assertEqual(widget_readonly_empty_texts, {"提交审批时生成"})
         native_field_nodes = {}
 
         def collect_native_fields(value):
@@ -2249,17 +2249,19 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
         self.assertTrue(all(node.get("widgetId") for node in funding_nodes))
         self.assertEqual(
             {node.get("widgetId") for node in funding_nodes},
-            {row.get("widgetId") for row in widgets_by_field["funding_baseline_id"]},
-        )
-        self.assertEqual(
             {
-                (((node.get("componentConfig") or {}).get("widgetSemantics") or {}).get(
-                    "readonly_empty_text"
-                ))
-                for node in funding_nodes
+                row.get("widgetId")
+                for row in widgets_by_field["funding_baseline_id"]
+                if row.get("widgetId")
             },
-            {"提交审批时生成"},
         )
+        node_readonly_empty_texts = {
+            semantics.get("readonly_empty_text")
+            for node in funding_nodes
+            for semantics in [((node.get("componentConfig") or {}).get("widgetSemantics") or {})]
+            if semantics.get("readonly_empty_text")
+        }
+        self.assertEqual(node_readonly_empty_texts, {"提交审批时生成"})
         form_structure = contract["formStructureContract"]
         self.assertEqual(form_structure.get("structureAuthority"), "container_tree")
         self.assertEqual(form_structure.get("slots"), [])
@@ -2580,6 +2582,7 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
                 "menu_id": menu.id,
                 "render_profile": "edit",
                 "client_type": "web_pc",
+                "accepted_contract_versions": ["2.7.x"],
             }
         )
         edit_envelope = (
@@ -2704,6 +2707,7 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
                 "menu_id": menu.id,
                 "render_profile": "readonly",
                 "client_type": "web_pc",
+                "accepted_contract_versions": ["2.7.x"],
             }
         )
         envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result

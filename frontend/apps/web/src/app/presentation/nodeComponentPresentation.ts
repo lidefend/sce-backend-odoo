@@ -1,5 +1,5 @@
 import { contractGapError, frontendCapabilityGap } from '../contract/contractGap';
-import { NODE_COMPONENT_REGISTRY } from './semantic_registry.generated';
+import { NODE_COMPONENT_REGISTRY, NODE_SEMANTICS } from './semantic_registry.generated';
 import type { ContractV2Container, ContractV2Snapshot } from '../contracts/v2/types';
 
 export type NodeComponentPresentation = {
@@ -128,6 +128,28 @@ export type FeedbackEvaluationOverride = {
   binding?: { container_id: string };
 };
 
+export function resolveNodeSemanticImplementation(
+  semanticType: string,
+  implementations: Readonly<Record<string, string>> = NODE_COMPONENT_REGISTRY,
+): string {
+  if (!NODE_SEMANTICS.has(semanticType)) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `node.semanticType.${semanticType}`,
+      requiredDeclarationLayer: 'P0:smart_core:semantic.yaml.node_semantics',
+    }, `节点语义 ${semanticType} 未在独立语义规范中登记`);
+  }
+  const key = implementations[semanticType];
+  if (!key) {
+    throw frontendCapabilityGap({
+      semanticType,
+      missing: `frontend.node_implementation.${semanticType}`,
+      requiredImplementationLayer: 'P0:frontend:implementation_registry',
+    }, `前端没有节点语义 ${semanticType} 的可用实现`);
+  }
+  return key;
+}
+
 export function projectNodeComponents(
   snapshot: Pick<ContractV2Snapshot, 'layoutContract' | 'statusContract' | 'dataContract'>,
   feedbackEvaluations?: ReadonlyMap<string, FeedbackEvaluationOverride>,
@@ -157,14 +179,7 @@ export function projectNodeComponents(
     }
     const semanticType = text(node.semanticType);
     if (!semanticType) continue;
-    const key = NODE_COMPONENT_REGISTRY[semanticType];
-    if (!key) {
-      throw frontendCapabilityGap({
-        semanticType,
-        missing: `frontend.node_implementation.${semanticType}`,
-        requiredImplementationLayer: 'P0:frontend:implementation_registry',
-      }, `前端没有节点语义 ${semanticType} 的可用实现`);
-    }
+    const key = resolveNodeSemanticImplementation(semanticType);
     unique(node.containerId);
     if (key === 'sc.navigation.anchor') {
       const config = keys(node.componentConfig, ['targetContainerId']);

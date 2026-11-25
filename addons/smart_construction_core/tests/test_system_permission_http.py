@@ -72,6 +72,13 @@ class TestSystemPermissionHttp(BusinessTransactionCase, HttpCase):
         self.assertTrue(token, 'real password login must issue a token')
         return token
 
+    def _system_init(self, token):
+        return self._intent("system.init", {
+            "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": [],
+        }, token=token)
+
     def _revoke(self):
         # HttpCase request cursors share the test transaction and its registry lock.
         with self.registry.test_lock:
@@ -83,17 +90,17 @@ class TestSystemPermissionHttp(BusinessTransactionCase, HttpCase):
 
     def test_old_jwt_is_rejected_after_role_revocation(self):
         token = self._login()
-        status, result = self._intent('system.init', token=token)
+        status, result = self._system_init(token)
         self.assertEqual(status, 200, result.get('error'))
         self.assertTrue(result.get('ok'), result.get('error'))
         self._revoke()
-        status, result = self._intent('system.init', token=token)
+        status, result = self._system_init(token)
         self.assertEqual(status, 401, result.get('error'))
         self.assertFalse(result.get('ok'))
         self.assertEqual((result.get('error') or {}).get('code'), 'AUTH_REQUIRED')
         fresh = self._login()
         self.assertNotEqual(fresh, token)
-        status, result = self._intent('system.init', token=fresh)
+        status, result = self._system_init(fresh)
         self.assertEqual(status, 200, result.get('error'))
         self.assertTrue(result.get('ok'), result.get('error'))
 
@@ -123,36 +130,36 @@ class TestSystemPermissionHttp(BusinessTransactionCase, HttpCase):
 
     def test_context_cannot_keep_old_jwt_after_role_revocation(self):
         token = self._login()
-        status, result = self._intent('system.init', token=token)
+        status, result = self._system_init(token)
         self.assertEqual(status, 200, result.get('error'))
         with self.registry.test_lock:
             self.subject.with_user(self.manager).with_context(
                 sc_runtime_user_management=True, sc_skip_token_epoch_bump=True,
             ).write({'sc_user_role_group_ids': [(6, 0, [])]})
             self.env.flush_all()
-        status, result = self._intent('system.init', token=token)
+        status, result = self._system_init(token)
         self.assertEqual(status, 401, result.get('error'))
         self.assertEqual((result.get('error') or {}).get('code'), 'AUTH_REQUIRED')
 
     def test_logout_revokes_existing_jwt(self):
         token = self._login()
-        status, result = self._intent('system.init', token=token)
+        status, result = self._system_init(token)
         self.assertEqual(status, 200, result.get('error'))
         status, result = self._intent('auth.logout', token=token)
         self.assertEqual(status, 200, result.get('error'))
         self.assertTrue(result.get('ok'), result.get('error'))
-        status, result = self._intent('system.init', token=token)
+        status, result = self._system_init(token)
         self.assertEqual(status, 401, result.get('error'))
         self.assertEqual((result.get('error') or {}).get('code'), 'AUTH_REQUIRED')
 
     def _assert_group_mutation_rejects_old_token(self, mutation):
         token = self._login()
-        status, result = self._intent('system.init', token=token)
+        status, result = self._system_init(token)
         self.assertEqual(status, 200, result.get('error'))
         with self.registry.test_lock:
             mutation()
             self.env.flush_all()
-        status, result = self._intent('system.init', token=token)
+        status, result = self._system_init(token)
         self.assertEqual(status, 401, result.get('error'))
         self.assertEqual((result.get('error') or {}).get('code'), 'AUTH_REQUIRED')
 

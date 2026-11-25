@@ -628,6 +628,13 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
         )
 
+    def test_offline_unittest_change_selects_registered_unit_not_odoo_orm(self):
+        targets = select_iteration_targets([
+            "addons/smart_core/tests/test_business_config_surface.py",
+        ])
+        self.assertIn("verify.business_config.unit", targets)
+        self.assertNotIn("verify.changed_tests.orm", targets)
+
     def test_production_change_keeps_owning_module_baseline(self):
         targets = select_iteration_targets([
             "addons/smart_core/handlers/business_config_change_set.py",

@@ -136,6 +136,7 @@ class TestBusinessConfigChangeSet(TransactionCase):
         request = {"op": "model", "model": "res.partner", "view_type": "form", "view_id": view.id,
                    "action_id": action.id, "render_profile": "create",
                    "client_type": "web_pc",
+                   "accepted_contract_versions": ["2.7.x"],
                    "client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY]}
         def load(**extra):
             result = UiContractV2Handler(env, su_env=env["ir.model"].sudo().env).handle({**request, **extra})

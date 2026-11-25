@@ -56,6 +56,12 @@ class NodeValidationTests(unittest.TestCase):
         self.host['componentConfig']['html'] = '<b>bad</b>'
         self.reject('FEEDBACK_CONFIG_INVALID')
 
+    def test_undeclared_node_semantic_is_rejected_before_payload_checks(self):
+        self.host['type'] = 'div'
+        self.host['semanticType'] = 'feedback_messsage'
+        self.host['componentConfig'] = {}
+        self.reject('NODE_SEMANTIC_UNKNOWN')
+
     def test_inactive_and_empty(self):
         self.host['componentConfig']['purpose'] = 'advisory'
         self.record.empty = True

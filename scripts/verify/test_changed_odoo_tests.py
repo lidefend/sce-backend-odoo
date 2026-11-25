@@ -46,6 +46,17 @@ class ChangedOdooTestSelectionTest(unittest.TestCase):
                     ["/example:TestOne"],
                 )
 
+    def test_offline_unittest_file_is_not_an_odoo_test_selection(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "test_example.py"
+            path.write_text(
+                "import unittest\n"
+                "class TestOffline(unittest.TestCase):\n"
+                "    pass\n"
+            )
+            self.assertEqual(selection.odoo_test_classes(path), [])
+            self.assertEqual(selection.classes(path, "example"), [])
+
     def test_missing_or_non_test_changes_fail_closed(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -22,6 +22,18 @@ function firstWidget(rows: unknown): Record<string, unknown> | null {
   return null;
 }
 
+function firstContainerOfType(rows: unknown, type: string): Record<string, unknown> | null {
+  if (!Array.isArray(rows)) return null;
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue;
+    const record = row as Record<string, unknown>;
+    if (record.type === type || record.containerType === type) return record;
+    const child = firstContainerOfType(record.children, type);
+    if (child) return child;
+  }
+  return null;
+}
+
 const strictDescriptor = {
   schemaVersion: '1.0.0',
   fieldCode: 'project.name',
@@ -49,6 +61,27 @@ assert.throws(
   () => decodeContractV2Snapshot(componentIdentity),
   /frontend implementation identity/,
   'V2.7 must not accept backend component identity',
+);
+
+const businessJson = clone(current);
+const businessData = ((businessJson.dataContract as Record<string, unknown>).mainData) as Record<string, unknown>;
+businessData.value_json = {
+  componentKey: 'ordinary business data',
+  componentRegistry: { business: 'value' },
+};
+decodeContractV2Snapshot(businessJson);
+
+const unknownNodeSemantic = clone(current);
+const nonFieldContainer = firstContainerOfType(
+  (unknownNodeSemantic.layoutContract as Record<string, unknown>).containerTree,
+  'group',
+);
+assert.ok(nonFieldContainer);
+nonFieldContainer.semanticType = 'feedback_messsage';
+assert.throws(
+  () => decodeContractV2Snapshot(unknownNodeSemantic),
+  /node semanticType is not declared/,
+  'an undeclared node semantic must be a contract defect, not a frontend capability gap',
 );
 
 const attachmentCarrier = clone(current);

@@ -122,6 +122,8 @@ export const SEMANTIC_FIELD_TYPES: Readonly<Record<string, readonly string[]>> =
   'unsupported_native_widget': Object.freeze(['*']),
 });
 
+export const NODE_SEMANTICS: ReadonlySet<string> = new Set(['action_list', 'display_ribbon', 'feedback_message', 'insight_summary', 'navigation_anchor', 'unsupported_native_node']);
+
 export type NativeWidgetStatus = 'ready' | 'fallback' | 'unsupported';
 
 export const NATIVE_WIDGET_REGISTRY: Readonly<Record<string, {status: NativeWidgetStatus; reasonCode: string}>> = Object.freeze({

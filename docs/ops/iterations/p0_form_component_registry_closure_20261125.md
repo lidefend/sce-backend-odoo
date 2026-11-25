@@ -10,8 +10,10 @@ capability gaps separately from backend contract defects.
 The real `projects.ledger` list-to-record browser journey now passes on the
 governed `sc-local-dev` / `sc_dev_demo` runtime as the `wutao` business
 configuration administrator. The browser captured the actual list contract,
-opened record `4` through action `590` / menu `382`, rendered the Form on
-desktop, and completed the mobile company-dashboard path. The same target also
+opened record `4` through action `590` / menu `382`, and reached Form
+`state=ok` independently at desktop `1440x960` and mobile `390x844`. Both runs
+preserved the same model/record/action/menu identity, reported no page errors,
+and exercised read-only, date and many2one semantics. The same target also
 passed the real ORM money chain and strict decoding of 45 Form descriptors.
 
 ## Ownership
@@ -40,6 +42,24 @@ passed the real ORM money chain and strict decoding of 45 Form descriptors.
   removed.
 - Node validation remains semantic/payload based and does not execute embedded
   Odoo components.
+
+## Review Remediation
+
+- Internal `system.init` callers explicitly declare the `2.7.x` client contract
+  and no longer convert negotiation failure into an empty catalog, package or
+  healthy scene result.
+- Store field projection uses canonical `relationEntry` and `widgetOptions`;
+  the relation consumer regression covers selected-ID hydration and inline
+  create after the real Store projection.
+- Unknown or misplaced node semantics fail as contract defects before payload
+  validation, while a valid registered semantic without a renderer remains a
+  frontend capability gap.
+- Frontend implementation identity is rejected only in structural contract
+  locations; opaque business JSON is not misclassified as renderer selection.
+- The assembled-contract cache identity is re-pinned to `v122` with digest
+  `7aeedd00250d9f75eda38f4d37d6fe286146ee8b3519c720e35ef83fe567d1d5`.
+- The V2.7 policy guard, generated component-driver inventory digest and
+  remediation source hashes were reconciled to the final source state.
 
 ## Runtime Alignment Correction
 
@@ -98,16 +118,24 @@ Candidate identity:
 Complete affected local iteration:
 
 - Receipt:
-  `.runtime/frontend-dev-validation/executions/20261125T101002Z-2826532-577357370/receipt.json`
+  `.runtime/frontend-dev-validation/executions/20261125T121530Z-3627665-224518041/receipt.json`
 - Status: passed
-- Local targets: 71
-- Freshly executed targets: 69
-- Reused unchanged passing targets: 2
-- Deferred remote module baselines: 1
+- Local targets: 78
+- Freshly executed targets: 78
+- Reused unchanged passing targets: 0
+- Deferred remote module baselines: 2
 - Layers: frontend, backend, contract, governance
 - Required targets all exited zero
-- `verify.smart_construction_core.module_baseline` is deferred to exact-head
-  remote integration CI.
+- `verify.smart_construction_core.module_baseline` and
+  `verify.smart_core.close_02.module_baseline` are deferred to exact-head remote
+  integration CI.
+
+Run-bound checks:
+
+- `component_registry_closure`: passed, 29 tests.
+- `real_project_form_decode`: passed, 46 checks, including 45 strict descriptors.
+- `project_ledger_user_path`: passed, desktop and mobile runtime readback bound
+  to `artifacts/p0_contract_producer_01/p0a_browser_acceptance.json`.
 
 Representative passed checks:
 
@@ -121,7 +149,8 @@ Representative passed checks:
 - contract cache input digest/version guard;
 - relation-entry native-to-canonical normalization with 7 focused cases;
 - real `projects.ledger` list -> row -> Form browser acceptance for desktop and
-  mobile, including the 45-descriptor strict decode.
+  mobile, including the 45-descriptor strict decode; both Forms reached `ok`
+  with `page_errors=[]`.
 
 Not run:
 
@@ -132,8 +161,9 @@ Not run:
 ## Remaining Exact Steps
 
 1. Commit the clean exact candidate.
-2. Publish the branch and PR through the governed entrypoint.
-3. Wait for exact-head required CI before any merge decision.
+2. Update existing PR #1004 through the governed entrypoint.
+3. Verify the four required checks on its exact HEAD and wait for independent
+   review before any merge decision.
 
 Deployment, database rebuild and production data migration are outside this
 batch.

@@ -1,4 +1,8 @@
 import { projectNodeComponents } from '../../presentation/nodeComponentPresentation';
+import {
+  NODE_SEMANTICS,
+  SEMANTIC_FIELD_TYPES,
+} from '../../presentation/semantic_registry.generated';
 import { normalizeActionSemantics } from '@sc/schema';
 import type {
   ContractV2ActionContract,
@@ -861,6 +865,12 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
   const widgetId = requiredString(raw, 'widgetId', path, issues);
   const widgetType = decodeWidgetType(requiredString(raw, 'widgetType', path, issues), `${path}.widgetType`, issues);
   const semanticType = requiredString(raw, 'semanticType', path, issues);
+  if (semanticType && !Object.hasOwn(SEMANTIC_FIELD_TYPES, semanticType)) {
+    issues.push({
+      path: `${path}.semanticType`,
+      message: 'field semanticType is not declared by the independent semantic specification',
+    });
+  }
   const widgetProvenance = decodeWidgetProvenance(
     componentConfig.widgetProvenance,
     `${path}.componentConfig.widgetProvenance`,
@@ -1016,6 +1026,32 @@ function decodeContainer(
   const componentConfig = optionalRecord(raw, 'componentConfig', path, issues);
   const badge = optionalRecord(raw, 'badge', path, issues);
   const normalizedContainerType = containerType.toLowerCase();
+  const declaredSemanticType = asString(raw.semanticType);
+  if (declaredSemanticType) {
+    if (normalizedContainerType === 'field') {
+      if (NODE_SEMANTICS.has(declaredSemanticType)) {
+        issues.push({
+          path: `${path}.semanticType`,
+          message: 'node semanticType is not applicable to a field position',
+        });
+      } else if (!Object.hasOwn(SEMANTIC_FIELD_TYPES, declaredSemanticType)) {
+        issues.push({
+          path: `${path}.semanticType`,
+          message: 'field semanticType is not declared by the independent semantic specification',
+        });
+      }
+    } else if (Object.hasOwn(SEMANTIC_FIELD_TYPES, declaredSemanticType)) {
+      issues.push({
+        path: `${path}.semanticType`,
+        message: 'field semanticType is not applicable to a node position',
+      });
+    } else if (!NODE_SEMANTICS.has(declaredSemanticType)) {
+      issues.push({
+        path: `${path}.semanticType`,
+        message: 'node semanticType is not declared by the independent semantic specification',
+      });
+    }
+  }
   if (normalizedContainerType === 'widget') {
     if (Object.hasOwn(raw, 'fieldCode')) {
       issues.push({ path: `${path}.fieldCode`, message: 'embedded widget nodes cannot carry a field identity' });
@@ -3539,6 +3575,11 @@ function rejectFrontendImplementationIdentity(
   issues: DecodeIssue[],
   path = '$',
 ): void {
+  const opaqueValueKeys = new Set([
+    'dataContract', 'dataPatch', 'dataMeta', 'mainData', 'datasets',
+    'payload', 'actionPayload', 'context', 'domain', 'options', 'optionsRaw',
+    'values', 'value', 'value_json', 'valueJson',
+  ]);
   if (Array.isArray(value)) {
     value.forEach((item, index) => rejectFrontendImplementationIdentity(item, issues, `${path}[${index}]`));
     return;
@@ -3553,6 +3594,7 @@ function rejectFrontendImplementationIdentity(
       });
       return;
     }
+    if (opaqueValueKeys.has(key)) return;
     rejectFrontendImplementationIdentity(child, issues, here);
   });
 }

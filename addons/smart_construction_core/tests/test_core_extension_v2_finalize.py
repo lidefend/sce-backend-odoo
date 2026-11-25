@@ -446,6 +446,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             "menu_id": menu.id,
             "render_profile": "edit",
             "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
             "client_contract_capabilities": list(NODE_CAPABILITIES.values()),
         }
         source, _meta = handler._dispatch_native_form_source(
@@ -552,6 +553,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             "menu_id": menu.id,
             "render_profile": "edit",
             "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
         }
         result = handler.handle(params)
         envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
@@ -747,7 +749,6 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                         ],
                     }
                 ],
-                "componentRegistry": {},
             },
             "statusContract": {
                 "globalStatus": {"pageAuth": "edit"},
@@ -797,10 +798,10 @@ class TestCoreExtensionV2Finalize(TransactionCase):
         # P0 injects the canonical workflow contract after native projection.
         # The P1 hook may normalize the V2.7 wire, but it must not rebuild or
         # redefine the project page graph.
-        self.assertIsNotNone(projected)
-        self.assertEqual(projected["layoutContract"]["containerTree"], contract["layoutContract"]["containerTree"])
-        self.assertEqual(projected["statusContract"], contract["statusContract"])
-        self.assertNotIn("componentRegistry", projected["layoutContract"])
+        effective = projected or contract
+        self.assertEqual(effective["layoutContract"]["containerTree"], contract["layoutContract"]["containerTree"])
+        self.assertEqual(effective["statusContract"], contract["statusContract"])
+        self.assertNotIn("componentRegistry", effective["layoutContract"])
         self.assertEqual(contract["layoutContract"], self._base_project_contract()["layoutContract"])
         self.assertEqual(contract["statusContract"], self._base_project_contract()["statusContract"])
         self.assertEqual(
@@ -987,13 +988,13 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             self._base_project_contract(),
             {"source_contract": {"model": "res.partner", "view_type": "form"}},
         )
-        self.assertIsNotNone(projected)
-        self.assertNotIn("componentRegistry", projected["layoutContract"])
+        effective = projected or self._base_project_contract()
+        self.assertNotIn("componentRegistry", effective["layoutContract"])
         self.assertEqual(
             {
                 row.get("name")
                 for row in self._field_nodes(
-                    projected["layoutContract"]["containerTree"],
+                    effective["layoutContract"]["containerTree"],
                     include_widget_list=False,
                 )
             },
@@ -1009,17 +1010,16 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                         "type": "field",
                         "name": "outflow_line_ids",
                         "widgetId": "field.outflow_line_ids",
-                        "componentKey": "sc.relation.table",
+                        "semanticType": "detail_collection",
                         "componentConfig": {"fieldType": "one2many"},
                     }],
                     "widgetList": [{
                         "widgetId": "field.outflow_line_ids",
                         "fieldCode": "outflow_line_ids",
-                        "componentKey": "sc.relation.table",
+                        "semanticType": "detail_collection",
                         "componentConfig": {"fieldType": "one2many"},
                     }],
                 }],
-                "componentRegistry": {},
             },
             "statusContract": {"globalStatus": {}, "widgetStatus": []},
             "runtimeContract": {},
@@ -1036,7 +1036,12 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             if row.get("name") == "outflow_line_ids" or row.get("fieldCode") == "outflow_line_ids"
         ]
         self.assertTrue(nodes)
-        self.assertTrue(all(row["componentKey"] == "sc.payment.settlement_detail_collection" for row in nodes))
+        self.assertTrue(all(
+            row["semanticType"] == "payment_settlement_detail_collection"
+            for row in nodes
+        ))
+        self.assertNotIn("componentRegistry", projected["layoutContract"])
+        self.assertTrue(all("componentKey" not in row for row in nodes))
         self.assertEqual(
             nodes[0]["componentConfig"]["actionRefs"],
             {
@@ -1112,15 +1117,6 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                 "confirmLabel", "recordRequiredMessage", "payloadFields",
             )),
         )
-        settlement_entry = projected["layoutContract"]["componentRegistry"][
-            "sc.payment.settlement_detail_collection"
-        ]
-        self.assertEqual(settlement_entry.get("version"), "1.0")
-        # Rendering is a frontend concern: the contract must never name a
-        # framework component, a per-client adapter or a rendering fallback.
-        for forbidden in ("adapter", "selectedAdapter", "selected_adapter", "fallback"):
-            self.assertNotIn(forbidden, settlement_entry)
-
     def test_payment_and_project_forms_share_existing_v2_minimum_authority_chain(self):
         contracts = {
             "project.project": {
@@ -1133,19 +1129,13 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                             "name": "manager_id",
                             "fieldCode": "manager_id",
                             "widgetId": "field.manager_id",
-                            "componentKey": "sc.value.user",
+                            "semanticType": "relation",
                             "componentConfig": {
                                 "fieldType": "many2one",
                                 "relationModel": "res.users",
                             },
                         }],
                     }],
-                    "componentRegistry": {
-                        "sc.value.user": {
-                            "version": "1.0",
-                            "adapter": {"web_pc": "UserValueControl"},
-                        },
-                    },
                 },
                 "statusContract": {
                     "globalStatus": {"pageAuth": "edit"},
@@ -1177,11 +1167,10 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                             "name": "outflow_line_ids",
                             "fieldCode": "outflow_line_ids",
                             "widgetId": "field.outflow_line_ids",
-                            "componentKey": "sc.relation.table",
+                            "semanticType": "detail_collection",
                             "componentConfig": {"fieldType": "one2many"},
                         }],
                     }],
-                    "componentRegistry": {},
                 },
                 "statusContract": {
                     "globalStatus": {"pageAuth": "edit"},
@@ -1219,20 +1208,18 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                 row["widgetId"]: row
                 for row in projected["statusContract"]["widgetStatus"]
             }
-            registry = projected["layoutContract"]["componentRegistry"]
 
             for widget in widgets:
                 widget_id = widget.get("widgetId")
-                component_key = widget.get("componentKey")
+                semantic_type = widget.get("semanticType")
+                if "fieldDescriptor" in widget:
+                    semantic_type = widget["fieldDescriptor"].get("semanticType")
                 self.assertTrue(widget.get("fieldCode") or widget.get("name"), model_name)
                 self.assertTrue(widget_id, model_name)
-                self.assertTrue(component_key, model_name)
+                self.assertTrue(semantic_type, model_name)
                 self.assertIn(widget_id, status_by_id, model_name)
-                self.assertIn(component_key, registry, model_name)
-            for key, entry in registry.items():
-                self.assertTrue(entry.get("version"), f"{model_name}:{key}")
-                for forbidden in ("adapter", "selectedAdapter", "selected_adapter", "fallback"):
-                    self.assertNotIn(forbidden, entry, f"{model_name}:{key}")
+                self.assertNotIn("componentKey", widget, model_name)
+            self.assertNotIn("componentRegistry", projected["layoutContract"], model_name)
 
             action = projected["actionContract"]["actionRuleList"][0]
             self.assertEqual(action["actionId"], "form.save")

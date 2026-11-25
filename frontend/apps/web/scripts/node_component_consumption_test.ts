@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import type { ContractV2Snapshot, ContractV2Container } from '../src/app/contracts/v2/types';
-import { projectNodeComponents, navigateToDeclaredNode } from '../src/app/presentation/nodeComponentPresentation';
+import {
+  navigateToDeclaredNode,
+  projectNodeComponents,
+  resolveNodeSemanticImplementation,
+} from '../src/app/presentation/nodeComponentPresentation';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import {
   createContractV2Store,
@@ -193,7 +197,17 @@ for(const mutation of ['semantic','purpose','extra','missing','duplicate','sourc
   if(mutation==='owner') s.layoutContract.containerTree.push({...n,containerId:'other',children:[]});
   assert.throws(
     () => projectNodeComponents(s),
-    {name: mutation === 'semantic' ? 'FrontendCapabilityGapError' : 'ContractGapError'},
+    {name: 'ContractGapError'},
+  );
+});
+test('declared node semantic without frontend implementation is a capability gap',()=>{
+  assert.throws(
+    () => resolveNodeSemanticImplementation('feedback_message', {}),
+    {name: 'FrontendCapabilityGapError'},
+  );
+  assert.throws(
+    () => resolveNodeSemanticImplementation('feedback_messsage', {}),
+    {name: 'ContractGapError'},
   );
 });
 test('actual decoder presenter bridge',()=>{

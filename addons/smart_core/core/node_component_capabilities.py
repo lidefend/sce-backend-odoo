@@ -1,6 +1,7 @@
 """Request-local protocol checks for declared form node semantics."""
 from .form_configuration_compiler import FormConfigurationError
-from .node_component_validation import walk
+from .contract_runtime.semantic_registry_generated import FIELD_SEMANTICS
+from .node_component_validation import validate_declared_semantics, walk
 
 # Protocol capabilities keyed by backend node semantics. These do not select a
 # frontend component and do not assert renderer implementation support.
@@ -64,6 +65,7 @@ def _project_optional_nodes(contract, capabilities):
 
 
 def validate_component_capabilities(contract, params):
+    validate_declared_semantics(contract)
     layout = contract.get('layoutContract') or {}
     supplied = params.get('client_contract_capabilities')
     capabilities = set(supplied) if isinstance(supplied, list) and all(type(v) is str for v in supplied) else set()
@@ -75,11 +77,7 @@ def validate_component_capabilities(contract, params):
             continue
         if type(semantic_type) is not str or not semantic_type:
             raise FormConfigurationError('NODE_SEMANTIC_MISSING', path + '.semanticType')
-        if (
-            semantic_type not in NODE_CAPABILITIES
-            and semantic_type not in OPTIONAL_NODE_CAPABILITIES
-            and semantic_type != 'unsupported_native_node'
-        ):
+        if semantic_type in FIELD_SEMANTICS:
             continue
         if semantic_type == 'unsupported_native_node':
             # The unsupported node is deliberately published so the client can

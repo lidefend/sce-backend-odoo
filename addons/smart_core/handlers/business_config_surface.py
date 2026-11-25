@@ -5,9 +5,10 @@ import hashlib
 import json
 from typing import Any
 
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 
 from ..core.base_handler import BaseIntentHandler
+from ..core.contract_version_negotiation import with_internal_client_contract
 from ..utils.backend_contract_boundaries import BUSINESS_CONFIG_INTENTS, MENU_CONFIG_INTENTS, MENU_CONFIG_POLICY_MODEL, is_business_config_runtime_model, classify_view_orchestration_contract
 from ..utils.extension_hooks import call_extension_hook_first
 
@@ -770,8 +771,36 @@ class BusinessConfigCoverageScanHandler(_BusinessConfigSurfaceBase):
         # system.init already resolves product identity, role, company, publication
         # and constrained menu overlays. A second DeliveryEngine invocation with
         # empty runtime context is not the user's actual navigation authority.
-        response = SystemInitHandler(env=self.env).handle(payload={"params": {}})
-        payload = response.data if hasattr(response, "data") else response.get("data", {})
+        response = SystemInitHandler(env=self.env).handle(
+            payload={"params": with_internal_client_contract()}
+        )
+        ok = (
+            response.ok
+            if hasattr(response, "ok")
+            else response.get("ok")
+            if isinstance(response, dict)
+            else None
+        )
+        if not ok:
+            error = (
+                response.error
+                if hasattr(response, "error")
+                else response.get("error")
+                if isinstance(response, dict)
+                else {}
+            )
+            error = error if isinstance(error, dict) else {}
+            raise ValidationError(
+                "业务配置目录初始化失败: %s"
+                % str(error.get("message") or error.get("reason_code") or "system.init failed")
+            )
+        payload = (
+            response.data
+            if hasattr(response, "data")
+            else response.get("data", {})
+            if isinstance(response, dict)
+            else {}
+        )
         payload = payload.get("navigation") or {}
         result = {}
         def collect(node, parents):

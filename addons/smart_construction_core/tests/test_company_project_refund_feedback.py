@@ -539,7 +539,11 @@ class TestCompanyProjectRefundFeedbackHttp(
             or (((body.get("data") or {}).get("session") or {}).get("token"))
         )
         self.assertTrue(token, body.get("error"))
-        status, initialized = self.intent("system.init", {}, token=token)
+        status, initialized = self.intent("system.init", {
+            "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": [],
+        }, token=token)
         self.assertEqual(status, 200, initialized.get("error"))
         self.assertTrue(initialized.get("ok"), initialized.get("error"))
         return token

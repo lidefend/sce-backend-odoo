@@ -37,6 +37,7 @@ from scripts.ops.incremental_execution import (
     verified_receipt as incremental_verified_receipt,
     write_index as write_incremental_index,
 )
+from scripts.dev import changed_odoo_tests
 from scripts.ci import ci_path_ownership
 
 WATCH_ROOTS = (
@@ -199,6 +200,20 @@ RULES = (
         "addons/smart_core/tests/test_form_structure_surface_capability_orm.py",
         "addons/smart_core/tests/test_user_activation.py",
     ), ("verify.smart_core.close_02.module_baseline",)),
+    Rule((
+        "addons/smart_core/handlers/business_config_surface.py",
+        "addons/smart_core/tests/test_business_config_surface.py",
+    ), ("verify.business_config.unit",)),
+    Rule((
+        "addons/smart_core/handlers/scene_health.py",
+        "addons/smart_core/tests/test_scene_health_params.py",
+    ), ("verify.p0_contract_producer.p0a.backend_unit",)),
+    Rule((
+        "addons/smart_core/tests/test_native_modifier.py",
+    ), ("verify.frontend.collection_view_semantics.unit",)),
+    Rule((
+        "addons/smart_construction_scene/services/scene_package_service.py",
+    ), ("verify.scene.company_route_scope_cache.orm",)),
     Rule((
         "addons/smart_construction_core/tests/test_um_p1_contract_settlement_visibility_contract_orm.py",
         "addons/smart_construction_core/tests/test_um_p1_cost_ledger_visibility_contract_orm.py",
@@ -3184,6 +3199,8 @@ def select_iteration_targets(paths: list[str]) -> list[str]:
             Path(relative).name.startswith("test_")
             and relative.endswith(".py")
         ):
+            continue
+        if not changed_odoo_tests.odoo_test_classes(ROOT / normalized):
             continue
         module_targets = set(select_targets([normalized]))
         module_baselines = MODULE_BASELINE_TARGETS.get(module, set())

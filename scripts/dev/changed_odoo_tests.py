@@ -18,18 +18,48 @@ sys.path.insert(0, str(ROOT))
 from scripts.ops.agent_run_context import delta_paths, resolve_run
 
 
-def classes(path: Path, module: str) -> list[str]:
+def odoo_test_classes(path: Path) -> list[ast.ClassDef]:
     try:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
     except (OSError, SyntaxError) as exc:
         raise ValueError(f"unreadable test source: {path}") from exc
-    names = sorted({
-        node.name
-        for node in tree.body
-        if isinstance(node, ast.ClassDef) and node.name.startswith("Test")
-    })
-    if not names:
+    unittest_test_case_names = {
+        alias.name
+        for import_node in tree.body
+        if isinstance(import_node, ast.ImportFrom) and import_node.module == "unittest"
+        for alias in import_node.names
+        if alias.name == "TestCase"
+    }
+    class_nodes = [node for node in tree.body if isinstance(node, ast.ClassDef)]
+    if not class_nodes:
         raise ValueError(f"changed test file declares no Test class: {path}")
+    candidates = [node for node in class_nodes if node.name.startswith("Test")]
+    odoo_classes = []
+    for node in candidates:
+        offline = False
+        for base in node.bases:
+            if (
+                isinstance(base, ast.Attribute)
+                and isinstance(base.value, ast.Name)
+                and base.value.id == "unittest"
+                and base.attr == "TestCase"
+            ):
+                offline = True
+                break
+            if (
+                isinstance(base, ast.Name)
+                and base.id == "TestCase"
+                and "TestCase" in unittest_test_case_names
+            ):
+                offline = True
+                break
+        if not offline:
+            odoo_classes.append(node)
+    return odoo_classes
+
+
+def classes(path: Path, module: str) -> list[str]:
+    names = sorted(node.name for node in odoo_test_classes(path))
     return [f"/{module}:{name}" for name in names]
 
 

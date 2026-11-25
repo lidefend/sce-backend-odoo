@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 import sys
 import unittest
 from pathlib import Path
@@ -179,14 +180,35 @@ class NativeWidgetContractBridgeTest(unittest.TestCase):
         ):
             _assert_no_frontend_implementation_identity(upgraded)
 
+        business_value = deepcopy(upgraded)
+        business_value["layoutContract"].pop("componentRegistry", None)
+        business_value["dataContract"]["mainData"]["value_json"] = {
+            "componentKey": "ordinary business data",
+            "componentRegistry": {"business": "value"},
+        }
+        _assert_no_frontend_implementation_identity(business_value)
+
+        business_patch = assemble_unified_page_patch_v2({
+            "patch": {
+                "value_json": {
+                    "componentKey": "ordinary business data",
+                    "componentRegistry": {"business": "value"},
+                },
+            },
+        })
+        self.assertEqual(
+            business_patch["dataPatch"]["mainData"]["value_json"]["componentKey"],
+            "ordinary business data",
+        )
+
         with self.assertRaisesRegex(
             ValueError,
             "CONTRACT_V27_FRONTEND_IMPLEMENTATION_IDENTITY",
         ):
-            assemble_unified_page_patch_v2({
-                "line_patches": [
-                    {"componentKey": "sc.input.date"},
-                ],
+            _assert_no_frontend_implementation_identity({
+                "layoutPatch": {
+                    "containerTree": [{"containerId": "node", "componentKey": "sc.input.date"}],
+                },
             })
 
 

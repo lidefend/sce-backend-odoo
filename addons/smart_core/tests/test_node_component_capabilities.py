@@ -16,7 +16,15 @@ CAPS = list(NODE_CAPABILITIES.values())
 
 def contract(keys):
     return {'pageInfo': {'contractVersion': '2.2.0'}, 'layoutContract': {
-        'containerTree': [{'containerId': str(i), 'semanticType': k} for i, k in enumerate(keys)]}}
+        'containerTree': [
+            {
+                'containerId': str(i),
+                'type': 'field' if k == 'readable_value' else 'div',
+                **({'fieldCode': 'field_%s' % i} if k == 'readable_value' else {}),
+                'semanticType': k,
+            }
+            for i, k in enumerate(keys)
+        ]}}
 
 
 class CapabilityTests(unittest.TestCase):
@@ -40,6 +48,21 @@ class CapabilityTests(unittest.TestCase):
 
     def test_registered_field_behavior_unchanged(self):
         validate_component_capabilities(contract(['readable_value']), {})
+
+    def test_unknown_or_mispositioned_semantic_is_a_contract_defect(self):
+        with self.assertRaises(FormConfigurationError) as unknown:
+            validate_component_capabilities(contract(['feedback_messsage']), {})
+        self.assertEqual(unknown.exception.code, 'NODE_SEMANTIC_UNKNOWN')
+
+        misplaced = contract([])
+        misplaced['layoutContract']['containerTree'] = [{
+            'containerId': 'node',
+            'type': 'div',
+            'semanticType': 'readable_value',
+        }]
+        with self.assertRaises(FormConfigurationError) as context:
+            validate_component_capabilities(misplaced, {})
+        self.assertEqual(context.exception.code, 'NODE_SEMANTIC_CONTEXT_INVALID')
 
     def test_ribbon_requires_capability_but_unsupported_node_is_published_for_client_rejection(self):
         with self.assertRaises(FormConfigurationError) as exc:

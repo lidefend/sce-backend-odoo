@@ -326,17 +326,49 @@ class ScenePackageService:
             raise ValueError("package_version is required")
 
         from odoo.addons.smart_core.handlers.system_init import SystemInitHandler
+        from odoo.addons.smart_core.core.contract_version_negotiation import (
+            with_internal_client_contract,
+        )
 
         channel = self._normalize_channel(scene_channel)
+        init_params = with_internal_client_contract(
+            {"scene": "web", "with_preload": False, "scene_channel": channel}
+        )
         handler = SystemInitHandler(
             self.env,
             self.env,
             None,
             context={"trace_id": trace_id or ""},
-            payload={"params": {"scene": "web", "with_preload": False, "scene_channel": channel}},
+            payload={"params": init_params},
         )
-        init_result = handler.handle(payload={"params": {"scene": "web", "with_preload": False, "scene_channel": channel}})
-        init_data = init_result.get("data") if isinstance(init_result, dict) else {}
+        init_result = handler.handle(payload={"params": init_params})
+        init_ok = (
+            init_result.ok
+            if hasattr(init_result, "ok")
+            else init_result.get("ok")
+            if isinstance(init_result, dict)
+            else False
+        )
+        if not init_ok:
+            error = (
+                init_result.error
+                if hasattr(init_result, "error")
+                else init_result.get("error")
+                if isinstance(init_result, dict)
+                else {}
+            )
+            error = error if isinstance(error, dict) else {}
+            raise ValueError(
+                "场景包导出初始化失败: %s"
+                % str(error.get("message") or error.get("reason_code") or "system.init failed")
+            )
+        init_data = (
+            init_result.data
+            if hasattr(init_result, "data")
+            else init_result.get("data")
+            if isinstance(init_result, dict)
+            else {}
+        )
         init_data = init_data if isinstance(init_data, dict) else {}
 
         schema_version = str(init_data.get("schema_version") or "v2")

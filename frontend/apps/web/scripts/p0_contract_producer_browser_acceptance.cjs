@@ -142,7 +142,34 @@ async function validateContractV2Matrix(page, token) {
   };
 }
 
-async function captureProjectLedgerContracts(page) {
+function requestParams(response) {
+  try {
+    return JSON.parse(response.request().postData() || '{}').params || {};
+  } catch {
+    return {};
+  }
+}
+
+function contractDescriptor(contract, fieldCode) {
+  let found = null;
+  const visit = (value) => {
+    if (found || !value || typeof value !== 'object') return;
+    if (Array.isArray(value)) {
+      value.forEach(visit);
+      return;
+    }
+    const descriptor = value.fieldDescriptor;
+    if (descriptor && typeof descriptor === 'object' && descriptor.fieldCode === fieldCode) {
+      found = descriptor;
+      return;
+    }
+    Object.values(value).forEach(visit);
+  };
+  visit(contract);
+  return found;
+}
+
+async function captureProjectLedgerContracts(page, viewport) {
   const listResponsePromise = page.waitForResponse((response) => {
     if (!response.url().includes('/api/v1/intent')) return false;
     try {
@@ -171,7 +198,15 @@ async function captureProjectLedgerContracts(page) {
       code: listBody?.error?.code || '',
     })}`);
   }
-  const row = page.locator('button[data-semantic-cell-kind="primary"]:visible').first();
+  const listParams = requestParams(listResponse);
+  const listScreenshot = path.join(
+    ARTIFACT_DIR,
+    `project-ledger-list-v27-${viewport.name}.png`,
+  );
+  await page.screenshot({ path: listScreenshot, fullPage: true });
+  const row = page.locator(
+    'button[data-semantic-cell-kind="primary"]:visible, button[data-semantic-action="open-record"]:visible',
+  ).first();
   await row.waitFor({ state: 'visible', timeout: 30000 });
   const formResponsePromise = page.waitForResponse((response) => {
     if (!response.url().includes('/api/v1/intent')) return false;
@@ -198,6 +233,7 @@ async function captureProjectLedgerContracts(page) {
       code: body?.error?.code || '',
     })}`);
   }
+  const formParams = requestParams(response);
   const formRoot = page.locator('[data-semantic-component="ContractFormPage"]:visible').first();
   await formRoot.waitFor({ state: 'visible', timeout: 30000 });
   await page.waitForFunction(() => {
@@ -211,9 +247,41 @@ async function captureProjectLedgerContracts(page) {
     action: element.getAttribute('data-form-action-id') || '',
     menu: element.getAttribute('data-form-menu-id') || '',
   }));
-  const screenshot = path.join(ARTIFACT_DIR, 'project-ledger-form-v27.png');
+  const fieldChecks = await page.evaluate(() => {
+    const inspect = (fieldName) => {
+      const container = document.querySelector(`[data-field-name="${CSS.escape(fieldName)}"]`);
+      if (!container) return null;
+      const control = container.querySelector('input, textarea, select');
+      return {
+        state: container.getAttribute('data-field-state') || '',
+        type: container.getAttribute('data-field-type') || '',
+        controlType: control?.getAttribute('type') || '',
+        readOnly: control instanceof HTMLInputElement || control instanceof HTMLTextAreaElement
+          ? control.readOnly
+          : false,
+      };
+    };
+    return {
+      project_code: inspect('project_code'),
+      date_start: inspect('date_start'),
+      manager_id: inspect('manager_id'),
+    };
+  });
+  const screenshot = path.join(
+    ARTIFACT_DIR,
+    `project-ledger-form-v27-${viewport.name}.png`,
+  );
   await page.screenshot({ path: screenshot, fullPage: true });
-  return { form: body.data, list: listBody.data, formState, screenshot };
+  return {
+    form: body.data,
+    list: listBody.data,
+    formState,
+    fieldChecks,
+    listParams,
+    formParams,
+    listScreenshot,
+    screenshot,
+  };
 }
 
 function assertProjectLedgerRowNavigation(contract) {
@@ -238,6 +306,11 @@ function assertProjectLedgerRowNavigation(contract) {
 
 function assertSemanticContractOnly(contract) {
   const forbidden = [];
+  const opaqueValueKeys = new Set([
+    'dataContract', 'dataPatch', 'dataMeta', 'mainData', 'datasets',
+    'payload', 'actionPayload', 'context', 'domain', 'options', 'optionsRaw',
+    'values', 'value', 'value_json', 'valueJson',
+  ]);
   const visit = (value, path = '$') => {
     if (Array.isArray(value)) {
       value.forEach((item, index) => visit(item, `${path}[${index}]`));
@@ -250,12 +323,59 @@ function assertSemanticContractOnly(contract) {
         forbidden.push(here);
         return;
       }
+      if (opaqueValueKeys.has(key)) return;
       visit(child, here);
     });
   };
   visit(contract);
   if (forbidden.length) {
     throw new Error(`V2.7 form contract leaked frontend implementation identity: ${JSON.stringify(forbidden)}`);
+  }
+}
+
+function assertProjectLedgerJourney(label, captured) {
+  const model = String(captured.form?.pageInfo?.model || '');
+  const recordId = Number(captured.formParams?.record_id || 0);
+  const actionId = String(captured.formParams?.action_id || '');
+  const menuId = String(captured.formParams?.menu_id || '');
+  if (!recordId || !actionId || !menuId) {
+    throw new Error(`${label}: Form request is missing record/action/menu identity`);
+  }
+  if (
+    captured.formState.state !== 'ok'
+    || captured.formState.model !== model
+    || captured.formState.record !== String(recordId)
+    || captured.formState.action !== actionId
+    || captured.formState.menu !== menuId
+  ) {
+    throw new Error(`${label}: Form runtime identity mismatch ${JSON.stringify({
+      formState: captured.formState,
+      expected: { state: 'ok', model, record: String(recordId), action: actionId, menu: menuId },
+    })}`);
+  }
+  if (String(captured.listParams?.action_id || '') !== actionId) {
+    throw new Error(`${label}: list and Form action identity differ`);
+  }
+  const code = contractDescriptor(captured.form, 'project_code');
+  const date = contractDescriptor(captured.form, 'date_start');
+  const manager = contractDescriptor(captured.form, 'manager_id');
+  if (code?.semanticType !== 'text' || code?.readonly !== true) {
+    throw new Error(`${label}: project_code contract semantics are incomplete`);
+  }
+  if (date?.semanticType !== 'date') {
+    throw new Error(`${label}: date_start date semantic is missing`);
+  }
+  if (manager?.semanticType !== 'relation' || manager?.relationEntry?.can_read !== true) {
+    throw new Error(`${label}: manager_id relation semantics are incomplete`);
+  }
+  if (
+    captured.fieldChecks.project_code?.state !== 'readonly'
+    || captured.fieldChecks.date_start?.type !== 'date'
+    || captured.fieldChecks.manager_id?.type !== 'many2one'
+  ) {
+    throw new Error(`${label}: rendered representative field semantics mismatch ${JSON.stringify(
+      captured.fieldChecks,
+    )}`);
   }
 }
 
@@ -296,34 +416,29 @@ async function renderViewport(browser, viewport) {
   });
   const matrix = await validateCompatMatrix(page, token);
   const contractV2Matrix = await validateContractV2Matrix(page, token);
-  const projectLedgerContracts = viewport.name === 'desktop'
-    ? await captureProjectLedgerContracts(page)
-    : null;
-  if (projectLedgerContracts) {
-    assertProjectLedgerRowNavigation(projectLedgerContracts.list);
-    assertSemanticContractOnly(projectLedgerContracts.form);
-  }
+  const projectLedgerContracts = await captureProjectLedgerContracts(page, viewport);
+  assertProjectLedgerRowNavigation(projectLedgerContracts.list);
+  assertSemanticContractOnly(projectLedgerContracts.form);
+  assertProjectLedgerJourney(`${viewport.name}.projects.ledger`, projectLedgerContracts);
   const uiConsoleErrors = [...consoleErrors];
   const uiPageErrors = [...pageErrors];
-  if (viewport.name === 'desktop') {
-    fs.writeFileSync(
-      path.join(ARTIFACT_DIR, 'ui-contract-v2-project-list.json'),
-      `${JSON.stringify(projectLedgerContracts.list, null, 2)}\n`,
-      'utf8',
-    );
-    fs.writeFileSync(
-      path.join(ARTIFACT_DIR, 'ui-contract-v2-project-form.json'),
-      `${JSON.stringify(projectLedgerContracts.form, null, 2)}\n`,
-      'utf8',
-    );
-  }
+  fs.writeFileSync(
+    path.join(ARTIFACT_DIR, `ui-contract-v2-project-list-${viewport.name}.json`),
+    `${JSON.stringify(projectLedgerContracts.list, null, 2)}\n`,
+    'utf8',
+  );
+  fs.writeFileSync(
+    path.join(ARTIFACT_DIR, `ui-contract-v2-project-form-${viewport.name}.json`),
+    `${JSON.stringify(projectLedgerContracts.form, null, 2)}\n`,
+    'utf8',
+  );
   await context.close();
   return {
     viewport,
     result,
     matrix,
     contractV2Matrix,
-    projectLedgerForm: projectLedgerContracts?.form || null,
+    projectLedgerForm: projectLedgerContracts.form,
     projectLedgerContracts,
     consoleErrors: uiConsoleErrors,
     pageErrors: uiPageErrors,
@@ -494,8 +609,15 @@ async function main() {
         project_ledger_form: run.projectLedgerForm ? {
           action_rules: run.projectLedgerForm.actionContract?.actionRuleList?.length || 0,
           layout_contract_present: Boolean(run.projectLedgerForm.layoutContract),
-          runtime_state: run.projectLedgerContracts?.formState || null,
-          screenshot: run.projectLedgerContracts?.screenshot || '',
+          runtime_state: run.projectLedgerContracts.formState,
+          clicked_record_id: Number(run.projectLedgerContracts.formParams.record_id || 0),
+          action_id: run.projectLedgerContracts.formParams.action_id,
+          menu_id: run.projectLedgerContracts.formParams.menu_id,
+          screenshots: {
+            list: run.projectLedgerContracts.listScreenshot,
+            form: run.projectLedgerContracts.screenshot,
+          },
+          field_checks: run.projectLedgerContracts.fieldChecks,
         } : null,
         action_carrier: (() => {
           const orchestration = run.matrix.current_page_block_action.body?.data?.page_orchestration;

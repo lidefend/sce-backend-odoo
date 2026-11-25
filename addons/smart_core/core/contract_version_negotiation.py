@@ -24,6 +24,8 @@ KNOWN_CARRIERS = (
     PAGE_BLOCK_ACTION_CAPABILITY,
 )
 STABLE_CLIENT_TYPES = ("web_pc", "wx_mini", "harmony_h5")
+INTERNAL_CLIENT_TYPE = "web_pc"
+INTERNAL_ACCEPTED_CONTRACT_VERSIONS = ("2.7.x",)
 
 REASON_CONTRACT_VERSION_UNSUPPORTED = "CONTRACT_VERSION_UNSUPPORTED"
 
@@ -148,6 +150,33 @@ def carrier_enabled(negotiation: dict[str, Any], carrier: str) -> bool:
     carriers = negotiation.get("carriers") if isinstance(negotiation, dict) else {}
     row = carriers.get(carrier) if isinstance(carriers, dict) else {}
     return bool(isinstance(row, dict) and row.get("enabled") is True)
+
+
+def with_internal_client_contract(
+    params: Any = None,
+    *,
+    client_type: Any = None,
+    capabilities: Any = None,
+) -> dict[str, Any]:
+    """Declare the protocol identity of a trusted backend-to-backend call.
+
+    This helper is only for internal consumers of a contract handler. External
+    requests must still declare their identity themselves, and explicit values
+    supplied by a caller are preserved so old or malformed declarations remain
+    fail-closed.
+    """
+
+    resolved = dict(params) if isinstance(params, dict) else {}
+    resolved.setdefault("client_type", _text(client_type) or INTERNAL_CLIENT_TYPE)
+    resolved.setdefault(
+        "accepted_contract_versions",
+        list(INTERNAL_ACCEPTED_CONTRACT_VERSIONS),
+    )
+    resolved.setdefault(
+        "client_contract_capabilities",
+        list(capabilities) if isinstance(capabilities, (list, tuple, set)) else [],
+    )
+    return resolved
 
 
 def negotiate_payload(

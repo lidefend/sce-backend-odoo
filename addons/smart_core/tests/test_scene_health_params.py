@@ -4,6 +4,7 @@ import sys
 import types
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 class _BaseIntentHandler:
@@ -16,10 +17,13 @@ class _BaseIntentHandler:
 
 
 class _SystemInitHandler:
+    last_payload = None
+
     def __init__(self, *args, **kwargs):
         pass
 
     def handle(self, payload=None, ctx=None):
+        type(self).last_payload = payload
         return {"ok": True, "data": {"system": "ready"}}
 
 
@@ -88,6 +92,37 @@ class TestSceneHealthParams(unittest.TestCase):
 
         self.assertTrue(result["ok"])
         self.assertIn("details", result["data"])
+        params = _SystemInitHandler.last_payload["params"]
+        self.assertEqual(params["client_type"], "web_pc")
+        self.assertEqual(params["accepted_contract_versions"], ["2.7.x"])
+        self.assertEqual(params["client_contract_capabilities"], [])
+
+    def test_system_init_failure_is_propagated(self):
+        module = _load_handler()
+
+        class _FailingSystemInit:
+            def __init__(self, *args, **kwargs):
+                pass
+
+            def handle(self, payload=None, ctx=None):
+                return {
+                    "ok": False,
+                    "error": {
+                        "code": 409,
+                        "message": "contract identity rejected",
+                        "reason_code": "CONTRACT_VERSION_UNSUPPORTED",
+                    },
+                }
+
+        with patch.object(module, "SystemInitHandler", _FailingSystemInit):
+            result = module.SceneHealthHandler(context={"trace_id": "trace"}).handle(
+                payload={"params": {}},
+            )
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["code"], 409)
+        self.assertIn("contract identity rejected", result["error"]["message"])
+        self.assertIsNone(result["data"])
 
     def test_invalid_company_id_returns_bad_request(self):
         module = _load_handler()

@@ -2263,8 +2263,7 @@ verify.backend.contract_slo_telemetry.persistence: guard.prod.forbid
 # real running deployment.
 .PHONY: verify.backend.contract_supply_chain
 verify.backend.contract_supply_chain: guard.prod.forbid \
-	verify.backend.contract_supply_chain.unit \
-	verify.backend.contract_supply_chain.compatibility.unit
+	verify.backend.contract_supply_chain.unit
 	@true
 
 .PHONY: verify.backend.contract_supply_chain.unit

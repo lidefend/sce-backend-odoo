@@ -545,8 +545,8 @@ export interface ContractV2FormFieldDescriptor extends ContractV2Dictionary {
   relation?: string;
   relation_field?: string;
   selection?: Array<[string, string]>;
-  relation_entry?: ContractV2Dictionary;
-  widget_options?: ContractV2Dictionary;
+  relationEntry?: ContractV2Dictionary;
+  widgetOptions?: ContractV2Dictionary;
   subview?: ContractV2Dictionary;
   filename?: string;
 }

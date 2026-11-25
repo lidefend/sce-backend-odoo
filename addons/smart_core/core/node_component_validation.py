@@ -6,6 +6,7 @@ The caller supplies the authoritative pre-extension tree, never a wire proof.
 from copy import deepcopy
 
 from .contract_lifecycle import payload_sha256
+from .contract_runtime.semantic_registry_generated import FIELD_SEMANTICS, NODE_SEMANTICS
 from .form_configuration_compiler import FormConfigurationError
 from .record_error_proof import validate_record_errors, _context
 
@@ -43,10 +44,65 @@ _SOURCE_PROOF_KEYS = (
     "attributes",
     "children",
 )
+_OPAQUE_BUSINESS_BRANCHES = frozenset({
+    "dataContract", "dataPatch", "dataMeta", "mainData", "datasets",
+    "payload", "actionPayload", "context", "domain", "options", "optionsRaw",
+    "values", "value", "value_json", "valueJson",
+})
 
 
 def fail(code, path):
     raise FormConfigurationError(code, path)
+
+
+def _semantic_declaration_objects(value, path="$"):
+    if isinstance(value, list):
+        for index, item in enumerate(value):
+            yield from _semantic_declaration_objects(item, f"{path}[{index}]")
+        return
+    if not isinstance(value, dict):
+        return
+    if "semanticType" in value:
+        yield value, path
+    for key, child in value.items():
+        if key in _OPAQUE_BUSINESS_BRANCHES:
+            continue
+        yield from _semantic_declaration_objects(child, f"{path}.{key}")
+
+
+def _is_field_semantic_position(node):
+    node_type = str(node.get("type") or node.get("containerType") or "").strip().lower()
+    if node_type == "field":
+        return True
+    if node_type:
+        return False
+    return bool(
+        node.get("fieldDescriptor")
+        or node.get("widgetType")
+        or node.get("fieldType")
+        or node.get("fieldCode")
+    )
+
+
+def validate_declared_semantics(contract):
+    """Validate semantic identity and applicability before implementation lookup."""
+
+    for node, path in _semantic_declaration_objects(contract):
+        semantic_type = node.get("semanticType")
+        if type(semantic_type) is not str or not semantic_type:
+            fail("NODE_SEMANTIC_MISSING", path + ".semanticType")
+        if _is_field_semantic_position(node):
+            if semantic_type in NODE_SEMANTICS:
+                fail("NODE_SEMANTIC_CONTEXT_INVALID", path + ".semanticType")
+            if semantic_type not in FIELD_SEMANTICS:
+                fail("NODE_SEMANTIC_UNKNOWN", path + ".semanticType")
+            if FIELD_SEMANTICS[semantic_type].get("appliesTo") != "field":
+                fail("NODE_SEMANTIC_CONTEXT_INVALID", path + ".semanticType")
+            continue
+        if semantic_type in FIELD_SEMANTICS:
+            fail("NODE_SEMANTIC_CONTEXT_INVALID", path + ".semanticType")
+        if semantic_type not in NODE_SEMANTICS:
+            fail("NODE_SEMANTIC_UNKNOWN", path + ".semanticType")
 
 
 def _valid_payload_source(value):
@@ -513,6 +569,7 @@ def validate_final_nodes(
     collect_proof=False,
 ):
     """Validate all declarations before modifying visibility. Re-run per request."""
+    validate_declared_semantics(contract)
     tree = (contract.get("layoutContract") or {}).get("containerTree", [])
     rows, originals = list(walk(tree)), list(walk(native_tree))
     declarations = [(node, path) for node, path in rows if node.get("semanticType") in KEYS]

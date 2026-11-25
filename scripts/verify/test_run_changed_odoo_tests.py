@@ -28,6 +28,11 @@ class RunChangedOdooTestsTest(unittest.TestCase):
                 mock.patch.object(runner, "delta_paths", return_value=paths), \
                 mock.patch.object(
                     runner.changed_odoo_tests,
+                    "odoo_test_classes",
+                    return_value=[object()],
+                ), \
+                mock.patch.object(
+                    runner.changed_odoo_tests,
                     "selection",
                     return_value=["/module:TestOne"],
                 ) as selection:
@@ -41,6 +46,25 @@ class RunChangedOdooTestsTest(unittest.TestCase):
             },
         )
         self.assertEqual(selection.call_count, 3)
+
+    def test_plan_ignores_offline_unittest_files(self):
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.object(
+                    runner,
+                    "resolve_run",
+                    return_value=("run", {"baseline_sha": "a" * 40}),
+                ), \
+                mock.patch.object(
+                    runner,
+                    "delta_paths",
+                    return_value=["addons/smart_core/tests/test_offline.py"],
+                ), \
+                mock.patch.object(
+                    runner.changed_odoo_tests,
+                    "odoo_test_classes",
+                    return_value=[],
+                ):
+            self.assertEqual(runner.plan(Path(directory)), {})
 
     def test_empty_plan_and_first_failure_fail_closed(self):
         with tempfile.TemporaryDirectory() as directory:

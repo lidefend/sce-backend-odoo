@@ -91,6 +91,9 @@ class TestScenarioNavigationMaintenance(TransactionCase):
             self.env.context, lang="zh_CN", allowed_company_ids=[actor.company_id.id]))
         result = SystemInitHandler(env=actor_env).handle({"params": {
             "scene": "web", "with_preload": False, "scene_ready_mode": "registry",
+            "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": [],
         }})
         self.assertTrue(result.ok)
         self.role_surface = result.data.get("role_surface") or {}
