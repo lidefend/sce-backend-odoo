@@ -30,7 +30,7 @@ construction-owned policy.
 | --- | --- | --- |
 | Import-time registration facts | Construction scope models, reason metadata, governance profiles, action maps. | Dedicated facts modules once import side effects are audited. |
 | Project layout projection | Project form node relabeling, user_id pruning, responsibility/collaboration group injection. | `core_extension_project_layout.py`. |
-| Contract normalizers | General tax form, enterprise/company form, diary form, workflow contract projection. | Small projection modules by form family. |
+| Contract normalizers | General tax form and declared presentation; workflow business facts. | Small projection modules by form family. |
 | Policy and maps | Role surfaces, nav maps, server actions, file/API allowlists, unlink policies. | Policy map modules with pure accessors. |
 | Capability and system-init rows | Home blocks, role entries, task/payment/risk/project action rows. | Fact builder modules by screen family. |
 | Compatibility hooks | smart_core hook wrappers. | Keep in `core_extension.py` as facade. |
@@ -46,7 +46,7 @@ construction-owned policy.
 | `construction_core_extension_capability_rows_split_guard.py` | Capability row normalization extraction, identity/ownership/UI/binding/permission/runtime envelope preservation, line lock, and pure-normalization boundary. |
 | `construction_core_extension_hook_facts_split_guard.py` | Static hook fact extraction, business config refs, low-code/menu delivery refs, product/app shell/scene facts, acceptance nav contract, line lock, and static-facts boundary. |
 | `construction_core_extension_policy_accessors_split_guard.py` | Policy accessor extraction, file model contribution scan, API mutation/create/unlink/search-field policies, contract tax quick-create detection, line lock, and read-side policy boundary. |
-| `construction_core_extension_contract_normalizers_split_guard.py` | Contract normalizer extraction, construction diary/general contract tax/company form projection, general contract form policy/alias helpers, helper delegation, workflow-injection boundary, line lock, and projection-only boundary. |
+| `construction_core_extension_contract_normalizers_split_guard.py` | Contract normalizer extraction, construction diary/general contract tax/company form projection, general contract form policy/alias helpers, helper delegation, P1 workflow-fact boundary, line lock, and projection-only boundary. |
 | `construction_core_extension_intent_handlers_split_guard.py` | Intent handler contribution extraction, lazy handler import mapping, approval-policy intent preservation, facade registry boundary, line lock, and no env/registry side effects. |
 | `construction_core_extension_service_builders_split_guard.py` | Service builder extraction, lazy service class/factory imports, facade hook preservation, line lock, and no ORM/registry side effects. |
 | `construction_core_extension_actor_roles_split_guard.py` | Actor role resolver extraction, explicit role XMLID parsing, capability-derived release roles, line lock, and no ORM/registry side effects. |
@@ -162,9 +162,11 @@ Stage 8 is complete when:
 - `core_extension_contract_normalizers.py` owns projection-only contract
   normalizers for construction diary form, general contract tax field
   migration, and general contract company form layout;
-- `core_extension.py` keeps public normalizer wrappers and the workflow
-  injection helper because workflow projection reads `env`, registry, records,
-  and workflow services;
+- `core_extension.py` keeps public normalizer wrappers and supplies workflow
+  profiles, evidence and approval-required facts through the registered hooks;
+- P0 owns canonical workflow contract projection in
+  `smart_core/core/workflow_contract_injection.py`; P1 must not restore the
+  retired `_sc_inject_workflow_contract` helper;
 - the extracted module remains pure contract projection: no ORM access, HTTP
   calls, routing, registration side effects, file IO, permission inference, or
   workflow service access;
@@ -289,8 +291,8 @@ Next candidates should be read-only first:
 
 - import-time registration facts after module load order and consumers are
   locked by tests;
-- workflow contract projection after env/service transaction boundaries are
-  documented and covered by behavior tests.
+- workflow fact hooks after env/service transaction boundaries are documented
+  and covered by behavior tests; canonical workflow projection remains in P0.
 
 Do not move import-time registration side effects until their module load order
 and external hook consumers are explicitly locked by tests.

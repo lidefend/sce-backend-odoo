@@ -6,9 +6,9 @@
     "gated": 5,
     "on_demand": 96,
     "unwired": 135,
-    "odoo_tag_declarations": 473,
+    "odoo_tag_declarations": 474,
     "gated_declarations": 107,
-    "uncovered_declarations": 366,
+    "uncovered_declarations": 367,
     "ci_unit_scripts": 24,
     "ci_unit_scripts_wired": 24,
     "ci_unit_scripts_unwired": 0
@@ -332,6 +332,22 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "acceptance_business_scene_lifecycle",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 4,
+      "files": [
+        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle,acceptan"
+      ],
+      "disposition": "class-selected"
+    },
+    {
       "group": "smoke",
       "status": "on-demand",
       "kind": "odoo_tag",
@@ -348,22 +364,6 @@
         "make:verify.smart_core.intent_smoke.orm :: /TestIntentSmoke (class selection)"
       ],
       "disposition": "wire-pending"
-    },
-    {
-      "group": "acceptance_business_scene_lifecycle",
-      "status": "on-demand",
-      "kind": "odoo_tag",
-      "declarations": 3,
-      "files": [
-        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
-        "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py",
-        "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py"
-      ],
-      "owner": "construction-product",
-      "evidence": [
-        "scripts/test/frontend_acceptance_fixture_orm.sh :: acceptance_fixture_execution_freeze,acceptance_business_scene_lifecycle,acceptan"
-      ],
-      "disposition": "class-selected"
     },
     {
       "group": "sc_upgrade",

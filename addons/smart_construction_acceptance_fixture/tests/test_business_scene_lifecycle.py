@@ -433,3 +433,44 @@ class TestBusinessSceneLifecycle(TransactionCase):
         self.assertEqual(result['dependencies'][0]['evidence']['readiness_kind'], 'orchestration')
         self.assertTrue(result['publication']['scene_composition']['applicable'])
         self.assertFalse(result['enable_allowed'])
+
+
+@tagged("post_install", "-at_install", "acceptance_business_scene_lifecycle")
+class TestFixtureCompanyWorkProjection(TransactionCase):
+    """The browser's B-company work item must exist under the real fixture ACLs."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        ensure_acceptance_fixture_for_local_test(cls.env)
+
+    def test_finance_initiated_item_survives_company_selection(self):
+        from odoo.addons.smart_construction_core.services.review_work_item_service import CurrentWorkItemService
+        finance = self.env.ref('smart_construction_acceptance_fixture.fe_user_finance')
+        company_a = self.env.ref('smart_construction_acceptance_fixture.fe_company_a')
+        company_b = self.env.ref('smart_construction_acceptance_fixture.fe_company_b')
+        request_b = self.env.ref('smart_construction_acceptance_fixture.fe_request_c_001')
+        self.assertEqual(request_b.create_uid, finance)
+        self.assertEqual(request_b.company_id, company_b)
+        for allowed in ([company_a.id, company_b.id], [company_b.id]):
+            with self.subTest(allowed=allowed):
+                context = {'allowed_company_ids': allowed, 'company_id': company_b.id}
+                caller = self.env(user=finance, context=context, su=False)
+                workspace = CurrentWorkItemService(caller, params={'product_workspace': True}, context=context).build()
+                initiated = next(row for row in workspace['sections'] if row['key'] == 'initiated')
+                self.assertIn(request_b.id, [row['target']['record_id'] for row in initiated['items']], workspace)
+                self.assertEqual(workspace['query_scope']['company_ids'], [company_b.id])
+
+    def test_license_does_not_add_native_company_membership_and_can_be_revoked(self):
+        finance = self.env.ref('smart_construction_acceptance_fixture.fe_user_finance')
+        member = self.env.ref('smart_construction_acceptance_fixture.fe_user_project_a_member')
+        company_a = self.env.ref('smart_construction_acceptance_fixture.fe_company_a')
+        company_b = self.env.ref('smart_construction_acceptance_fixture.fe_company_b')
+        self.assertEqual(set(finance._sc_authorized_company_ids()), {company_a.id, company_b.id})
+        self.assertEqual(member._sc_authorized_company_ids(), [company_a.id])
+        plan = self.env.ref('smart_construction_acceptance_fixture.fe_multi_company_plan')
+        plan.multi_company_enabled = False
+        self.assertEqual(finance._sc_authorized_company_ids(), [company_a.id])
+        caller = self.env(user=finance, context={'allowed_company_ids': [company_b.id]}, su=False)
+        with self.assertRaisesRegex(AccessError, 'PLATFORM_COMPANY_NOT_AUTHORIZED'):
+            caller['payment.request'].search([])

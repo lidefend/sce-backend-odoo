@@ -75,3 +75,19 @@ P4 修复守卫仅识别当前终端解码器中的真实 requiredRecord 调用�
 定向入口 delivery_hardening.guard、standard_preview.unit 全部通过，包含 18/40/140 项 Python 测试与 42 项 Node 测试；最终 ci.local.iteration 3 个目标通过。新增回归模拟缺失协商时返回409的接收方，验证保留、显式错误覆盖被拒绝、不同意图不泄漏启动参数及原始参数不被修改。
 
 本地证据不替代浏览器：新候选通过现有 candidate.required_checks.dispatch 进入完整发布候选验收，包含真实浏览器步骤；通过后受保护合并，再核验新主线全量。前端产品专题仍保持 planned。
+
+
+### 完整候选暴露的 P1 工作流职责守卫残留
+
+候选 31a352f066b69aafc12d43b7a8e72ea238d4641e 的完整 professional_quality_gate 45855811366 在契约架构套件失败：normalizers 拆分守卫仍要求已退役的 P1 工作流注入函数。完整本地套件继续发现责任图守卫存在同源断言。四个远端后端分片均通过，不能把这两个 P4 陈旧断言归因于 ORM 回归。
+
+保留 P1 事实钩子、P0 统一工作流投影的现有设计；更新两处守卫及职责文档，禁止恢复退役注入器，补齐两守卫和文档的本地选测映射。完整 verify.contract.architecture.suite 通过，277 项选测执行器测试通过，缺少事实接口与恢复旧注入器的两项负例均被拒绝。原始证据见 run.contract_normalizer_guard_repair。新候选尚须远端成功；此处不宣称主线已合格。
+
+
+### J11 公司切换 Fixture 许可前提修复
+
+浏览器候选 31a352f06 已越过原协议拒绝，performance probe、J09、J10 通过，J11 公司 B 的 My Work 列表为空。一次性 ORM 在真实 Fixture 上复现：原生 A/B 公司范围查询 B 返回空；原生仅 B 范围触发 PLATFORM_COMPANY_NOT_AUTHORIZED。Fixture 只维护原生公司成员，未配置平台多公司订阅。
+
+补充 Fixture 自有方案及仅绑定主公司 A 的有效订阅，明确支持本 Fixture 的 A/B 切换前提；不修改平台默认方案或生产许可检查。新增真实回归验证 B 发起记录、原生成员交集及撤销许可立即拒绝。首次修复执行两项测试均通过，但运行期间登记元数据改变了全树指纹，受管回执拒绝成功；因此冻结工作树后重跑同一两项，保留无效回执而不改绿。
+
+最终本地回执：2 项专门 ORM 回归和受影响的 16 项 Fixture ORM 均通过；最后 ci.local.iteration 执行 8 个目标并复用 1 个目标，完整通过，ORM 16 项复用未重跑。快照已按登记入口更新。日志 .runtime/main-ci-1015-complete-iteration.log；新候选远端及合并后主线资格仍待完成。

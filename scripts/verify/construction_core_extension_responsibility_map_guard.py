@@ -17,6 +17,9 @@ PUBLIC_ENTRY_POINTS = [
     "get_capability_contributions",
     "get_system_init_fact_contributions",
     "smart_core_extend_system_init",
+    "smart_core_workflow_contract_profiles",
+    "smart_core_workflow_contract_evidence",
+    "smart_core_workflow_approval_required",
 ]
 
 
@@ -82,7 +85,7 @@ def main() -> int:
         "`core_extension.py` is locked at `<=1787` lines",
         "`core_extension.py` is locked at `<=1849` lines",
         "Do not move import-time registration side effects",
-        "workflow projection reads `env`, registry, records",
+        "P0 owns canonical workflow contract projection",
         "`smart_core_register(registry)` because registry writes",
         "projection-only",
     ]:
@@ -161,8 +164,8 @@ def main() -> int:
             errors.append("core_extension.py must delegate form contract policy helper")
         if "return _contract_normalizers.form_field_aliases(payload)" not in core:
             errors.append("core_extension.py must delegate form field alias helper")
-        if "def _sc_inject_workflow_contract(env, contract, source, *, model, view_type):" not in core:
-            errors.append("core_extension.py must keep workflow injection boundary in facade")
+        if "_sc_inject_workflow_contract" in functions:
+            errors.append("P1 must supply workflow facts, not restore canonical workflow injection")
         if "core_extension_intent_handlers as _intent_handlers" not in core:
             errors.append("core_extension.py must import intent handlers module")
         if "return _intent_handlers.get_intent_handler_contributions()" not in core:
