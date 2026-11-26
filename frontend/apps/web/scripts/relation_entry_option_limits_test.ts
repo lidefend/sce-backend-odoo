@@ -4,10 +4,14 @@ import {
   relationEntry,
   relationInlineCreate,
   relationModel,
+  relationOptionFromRow,
   relationOptionsLimit,
+  relationOptionsFromRecords,
   relationOptionsSearchLimit,
   relationOptionsWithSelectedFallback,
 } from '../src/pages/contractForm/relationDescriptor';
+import { parseMany2oneDisplay } from '../src/pages/contractForm/fieldUtils';
+import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime';
 import { nativeNodeFieldDescriptor } from '../src/pages/contractForm/nativeLayoutUtils';
 import { resolveContractV2FormFieldMap } from '../src/app/contracts/v2/store';
 import { isContractGapError } from '../src/app/contract/contractGap';
@@ -149,9 +153,45 @@ assert.equal(relationOptionsSearchLimit(storeEntry as Record<string, unknown>), 
 assert.equal(relationCreateMode(storeField), 'quick', 'store projection: quick create must remain available');
 assert.equal(relationInlineCreate(storeField).enabled, true, 'store projection: inline create must remain available');
 assert.deepEqual(
-  relationOptionsWithSelectedFallback([], [42, '已有负责人']),
-  [{ id: 42, label: '#42' }],
-  'store projection: selected IDs without cached labels must retain a hydration fallback',
+  relationOptionsWithSelectedFallback([]),
+  [],
+  'store projection: selected IDs without authoritative labels must not synthesize a #id label',
+);
+const missingRelationLabel = (() => {
+  try {
+    relationOptionFromRow({ id: 42 }, descriptorWith({ model: 'project.project', can_read: true }));
+  } catch (error) {
+    return error;
+  }
+  return null;
+})();
+assert.ok(isContractGapError(missingRelationLabel), 'relation rows without an authoritative label must stop');
+assert.equal(
+  (missingRelationLabel as ContractGapError).defect.missing,
+  'relation_option.42.label',
+  'the stop must name the missing relation display label',
+);
+assert.equal(parseMany2oneDisplay(42), null, 'a bare many2one identity has no display label');
+assert.equal(parseMany2oneDisplay([42, '']), null, 'an empty many2one display label is not a business label');
+const relationRuntime = useRelationRuntime();
+await assert.rejects(
+  relationRuntime.queryRelationOptions({
+    fieldName: 'project_id',
+    keyword: '',
+    relation: 'project.project',
+    canRead: true,
+    hasDynamicFallback: false,
+    currentValue: null,
+    optionsLimit: DECLARED_LIMIT,
+    optionsSearchLimit: DECLARED_SEARCH_LIMIT,
+    fetchOptions: async () => relationOptionsFromRecords(
+      [{ id: 42 }],
+      descriptorWith({ model: 'project.project', can_read: true }),
+    ),
+    isDeniedError: () => false,
+  }),
+  { name: 'ContractGapError' },
+  'candidate loading must surface a missing relation label instead of swallowing the contract defect',
 );
 assert.equal(
   Object.prototype.hasOwnProperty.call(storeField as object, 'relation_entry'),

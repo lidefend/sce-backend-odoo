@@ -255,6 +255,14 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         self.assertTrue(any("conflicting relation and relationEntry models" in failure for failure in failures))
         self.assertTrue(any("compare both declared carriers" in failure for failure in failures))
 
+    def test_relation_label_synthesis_fails(self):
+        failures = guard.validate(lambda path: (
+            "export function relationOptionFromRow() { return { label: `#${id}` }; }"
+            if path == "pages/contractForm/relationDescriptor.ts"
+            else source(path)
+        ))
+        self.assertTrue(any("#id label" in failure for failure in failures))
+
     def test_hard_coded_duration_rounding_fails(self):
         failures = guard.validate(lambda path: source(
             path,

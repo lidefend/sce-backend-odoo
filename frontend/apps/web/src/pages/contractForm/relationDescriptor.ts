@@ -133,7 +133,14 @@ export function relationOptionFromRow(row: Record<string, unknown>, descriptor?:
   const entry = relationEntry(descriptor);
   const displayField = String(entry?.displayField || '').trim();
   const displayValue = displayField ? row[displayField] : '';
-  const label = String(displayValue || row.display_name || row.name || `#${id}`).trim();
+  const label = cleanRelationDisplayLabel(displayValue || row.display_name || row.name);
+  if (!label) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `relation_option.${Math.trunc(id)}.label`,
+      requiredDeclarationLayer: 'P0:smart_core:relation_display_projection',
+    }, `关系记录 ${Math.trunc(id)} 缺少权威显示标签`);
+  }
   const colorField = relationColorField(descriptor);
   const colorValue = colorField ? Number(row[colorField]) : NaN;
   const switchContract = entry?.switchContext?.enabled ? entry.switchContext : null;
@@ -144,7 +151,7 @@ export function relationOptionFromRow(row: Record<string, unknown>, descriptor?:
     : {};
   return {
     id: Math.trunc(id),
-    label: cleanRelationDisplayLabel(label, id),
+    label,
     ...(switchCode ? { switchContext: { code: switchCode, label: switchLabel || label, defaultValues } } : {}),
     ...(Number.isFinite(colorValue) ? { color: Math.trunc(colorValue) } : {}),
   };
@@ -156,17 +163,17 @@ export function relationOptionsFromRecords(records: unknown, descriptor?: FieldD
     .filter((item): item is RelationOption => Boolean(item));
 }
 
-export function relationOptionsWithSelectedFallback(options: RelationOption[] | undefined, value: unknown): RelationOption[] {
-  const rows = Array.isArray(options) ? options.filter((item): item is RelationOption => Boolean(item)) : [];
-  if (rows.length) return rows;
-  const ids = normalizeRelationIds(value);
-  return ids.map((id) => ({ id, label: `#${id}` }));
+export function relationOptionsWithSelectedFallback(options: RelationOption[] | undefined): RelationOption[] {
+  return Array.isArray(options) ? options.filter((item): item is RelationOption => Boolean(item)) : [];
 }
 
 export function selectedRelationOptionsFromValue(options: RelationOption[] | undefined, value: unknown): RelationOption[] {
-  const rows = relationOptionsWithSelectedFallback(options, value);
+  const rows = relationOptionsWithSelectedFallback(options);
   const byId = new Map(rows.map((option) => [option.id, option]));
-  return normalizeRelationIds(value).map((id) => byId.get(id) || { id, label: `#${id}` });
+  return normalizeRelationIds(value).flatMap((id) => {
+    const option = byId.get(id);
+    return option ? [option] : [];
+  });
 }
 
 export function mergeRelationOptionRows(current: RelationOption[] | undefined, incoming: RelationOption[]) {
@@ -607,7 +614,14 @@ export function relationSearchRowsFromRecords(
       const id = Number(values.id);
       if (!Number.isFinite(id) || id <= 0) return null;
       const firstColumn = columns[0]?.name || '';
-      const label = cleanRelationDisplayLabel(values.display_name || values.name || values[firstColumn], id);
+      const label = cleanRelationDisplayLabel(values.display_name || values.name || values[firstColumn]);
+      if (!label) {
+        throw contractGapError({
+          kind: 'contract_defect',
+          missing: `relation_search_row.${Math.trunc(id)}.label`,
+          requiredDeclarationLayer: 'P0:smart_core:relation_search_display_projection',
+        }, `关系搜索结果 ${Math.trunc(id)} 缺少权威显示标签`);
+      }
       return { id: Math.trunc(id), label, values };
     })
     .filter((item): item is RelationSearchRow => Boolean(item));

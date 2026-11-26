@@ -117,6 +117,9 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("relation target consumers do not reject conflicting relation and relationEntry models")
     if "relation !== entryModel" not in relation_descriptor:
         failures.append("relation target consistency does not compare both declared carriers")
+    relation_field_utils = _read("pages/contractForm/fieldUtils.ts", read_text)
+    if "#${id}" in relation_descriptor or "#${id}" in relation_field_utils:
+        failures.append("relation display still synthesizes a #id label from record identity")
 
     display = _read("utils/display.ts", read_text)
     if "presentDeclaredBusinessValue({" not in display:

@@ -45,9 +45,12 @@
     "frontend/apps/web/src/pages/ContractFormPage.vue",
     "frontend/apps/web/src/pages/ListPage.vue",
     "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+    "frontend/apps/web/src/pages/contractForm/fieldUtils.ts",
     "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
     "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
     "frontend/apps/web/src/pages/contractForm/types.ts",
+    "frontend/apps/web/src/pages/contractForm/useRelationRuntime.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
     "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
     "frontend/apps/web/src/utils/display.ts",
     "frontend/apps/web/src/utils/fieldSemantics.ts",
@@ -255,9 +258,12 @@
       "target": "verify.frontend.professional_relation_field.unit",
       "inputs": [
         "frontend/packages/schema/src/index.ts",
+        "frontend/apps/web/src/pages/contractForm/fieldUtils.ts",
         "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
         "frontend/apps/web/src/components/professional-fields/professionalRelationFieldModel.ts",
         "frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts",
+        "frontend/apps/web/src/pages/contractForm/useRelationRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
         "frontend/apps/web/scripts/professional_relation_field_model_test.ts",
         "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
         "frontend/apps/web/scripts/relation_column_descriptor_authority_test.ts",
@@ -502,7 +508,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue FC-01 by tracing authoritative relation-label consumption and eliminating synthetic #id fallbacks across selected many2one/many2many options; update the same run and do not inherit the historical 143-entry browser matrix.",
+  "next_exact_step": "Commit the relation-label authority candidate, rebuild the isolated clean runtime from that exact HEAD, verify health and identity readback, then rerun ci.local.iteration on the clean HEAD before continuing the remaining FC-01 semantic coverage matrix.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -866,6 +872,30 @@
       "static_checks": 5,
       "unmapped_paths": 0,
       "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
+    },
+    "fc01_relation_label_authority": {
+      "status": "passed",
+      "stage_identity": "924194a701f9fe84a01bfe284ef8f9ef09194908 plus the owned relation-label dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T235634Z-1228375-184515308/receipt.json",
+      "receipt_sha256": "2c1b77d3ba53468a66a1275a0ba8034f183a66ff0e1502733eb1d7d74d17833c",
+      "executed_targets": 31,
+      "reused_targets": 16,
+      "test_targets": 21,
+      "executed_test_count": 792,
+      "static_checks": 7,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "selected relation identities without authoritative labels no longer synthesize #id options",
+        "relation rows and search rows without display labels stop with ContractGapError",
+        "candidate loading and selected-label hydration propagate the contract gap instead of swallowing it",
+        "relation lifecycle, create/edit journeys, collection semantics and contract-basis checks remain green"
+      ],
+      "failure_recovery": [
+        "the first unified execution stopped at lint because obsolete compatibility parameters remained unused",
+        "the parameters were removed and the focused relation target plus lint were rerun before the final unified execution"
+      ],
+      "scope_limit": "Local targeted validation only; clean exact-HEAD runtime, remote PR CI, mainline qualification, the 143-entry browser matrix and user acceptance remain not_run."
     }
   }
 }

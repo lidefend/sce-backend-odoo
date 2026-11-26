@@ -424,6 +424,35 @@ clean 运行态权威回读：
 仍未执行 143 个业务入口的当前候选页面、角色或办理旅程，也未完成远端 PR CI、主线资格、
 部署和用户验收。
 
+### 2026-11-27 FC-01 relation label 权威消费收口
+
+继续核对 many2one/many2many 候选项与已选记录时发现，缺少权威显示标签时会生成 `#<id>`，
+检索结果也使用同类回退。这会把数据库主键冒充业务名称，违反契约缺声明即停机。
+
+本切片完成：
+
+- 已选 relation ID 没有权威标签时不再生成 `#id`，选择项只保留真实 label；
+- relation option 或 search row 缺少 `display_field/display_name/name` 标签时抛
+  `ContractGapError`；
+- 候选查询与选中标签水合对 `ContractGapError` 重新抛出，不再被一般请求错误处理吞掉；
+- `parseMany2oneDisplay` 对裸 ID 或空标签返回空，不合成业务文本；
+- 增加选项、搜索结果、异步候选加载和静态守卫负例；
+- `frontend_contract_basis_ledger.json` 新增 relation option label 权威绑定。
+
+首次统一入口在 relation 行为、契约与组件检查通过后停于 lint，原因是删除合成逻辑后遗留
+两个未消费兼容参数；移除参数并重跑 relation 目标与 lint 后，最终 `make ci.local.iteration`
+执行 31 个目标、复用 16 个未变目标，其中 21 个测试目标执行 792 项测试、7 项静态检查，
+`outside_scope=[]`、`unmapped_paths=0`，全部退出零。原始回执：
+
+`.runtime/frontend-dev-validation/executions/20261126T235634Z-1228375-184515308/receipt.json`
+
+回执 SHA256：
+`2c1b77d3ba53468a66a1275a0ba8034f183a66ff0e1502733eb1d7d74d17833c`。
+
+该证据只证明当前 dirty 候选的本地精准消费与治理检查。产品提交后仍需按新精确 HEAD
+重建 clean 前端与 Odoo 容器，并在 clean HEAD 重新执行本地增量入口。143 个业务入口的
+当前候选页面、角色或办理旅程仍未执行，远端 PR CI、主线资格、部署和用户验收均未完成。
+
 ### 2026-11-27 FC-01 relation target 一致性与选测归属收口
 
 继续检查关系声明链时确认，`fieldDescriptor.relation` 与 `relationEntry.model` 可能同时

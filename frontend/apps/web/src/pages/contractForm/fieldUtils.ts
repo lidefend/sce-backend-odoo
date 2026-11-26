@@ -119,9 +119,9 @@ export function normalizeRelationIds(value: unknown): number[] {
   return extractX2ManyIds(value);
 }
 
-export function cleanRelationDisplayLabel(value: unknown, id: number) {
+export function cleanRelationDisplayLabel(value: unknown) {
   const label = String(value || '').trim();
-  if (!label || label === 'display_name' || label === 'name') return `#${id}`;
+  if (!label || label === 'display_name' || label === 'name') return '';
   return label;
 }
 
@@ -129,14 +129,16 @@ export function parseMany2oneDisplay(value: unknown): RelationOption | null {
   if (Array.isArray(value)) {
     const id = Number(value[0]);
     if (!Number.isFinite(id) || id <= 0) return null;
-    const label = cleanRelationDisplayLabel(value[1], id);
+    const label = cleanRelationDisplayLabel(value[1]);
+    if (!label) return null;
     return { id: Math.trunc(id), label };
   }
   if (value && typeof value === 'object') {
     const row = value as Record<string, unknown>;
     const id = Number(row.id);
     if (!Number.isFinite(id) || id <= 0) return null;
-    const label = cleanRelationDisplayLabel(row.display_name || row.name, id);
+    const label = cleanRelationDisplayLabel(row.display_name || row.name);
+    if (!label) return null;
     return { id: Math.trunc(id), label };
   }
   return null;

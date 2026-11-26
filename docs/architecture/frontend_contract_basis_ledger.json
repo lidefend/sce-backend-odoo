@@ -380,6 +380,20 @@
       "regressionGuard": "verify.frontend.professional_relation_field.unit",
       "behaviourTest": "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
       "stopDetail": "关系字段声明的 relation 与 relationEntry.model 必须一致；前端不得静默选择其中一个作为第二套模型事实，冲突时以 ContractGapError 指向 relation_model_consistency 回声明层修复。"
+    },
+    {
+      "surface": "Relation option display label authority",
+      "declared": "relationEntry.display_field with target display_name/name and selected relation tuple label",
+      "declaredBy": "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+      "declaredMethod": "_build_relation_entry_for_field",
+      "declaredSymbol": "\"display_field\": display_field,",
+      "consumedBy": "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+      "consumedSymbol": "function relationOptionFromRow(row: Record<string, unknown>, descriptor?: FieldDescriptor)",
+      "onMissing": "stop",
+      "stopSymbol": "contractGapError",
+      "regressionGuard": "verify.frontend.professional_relation_field.unit",
+      "behaviourTest": "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
+      "stopDetail": "关系选项和已选记录只能显示契约指定 display_field 或权威 display_name/name；缺少显示标签时不得生成 #id，必须停机回声明/读取层补齐。"
     }
   ],
   "registeredMechanismExemptions": [

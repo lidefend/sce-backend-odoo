@@ -1,5 +1,6 @@
 import type { FieldDescriptor } from '@sc/schema';
 import { getCurrentScope, onScopeDispose, reactive, ref } from 'vue';
+import { isContractGapError } from '../../app/contract/contractGap';
 import type { RelationSearchDialogState } from './RelationSearchDialog.vue';
 import {
   closedRelationSearchDialogState,
@@ -40,7 +41,8 @@ export function useRelationRuntime() {
   }
 
   function relationOptionsForField(name: string, value: unknown) {
-    return relationOptionsWithSelectedFallback(relationOptions.value[name], value);
+    void value;
+    return relationOptionsWithSelectedFallback(relationOptions.value[name]);
   }
 
   function selectedRelationOptions(name: string, value: unknown) {
@@ -267,6 +269,7 @@ export function useRelationRuntime() {
       }
       return mapped;
     } catch (err) {
+      if (isContractGapError(err)) throw err;
       if (isCurrent() && params.isDeniedError(err)) deniedRelationModels.add(relation);
       return [];
     }

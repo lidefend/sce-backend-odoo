@@ -1,5 +1,6 @@
 import { triggerOnchange } from '../../api/onchange';
 import { one2manyDataColumnsFromSubview, one2manyDataFieldNames } from './one2manyUtils';
+import { isContractGapError } from '../../app/contract/contractGap';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FieldDescriptor } from '@sc/schema';
 import { reactive, watch } from 'vue';
@@ -78,6 +79,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
         if (options.length) mergeRelationOptions(name, options);
       } catch (err) {
         if (!isCurrent()) return;
+        if (isContractGapError(err)) throw err;
         if (err instanceof ApiError) {
           const denied = err.status === 403 || String(err.reasonCode || '').toUpperCase() === 'PERMISSION_DENIED';
           if (denied) deniedRelationModels.add(relation);
