@@ -201,7 +201,8 @@ class ProductPolicyService:
             rec = model.search([("product_key", "=", product_key), ("state", "=", "released"),
                                 ("is_active", "=", True), ("active", "=", True)],
                                order="released_at desc, activated_at desc, id desc", limit=1)
-            payload = rec.snapshot_json if rec and isinstance(rec.snapshot_json, dict) else {}
+            payload = rec.snapshot_json if rec else {}
+            payload = payload if isinstance(payload, dict) else {}
             if not rec:
                 return None
             if "policy_snapshot_schema" not in payload:

@@ -4,8 +4,8 @@
   "counts": {
     "odoo_tags": 236,
     "gated": 5,
-    "on_demand": 96,
-    "unwired": 135,
+    "on_demand": 97,
+    "unwired": 134,
     "odoo_tag_declarations": 474,
     "gated_declarations": 107,
     "uncovered_declarations": 367,
@@ -2034,7 +2034,8 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "make:verify.daily.permission_truth.payment.orm :: /TestPaymentRequestAvailableActionsBackend (class selection)"
+        "make:verify.daily.permission_truth.payment.orm :: /TestPaymentRequestAvailableActionsBackend (class selection)",
+        "make:verify.payment.work_projection.orm :: /TestPaymentRequestAvailableActionsBackend (class selection)"
       ],
       "disposition": "wire-pending"
     },
@@ -2064,14 +2065,16 @@
     },
     {
       "group": "payment_request_work_item_service",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_payment_request_work_item_service.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.payment.work_projection.orm :: /TestPaymentRequestWorkItemService (class selection)"
+      ],
       "disposition": "wire-pending"
     },
     {

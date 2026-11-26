@@ -876,6 +876,12 @@ local.test.prepare local.test.up local.test.down: guard.prod.forbid
 local.test.test: guard.prod.forbid
 	@python3 scripts/dev/local_test_runner.py test --env-file "$(LOCAL_TEST_ENV_FILE)" --module "$(MODULE)" --tags "$(TEST_TAGS)" --order "$(or $(LOCAL_TEST_ORDER),forward)" $(if $(filter 1,$(LOCAL_TEST_REUSE_DATABASE)),--reuse-database,)
 
+.PHONY: verify.payment.work_projection.orm
+verify.payment.work_projection.orm: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_acceptance_fixture $(MAKE) --no-print-directory local.test.test \
+	  MODULE=smart_construction_core \
+	  TEST_TAGS=/smart_construction_core:TestPaymentRequestWorkItemService,/smart_construction_core:TestPaymentRequestAvailableActionsBackend
+
 verify.changed.odoo.tests.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/dev/changed_odoo_tests.py scripts/dev/local_test_inputs.py scripts/dev/run_changed_odoo_tests.py scripts/verify/test_changed_odoo_tests.py scripts/verify/test_local_test_inputs.py scripts/verify/test_run_changed_odoo_tests.py
 	@python3 -m unittest scripts.verify.test_changed_odoo_tests scripts.verify.test_local_test_inputs scripts.verify.test_run_changed_odoo_tests

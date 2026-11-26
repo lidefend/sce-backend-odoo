@@ -327,6 +327,8 @@ class ScEditionReleaseSnapshot(models.Model):
 
     def to_runtime_dict(self) -> dict[str, Any]:
         self.ensure_one()
+        snapshot = self.snapshot_json
+        metadata = self.meta_json
         return {
             "id": int(self.id),
             "active": bool(self.active),
@@ -347,8 +349,8 @@ class ScEditionReleaseSnapshot(models.Model):
             "promoted_from_snapshot_id": int(self.promoted_from_snapshot_id.id) if self.promoted_from_snapshot_id else 0,
             "rollback_target_snapshot_id": int(self.rollback_target_snapshot_id.id) if self.rollback_target_snapshot_id else 0,
             "replaced_by_snapshot_id": int(self.replaced_by_snapshot_id.id) if self.replaced_by_snapshot_id else 0,
-            "snapshot_json": self.snapshot_json if isinstance(self.snapshot_json, dict) else {},
-            "meta_json": self.meta_json if isinstance(self.meta_json, dict) else {},
+            "snapshot_json": snapshot if isinstance(snapshot, dict) else {},
+            "meta_json": metadata if isinstance(metadata, dict) else {},
             "state_reason": _text(self.state_reason),
             "promotion_note": _text(self.promotion_note),
             "note": _text(self.note),

@@ -103,3 +103,15 @@ P4 修复守卫仅识别当前终端解码器中的真实 requiredRecord 调用�
 ### Fixture-only 增量产品分区修复
 
 候选 ec29a08af 的普通增量专业质量规划失败：仅 Fixture 变化被选出，按职责排除验收模块后 product 集合为空，suite_modules 误把“不适用”当成非法全量空套件。修复只允许增量产品分区为空，明确记录被其他职责分区承接的模块、原因、零分片；全量显式套件仍要求非空，未知模块仍拒绝。既有空计划回读标记 not_applicable，不记测试通过。Fixture 继续由 frontend_release_gate 的 managed ORM 验证。68 项规划单测通过，精确失败 HEAD/Base 的真实规划已回放成功。
+
+### Exact-main d41a performance failure and minimal repair (2026-11-27)
+
+PR #1015 merged at `d41a3837428ac88369d5157732583014ced30350`. Its exact-main operator audit passed public, professional (all four backend shards and coverage), merge policy and auxiliary suites. Frontend run `45870907451` failed the unchanged median budgets: login 3249/3000 ms, my work 1539/1200 ms, company switch 2099/2000 ms; release aggregation consequently failed. No main qualification or deployment is claimed.
+
+Operator recovery: a missing-object message was misread while the dispatch helper was automatically fetching main. Two dispatch processes ran, both refused ambiguous discovery; no third dispatch was issued. Latest explicit run IDs were recovered from GitHub identities into the manifest, retaining `.runtime/main-ci-1015-dispatch-recovery.json`. The verifier rejected this batch's real frontend failure. Superseded runs are not silently relabeled or used as passes.
+
+A disposable Fixture cProfile isolated repeated native JSON field reads and repeated settlement reservation aggregation. P0 now reads each JSON field once per projection, preserving native detached values. P1 shares raw reservation totals within the existing private evaluation cache, separately subtracting each request's own reservation. Native execution checks without that cache still read current facts; no ACL, record rule, approval or performance budget changed. Scope is this reproduced backend performance defect, not the planned frontend convergence topic.
+
+Before/after diagnostic profiles were startup 2.224/1.926 s and work 0.454/0.195 s; these are diagnostic timings, not browser qualification. Profiling code was removed. Durable regressions compare the complete work projection with uncached native results, require fresh reads on the next projection, test later native overpayment refusal, and prove one JSON read plus detached outputs. Existing company scope and license revocation cases remain.
+
+Final local impact verification passed: 19 Fixture ORM cases, 22 payment work/action ORM cases, existing workflow ORM, schema and pure guards (including 279 planner tests). Evidence: `.runtime/frontend-dev-validation/executions/20261126T182733Z-3231859-915366482/receipt.json`; Fixture `.runtime/test-baseline/1795717487645604494/receipt.json`; payment `.runtime/test-baseline/1795717661255258210/receipt.json`; workflow `.runtime/test-baseline/1795717682630494464/receipt.json`. The previously unmapped operating-metrics source now selects the real payment ORM consumers; coverage snapshot regenerated through its Make entrypoint. Remote new-HEAD performance and main qualification remain pending.
