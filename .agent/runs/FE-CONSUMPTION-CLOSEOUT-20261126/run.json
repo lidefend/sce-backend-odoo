@@ -476,6 +476,22 @@
       "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-fc01-frontend-build.log",
       "frontend_build_log_sha256": "7fb49f724601a916f894331c3b665e767767c15c6ed52595c2196ef8995e9bad",
       "scope_limit": "Environment, build and runtime identity readback only; it is not a business-entry browser journey or product acceptance."
+    },
+    "fc01_clean_exact_head_validation": {
+      "status": "passed",
+      "head": "c9cab224d0fc0c075ad20e89f7c92ff7bf1b635d",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T222229Z-553917-405463817/receipt.json",
+      "receipt_sha256": "14484d21c4915ef16da422bca5c255259d8b91926d96cb4f2f19609b55d602a5",
+      "executed_targets": 12,
+      "reused_targets": 24,
+      "executed_test_count": 402,
+      "facts_verified": [
+        "the clean exact-head iteration resolved no out-of-scope paths",
+        "all 36 required targets are passed through current execution or unchanged input reuse",
+        "lint, strict typecheck, business semantics, collection semantics, professional values and governance checks remain green at the clean head"
+      ],
+      "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
     }
   }
 }
