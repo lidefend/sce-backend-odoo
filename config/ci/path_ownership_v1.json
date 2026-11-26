@@ -2,6 +2,21 @@
   "schema_version": "ci-path-ownership/v1",
   "categories": [
     {
+      "id": "contract_design_evidence",
+      "patterns": [
+        "docs/architecture/p0_contract_producer_01/*.json"
+      ],
+      "risk": "standard",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.frontend.contract_fidelity.plan.unit"
+      ],
+      "local_targeted": true
+    },
+    {
       "id": "contract_intent_guard",
       "patterns": [
         "scripts/verify/unified_page_contract_v2_intent_guard.py"

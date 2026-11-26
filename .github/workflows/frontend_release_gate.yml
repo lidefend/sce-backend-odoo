@@ -220,40 +220,6 @@ jobs:
             fi
           fi
 
-      - name: Run the single authoritative frontend release command
-        id: release
-        if: steps.effective_lane.outputs.frontend_mode == 'full' && env.PAYMENT_REQUEST_DIAGNOSTIC != '1'
-        env:
-          FRONTEND_RELEASE_PR_HEAD_SHA: ${{ env.PR_HEAD_SHA }}
-        run: |
-          set -euo pipefail
-          cd frontend/apps/web
-          pnpm test:release
-
-      - name: Run focused payment-request diagnostic
-        id: payment_request_diagnostic
-        if: >-
-          env.PAYMENT_REQUEST_DIAGNOSTIC == '1' ||
-          steps.effective_lane.outputs.run_contract_diagnostic == 'true'
-        run: make --no-print-directory verify.frontend.payment_request.diagnostic
-
-      - name: Execute governed managed ORM regressions
-        if: steps.effective_lane.outputs.frontend_mode == 'full'
-        run: |
-          set -euo pipefail
-          mkdir -p "${RUNNER_TEMP}/managed-orm"
-          make acceptance.frontend.fixture_orm 2>&1 | tee "${RUNNER_TEMP}/managed-orm.log"
-          python3 scripts/ci/backend_changed_test_coverage.py --record-managed "${RUNNER_TEMP}/managed-orm.log" \
-            --head "${CHECKOUT_SHA}" --output "${RUNNER_TEMP}/managed-orm/managed-test-evidence.json"
-      - name: Upload managed ORM execution identities
-        if: steps.effective_lane.outputs.frontend_mode == 'full'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: managed-orm-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CHECKOUT_SHA }}
-          path: ${{ runner.temp }}/managed-orm/managed-test-evidence.json
-          if-no-files-found: error
-          retention-days: 7
-
       - name: Run standard frontend checks in parallel
         id: standard
         if: steps.effective_lane.outputs.frontend_mode == 'standard'
@@ -288,6 +254,40 @@ jobs:
         run: |
           set -euo pipefail
           make verify.frontend.systemic.convergence.static
+
+      - name: Run the single authoritative frontend release command
+        id: release
+        if: steps.effective_lane.outputs.frontend_mode == 'full' && env.PAYMENT_REQUEST_DIAGNOSTIC != '1'
+        env:
+          FRONTEND_RELEASE_PR_HEAD_SHA: ${{ env.PR_HEAD_SHA }}
+        run: |
+          set -euo pipefail
+          cd frontend/apps/web
+          pnpm test:release
+
+      - name: Run focused payment-request diagnostic
+        id: payment_request_diagnostic
+        if: >-
+          env.PAYMENT_REQUEST_DIAGNOSTIC == '1' ||
+          steps.effective_lane.outputs.run_contract_diagnostic == 'true'
+        run: make --no-print-directory verify.frontend.payment_request.diagnostic
+
+      - name: Execute governed managed ORM regressions
+        if: steps.effective_lane.outputs.frontend_mode == 'full'
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/managed-orm"
+          make acceptance.frontend.fixture_orm 2>&1 | tee "${RUNNER_TEMP}/managed-orm.log"
+          python3 scripts/ci/backend_changed_test_coverage.py --record-managed "${RUNNER_TEMP}/managed-orm.log" \
+            --head "${CHECKOUT_SHA}" --output "${RUNNER_TEMP}/managed-orm/managed-test-evidence.json"
+      - name: Upload managed ORM execution identities
+        if: steps.effective_lane.outputs.frontend_mode == 'full'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: managed-orm-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CHECKOUT_SHA }}
+          path: ${{ runner.temp }}/managed-orm/managed-test-evidence.json
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Fail closed on command or evidence identity
         if: always() && steps.effective_lane.outputs.frontend_mode == 'full' && env.PAYMENT_REQUEST_DIAGNOSTIC != '1'

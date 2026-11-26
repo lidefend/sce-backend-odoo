@@ -999,6 +999,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "contracts/registry/semantic.yaml",
             ]),
             [
+                "verify.frontend.contract_fidelity.plan.unit",
                 "verify.frontend.professional_component_registry.unit",
                 "verify.semantic.registry.lint",
             ],
@@ -1058,6 +1059,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "addons/smart_core/core/action_target_schema.py"
             ]),
             [
+                "verify.frontend.contract_fidelity.plan.unit",
                 "verify.frontend.page_contract_boundary.guard",
                 "verify.p0_contract_producer.p0c.unit",
                 "verify.page_contract.action_schema_semantics.guard",
@@ -1068,6 +1070,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "addons/smart_core/core/page_block_action_contract.py"
             ]),
             [
+                "verify.frontend.contract_fidelity.plan.unit",
                 "verify.p0_contract_producer.p0a.backend_unit",
                 "verify.p0_contract_producer.p0a.descriptor_conformance",
                 "verify.p0_contract_producer.p0a.money",
@@ -1081,6 +1084,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "frontend/apps/web/src/app/pageOrchestration.ts"
             ]),
             [
+                "verify.frontend.contract_fidelity.plan.unit",
                 "verify.frontend.lint.src",
                 "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
@@ -1650,6 +1654,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(
             select_targets(["addons/smart_core/core/page_contracts_builder.py"]),
             [
+                "verify.frontend.contract_fidelity.plan.unit",
                 "verify.frontend.page_contract_boundary.guard",
                 "verify.p0_contract_producer.p0c.unit",
                 "verify.page_contract.action_schema_semantics.guard",
@@ -2092,6 +2097,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.workflow_action_semantics.guard"],
         )
 
+    def test_fidelity_sources_are_selected_from_declared_evidence(self):
+        evidence = json.loads((ROOT / "docs/architecture/p0_contract_producer_01/remediation_design.json").read_text())
+        for path in evidence["source_evidence"]:
+            with self.subTest(path=path):
+                self.assertIn("verify.frontend.contract_fidelity.plan.unit", select_targets([path]))
+
     def test_contract_visibility_proof_inputs_select_their_executors(self) -> None:
         self.assertEqual(
             select_targets([
@@ -2100,6 +2111,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]),
             [
                 "verify.frontend.canonical_form_presenter.unit",
+                "verify.frontend.contract_fidelity.plan.unit",
                 "verify.frontend.contract_record_action_state.unit",
                 "verify.frontend.contract_v2_occurrence_authority.unit",
                 "verify.frontend.lint.src",

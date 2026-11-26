@@ -42,7 +42,8 @@
     "docs/audit/web_contract_v2_frontend_architecture_guard_report.md",
     "frontend/apps/web/src/app/contracts/v2/schema.ts",
     "frontend/apps/web/src/app/contracts/v2/types.ts",
-    "scripts/verify/construction_core_extension_policy_maps_split_guard.py"
+    "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
+    "docs/architecture/p0_contract_producer_01/remediation_design.json"
   ],
   "environment": {
     "kind": "offline",
@@ -222,6 +223,28 @@
         "validation_delivery",
         "native_view_workflow_action_coverage"
       ]
+    },
+    "pr_791c_frontend": {
+      "status": "failed",
+      "run": 45809130549,
+      "log": ".runtime/main-ci-791c-frontend-failed.log",
+      "reason": "source evidence digest drift for current decoder; missing local fidelity dependency; diagnostic passed"
+    },
+    "fidelity_dependency_repair": {
+      "status": "passed",
+      "scope": "two reviewed decoder digests, declared source dependency selection, cheap checks before diagnostic",
+      "iteration_log": ".runtime/main-ci-fidelity-iteration.log",
+      "executed_iteration_targets": 25,
+      "selection_log": ".runtime/main-ci-fidelity-fact-selection-2.log",
+      "selection_tests": 276,
+      "standard_unit_log": ".runtime/main-ci-standard-consumer-batch.log",
+      "release_unit_log": ".runtime/main-ci-release-consumer-batch.log"
+    },
+    "pr_791c_backend": {
+      "status": "passed",
+      "run": 45809130593,
+      "receipt": ".runtime/backend-iteration/791c8544017889ee1cf6f3c65d83f143a9c33d8c.json",
+      "not_reusable_as_new_head_ci": true
     }
   },
   "owner_verification_principle": "Verify our contract generation, correctness and faithful frontend consumption; exercise Odoo only at changed integration/composition boundaries, not as a separate native-engine verification objective.",

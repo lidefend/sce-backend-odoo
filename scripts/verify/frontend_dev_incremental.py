@@ -55,6 +55,7 @@ WATCH_ROOTS = (
     "scripts/ops/incremental_execution.py",
 )
 CHECKPOINT_AUTHORITY_PATHS = (
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/ops/incremental_execution.py",
     "make/frontend.mk",
@@ -92,6 +93,7 @@ NODE_TOOL_REQUIREMENTS = {
     "verify.frontend.canonical_form_presenter.unit": "esbuild",
     "verify.frontend.approval_contract.closure.unit": "esbuild",
     "verify.frontend.contract_v2_occurrence_authority.unit": "esbuild",
+    "verify.frontend.contract_fidelity.plan.unit": "esbuild",
     "verify.frontend.contract_reason_dialog.browser": "node",
     "verify.frontend.primitive_adapter.unit": "esbuild",
     "verify.frontend.scene_primitive_adapter.unit": "esbuild",
@@ -150,6 +152,12 @@ class Rule:
 
 
 RULES = (
+    Rule(tuple(json.loads((ROOT / "docs/architecture/p0_contract_producer_01/remediation_design.json")
+                          .read_text(encoding="utf-8"))["source_evidence"]) + (
+        "docs/architecture/p0_contract_producer_01/remediation_design.json",
+        "scripts/verify/test_contract_fidelity_plan_guard.py",
+        "scripts/verify/contract_fidelity_plan_guard.py",
+    ), ("verify.frontend.contract_fidelity.plan.unit",)),
     Rule((
         "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
         "frontend/apps/web/src/app/contracts/v2/schema.ts",

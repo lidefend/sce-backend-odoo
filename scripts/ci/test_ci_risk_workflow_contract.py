@@ -21,6 +21,15 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
     def text(self, name: str) -> str:
         return (ROOT / ".github/workflows" / name).read_text(encoding="utf-8")
 
+    def test_standard_checks_precede_expensive_contract_diagnostic(self):
+        workflow = yaml.safe_load(self.text("frontend_release_gate.yml"))
+        steps = workflow["jobs"]["frontend_release_gate"]["steps"]
+        names = [step.get("name") for step in steps]
+        self.assertLess(names.index("Run standard frontend checks in parallel"),
+                        names.index("Run focused payment-request diagnostic"))
+        diagnostic = next(step for step in steps if step.get("id") == "payment_request_diagnostic")
+        self.assertNotIn("always()", diagnostic.get("if", ""))
+
     def test_merge_policy_gate_is_the_single_required_aggregation_job(self) -> None:
         contracts = {
             "public_guard.yml": ("  public_guard:", "    name: public_guard"),
