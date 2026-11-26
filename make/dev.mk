@@ -1816,12 +1816,17 @@ verify.local.dev.readiness.readback: guard.prod.forbid local.dev.ready
 
 .PHONY: verify.local.dev.enterprise_configuration.consumer.unit verify.local.dev.enterprise_configuration.consumer verify.local.dev.enterprise_configuration.consumer.run
 verify.local.dev.enterprise_configuration.consumer.unit: guard.prod.forbid
+	@node --test --test-reporter=tap scripts/verify/local_dev_enterprise_configuration_consumer.test.mjs
 	@bash -n scripts/verify/local_dev_enterprise_configuration_consumer.sh
 	@node --check scripts/verify/local_dev_enterprise_configuration_consumer.mjs
 
 verify.local.dev.enterprise_configuration.consumer: guard.prod.forbid local.dev.ready verify.local.dev.enterprise_configuration.consumer.unit
-	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "enterprise_configuration_consumer" -- \
-	  $(MAKE) --no-print-directory verify.local.dev.enterprise_configuration.consumer.run C02_SCENARIO_ONLY="$(C02_SCENARIO_ONLY)"
+	@if [ "$(ENTERPRISE_READ_ONLY)" = "1" ]; then \
+	  $(MAKE) verify.local.dev.enterprise_initialization.readonly; \
+	else \
+	  ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "enterprise_configuration_consumer" -- \
+	    $(MAKE) --no-print-directory verify.local.dev.enterprise_configuration.consumer.run C02_SCENARIO_ONLY="$(C02_SCENARIO_ONLY)"; \
+	fi
 
 verify.local.dev.enterprise_configuration.consumer.run: guard.prod.forbid local.dev.ready verify.local.dev.enterprise_configuration.consumer.unit local.dev.write_lease.require
 	@RUNTIME_CANDIDATE_SHA="$${C02_RUNTIME_CANDIDATE_SHA:-$$(git -C $(ROOT_DIR) rev-parse HEAD)}"; \
@@ -2016,3 +2021,11 @@ verify.local.dev.capability.tooling.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_local_dev_capability_tooling
 	@node --check scripts/verify/local_dev_capability_browser.mjs
 	@bash -n scripts/verify/local_dev_capability_browser.sh
+
+.PHONY: verify.local.dev.enterprise_initialization.readonly
+verify.local.dev.enterprise_initialization.readonly: guard.prod.forbid local.dev.ready verify.local.dev.enterprise_configuration.consumer.unit
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_ENVIRONMENT=dev ENTERPRISE_READ_ONLY=1 CANDIDATE_GIT_HEAD="$(ENTERPRISE_RUNTIME_SHA)" \
+	  TEST_TOOL_GIT_HEAD="$$(git rev-parse HEAD)" CONFIG_ADMIN_LOGIN="$(SC_CONFIG_ADMIN_LOGIN)" \
+	  CONFIG_ADMIN_USER_ID="$(SC_CONFIG_ADMIN_USER_ID)" CONFIG_COMPANY_ID="$(SC_CONFIG_COMPANY_ID)" \
+	  ARTIFACT_DIR="$(ENTERPRISE_ARTIFACT_DIR)" bash scripts/verify/local_dev_enterprise_configuration_consumer.sh

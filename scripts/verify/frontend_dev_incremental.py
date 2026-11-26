@@ -1348,6 +1348,7 @@ RULES = (
     Rule((
         "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
         "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
+        "scripts/verify/local_dev_enterprise_configuration_consumer.test.mjs",
     ), (
         "verify.local.dev.enterprise_configuration.consumer.unit",
     )),
