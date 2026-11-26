@@ -63,6 +63,8 @@
                                 </group>
                                 <group name="sc_account_company" string="账号归属公司">
                                     <field name="company_id" string="主公司" />
+                                    <field name="lang" string="界面语言" />
+                                    <field name="tz" string="时区" />
                                 </group>
                             </group>
                         </page>

@@ -144,11 +144,25 @@ class ResGroupsAuthorityInvalidation(models.Model):
     _inherit = 'res.groups'
 
     def write(self, vals):
-        affected = self.users if {'users', 'implied_ids'} & set(vals) else self.env['res.users']
+        if not {'users', 'implied_ids'} & set(vals):
+            return super().write(vals)
+        affected = self.users
         affected._sc_lock_group_authority()
+        before_edges = {group.id: set(group.implied_ids.ids) for group in self}
+        before_users = {group.id: set(group.users.ids) for group in self}
+        before_membership = {user.id: set(user.groups_id.ids) for user in affected}
         result = super().write(vals)
-        if {'users', 'implied_ids'} & set(vals):
-            affected |= self.users
+        affected |= self.users
+        affected.invalidate_recordset(['groups_id'])
+        changed = any(
+            before_edges[group.id] != set(group.implied_ids.ids)
+            or before_users[group.id] != set(group.users.ids)
+            for group in self
+        ) or any(before_membership.get(user.id) != set(user.groups_id.ids) for user in affected)
+        # XML reloads commonly repeat the same relations. Preserve provenance
+        # only when both the definition and effective memberships are unchanged.
+        # Never reconstruct roots or promote an unresolved snapshot on replay.
+        if changed:
             affected._sc_store_group_authority(None, 'GROUP_AUTHORITY_REVERSE_OR_DEFINITION_WRITE')
             affected._sc_bump_token_epoch()
         return result

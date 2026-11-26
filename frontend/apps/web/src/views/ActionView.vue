@@ -786,6 +786,7 @@
     </ActionSurfaceRendererHost>
     </component>
     <IntentConfirmationDialog ref="batchConfirmationRef" />
+    <NativeImportWizard ref="importWizardRef" />
   </ScPage>
 </template>
 <script setup lang="ts">
@@ -813,6 +814,7 @@ import ScDialog from '../components/design-system/ScDialog.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
 import ScPage from '../components/design-system/ScPage.vue';
 import IntentConfirmationDialog from '../components/business/IntentConfirmationDialog.vue';
+import NativeImportWizard from '../components/business/NativeImportWizard.vue';
 import ProductPageHeader from '../components/product-page-header/ProductPageHeader.vue';
 import CollectionPattern from '../components/product-page-patterns/CollectionPattern.vue';
 import CollectionFilterChip from '../components/product-list/CollectionFilterChip.vue';
@@ -1265,6 +1267,7 @@ const headerActions = computed(() => pageGlobalActions.value);
 const advancedFields = ref<string[]>([]);
 const batchBusy = ref(false);
 const batchConfirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
+const importWizardRef = ref<InstanceType<typeof NativeImportWizard> | null>(null);
 const {
   isUiBusy,
   isBusyDisabled,
@@ -3351,7 +3354,7 @@ const {
   capabilities: collectionCapabilities,
   busy: batchBusy,
   message: batchMessage,
-  confirmationRef: batchConfirmationRef,
+  importWizardRef,
   text: toolbarUiLabel,
   resolveTargetModel: () => resolvedModelRef.value || model.value || '',
   resolveEffectiveRequestContext,

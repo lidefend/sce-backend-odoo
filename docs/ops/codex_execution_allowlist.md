@@ -1205,3 +1205,30 @@ operation entry、受管嵌套 Make 和真实 HTTP 登录复用隔离入口声�
 `make local.test.prepare` validates the existing private test profile, exact project, database, filter, volumes and source mounts without starting services. It never generates a replacement credential authority. `local.test.up/down` starts/stops only this profile's db/redis, preserving volumes. `local.test.test MODULE=<one module> TEST_TAGS=<selection>` serializes the existing sc-local-test/sc_test profile, rejects foreign identities and Make overrides, recreates only its disposable synthetic sc_test database, runs installation plus tests in a transient carrier, and requires the existing nonzero ORM result guard. No persistent dev/demo/acceptance/production data is authorized.
 
 `make local.test.baseline` runs the declared two smart_core baseline groups in three fresh databases with forward/reverse/seeded class-local method ordering. `make verify.test.baseline` compares all case outcomes in the offline manifest across three fresh processes; quarantine is explicitly empty and any instability blocks. `make verify.test.baseline.ready` verifies current-source receipts and hashes; it does not itself grant merge/deployment qualification. Required remote gates and independent review remain mandatory. Unknown or uncertified dependencies force RUN; ordinary ORM historical reuse is not enabled by this baseline.
+
+
+## 企业初始化一次性重建验收（2026-11-26）
+
+所有者已授权本轮在 `sc-init-6b0769da09e2/sc_init_6b0769da09e2` 中，以 demo 声明为参照，
+由业务配置管理员实际操作重建正式业务配置并执行代表性业务闭环。以下是该一次性载体的
+按需操作入口，不属于每次 CI 自动执行项；不授权持久数据库写入或扩大角色权限。
+
+- `make verify.enterprise.reconstruction.bootstrap`：一次性创建平台前提、企业和首个业务管理员；
+  拒绝已完成 bootstrap 的库，不写部门、岗位和业务角色配置。已成功执行后不得重复调用。
+- `make verify.enterprise.reconstruction.browser`：在同一载体续跑实际页面操作，保留已提交记录，
+  记录失败和未覆盖项；不得将部分配置步骤通过声明为全量验收通过。
+- `make verify.enterprise.reconstruction.baseline`：只读回收该载体的配置事实，供字段、关系及权限
+  闭包比对；不补数据，不修权限。
+- `make verify.enterprise.reconstruction.reference_runtime`：只读既有 demo 载体中的场景配置参考，
+  不将无持久 enablement 行等同于无有效场景。
+
+纯工具验证使用 `make verify.enterprise.reconstruction.unit`，由增量选测根据实际输入变化调用。
+私有密码仅留在工作树忽略目录；所有 runtime 入口拒绝身份不匹配，保留原始失败记录。
+
+`make verify.enterprise.reconstruction.parity` 在同一一次性库只读核对配置，逐项比较部门父级、人员关联与权限闭包；创建数量相同或存在额外授权均不能冒充配置一致。
+
+`make verify.enterprise.reconstruction.import_browser` 通过用户实际批量导入按钮上传合成 CSV，验证预检、字段映射、确认/取消、外部 ID 更新及错误行拒绝。仅写同一一次性载体，不以脚本逐条建档替代导入验收。
+
+`make verify.enterprise.reconstruction.authority_recovery` 仅恢复上述一次性库中、当前浏览器创建/赋权记录可证明来源的 21 个账号授权来源。默认 dry-run；`RECONSTRUCTION_AUTHORITY_APPLY=1` 调用原生来源确认向导并保留审计记录。逐账号断言权限集合及账号数量不变，不作业务配置，不替代用户办理验收；未知历史、目标或闭包不匹配则拒绝。
+
+`make verify.enterprise.reconstruction.permissions` 只读盘点同一已登记一次性库的配置管理员原生菜单、动作、ACL、关联字段和视图按钮；以真实业务身份探测并回滚，不替代业务写入验收。

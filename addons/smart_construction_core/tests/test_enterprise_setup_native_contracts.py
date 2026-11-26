@@ -44,6 +44,15 @@ def _access_rows():
 
 
 class TestEnterpriseSetupNativeContracts(unittest.TestCase):
+    def test_formal_business_roles_have_explicit_assignment_declarations(self):
+        roles = _root("security/sc_role_groups.xml").findall(".//record")
+        declarations = _root("security/runtime_user_permission_groups.xml")
+        self.assertGreater(len(roles), 0)
+        for role in roles:
+            with self.subTest(role=role.get("id")):
+                declaration = _record(declarations, role.get("id"))
+                self.assertEqual(_field_text(declaration, "sc_assignable_user_permission"), "1")
+
     def test_initialization_declares_all_five_native_entries(self):
         root = _root("views/support/enterprise_initialization_views.xml")
         view = _record(root, "view_sc_enterprise_initialization_form")
@@ -97,7 +106,7 @@ class TestEnterpriseSetupNativeContracts(unittest.TestCase):
             _field_text(organization_action, "groups_id"),
         )
         organization_form = _arch(_record(organization, "view_sc_organization_department_form"))
-        for field_name in ("name", "parent_id", "manager_id", "company_id", "active"):
+        for field_name in ("name", "parent_id", "sc_manager_public_id", "company_id", "active"):
             self.assertIsNotNone(organization_form.find(".//field[@name='%s']" % field_name))
         self.assertEqual(
             organization_form.find(".//field[@name='child_ids']").get("readonly"),

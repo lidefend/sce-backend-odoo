@@ -8,6 +8,7 @@ import re
 import json
 import subprocess
 import unittest
+import sys
 from pathlib import Path
 
 
@@ -634,27 +635,10 @@ MODULE = ROOT / 'addons/smart_construction_core'
 
 
 def native_group_graph():
-    graph = {}
-    for filename in ('sc_capability_groups.xml', 'sc_role_groups.xml'):
-        for row in ET.parse(MODULE / 'security' / filename).findall('.//record[@model="res.groups"]'):
-            key = row.attrib['id']
-            key = key if '.' in key else 'smart_construction_core.' + key
-            edges = graph.setdefault(key, set())
-            for field in row.findall('./field[@name="implied_ids"]'):
-                expression = re.sub(r"ref\(['\"]([^'\"]+)['\"]\)", lambda m: repr(m.group(1)), field.attrib['eval'])
-                for command in ast.literal_eval(expression):
-                    if command[0] == 6:
-                        edges.clear()
-                        edges.update(command[2])
-                    elif command[0] == 4:
-                        edges.add(command[1])
-                    elif command[0] == 3:
-                        edges.discard(command[1])
-                    elif command[0] == 5:
-                        edges.clear()
-                    else:
-                        raise AssertionError(f'unhandled group command: {command}')
-    return graph
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from scripts.verify.role_capability_group_authority_guard import group_graph, manifest_group_xml_paths
+    return group_graph(manifest_group_xml_paths())
 
 
 class SettlementComplianceVisibilityTest(unittest.TestCase):

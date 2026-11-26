@@ -1873,3 +1873,8 @@ verify.smart_owner_core.extension_module_baseline: guard.prod.forbid
 verify.smart_owner_bundle.extension_module_baseline: guard.prod.forbid
 	@LOCAL_TEST_TEMPLATE_MODULE=smart_owner_bundle \
 	  $(MAKE) --no-print-directory local.test.test MODULE=smart_owner_bundle TEST_TAGS=/smart_owner_bundle
+
+.PHONY: verify.smart_core.api_data_import.unit
+verify.smart_core.api_data_import.unit: guard.prod.forbid
+	@python3 addons/smart_core/tests/test_api_data_import_mapping.py
+ci.professional.backend.shard-verify: verify.smart_core.api_data_import.unit

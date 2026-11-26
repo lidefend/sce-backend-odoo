@@ -442,19 +442,10 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         self.assertEqual(evidence["surface_roles"], ["business_config_admin"])
 
     def test_role_groups_only_compose_capability_authorization(self):
-        paths = (
-            ROOT / "addons/smart_construction_core/security/sc_role_groups.xml",
-            ROOT / "addons/smart_construction_core/security/sc_capability_groups.xml",
-        )
-        graph = {}
-        for path in paths:
-            tree = ElementTree.parse(path)
-            for record in tree.findall(".//record[@model='res.groups']"):
-                group = "smart_construction_core." + str(record.get("id") or "")
-                implied = []
-                for field in record.findall("field[@name='implied_ids']"):
-                    implied.extend(re.findall(r"ref\(\s*'([^']+)'\s*\)", field.get("eval") or ""))
-                graph[group] = implied
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from scripts.verify.role_capability_group_authority_guard import group_graph, manifest_group_xml_paths
+        graph = group_graph(manifest_group_xml_paths())
 
         def closure(group):
             seen = set()

@@ -322,5 +322,44 @@
         }
       ]
     }
+  },
+  "finalWireDescriptor": {
+    "schemaVersion": "1.0.0",
+    "fieldCode": "parent_id",
+    "label": "parent_id",
+    "fieldType": "many2one",
+    "widgetType": "many2one",
+    "semanticType": "relation",
+    "relation": "hr.department",
+    "domain": "[('id', 'not child_of', id)]",
+    "domainExpression": {
+      "version": 1,
+      "raw": "[('id', 'not child_of', id)]",
+      "dependencies": [
+        "id"
+      ],
+      "tree": {
+        "kind": "sequence",
+        "items": [
+          {
+            "kind": "tuple",
+            "items": [
+              {
+                "kind": "literal",
+                "value": "id"
+              },
+              {
+                "kind": "literal",
+                "value": "not child_of"
+              },
+              {
+                "kind": "field",
+                "name": "id"
+              }
+            ]
+          }
+        ]
+      }
+    }
   }
 }

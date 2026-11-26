@@ -339,15 +339,23 @@ class TestRelationEntryContract(unittest.TestCase):
         self.assertTrue(entry.get("can_read"))
         self.assertEqual(entry.get("reason_code"), "NO_CREATE_ENTRY")
 
-    def test_self_relation_search_dialog_uses_minimal_contract(self):
-        dialog = self.assembler._build_relation_search_dialog_contract(
-            "construction.contract",
-            model_name="construction.contract",
-        )
-
-        self.assertEqual(dialog.get("source"), "self_relation_minimal_view")
-        self.assertEqual(dialog.get("read_fields"), ["id", "display_name", "name"])
-        self.assertEqual(dialog.get("columns"), [])
+    def test_self_relation_search_dialog_uses_model_display_metadata(self):
+        for rec_name, label in [("name", "部门名称"), ("title", "合同标题")]:
+            with self.subTest(rec_name=rec_name):
+                requested = []
+                def fields_get(names):
+                    requested.extend(names)
+                    return {rec_name: {"string": label, "type": "char"},
+                            "display_name": {"string": "显示名称", "type": "char"}}
+                self.assembler.env = {"x.self": types.SimpleNamespace(
+                    _rec_name=rec_name, fields_get=fields_get)}
+                dialog = self.assembler._build_relation_search_dialog_contract(
+                    "x.self", model_name="x.self")
+                self.assertEqual(dialog["source"], "self_relation_minimal_view")
+                self.assertEqual(dialog["read_fields"], ["id", "display_name", rec_name])
+                self.assertEqual(dialog["columns"], [{"name": rec_name, "label": label,
+                    "type": "char", "widget": "char", "optional": ""}])
+                self.assertEqual(requested, [rec_name, "display_name"])
 
     def test_build_relation_entry_dictionary_domain_hint_from_model_field(self):
         class _Field:

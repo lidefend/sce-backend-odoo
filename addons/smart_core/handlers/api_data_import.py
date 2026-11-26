@@ -10,6 +10,7 @@ import hashlib
 import logging
 from typing import Any, Dict, List
 
+from odoo import _
 from odoo.exceptions import AccessError, UserError, ValidationError
 
 from ..core.base_handler import BaseIntentHandler
@@ -247,8 +248,10 @@ class ApiDataImportHandler(BaseIntentHandler):
         if not isinstance(matches, dict):
             return [False for _header in headers]
         fields: List[Any] = []
-        for header in headers:
-            value = matches.get(header)
+        for index, _header in enumerate(headers):
+            # Native base_import keys suggestions by column position, not by
+            # header text; repeated headers may map to distinct relation paths.
+            value = matches.get(index, matches.get(str(index)))
             if isinstance(value, (list, tuple)):
                 value = "/".join([str(part) for part in value if str(part or "").strip()])
             fields.append(str(value or "").strip() or False)
@@ -258,7 +261,14 @@ class ApiDataImportHandler(BaseIntentHandler):
         Kernel = self.env.get(IMPORT_KERNEL_MODEL)
         return Kernel
 
-    def _kernel_result(self, result: Any) -> Dict[str, Any]:
+    @staticmethod
+    def _row_label(rows, row_offset):
+        if not isinstance(rows, dict) or type(rows.get("from")) is not int or type(rows.get("to")) is not int:
+            return ""
+        first, last = rows["from"] + row_offset, rows["to"] + row_offset
+        return (_("第 %s 行") % first) if first == last else (_("第 %s 至 %s 行") % (first, last))
+
+    def _kernel_result(self, result: Any, row_offset=1) -> Dict[str, Any]:
         if not isinstance(result, dict):
             return {"ids": [], "messages": []}
         return {
@@ -268,11 +278,51 @@ class ApiDataImportHandler(BaseIntentHandler):
                     "type": str(row.get("type") or "error"),
                     "message": str(row.get("message") or ""),
                     "record": row.get("record") if isinstance(row.get("record"), dict) else None,
+                    "rows": row.get("rows") if isinstance(row.get("rows"), dict) else None,
+                    "field": row.get("field"),
+                    "field_path": row.get("field_path"),
+                    "row_label": self._row_label(row.get("rows"), row_offset),
                 }
                 for row in (result.get("messages") or [])
                 if isinstance(row, dict)
             ],
         }
+
+    @staticmethod
+    def _wizard_contract():
+        return {
+            "schema": "native_import.v1", "authority": IMPORT_KERNEL_MODEL,
+            "title": _("批量导入"), "file_label": _("文件"),
+            "row_count_label": _("数据行数"), "column_label": _("文件列"),
+            "field_label": _("系统字段"), "preview_label": _("数据预览"),
+            "ignore_label": _("不导入此列"), "validate_label": _("校验数据"),
+            "execute_label": _("确认导入"), "cancel_label": _("取消"),
+            "valid_label": _("校验通过，可以导入"),
+            "mapping_changed_label": _("字段映射已变更，请重新校验"),
+            "choose_file_label": _("选择导入文件"), "empty_file_label": _("尚未选择文件"),
+            "preview_action_label": _("读取预览"), "options_label": _("文件解析选项"),
+            "headers_label": _("首行为列标题"), "templates_label": _("原生导入模板"),
+            "file_accept": ".csv,.xls,.xlsx,.ods",
+            "done_label": _("完成并返回列表"), "result_label": _("导入结果"),
+            "imported_label": _("成功记录数"), "record_ids_label": _("记录编号"),
+        }
+
+    @staticmethod
+    def _option_fields():
+        # Parsing settings understood by base_import; values remain kernel-owned.
+        return [
+            {"name": name, "label": _(label), "type": kind}
+            for name, label, kind in [
+                ("has_headers", "首行为列标题", "boolean"),
+                ("encoding", "编码（留空自动检测）", "text"),
+                ("separator", "分隔符（留空自动检测）", "text"),
+                ("quoting", "文本引用符", "text"),
+                ("date_format", "日期格式（留空自动检测）", "text"),
+                ("datetime_format", "日期时间格式（留空自动检测）", "text"),
+                ("float_thousand_separator", "千位分隔符", "text"),
+                ("float_decimal_separator", "小数分隔符", "text"),
+            ]
+        ]
 
     # ---- execution ----
 
@@ -288,6 +338,30 @@ class ApiDataImportHandler(BaseIntentHandler):
         if Kernel is None:
             return self._err(501, "当前部署未提供 base_import 导入内核", REASON_UNSUPPORTED_SOURCE)
 
+        if params.get("phase") == "describe":
+            try:
+                Model = self.env[model]
+                Model.check_access_rights("create")
+                templates = Model.get_import_templates() if callable(getattr(Model, "get_import_templates", None)) else []
+                return {"ok": True, "data": {
+                    "model": model, "phase": "describe", "file_name": "", "file_digest": "",
+                    "headers": [], "mapping": [], "preview": [], "file_length": 0,
+                    "native_fields": Kernel.get_fields_tree(model), "native_options": dict(DEFAULT_IMPORT_OPTIONS),
+                    "native_templates": templates, "wizard": self._wizard_contract(),
+                    "update_export": {
+                        "enabled": bool(Model.check_access_rights("read", raise_exception=False)
+                            and (self.env.is_admin() or self.env.user.has_group("base.group_allow_export"))),
+                        "fields": list(dict.fromkeys(["id", Model._rec_name or "id"])),
+                        "import_compatible": True,
+                        "label": _("下载更新标识文件"),
+                        "empty_label": _("当前范围没有可导出的记录"),
+                    },
+                    "option_fields": self._option_fields(),
+                    "dry_run": True, "ids": [], "imported_count": 0, "messages": [], "error_count": 0, "valid": False,
+                }, "meta": {"source_authority": self._source_authority_contract(model)}}
+            except AccessError:
+                return self._err(403, "无导入权限", REASON_PERMISSION_DENIED)
+
         file_name = str(params.get("file_name") or params.get("fileName") or "").strip()
         if not file_name:
             return self._err(400, "缺少参数 file_name", REASON_MISSING_PARAMS)
@@ -295,6 +369,12 @@ class ApiDataImportHandler(BaseIntentHandler):
         if file_error:
             return file_error
         dry_run = parse_bool(params.get("dry_run"), False)
+        phase = str(params.get("phase") or ("validate" if dry_run else "execute"))
+        if phase not in {"inspect", "validate", "execute"}:
+            return self._err(400, "未知导入阶段", REASON_MISSING_PARAMS)
+        if phase == "execute" and dry_run:
+            return self._err(400, "dry_run 与执行阶段冲突", REASON_MISSING_PARAMS)
+        dry_run = phase != "execute"
         options = self._read_import_options(params)
         columns, columns_error = self._read_columns(params)
         if columns_error:
@@ -396,11 +476,13 @@ class ApiDataImportHandler(BaseIntentHandler):
             return self._err(400, str(preview.get("error") or "导入文件解析失败"), REASON_BUSINESS_RULE_FAILED)
 
         headers = [str(item or "") for item in (preview.get("headers") or [])]
+        if not headers:
+            headers = [_("列 %s") % (index + 1) for index in range(len(preview.get("preview") or []))]
         if columns is None:
             columns = headers
         if fields is None:
             fields = self._suggested_fields(headers, preview.get("matches"))
-        if not any(fields):
+        if phase != "inspect" and not any(fields):
             return self._err(400, "未能在导入文件中匹配到任何可导入字段", REASON_BUSINESS_RULE_FAILED)
 
         base_data: Dict[str, Any] = {
@@ -410,9 +492,18 @@ class ApiDataImportHandler(BaseIntentHandler):
             "headers": headers,
             "mapping": fields,
             "preview": preview.get("preview") or [],
-            "file_length": int(preview.get("file_length") or 0),
+            "file_length": max(0, int(preview.get("file_length") or 0) - (1 if headers and options.get("has_headers") else 0)),
             "advanced_mode": bool(preview.get("advanced_mode")),
+            "native_fields": preview.get("fields") or [],
+            "native_options": preview.get("options") or dict(options),
+            "phase": phase,
+            "wizard": self._wizard_contract(),
         }
+
+        if phase == "inspect":
+            return {"ok": True, "data": dict(base_data, dry_run=True, ids=[], imported_count=0,
+                                               messages=[], error_count=0, valid=False),
+                    "meta": {"write_mode": "import_inspect", "source_authority": self._source_authority_contract(model)}}
 
         try:
             result = importer.execute_import(list(fields), list(columns), dict(options), dryrun=bool(dry_run))
@@ -426,7 +517,7 @@ class ApiDataImportHandler(BaseIntentHandler):
             _logger.exception("api.data.import failed on %s", model)
             return self._err(500, str(exc), REASON_SYSTEM_ERROR)
 
-        kernel_result = self._kernel_result(result)
+        kernel_result = self._kernel_result(result, row_offset=2 if headers and options.get("has_headers") else 1)
         errors = [row for row in kernel_result["messages"] if row.get("type") == "error"]
         data = dict(base_data)
         data.update(

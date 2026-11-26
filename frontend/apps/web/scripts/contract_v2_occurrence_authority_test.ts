@@ -560,8 +560,8 @@ function attachDomain(nodes: Array<Record<string, unknown>>): boolean {
     const widgets = node.widgetList as Array<Record<string, unknown>> | undefined;
     if (widgets?.length) {
       Object.assign(widgets[0].fieldDescriptor as object, {
-        domain: domainFixture.raw,
-        domainExpression: domainFixture.expression,
+        ...domainFixture.finalWireDescriptor,
+        fieldCode: (widgets[0].fieldDescriptor as Record<string, unknown>).fieldCode,
       });
       return true;
     }
@@ -572,5 +572,18 @@ function attachDomain(nodes: Array<Record<string, unknown>>): boolean {
 assert(attachDomain(domainSnapshot.layoutContract.containerTree as unknown as Array<Record<string, unknown>>));
 const { resolveContractV2FormFieldMap } = await import('../src/app/contracts/v2/store');
 const domainFields = resolveContractV2FormFieldMap(createContractV2Store(decodeContractV2Snapshot(domainSnapshot)));
-assert(Object.values(domainFields).some(field => JSON.stringify((field as Record<string, unknown>).domain_expression) === JSON.stringify(domainFixture.expression)));
+assert(Object.values(domainFields).some(field => JSON.stringify((field as Record<string, unknown>).domain_expression) === JSON.stringify(domainFixture.finalWireDescriptor.domainExpression)));
 console.log('[contract_v2_occurrence_authority_test] compiled domain normalized store PASS');
+
+const { dynamicRelationDomainFromDescriptor } = await import('../src/pages/contractForm/relationDescriptor');
+const projectedDomain = Object.values(domainFields).find(field => (field as Record<string, unknown>).domain_expression);
+assert(projectedDomain);
+for (const recordId of [false, 4] as const) {
+  assert.deepEqual(dynamicRelationDomainFromDescriptor({
+    descriptor: projectedDomain as never,
+    resolveDependencyValue: field => field === 'id' ? recordId : undefined,
+    normalizeDependencyValue: (_field, value) => value,
+    currentFieldValue: () => undefined,
+  }), [['id', 'not child_of', recordId]]);
+}
+console.log('[contract_v2_occurrence_authority_test] backend final wire through domain consumer PASS cases=2');
