@@ -16,7 +16,8 @@
     ".agent/context.yaml",
     "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
     "scripts/verify/enterprise_reconstruction_browser.mjs",
-    "scripts/verify/enterprise_reconstruction_import_browser.mjs"
+    "scripts/verify/enterprise_reconstruction_import_browser.mjs",
+    "config/contract/page_contract_v1_retirement_manifest.json"
   ],
   "environment": {
     "kind": "offline",
@@ -125,6 +126,17 @@
       "iteration": ".runtime/main-ci-suite-iteration-2.log",
       "executed_incremental_targets": 6,
       "browser_end_to_end": "not_run; no persistent environment or database mutation authorized"
+    },
+    "main_9c4ed0b_professional": {
+      "status": "failed",
+      "job_id": 139848490286,
+      "log": ".runtime/main-ci-professional-failed.log",
+      "reason": "Retirement manifest expects assembler snapshot 2.5.0, actual assembler/snapshot are 2.7.0"
+    },
+    "contract_version_repair": {
+      "status": "passed",
+      "log": ".runtime/main-ci-contract-version.log",
+      "scope": "retirement manifest matches existing 2.7.0 assembler and architecture snapshot; no runtime version change"
     }
   }
 }
