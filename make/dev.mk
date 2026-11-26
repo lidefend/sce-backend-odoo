@@ -876,6 +876,15 @@ local.test.prepare local.test.up local.test.down: guard.prod.forbid
 local.test.test: guard.prod.forbid
 	@python3 scripts/dev/local_test_runner.py test --env-file "$(LOCAL_TEST_ENV_FILE)" --module "$(MODULE)" --tags "$(TEST_TAGS)" --order "$(or $(LOCAL_TEST_ORDER),forward)" $(if $(filter 1,$(LOCAL_TEST_REUSE_DATABASE)),--reuse-database,)
 
+.PHONY: verify.navigation.projection.orm
+verify.navigation.projection.orm: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_acceptance_fixture $(MAKE) --no-print-directory local.test.test \
+	  MODULE=smart_construction_core \
+	  TEST_TAGS=/smart_construction_core:TestScenarioDirectInitialization,/smart_construction_core:TestProductPolicyFactAuthority
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_acceptance_fixture $(MAKE) --no-print-directory local.test.test \
+	  MODULE=smart_construction_acceptance_fixture \
+	  TEST_TAGS=/smart_construction_acceptance_fixture:TestFixtureCompanyWorkProjection.test_batched_native_scene_references_match_env_ref_and_do_not_cache_deletions,/smart_construction_acceptance_fixture:TestFixtureCompanyWorkProjection.test_native_nav_enrichment_batches_xmlids_and_preserves_metadata
+
 .PHONY: verify.payment.work_projection.orm
 verify.payment.work_projection.orm: guard.prod.forbid
 	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_acceptance_fixture $(MAKE) --no-print-directory local.test.test \

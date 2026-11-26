@@ -646,7 +646,17 @@ class RuntimeMenuMetadataBatchTest(unittest.TestCase):
             model.sudo.return_value = model
             model.with_context.return_value = model
             model.search.return_value = records
-        env = {'sc.product.scenario': scenario_model, 'ir.ui.menu': menu_model}
+        data_model = Mock()
+        native_ids = {'native.first': 9, 'alias.second': 9, 'native.seven': 7}
+        data_model._xmlid_to_res_model_res_id.side_effect = (
+            lambda reference, raise_if_not_found=False:
+            ('ir.ui.menu', native_ids[reference]) if reference in native_ids else (False, False)
+        )
+        menu_model.browse.side_effect = lambda ids: types.SimpleNamespace(
+            exists=lambda: types.SimpleNamespace(ids=[mid for mid in ids if mid in {9, 4, 7}]),
+        )
+        env = {'sc.product.scenario': scenario_model, 'ir.ui.menu': menu_model,
+               'ir.model.data': data_model}
         return env, menus, calls
 
     def test_native_choice_empty_ids_archived_binding_and_order_match_singletons(self):

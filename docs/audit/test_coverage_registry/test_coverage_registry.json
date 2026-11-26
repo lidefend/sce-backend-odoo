@@ -2219,7 +2219,7 @@
       "evidence": [
         "make:verify.capability.identity_boundary.orm :: /TestProductPolicyFactAuthority (class selection)",
         "make:verify.daily.permission_truth.capability.orm :: /TestProductPolicyFactAuthority (class selection)",
-        "make:verify.product_center.policy.orm :: /TestProductPolicyFactAuthority (class selection)"
+        "make:verify.navigation.projection.orm :: /TestProductPolicyFactAuthority (class selection)"
       ],
       "disposition": "class-selected"
     },
@@ -2647,7 +2647,7 @@
       "evidence": [
         "make:verify.daily.permission_truth.capability.orm :: /TestScenarioDirectInitialization (class selection)",
         "make:verify.local.test.template.bundle.orm :: /TestScenarioDirectInitialization (class selection)",
-        "make:verify.smart_construction_core.migration_compatibility.orm :: /TestScenarioDirectInitialization (class selection)"
+        "make:verify.navigation.projection.orm :: /TestScenarioDirectInitialization (class selection)"
       ],
       "disposition": "class-selected"
     },

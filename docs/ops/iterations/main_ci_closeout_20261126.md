@@ -115,3 +115,16 @@ A disposable Fixture cProfile isolated repeated native JSON field reads and repe
 Before/after diagnostic profiles were startup 2.224/1.926 s and work 0.454/0.195 s; these are diagnostic timings, not browser qualification. Profiling code was removed. Durable regressions compare the complete work projection with uncached native results, require fresh reads on the next projection, test later native overpayment refusal, and prove one JSON read plus detached outputs. Existing company scope and license revocation cases remain.
 
 Final local impact verification passed: 19 Fixture ORM cases, 22 payment work/action ORM cases, existing workflow ORM, schema and pure guards (including 279 planner tests). Evidence: `.runtime/frontend-dev-validation/executions/20261126T182733Z-3231859-915366482/receipt.json`; Fixture `.runtime/test-baseline/1795717487645604494/receipt.json`; payment `.runtime/test-baseline/1795717661255258210/receipt.json`; workflow `.runtime/test-baseline/1795717682630494464/receipt.json`. The previously unmapped operating-metrics source now selects the real payment ORM consumers; coverage snapshot regenerated through its Make entrypoint. Remote new-HEAD performance and main qualification remain pending.
+
+
+## 2026-11-27：主线 9a56 导航启动性能收敛
+
+PR #1016 合并后的精确主线 `9a56e0cdc38e47a1bd37b930199214418f712f6a` 全量验证仍未合格：登录中位数 3154 ms（预算 3000），切换公司 2181 ms（预算 2000）；我的工作已通过 1069 ms（预算 1200）。失败来源为 `frontend_release_gate` run 45880432634，其余实体工作流通过，发布汇总随之失败。预算不变，不将候选绿灯替代主线证据。
+
+- P0：策略规范化每个输出子树只深拷贝一次；导航菜单/动作 XMLID 和记录存在性按原生记录集批量读取。
+- P1：场景引用沿用原生 XMLID 解析，按模型批量验证记录存在性；解析结果只存活于一次投影，原有公司/权限筛选不变。
+- P4：注册启动投影的真实 ORM 消费者选测，补充相关/无关路径断言；同步纯测试的原生 ORM 传输替身，不降低身份、归档或跨库约束。
+
+隔离真实 Fixture 剖析：启动 SQL 从 1268 降至 576，同场景剖析耗时从约 1.926 秒降至 1.638 秒；这是本地诊断，不是浏览器性能合格声明。诊断 profiler 已删除，保留身份等价、删除回读、元数据一致与深拷贝隔离回归。
+
+最终 `make ci.local.iteration` 13 个入口通过，原始回执 `.runtime/frontend-dev-validation/executions/20261126T194019Z-3711177-376988054/receipt.json`；完整远端候选与合并后主线仍待独立验证。未部署持久环境，前端专题仍只计划。

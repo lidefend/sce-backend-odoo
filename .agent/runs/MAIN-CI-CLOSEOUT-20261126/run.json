@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "baseline_sha": "d41a3837428ac88369d5157732583014ced30350",
+  "baseline_sha": "9a56e0cdc38e47a1bd37b930199214418f712f6a",
   "scope": [
     "scripts/ci/main_full_release_dispatch.py",
     "scripts/ci/test_main_full_release_dispatch.py",
@@ -65,7 +65,13 @@
     "addons/smart_core/models/release_management.py",
     "addons/smart_construction_core/models/core/payment_request.py",
     "addons/smart_construction_core/models/support/operating_metrics.py",
-    "make/dev.mk"
+    "make/dev.mk",
+    "addons/smart_core/delivery/product_center_policy.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "scripts/verify/test_product_center_policy.py",
+    "addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py",
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py"
   ],
   "environment": {
     "kind": "offline",
@@ -159,14 +165,30 @@
         "addons/smart_construction_core/models/core/payment_request.py",
         "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py"
       ]
+    },
+    "verify_navigation_projection_orm": {
+      "target": "verify.navigation.projection.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py",
+        "addons/smart_core/delivery/product_center_policy.py",
+        "addons/smart_core/delivery/product_policy_service.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+        "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+        "make/dev.mk",
+        "scripts/dev/local_test_runner.py",
+        "scripts/dev/local_test_inputs.py"
+      ]
     }
   },
   "blockers": [
-    "Exact-main frontend performance medians exceed unchanged budgets: login 3249>3000, my_work 1539>1200, company_switch 2099>2000."
+    "Exact-main login/company switch performance still exceeds unchanged budgets."
   ],
-  "next_exact_step": "Publish performance followup; verify new HEAD browser and all required checks, protected merge, exact-main full audit. No budget changes or persistent deployment.",
+  "next_exact_step": "Publish clean navigation batch projection candidate; verify exact candidate then merge and dispatch a single exact-main full audit.",
   "id": "MAIN-CI-CLOSEOUT-20261126",
-  "branch": "fix/main-navigation-performance-20261127",
+  "branch": "fix/main-navigation-batch-projection-20261127",
   "status": "verification_pending",
   "goal": ".agent/goals/MAIN-CI-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/main_ci_closeout_20261126.md",
@@ -564,5 +586,30 @@
     "fixture_regression_receipt": ".runtime/test-baseline/1795717487645604494/receipt.json",
     "payment_regression_receipt": ".runtime/test-baseline/1795717661255258210/receipt.json",
     "workflow_regression_receipt": ".runtime/test-baseline/1795717682630494464/receipt.json"
+  },
+  "main_9a56_results": {
+    "pr": 1016,
+    "merged": true,
+    "main": "9a56e0cdc38e47a1bd37b930199214418f712f6a",
+    "status": "FAILED",
+    "frontend_run": 45880432634,
+    "reason": "Login median 3154>3000 ms and company switch 2181>2000 ms; my_work now passes 1069<1200 ms.",
+    "evidence": ".runtime/main-ci-1016-main-frontend-failed.log"
+  },
+  "batch_projection_diagnosis": {
+    "first_receipt": ".runtime/test-baseline/1795721320657069774/receipt.json",
+    "result": "failed: query-bound assertion counted one legitimate uncached missing-XMLID lookup; separate missing-reference correctness from existing-reference query bound.",
+    "before_sql": 1268,
+    "after_sql": 576,
+    "profile_after_seconds": 1.638,
+    "next": "Validate final source without diagnostic profiler, including registered navigation ORM consumers.",
+    "final_diagnostic_receipt": ".runtime/test-baseline/1795721425517558845/receipt.json",
+    "final_diagnostic_tests": 8,
+    "final_local_iteration": {
+      "status": "passed",
+      "targets": 13,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T194019Z-3711177-376988054/receipt.json",
+      "log": ".runtime/main-ci-batch-local-final5.log"
+    }
   }
 }
