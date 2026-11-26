@@ -404,6 +404,26 @@ clean 运行态权威回读：
 产品改动提交后必须按新精确 HEAD 重建 clean 前端与 Odoo 容器；当前运行态仍属于上一
 产品候选。远端 PR CI、主线资格、部署和用户验收均未完成。
 
+产品改动已提交为 `c73bb6d0f504ceaed507befc2472313d11f06689`，随后按该 SHA
+重建 clean 前端并用 `046332dc0f6f6ad74e6e29a37b9bf0ce2c726c6a600c5201e158f68eb5c8ee14`
+构建指纹重建 Odoo 容器。回读结果：
+
+- `/t/clean/api/runtime-version` 同时返回上述源码 SHA 与构建指纹；
+- 根路径 `/build-info.json` 返回同一源码 SHA；
+- `local.clean.health`、`local.clean.entry_identity.verify` 均通过；
+- project/database/dbfilter/namespace 仍严格为 clean 专属身份。
+
+在该 clean HEAD 上再次执行 `make ci.local.iteration`：45 个必需目标全部成立，其中
+15 个本轮执行、30 个按未变输入复用，执行测试 439 项，退出零。回执：
+
+`.runtime/frontend-dev-validation/executions/20261126T224644Z-712232-380062170/receipt.json`
+
+回执 SHA256：
+`11a29f38df92e13a0667e712f166e6dee60de781ff40d9550e4b0e803d2cc2ec`。
+
+仍未执行 143 个业务入口的当前候选页面、角色或办理旅程，也未完成远端 PR CI、主线资格、
+部署和用户验收。
+
 
 ### 2026-11-27 开工条件回读
 
