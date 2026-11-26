@@ -74,9 +74,9 @@ Generated from repository source files. This report is informational during the 
 | 1792 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1766 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1752 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1730 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1730 | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1725 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
-| 1715 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1693 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1687 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1676 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
@@ -339,9 +339,9 @@ Generated from repository source files. This report is informational during the 
 | 1792 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1766 | split_plan_required | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1752 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1730 | split_plan_required | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1730 | split_plan_required | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1725 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
-| 1715 | split_plan_required | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
 | 1693 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1687 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1676 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
