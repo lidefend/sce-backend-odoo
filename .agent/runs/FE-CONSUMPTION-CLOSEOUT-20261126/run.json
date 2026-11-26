@@ -83,21 +83,21 @@
     "dbfilter": "^sc_clean$",
     "namespace_alias": "clean",
     "namespace_id": "ns_c6fed472e939",
-    "source_revision": "8b7292830f63f58c3ecee5689047bfac8924e9ed",
+    "source_revision": "b3598c112f35a6e0676e4744ea16239092cc950c",
     "modules": [
       "smart_construction_bundle",
       "sc_norm_engine"
     ],
     "demo_data": false,
     "fixture": false,
-    "frontend_build_fingerprint": "d48e6857e7f90acfdef5f3dc542ae57de6d3c6754d657ffa86ea3a015c95d099",
+    "frontend_build_fingerprint": "fe998421ada71ca76b1547224569dc427975321abbbc21b3de597dad62f72f65",
     "health": "passed",
-    "health_note": "The clean profile serves the exact declared-unit product source. Any later run/documentation-only update does not change the product surface.",
-    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-health.log",
-    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-entry-identity.log",
-    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-frontend-build.log",
-    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-runtime-version.json",
-    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-build-info.json",
+    "health_note": "The clean profile serves the exact component-identity product source and build fingerprint. Documentation and run updates do not change the product surface.",
+    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-component-up.log",
+    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-component-health.log",
+    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-component-entry-identity.log",
+    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-component-runtime-version.json",
+    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-component-build-info.json",
     "authority": "Owner-directed isolated clean development profile; existing dev/sample/acceptance/customer data and volumes are excluded."
   },
   "verification_responsibility": {
@@ -481,7 +481,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Commit the component-identity product candidate, rebuild the isolated clean runtime from that exact HEAD, verify health and identity readback, then rerun ci.local.iteration on the clean HEAD before continuing the remaining FC-01 semantic coverage matrix.",
+  "next_exact_step": "Continue FC-01 by tracing relation and selection declarations through producer, normalized store, runtime consumers and fail-closed negative cases; update the same run and do not inherit the historical 143-entry browser matrix.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -671,6 +671,47 @@
         "the component-driver inventory was regenerated for the changed production source input"
       ],
       "scope_limit": "Local targeted validation only; clean exact-HEAD runtime, remote PR CI, mainline qualification, the 143-entry browser matrix and user acceptance remain not_run."
+    },
+    "fc01_component_clean_runtime": {
+      "status": "passed",
+      "product_source_revision": "b3598c112f35a6e0676e4744ea16239092cc950c",
+      "frontend_build_fingerprint": "fe998421ada71ca76b1547224569dc427975321abbbc21b3de597dad62f72f65",
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "dbfilter": "^sc_clean$",
+      "namespace_id": "ns_c6fed472e939",
+      "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-component-up.log",
+      "up_log_sha256": "eb6da53d7374b720b9249eb8e7540f22de3aeb646174bd3f3bfecd3396730346",
+      "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-component-health.log",
+      "health_log_sha256": "3edb53ae8eaa7889b0a03472c49ccafd09763cf079679d2ff182f7f669dd4550",
+      "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-component-entry-identity.log",
+      "entry_identity_log_sha256": "08a8d638a4b2744492f8eb760b91130ef319be7d52b7865598a735375722dc78",
+      "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-component-runtime-version.json",
+      "runtime_version_log_sha256": "8330d7a6ecf3994e41a27416acac70b9193cbd0da30d628df6069beef0709614",
+      "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-component-build-info.json",
+      "build_info_log_sha256": "abdafd6f62f251c8d699b2d983e36c867bc7468fbb7b444b3ca9895f469dd257",
+      "facts_verified": [
+        "the clean frontend was built from the exact product commit b3598c112f35a6e0676e4744ea16239092cc950c",
+        "the Odoo container was recreated with the matching frontend build fingerprint",
+        "tenant runtime-version returns the exact source revision, build fingerprint, sc_clean database, namespace id and clean alias",
+        "root build-info.json returns the same exact source revision",
+        "local.clean.health and entry identity verification pass under the isolated clean profile"
+      ],
+      "scope_limit": "Environment, build and runtime identity readback only; it is not a business-entry browser journey or product acceptance."
+    },
+    "fc01_component_clean_exact_head_validation": {
+      "status": "passed",
+      "head": "b3598c112f35a6e0676e4744ea16239092cc950c",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T232923Z-1004249-565697291/receipt.json",
+      "receipt_sha256": "7e890da06a4a354f5f890f5b59585e5fb0eaf7f5fbffa3558ce75a8ae222e8a0",
+      "executed_targets": 16,
+      "reused_targets": 30,
+      "test_targets": 8,
+      "executed_test_count": 484,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
     }
   }
 }

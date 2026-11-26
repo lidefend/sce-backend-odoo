@@ -453,6 +453,31 @@ clean 运行态权威回读：
 重建 clean 前端与 Odoo 容器，并在 clean HEAD 重新执行本地增量入口。143 个业务入口的
 当前候选页面、角色或办理旅程仍未执行，远端 PR CI、主线资格、部署和用户验收均未完成。
 
+产品改动已提交为 `b3598c112f35a6e0676e4744ea16239092cc950c`，并按该 SHA 重建
+clean 前端，构建指纹为
+`fe998421ada71ca76b1547224569dc427975321abbbc21b3de597dad62f72f65`。
+
+clean 运行态回读：
+
+- `/t/clean/api/runtime-version` 同时返回上述源码 SHA、构建指纹、`sc_clean`、
+  namespace `ns_c6fed472e939` 与 alias `clean`；
+- 根路径 `/build-info.json` 返回同一源码 SHA；
+- `local.clean.health` 与 `local.clean.entry_identity.verify` 均通过；
+- project/database/dbfilter/namespace 保持 clean 专属身份，未使用 dev/sample/acceptance
+  或客户数据。
+
+在该 clean HEAD 上执行 `make ci.local.iteration`：46 个必需目标全部成立，其中
+16 个本轮执行、30 个复用，8 个测试目标执行 484 项测试，5 项静态检查通过，
+`unmapped_paths=0`，退出零。回执：
+
+`.runtime/frontend-dev-validation/executions/20261126T232923Z-1004249-565697291/receipt.json`
+
+回执 SHA256：
+`7e890da06a4a354f5f890f5b59585e5fb0eaf7f5fbffa3558ce75a8ae222e8a0`。
+
+仍未执行 143 个业务入口的当前候选页面、角色或办理旅程，也未完成远端 PR CI、主线资格、
+部署和用户验收。
+
 ### 2026-11-27 FC-01 percentage/duration 单位消费收口
 
 继续按 P0 描述符条件规则核对时发现，percentage/duration 虽要求声明
