@@ -12,6 +12,7 @@ import {
 } from '../contracts/v2/store';
 import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 import { contractGapError, requireDeclaredBoolean, requireDeclaredText } from '../contract/contractGap';
+import { isRegisteredComponentKey } from '../presentation/professionalComponentRegistry';
 
 type Dict = Record<string, unknown>;
 
@@ -294,12 +295,14 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         const type = String(schema.type || field?.fieldType || '').trim();
         const widget = String(schema.widget || field?.widgetType || field?.fieldType || '').trim();
         const declaredComponentKey = String(schema.componentKey || field?.componentKey || '').trim();
-        // Collection projection previously omitted component identity. Expose
-        // only the duration identity in this batch so Kanban does not acquire
-        // unrelated percentage/money/status semantics while fixing float_time.
-        const componentKey = ['sc.value.duration', 'sc.value.percentage'].includes(declaredComponentKey)
-          ? declaredComponentKey
-          : '';
+        if (declaredComponentKey && !isRegisteredComponentKey(declaredComponentKey)) {
+          throw contractGapError({
+            kind: 'contract_defect',
+            missing: `list_column.${name}.component_key_registration`,
+            requiredDeclarationLayer: 'P0:frontend:semantic_registry',
+          }, `列表列 ${name} 的组件身份未登记: ${declaredComponentKey}`);
+        }
+        const componentKey = declaredComponentKey;
         const valueField = String(schema.value_field || name).trim() || name;
         const aggregate = String(schema.aggregate || (schema.sum ? 'sum' : '')).trim();
         const rawSelection = Array.isArray(schema.selection) ? schema.selection : field?.selection;

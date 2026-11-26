@@ -252,6 +252,57 @@ check(presentCollectionKanbanCell({
   columnOptions: [percentageOption],
 }).text, '12.5000%', 'Kanban consumes projected percentage identity and precision');
 
+const statusWidget = {
+  widgetId: 'status',
+  fieldCode: 'state',
+  label: 'State',
+  widgetType: 'selection',
+  componentKey: 'sc.display.status',
+  componentConfig: {
+    fieldType: 'selection',
+    selection: [['pending', '待处理']],
+  },
+  fieldDescriptor: {
+    fieldType: 'selection',
+    componentKey: 'sc.display.status',
+    selection: [['pending', '待处理']],
+  },
+};
+const statusStore = {
+  snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
+  widgetsById: new Map([[statusWidget.widgetId, statusWidget]]),
+  widgetsByFieldCode: new Map([[statusWidget.fieldCode, statusWidget]]),
+  widgetsByFieldCodeAll: new Map([[statusWidget.fieldCode, [statusWidget]]]),
+  widgetStatusById: new Map(),
+  primaryDataSource: {},
+} as unknown as ContractV2NormalizedStore;
+const statusOption = runtime.resolveListColumnOptions(statusStore, { columns: ['state'] })[0];
+check(statusOption?.componentKey, 'sc.display.status', 'collection projection preserves status component identity');
+check(presentListCell({
+  raw: 'pending',
+  column: { ...statusOption, field: statusOption.name },
+}).text, '待处理', 'List consumes projected status identity');
+
+const unknownWidget = {
+  ...statusWidget,
+  widgetId: 'unknown-component',
+  fieldCode: 'unknown_component',
+  componentKey: 'sc.unknown.component',
+  fieldDescriptor: { ...statusWidget.fieldDescriptor, componentKey: 'sc.unknown.component' },
+};
+const unknownStore = {
+  ...statusStore,
+  widgetsById: new Map([[unknownWidget.widgetId, unknownWidget]]),
+  widgetsByFieldCode: new Map([[unknownWidget.fieldCode, unknownWidget]]),
+  widgetsByFieldCodeAll: new Map([[unknownWidget.fieldCode, [unknownWidget]]]),
+} as unknown as ContractV2NormalizedStore;
+assert.throws(
+  () => runtime.resolveListColumnOptions(unknownStore, { columns: ['unknown_component'] }),
+  { name: 'ContractGapError' },
+  'an unregistered declared component identity must stop instead of being dropped',
+);
+cases += 1;
+
 // Attachment actions cross the same producer as any other field identity. A
 // relation target and role are both required before List or FieldValue may
 // expose link behavior.

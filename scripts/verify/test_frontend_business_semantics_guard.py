@@ -217,6 +217,18 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         ))
         self.assertTrue(any("declared field unit" in failure for failure in failures))
 
+    def test_partial_component_identity_allowlist_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "const componentKey = declaredComponentKey;",
+                "const componentKey = ['sc.value.duration', 'sc.value.percentage'].includes(declaredComponentKey) ? declaredComponentKey : '';",
+            )
+            if path == "app/action_runtime/useActionViewContractShapeRuntime.ts"
+            else None,
+        ))
+        self.assertTrue(any("partial component identity allowlist" in failure for failure in failures))
+
     def test_hard_coded_duration_rounding_fails(self):
         failures = guard.validate(lambda path: source(
             path,

@@ -424,6 +424,35 @@ clean 运行态权威回读：
 仍未执行 143 个业务入口的当前候选页面、角色或办理旅程，也未完成远端 PR CI、主线资格、
 部署和用户验收。
 
+### 2026-11-27 FC-01 collection component identity 消费收口
+
+继续检查 V2 列投影时发现，字段描述符已经携带 `componentKey`，但列表列投影只允许
+`sc.value.duration` 与 `sc.value.percentage` 两个身份，其余已登记身份会被静默清空。
+这会让状态等通用展示控件退化成无身份的值渲染，属于 P0 前端契约消费缺陷。
+
+本切片完成：
+
+- 列投影使用既有的 `isRegisteredComponentKey` 语义注册表校验声明身份，已登记身份原样
+  保留，不再维护局部产品身份 allowlist；
+- 未登记但已声明的身份抛 `ContractGapError`，不静默丢弃、不从字段类型或标签猜测替代；
+- 增加 `sc.display.status` 身份保留、List selection 标签消费和未知
+  `sc.unknown.component` 停机的区分性用例；
+- 静态守卫禁止重新引入 duration/percentage 局部 allowlist；
+- 重新生成 component-driver takeover inventory，记录变化后的生产源码输入摘要。
+
+`make ci.local.iteration` 在 `757b84dcf183946a42f0d1ce1fb3c8ec866fbd02`
+加当前 owned dirty scope 上执行 25 个目标、复用 21 个未变目标，其中 16 个测试目标
+共执行 671 项测试、6 项静态检查，`unmapped_paths=0`，全部退出零。原始回执：
+
+`.runtime/frontend-dev-validation/executions/20261126T232422Z-959415-419794986/receipt.json`
+
+回执 SHA256：
+`092b283a3941dfbad38f8982f558455954073ace75dd8909fd079f8d313bd230`。
+
+该证据只证明当前 dirty 候选的本地精准消费与治理检查。产品提交后仍需按新精确 HEAD
+重建 clean 前端与 Odoo 容器，并在 clean HEAD 重新执行本地增量入口。143 个业务入口的
+当前候选页面、角色或办理旅程仍未执行，远端 PR CI、主线资格、部署和用户验收均未完成。
+
 ### 2026-11-27 FC-01 percentage/duration 单位消费收口
 
 继续按 P0 描述符条件规则核对时发现，percentage/duration 虽要求声明

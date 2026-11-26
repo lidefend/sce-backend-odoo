@@ -94,6 +94,12 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     if "unit: option?.unit" not in kanban_adapter:
         failures.append("Kanban adapter drops the declared field unit")
 
+    shape_runtime = _read("app/action_runtime/useActionViewContractShapeRuntime.ts", read_text)
+    if "isRegisteredComponentKey(declaredComponentKey)" not in shape_runtime:
+        failures.append("collection projection does not validate declared component identity through the semantic registry")
+    if "['sc.value.duration', 'sc.value.percentage'].includes(declaredComponentKey)" in shape_runtime:
+        failures.append("collection projection still hard-codes a partial component identity allowlist")
+
     display = _read("utils/display.ts", read_text)
     if "presentDeclaredBusinessValue({" not in display:
         failures.append("[CFG-001] generic display does not delegate declared business values to the shared authority")

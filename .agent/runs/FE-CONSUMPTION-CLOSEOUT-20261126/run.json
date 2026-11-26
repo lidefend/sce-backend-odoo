@@ -481,7 +481,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue FC-01 with the remaining semantic coverage matrix and current-candidate runtime equivalence classes; do not inherit historical 143-entry browser evidence.",
+  "next_exact_step": "Commit the component-identity product candidate, rebuild the isolated clean runtime from that exact HEAD, verify health and identity readback, then rerun ci.local.iteration on the clean HEAD before continuing the remaining FC-01 semantic coverage matrix.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -649,6 +649,28 @@
       "reused_targets": 30,
       "executed_test_count": 483,
       "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
+    },
+    "fc01_component_identity_consumption": {
+      "status": "passed",
+      "stage_identity": "757b84dcf183946a42f0d1ce1fb3c8ec866fbd02 plus the owned component-identity dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T232422Z-959415-419794986/receipt.json",
+      "receipt_sha256": "092b283a3941dfbad38f8982f558455954073ace75dd8909fd079f8d313bd230",
+      "executed_targets": 25,
+      "reused_targets": 21,
+      "test_targets": 16,
+      "executed_test_count": 671,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "collection projection validates declared component identity through the semantic registry",
+        "registered component identities are preserved instead of being reduced to a local duration/percentage allowlist",
+        "an unregistered declared component identity stops with ContractGapError",
+        "List consumes the preserved status identity and selection label",
+        "the static guard rejects reintroduction of the partial component identity allowlist",
+        "the component-driver inventory was regenerated for the changed production source input"
+      ],
+      "scope_limit": "Local targeted validation only; clean exact-HEAD runtime, remote PR CI, mainline qualification, the 143-entry browser matrix and user acceptance remain not_run."
     }
   }
 }
