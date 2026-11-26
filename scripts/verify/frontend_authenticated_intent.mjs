@@ -69,7 +69,13 @@ export async function bindAuthenticatedIntent(response, expectedPrincipal) {
   }
   assertEntryRequest(url, headers, original);
   const replayIntent = async (context, intent, params) => {
-    const data = { ...original, intent, params };
+    // Replaying the captured intent retains its actual client declarations.
+    // A different intent receives only its own parameters; startup filters and
+    // negotiation data must not leak into unrelated business operations.
+    const replayParams = intent === original.intent
+      ? { ...original.params, ...params }
+      : params;
+    const data = { ...original, intent, params: replayParams };
     assertEntryRequest(url, headers, data);
     let replay;
     let transportCode = 'unknown';

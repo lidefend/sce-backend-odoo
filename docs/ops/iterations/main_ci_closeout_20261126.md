@@ -66,3 +66,12 @@ P4 修复将固定 Node 运行时提前，在选中工具检查或正式全量�
 P4 修复守卫仅识别当前终端解码器中的真实 requiredRecord 调用，补删除读取、注释/字符串伪装、旧接口及无关函数负例。为守卫读取的生产/消费事实补本地选测，守卫自身注册为远端纯检查，前端 PR 单元入口加入 stable_projection 前置目标。保持必需字段集合等价断言，未恢复旧契约或改变产品逻辑。
 
 14 项定向守卫测试、277 项增量执行器测试、8 个本地影响集目标通过；执行日志与 Make 接线 dry-run 见 run.projection_guard_repair。新候选远端结果待验证。本轮从已合并主线新建 fix/main-full-projection-guard-20261126，沿用同一批次记录；前端准备文件已限定路径保全，发布后恢复。
+
+
+### 真实浏览器验收的认证重放参数修复
+
+原主线前端全量运行 45849949930 在 releasedNavigationTargetFor 调用 system.init 时收到 HTTP409 / CONTRACT_VERSION_UNSUPPORTED。首次浏览器启动已成功，后续 bindAuthenticatedIntent.replayIntent 用空 params 替换原请求参数，丢失实际客户端声明。P4 修复同意图重放保留已捕获参数并应用显式覆盖，其他意图保持独立参数；不硬编码协商版本、不放宽后端拒绝。
+
+定向入口 delivery_hardening.guard、standard_preview.unit 全部通过，包含 18/40/140 项 Python 测试与 42 项 Node 测试；最终 ci.local.iteration 3 个目标通过。新增回归模拟缺失协商时返回409的接收方，验证保留、显式错误覆盖被拒绝、不同意图不泄漏启动参数及原始参数不被修改。
+
+本地证据不替代浏览器：新候选通过现有 candidate.required_checks.dispatch 进入完整发布候选验收，包含真实浏览器步骤；通过后受保护合并，再核验新主线全量。前端产品专题仍保持 planned。

@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "baseline_sha": "162bdc3c78558f6ebc5cadef123c9f7a82564121",
+  "baseline_sha": "c55e907bdd50a1fdb720839b1aabd8b5cc17fc35",
   "scope": [
     "scripts/ci/main_full_release_dispatch.py",
     "scripts/ci/test_main_full_release_dispatch.py",
@@ -47,7 +47,9 @@
     ".github/workflows/professional_quality_gate.yml",
     "scripts/ci/test_backend_test_suite_dispatch_contract.py",
     "scripts/verify/frontend_v2_policy_projection_guard.py",
-    "scripts/verify/test_frontend_v2_policy_projection_guard.py"
+    "scripts/verify/test_frontend_v2_policy_projection_guard.py",
+    "scripts/verify/frontend_authenticated_intent.mjs",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py"
   ],
   "environment": {
     "kind": "offline",
@@ -110,9 +112,9 @@
   "blockers": [
     "Remote integration and repaired exact-main full audit pending."
   ],
-  "next_exact_step": "Publish followup PR; verify current-head gates and inspect still-running main frontend result before integration.",
+  "next_exact_step": "Publish replay fix and trigger exact-head candidate checks including full browser; resolve failures before merge, then qualify resulting main.",
   "id": "MAIN-CI-CLOSEOUT-20261126",
-  "branch": "fix/main-full-projection-guard-20261126",
+  "branch": "fix/main-full-authenticated-replay-20261127",
   "status": "verification_pending",
   "goal": ".agent/goals/MAIN-CI-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/main_ci_closeout_20261126.md",
@@ -333,5 +335,18 @@
     "not_run": "new exact-head remote CI",
     "frontend_full_prior_main": "still running; not claimed passed",
     "preparation_stash": "a70819b007a228d7c68bd1dd7e9ae5def819d18e"
+  },
+  "authenticated_replay_repair": {
+    "base": "c55e907bdd50a1fdb720839b1aabd8b5cc17fc35",
+    "failed_main_run": 45849949930,
+    "classification": "validation_tool_defect",
+    "cause": "Probe replaced the successful browser startup params with an empty object, dropping client contract negotiation.",
+    "fix": "Same-intent replay merges captured params with explicit overrides; other intents keep only their own params. No protocol defaults or backend relaxation.",
+    "local_status": "passed",
+    "local_targets": 3,
+    "focused_log": ".runtime/main-ci-replay-focused.log",
+    "iteration_log": ".runtime/main-ci-replay-iteration.log",
+    "remote_requirement": "Full candidate frontend browser release must pass before merging; final exact-main full qualification remains required.",
+    "preparation_stash": "39f0f3f7d389abd975b3304253d75da40335bd26"
   }
 }
