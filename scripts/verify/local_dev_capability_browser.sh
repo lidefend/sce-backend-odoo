@@ -26,17 +26,18 @@ if [[ "${1:-}" == "--readback" ]]; then
   exit 0
 fi
 set +e
-LOCAL_DEV_CAPABILITY_JSON="$before" FRONTEND_URL="http://127.0.0.1:${NGINX_PORT}/t/demo" \
+LOCAL_DEV_CAPABILITY_JSON_FILE="$evidence_dir/before.json" FRONTEND_URL="http://127.0.0.1:${NGINX_PORT}/t/demo" \
 E2E_PASSWORD="$SC_DEMO_USER_PASSWORD" CANDIDATE_HEAD="$(git -C "$ROOT_DIR" rev-parse HEAD)" \
 node "$ROOT_DIR/scripts/verify/local_dev_capability_browser.mjs"
 browser_status=$?
 set -e
 after="$(resolve_target)"
 printf '%s\n' "$after" > "$evidence_dir/after.json"
-BEFORE_JSON="$before" AFTER_JSON="$after" python3 - <<'PYREADBACK'
-import json, os
-before = json.loads(os.environ['BEFORE_JSON'])
-after = json.loads(os.environ['AFTER_JSON'])
+python3 - "$evidence_dir/before.json" "$evidence_dir/after.json" <<'PYREADBACK'
+import json, sys
+from pathlib import Path
+before = json.loads(Path(sys.argv[1]).read_text())
+after = json.loads(Path(sys.argv[2]).read_text())
 assert before == after, 'capability browser changed business data or projected state'
 print('[capability.browser] business readback unchanged')
 PYREADBACK

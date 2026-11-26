@@ -22,6 +22,17 @@ export function ownsSceneRoute(routeName: unknown): boolean {
   return String(routeName ?? '').trim() === SCENE_ROUTE_NAME;
 }
 
+/** Kept-alive scene instances may only resolve their own active cache identity. */
+export function ownsSceneActivity(options: {
+  routeName: unknown;
+  active: boolean;
+  instanceKey: string;
+  currentKey: string;
+}): boolean {
+  return ownsSceneRoute(options.routeName) && options.active
+    && Boolean(options.instanceKey) && options.instanceKey === options.currentKey;
+}
+
 export function resolveSceneContractEntryIntent(options: {
   routeName: unknown;
   declaredTarget?: { intent?: unknown; entry_intent?: unknown } | null;

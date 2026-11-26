@@ -186,7 +186,7 @@
 
 <script setup lang="ts">
 import { shouldHydrateSceneContent } from '../app/sceneEntryContract';
-import { computed, ref, watch } from 'vue';
+import { computed, onActivated, onDeactivated, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router';
 import ActionView from './ActionViewShell.vue';
 import SceneContractBlockGridView from './SceneContractBlockGridView.vue';
@@ -206,13 +206,14 @@ import { trackSceneOpen } from '../api/usage';
 import { intentRequest } from '../api/intents';
 import { ApiError } from '../api/client';
 import { contractGapError, type ContractDefectRef } from '../app/contract/contractGap';
-import { currentContextSignal, currentContextEpoch } from '../app/contextEpoch';
+import { currentContextSignal, currentContextEpoch, onContextEpochChange } from '../app/contextEpoch';
+import { resolveActivityRouteKey } from '../app/activityPageCacheIdentity';
 import { awaitSceneHydration } from '../app/sceneHydration';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { readWorkspaceContext } from '../app/workspaceContext';
 import { buildCanonicalSceneRouteTarget, normalizeLegacyWorkbenchPath, resolveSceneDefaultOrder } from '../app/routeQuery';
 import { withEnterpriseSetupReturnTarget } from '../app/enterpriseSetupNavigation';
-import { ownsSceneRoute, resolveSceneContractEntryIntent, resolveSceneRuntimeDiagnostic } from '../app/sceneEntryContract';
+import { ownsSceneActivity, resolveSceneContractEntryIntent, resolveSceneRuntimeDiagnostic } from '../app/sceneEntryContract';
 import {
   resolveSceneActionTarget,
   resolveSceneHandlingEntryTarget,
@@ -229,6 +230,22 @@ const route = useRoute();
 const router = useRouter();
 const showSceneBlocksDebug = computed(() => isSceneBlocksDebugEnabled(route));
 const session = useSessionStore();
+function currentSceneActivityKey() {
+  return resolveActivityRouteKey({
+    routeName: route.name, params: route.params, query: route.query, meta: route.meta,
+    selectedRecordId: session.recordContext?.selected?.id,
+  });
+}
+const instanceActivityKey = currentSceneActivityKey();
+const sceneInstanceActive = ref(true);
+const sceneContextEpoch = ref(currentContextEpoch());
+const stopSceneContextListener = onContextEpochChange(() => {
+  sceneContextEpoch.value = currentContextEpoch();
+});
+function ownsCurrentSceneActivity() {
+  return ownsSceneActivity({ routeName: route.name, active: sceneInstanceActive.value,
+    instanceKey: instanceActivityKey, currentKey: currentSceneActivityKey() });
+}
 const pageContract = usePageContract('scene');
 const pageText = pageContract.text;
 const pageSectionEnabled = pageContract.sectionEnabled;
@@ -239,7 +256,7 @@ const pageActionTarget = pageContract.actionTarget;
 const pageGlobalActions = pageContract.globalActions;
 const headerActions = computed(() => pageGlobalActions.value);
 const currentSceneKey = computed(() => String(route.params.sceneKey || route.meta?.sceneKey || '').trim());
-const sceneContractEntryIntent = computed(() => resolveSceneContractEntryIntent({
+const sceneContractEntryIntent = computed(() => !ownsCurrentSceneActivity() ? '' : resolveSceneContractEntryIntent({
   routeName: route.name,
   declaredTarget: scene.value?.key === currentSceneKey.value ? scene.value.target : null,
   queryEntryIntent: route.query.entry_intent,
@@ -434,6 +451,7 @@ function resolveSceneRuntime() {
 
 
 const sceneResolveSignature = computed(() => JSON.stringify({
+  contextEpoch: sceneContextEpoch.value,
   path: route.path,
   sceneKey: String(route.params.sceneKey || route.meta?.sceneKey || '').trim(),
   actionId: Number(route.query.action_id || 0) || 0,
@@ -629,7 +647,7 @@ async function hydrateSceneReadyForCurrentScene(sceneKey: string) {
   const key = String(sceneKey || '').trim();
   const epoch = currentContextEpoch();
   const scopeKey = `${epoch}:${key}`;
-  if (!key || hydratedSceneScope === scopeKey) return false;
+  if (!ownsCurrentSceneActivity() || !key || hydratedSceneScope === scopeKey) return false;
   const pending = sceneHydrations.get(scopeKey);
   if (pending) return pending;
   const hydration = (async () => {
@@ -645,7 +663,7 @@ async function hydrateSceneReadyForCurrentScene(sceneKey: string) {
       },
       meta: { startup_chain_bypass: true },
     }, { signal }), currentContextSignal());
-    if (currentContextEpoch() !== epoch || currentSceneKey.value !== key || !ownsSceneRoute(route.name)) return false;
+    if (currentContextEpoch() !== epoch || currentSceneKey.value !== key || !ownsCurrentSceneActivity()) return false;
     const contract = result.scene_ready_contract;
     if (contract && typeof contract === 'object' && Array.isArray((contract as Record<string, unknown>).scenes)) {
       const readyContract = contract as Record<string, unknown>;
@@ -965,11 +983,11 @@ function isCanonicalSceneOwnerTarget(target: SceneTarget, sceneKey: string) {
 async function resolveScene() {
   // The scene runtime only acts for the scene route it owns; a cached view must not
   // dispatch a foreign route's business `entry_intent` value as a scene intent.
-  if (!ownsSceneRoute(route.name)) return;
+  if (!ownsCurrentSceneActivity()) return;
   const resolution = ++sceneResolution;
   const epoch = currentContextEpoch();
   const ownsResolution = () => resolution === sceneResolution
-    && epoch === currentContextEpoch() && ownsSceneRoute(route.name);
+    && epoch === currentContextEpoch() && ownsCurrentSceneActivity();
   try {
     status.value = 'loading';
     clearError();
@@ -1347,6 +1365,21 @@ function findActionNodeByMenuXmlid(nodes: NavNode[], menuXmlid: string): NavNode
   };
   return walk(nodes) || null;
 }
+
+onDeactivated(() => {
+  sceneInstanceActive.value = false;
+  sceneResolution += 1;
+});
+onBeforeUnmount(() => {
+  stopSceneContextListener();
+  sceneInstanceActive.value = false;
+  sceneResolution += 1;
+});
+onActivated(() => {
+  const returning = !sceneInstanceActive.value;
+  sceneInstanceActive.value = true;
+  if (returning) void resolveScene();
+});
 
 watch(
   sceneResolveSignature,

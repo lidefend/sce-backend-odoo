@@ -10,6 +10,7 @@ const COMPANY_ID = Number(process.env.CONFIG_COMPANY_ID || 0);
 const PASSWORD = String(process.env.E2E_PASSWORD || '');
 const CANDIDATE_SHA = String(process.env.CANDIDATE_GIT_HEAD || '');
 const TEST_TOOL_GIT_HEAD = String(process.env.TEST_TOOL_GIT_HEAD || '');
+const READ_ONLY = process.env.ENTERPRISE_READ_ONLY === '1';
 const SCENARIO_ONLY = ['1', 'true', 'yes'].includes(
   String(process.env.C02_SCENARIO_ONLY || '').trim().toLowerCase(),
 );
@@ -20,7 +21,7 @@ const OUTPUT = path.resolve(
     || '.runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer',
 );
 
-assert.equal(BASE_URL, 'http://127.0.0.1:5176');
+assert.equal(BASE_URL, READ_ONLY ? 'http://127.0.0.1:18081/t/demo' : 'http://127.0.0.1:5176');
 assert.match(CANDIDATE_SHA, /^[0-9a-f]{40}$/);
 assert.match(TEST_TOOL_GIT_HEAD, /^[0-9a-f]{40}$/);
 assert.ok(LOGIN);
@@ -36,6 +37,7 @@ const report = {
   test_tool_git_head: TEST_TOOL_GIT_HEAD,
   identity: { login: LOGIN, user_id: USER_ID, company_id: COMPANY_ID },
   scenario_only: SCENARIO_ONLY,
+  read_only: READ_ONLY,
   entry_feedback: null,
   scenario_catalog: null,
   writes: [],
@@ -52,7 +54,7 @@ function intentBody(request) {
 
 function isBusinessWrite(request) {
   const body = intentBody(request);
-  if (body?.intent === 'scenario.activation.set') return true;
+  if (/(?:^|\.)(?:set|save|write|create|unlink|delete|assign|execute|publish|rollback|activate|deactivate)$/.test(String(body?.intent || ''))) return true;
   return body?.intent === 'api.data'
     && ['create', 'write', 'unlink'].includes(String(body?.params?.op || ''));
 }
@@ -199,9 +201,78 @@ async function returnToEnterpriseSetup(page, listLocation) {
   return { url: page.url(), diagnosis };
 }
 
+async function walkInitializationReadOnly(page) {
+  const catalogResponse = page.waitForResponse(response => response.url().includes('/api/v1/intent')
+    && intentBody(response.request()).intent === 'scenario.activation.catalog.get', { timeout: 60000 });
+  const diagnosisResponse = page.waitForResponse(response => response.url().includes('/api/v1/intent')
+    && intentBody(response.request()).intent === 'enterprise.readiness.diagnosis.get', { timeout: 60000 });
+  await page.goto(`${BASE_URL}/s/enterprise.setup`, { waitUntil: 'domcontentloaded' });
+  const [catalog, diagnosis] = await Promise.all([
+    catalogResponse.then(catalogBodyFrom), diagnosisResponse.then(catalogBodyFrom),
+  ]);
+  assert.equal(catalog.company_id, COMPANY_ID);
+  assert.equal(catalog.actor.user_id, USER_ID);
+  assert.equal(catalog.actor.login, LOGIN);
+  assert.equal(catalog.actor.platform_admin, false);
+  assert.equal(catalog.target_scope.is_global_product_release, false);
+  assert.equal(diagnosis.company_id, COMPANY_ID);
+  assert.equal(diagnosis.contract_version, 'enterprise_readiness.v2');
+  assert.ok(Array.isArray(diagnosis.rules) && diagnosis.rules.length > 0);
+  const panel = page.locator('#enterprise-scenario-activation[data-state="ready"]');
+  await panel.waitFor({ timeout: 30000 });
+  report.scenario_catalog = { mode: 'read_only', company_id: catalog.company_id,
+    row_count: catalog.row_count, business_scenario_count: catalog.business_scenarios?.length,
+    writes: 'not_run', panel_text: await panel.innerText() };
+  report.diagnosis = diagnosis;
+  const buttons = page.locator('button.handling-item[data-action-xmlid]');
+  await buttons.first().waitFor({ state: 'visible' });
+  const entries = await buttons.evaluateAll(nodes => nodes.map(node => ({
+    xmlid: node.getAttribute('data-action-xmlid'), label: node.innerText,
+  })));
+  for (const label of ['企业信息', '组织架构', '岗位管理', '人员与账号', '业务权限分配']) {
+    assert.ok(entries.some(entry => entry.label.includes(label)), `missing initialization entry: ${label}`);
+  }
+  report.initialization_entries = [];
+  await page.screenshot({ path: path.join(OUTPUT, 'initialization.png'), fullPage: true });
+  for (const [index, entry] of entries.entries()) {
+    await page.locator(`button.handling-item[data-action-xmlid="${entry.xmlid}"]`).click();
+    await page.waitForFunction(() => !location.pathname.endsWith('/s/enterprise.setup'), null, { timeout: 30000 });
+    assert.ok(!page.url().includes('/access-denied'), `${entry.xmlid}: entry denied`);
+    await page.waitForFunction(() => [...document.querySelectorAll('[data-semantic-component="ActionView"], [data-semantic-component="ContractFormPage"]')]
+      .some(node => node.getClientRects().length && ['ok', 'empty', 'ready'].includes(
+        node.getAttribute('data-collection-state') || node.getAttribute('data-state'))), null, { timeout: 45000 });
+    assert.equal(await page.locator('[data-contract-gap]:visible').count(), 0);
+    const row = { ...entry, url: page.url(), status: 'passed', detail: 'not_available' };
+    const primary = page.locator('tr[data-record-key] button[data-semantic-cell-kind="primary"]:visible').first();
+    if (await primary.count()) {
+      await primary.click();
+      const form = page.locator('[data-semantic-component="ContractFormPage"][data-state="ok"]:visible');
+      await form.waitFor({ timeout: 45000 });
+      row.detail = 'passed';
+      row.model = await form.getAttribute('data-form-model');
+    }
+    await page.screenshot({ path: path.join(OUTPUT, `initialization-entry-${index + 1}.png`), fullPage: true });
+    report.initialization_entries.push(row);
+    await page.getByRole('tab', { name: '切换至企业初始化', exact: true }).click();
+    await page.waitForFunction(() => location.pathname.endsWith('/s/enterprise.setup'), null, { timeout: 30000 });
+    await buttons.first().waitFor({ state: 'visible', timeout: 30000 });
+  }
+  report.entry_feedback = { kind: 'read_only_initialization_entries', count: entries.length };
+}
+
 const browser = await launchChromium({ headless: true });
 try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
+  if (READ_ONLY) {
+    const response = await context.request.get(`${BASE_URL}/api/runtime-version`);
+    assert.equal(response.status(), 200);
+    report.runtime = await response.json();
+    assert.equal(report.runtime.source_revision, CANDIDATE_SHA);
+    assert.equal(report.runtime.database, 'sc_dev_demo');
+    assert.match(report.runtime.frontend_build_sha256, /^[0-9a-f]{64}$/);
+    await context.route('**/api/v1/intent', route => isBusinessWrite(route.request())
+      ? route.abort('blockedbyclient') : route.continue());
+  }
   const page = await context.newPage();
   page.on('pageerror', (error) => report.errors.push(error.message));
   const requests = [];
@@ -210,6 +281,10 @@ try {
   });
   await login(page);
 
+  if (READ_ONLY) {
+    await walkInitializationReadOnly(page);
+    assert.equal(requests.filter(isBusinessWrite).length, 0, 'read-only walkthrough must not attempt business writes');
+  } else {
   const catalogResponsePromise = page.waitForResponse((response) => (
     response.url().includes('/api/v1/intent')
     && intentBody(response.request()).intent === 'scenario.activation.catalog.get'
@@ -359,6 +434,8 @@ try {
     }
   }
 
+  }
+
   report.writes = requests.filter(isBusinessWrite).map((request) => intentBody(request));
   if (SCENARIO_ONLY) {
     assert.ok(
@@ -369,7 +446,7 @@ try {
   assert.deepEqual(report.errors, []);
   report.status = 'passed';
   fs.writeFileSync(path.join(OUTPUT, 'report.json'), JSON.stringify(report, null, 2));
-  console.log(`[enterprise_configuration_consumer] PASS entry=${report.entry_feedback.kind} catalog=${report.scenario_catalog.mode} rows=${report.scenario_catalog.row_count} scenario_only=${SCENARIO_ONLY}`);
+  console.log(`[enterprise_configuration_consumer] PASS entry=${report.entry_feedback.kind} catalog=${report.scenario_catalog.mode} scenarios=${report.scenario_catalog.business_scenario_count} scenario_only=${SCENARIO_ONLY}`);
   await context.close();
 } catch (error) {
   report.failure = error instanceof Error ? error.stack || error.message : String(error);

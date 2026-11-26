@@ -1348,6 +1348,7 @@ RULES = (
     Rule((
         "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
         "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
+        "scripts/verify/local_dev_enterprise_configuration_consumer.test.mjs",
     ), (
         "verify.local.dev.enterprise_configuration.consumer.unit",
     )),
@@ -2067,6 +2068,12 @@ RULES = (
         "scripts/verify/frontend_list_optional_columns_contract_test.ts",
     ), (
         "verify.frontend.list_optional_columns.unit",
+    )),
+    Rule((
+        "scripts/verify/local_dev_capability_",
+        "scripts/verify/test_local_dev_capability_tooling.py",
+    ), (
+        "verify.local.dev.capability.tooling.unit",
     )),
     Rule((
         "scripts/verify/business_entry_matrix_",

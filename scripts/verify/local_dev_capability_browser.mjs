@@ -2,7 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import assert from 'node:assert/strict';
 import { launchChromium } from './playwright_runtime.mjs';
-const target = JSON.parse(process.env.LOCAL_DEV_CAPABILITY_JSON || '{}');
+const target = JSON.parse(process.env.LOCAL_DEV_CAPABILITY_JSON_FILE
+  ? fs.readFileSync(process.env.LOCAL_DEV_CAPABILITY_JSON_FILE, 'utf8')
+  : process.env.LOCAL_DEV_CAPABILITY_JSON || '{}');
 const output = path.resolve('.runtime/agent-runs/PRODUCT-ITERATION-V2-20261020/capability-browser');
 const report = { status: 'failed', head: process.env.CANDIDATE_HEAD, stage: 'head_plus_dirty_scope', cases: [], errors: [], mutations: [] };
 assert.equal(target.database, 'sc_dev_demo');
@@ -116,13 +118,31 @@ try {
         assert.equal(typeof globalStatus?.modelRights?.write, 'boolean', 'model write authority must be declared');
         assert.equal(typeof globalStatus?.effectiveRecordCapabilities?.create, 'boolean', 'create authority must be declared');
         const root = page.locator('[data-semantic-component="ActionView"]');
-        assert.equal(await root.getAttribute('data-can-create'), String(globalStatus.effectiveRecordCapabilities.create));
-        assert.equal(await root.getAttribute('data-can-edit'), String(globalStatus.modelRights.write));
-        const actionAuthority = { create: globalStatus.effectiveRecordCapabilities.create, edit: globalStatus.modelRights.write };
+        const createRule = contract.actionContract?.actionRuleList?.find(rule =>
+          rule.actionKey === 'list.create' || rule.actionId === 'action.list.create');
+        const createAuthorized = createRule?.allowed === true
+          && createRule.authorizationAllowed === true && createRule.entitlementEvaluated === true;
+        const createTarget = createRule?.target;
+        const delegatedCreate = createAuthorized && createTarget?.type === 'action'
+          && Number.isInteger(createTarget.action_id) && createTarget.action_id > 0
+          && Number.isInteger(createTarget.menu_id) && createTarget.menu_id > 0;
+        const directCreate = createAuthorized && createTarget?.type === 'record_create'
+          && globalStatus.effectiveRecordCapabilities.create === true;
+        const expectedCreate = delegatedCreate || directCreate;
+        assert.equal(await root.getAttribute('data-can-create'), String(expectedCreate), `${entry.key}: declared create entry authority`);
+        assert.equal(await root.getAttribute('data-can-edit'), String(globalStatus.modelRights.write), `${entry.key}: model edit authority`);
+        const actionAuthority = { create: expectedCreate, direct_create: globalStatus.effectiveRecordCapabilities.create,
+          delegated_create: delegatedCreate, edit: globalStatus.modelRights.write };
         const listProfile = contract.layoutContract?.listProfile;
         assert.ok(Array.isArray(listProfile?.columns) && listProfile.columns.length > 0, 'list columns must be declared');
         const headers = root.locator('[data-semantic-component="CollectionColumnHeaderControl"]');
-        assert.ok(await headers.count() > 0, 'declared collection must render field headers');
+        if (listData.records.length) {
+          await headers.first().waitFor({ state: 'visible' });
+          assert.ok(await headers.count() > 0, 'nonempty collection must render field headers');
+        } else {
+          await root.locator('[data-semantic-component="ScEmptyState"][data-state="empty"]').waitFor({ state: 'visible' });
+          assert.equal(collectionState, 'empty', 'zero records require the declared empty state');
+        }
         const renderedColumns = [];
         for (const header of await headers.all()) {
           const field = await header.getAttribute('data-column');
