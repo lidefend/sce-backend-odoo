@@ -208,15 +208,28 @@ def settlement_remaining_reservable_amount(settlement, reserved_amount: Optional
     return max(_currency_round(settlement.currency_id, remaining), 0.0)
 
 
-def compute_settlement_reservable_excluding_request(payment_rec, settlement, current_amount: float):
+def compute_settlement_reservable_excluding_request(
+    payment_rec, settlement, current_amount: float, *, evaluation_cache=None
+):
     """Return reservation metrics while excluding the request being edited."""
     ensure_payment_settlement_currency_consistency(payment_rec, settlement)
     reserved_states = get_reserved_states()
-    reserved = settlement_reserved_amount_map(
-        payment_rec.env,
-        [settlement.id],
-        reserved_states=reserved_states,
-    ).get(settlement.id, 0.0)
+    # The caller may share a private cache for one read-only evaluation pass.
+    # Cache the total reservation, never the request-specific subtraction.
+    # Executing native checks without that cache always re-reads current facts.
+    cache = evaluation_cache if isinstance(evaluation_cache, dict) else None
+    env = payment_rec.env
+    key = ("settlement_reserved_total", env.cr, env.uid, env.su,
+           tuple(env.context.get("allowed_company_ids") or ()),
+           settlement.id, tuple(reserved_states))
+    if cache is not None and key in cache:
+        reserved = cache[key]
+    else:
+        reserved = settlement_reserved_amount_map(
+            env, [settlement.id], reserved_states=reserved_states,
+        ).get(settlement.id, 0.0)
+        if cache is not None:
+            cache[key] = reserved
     if payment_rec.state in reserved_states:
         reserved -= current_amount or 0.0
     reserved = max(_currency_round(settlement.currency_id, reserved), 0.0)
@@ -498,7 +511,7 @@ def settlement_paid_payable_map(env, settlement_ids: Iterable[int], amount_total
     return res
 
 
-def compute_payment_payable_excluding_self(payment_rec):
+def compute_payment_payable_excluding_self(payment_rec, *, evaluation_cache=None):
     """
     计算当前付款申请所在结算单的已付/可付口径，排除自身，避免自我误伤。
     返回 {'paid': x, 'payable': y, 'precision': rounding}
@@ -511,6 +524,7 @@ def compute_payment_payable_excluding_self(payment_rec):
         payment_rec,
         settle,
         payment_rec.amount or 0.0,
+        evaluation_cache=evaluation_cache,
     )
     metrics["paid"] = metrics["reserved"]
     return metrics

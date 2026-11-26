@@ -474,3 +474,77 @@ class TestFixtureCompanyWorkProjection(TransactionCase):
         caller = self.env(user=finance, context={'allowed_company_ids': [company_b.id]}, su=False)
         with self.assertRaisesRegex(AccessError, 'PLATFORM_COMPANY_NOT_AUTHORIZED'):
             caller['payment.request'].search([])
+
+    def test_work_projection_reuses_totals_without_changing_actions(self):
+        from odoo.addons.smart_construction_core.models.support import operating_metrics as metrics
+        from odoo.addons.smart_construction_core.services.review_work_item_service import CurrentWorkItemService
+        finance = self.env.ref('smart_construction_acceptance_fixture.fe_user_finance')
+        company = self.env.ref('smart_construction_acceptance_fixture.fe_company_a')
+        context = {'allowed_company_ids': [company.id], 'company_id': company.id}
+        actor = self.env(user=finance.id, context=context, su=False)
+        def build():
+            return CurrentWorkItemService(actor, params={'product_workspace': True}, context=context).build()
+        original = metrics.compute_payment_payable_excluding_self
+        # Reference execution re-reads totals for every native check.
+        with patch.object(metrics, 'compute_payment_payable_excluding_self',
+                          side_effect=lambda record, **kwargs: original(record)):
+            with patch.object(metrics, 'settlement_reserved_amount_map', wraps=metrics.settlement_reserved_amount_map) as queries:
+                expected = build()
+                uncached_calls = queries.call_count
+        with patch.object(metrics, 'settlement_reserved_amount_map', wraps=metrics.settlement_reserved_amount_map) as queries:
+            actual = build()
+            cached_calls = queries.call_count
+        self.assertEqual(actual, expected)
+        self.assertGreater(cached_calls, 0)
+        self.assertGreater(uncached_calls, cached_calls * 2)
+        # A new projection must read totals again, rather than retaining a
+        # handler/session/global permission or business-data cache.
+        with patch.object(metrics, 'settlement_reserved_amount_map', wraps=metrics.settlement_reserved_amount_map) as queries:
+            self.assertEqual(build(), expected)
+            self.assertEqual(queries.call_count, cached_calls)
+
+    def test_snapshot_projection_reads_json_once_and_keeps_detached_values(self):
+        from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
+        snapshot = self.env['sc.edition.release.snapshot'].sudo().search([
+            ('state', '=', 'released'), ('is_active', '=', True),
+            ('product_key', '=', 'construction.standard'),
+        ], limit=1)
+        self.assertTrue(snapshot)
+        field_type = type(snapshot._fields['snapshot_json'])
+        original = field_type.convert_to_record
+        counts = {}
+        def convert(field, value, record):
+            if record._name == snapshot._name and record.id == snapshot.id:
+                counts[field.name] = counts.get(field.name, 0) + 1
+            return original(field, value, record)
+        with patch.object(field_type, 'convert_to_record', convert):
+            runtime = snapshot.to_runtime_dict()
+        self.assertEqual(counts.get('snapshot_json'), 1)
+        self.assertEqual(counts.get('meta_json'), 1)
+        counts.clear()
+        with patch.object(field_type, 'convert_to_record', convert):
+            lineage = EditionReleaseSnapshotService(self.env)._lineage_meta(snapshot)
+        self.assertEqual(counts.get('snapshot_json'), 1)
+        self.assertEqual(lineage['snapshot_id'], snapshot.id)
+        before = snapshot.snapshot_json
+        runtime['snapshot_json']['diagnostic_mutation'] = True
+        self.assertEqual(snapshot.snapshot_json, before)
+
+    def test_native_settlement_execution_checks_do_not_reuse_projection_totals(self):
+        from odoo.addons.smart_construction_core.models.support import operating_metrics as metrics
+        from odoo.exceptions import UserError
+        request = self.env['payment.request'].sudo().search([
+            ('type', '=', 'pay'), ('settlement_id', '!=', False), ('amount', '>', 0),
+        ], limit=1)
+        self.assertTrue(request)
+        settlement = request.settlement_id
+        # A completed read projection cannot make a later native execution
+        # check reuse its previously favorable total.
+        with patch.object(metrics, 'settlement_reserved_amount_map', return_value={settlement.id: 0.0}):
+            metrics.compute_payment_payable_excluding_self(request, evaluation_cache={})
+        with patch.object(metrics, 'settlement_reserved_amount_map', return_value={settlement.id: 10**12}) as queries:
+            with self.assertRaises(UserError):
+                request._check_settlement_remaining_amount()
+            with self.assertRaises(UserError):
+                request._check_not_overpay_settlement()
+            self.assertEqual(queries.call_count, 2)

@@ -8,4 +8,4 @@ goal:
   layer_target: CI release orchestration
   module: [scripts/ci]
   standard_vs_user_specific: standard
-  exclusions: [product_changes, persistent_deployment, historical_worktree_cleanup]
+  exclusions: [unrelated_product_changes, frontend_topic_implementation, persistent_deployment, historical_worktree_cleanup]

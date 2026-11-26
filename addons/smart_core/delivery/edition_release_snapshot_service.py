@@ -1067,7 +1067,8 @@ class EditionReleaseSnapshotService:
             )
 
     def _lineage_meta(self, rec) -> dict[str, Any]:
-        runtime = rec.snapshot_json if isinstance(rec.snapshot_json, dict) else {}
+        runtime = rec.snapshot_json
+        runtime = runtime if isinstance(runtime, dict) else {}
         runtime_meta = _dict(runtime.get("runtime_meta"))
         return {
             "snapshot_id": int(rec.id),

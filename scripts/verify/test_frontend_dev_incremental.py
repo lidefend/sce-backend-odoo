@@ -681,6 +681,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.industry_business_model_02.orm", targets)
                 self.assertIn("verify.industry_business_model_02.data_audit", targets)
 
+    def test_payment_reservation_and_projection_select_real_orm_consumers(self):
+        for path in (
+            "addons/smart_construction_core/models/support/operating_metrics.py",
+            "addons/smart_construction_core/models/core/payment_request.py",
+            "addons/smart_construction_core/services/payment_request_work_item_service.py",
+        ):
+            with self.subTest(path=path):
+                targets = set(select_targets([path]))
+                self.assertIn("verify.payment.work_projection.orm", targets)
+                self.assertNotIn("verify.workflow_contract.be_close_01.samples", targets)
+
     def test_backend_workflow_contract_does_not_select_http_samples(self):
         targets = set(select_targets([
             "addons/smart_construction_core/models/core/project_core.py",

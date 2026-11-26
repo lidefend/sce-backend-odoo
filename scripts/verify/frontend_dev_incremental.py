@@ -2372,6 +2372,14 @@ RULES = (
         "verify.workflow_contract.be_close_01.orm",
         "verify.payment.approval_state_machine.unit",
     )),
+    Rule((
+        "addons/smart_construction_core/models/support/operating_metrics.py",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/services/payment_request_work_item_service.py",
+        "addons/smart_construction_core/handlers/payment_request_available_actions.py",
+        "addons/smart_construction_core/tests/test_payment_request_work_item_service.py",
+        "addons/smart_construction_core/tests/test_payment_request_available_actions_backend.py",
+    ), ("verify.payment.work_projection.orm",)),
     # HTTP sample validation is authoritative only when the probe or its
     # executable fixture changes. Backend model and ORM contract edits must not
     # require unrelated acceptance samples that may not exist in every worktree.

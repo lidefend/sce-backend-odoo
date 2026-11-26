@@ -2493,10 +2493,10 @@ class PaymentRequest(models.Model):
                 exclude_ids=self.ids,
                 evaluation_cache=evaluation_cache,
             ),
-            self._check_settlement_remaining_amount,
+            lambda: self._check_settlement_remaining_amount(evaluation_cache=evaluation_cache),
             self._check_material_settlement_remaining_amount,
             self._check_material_settlement_balance_risk,
-            self._check_not_overpay_settlement,
+            lambda: self._check_not_overpay_settlement(evaluation_cache=evaluation_cache),
             self._check_settlement_consistency,
             lambda: self._check_settlement_compliance_or_raise(strict=False),
         ):
@@ -3089,13 +3089,13 @@ class PaymentRequest(models.Model):
             for execution in executions:
                 execution._normalize_payment_relation_values({}, current=execution)
 
-    def _check_settlement_remaining_amount(self):
+    def _check_settlement_remaining_amount(self, evaluation_cache=None):
         """防超付额度硬校验：提交/审批前必须满足结算额度（排除本申请）。"""
         for rec in self:
             settle = rec.settlement_id
             if rec.type != "pay" or not settle:
                 continue
-            metrics = opm.compute_payment_payable_excluding_self(rec)
+            metrics = opm.compute_payment_payable_excluding_self(rec, evaluation_cache=evaluation_cache)
             payable = metrics["payable"]
             precision = metrics["precision"]
             amount = rec.amount or 0.0
@@ -3116,7 +3116,7 @@ class PaymentRequest(models.Model):
                     hints=["请降低付款金额或拆分付款申请"],
                 )
 
-    def _check_not_overpay_settlement(self):
+    def _check_not_overpay_settlement(self, evaluation_cache=None):
         """
         防超付硬校验：付款金额不得超过结算单可付余额。
         """
@@ -3124,7 +3124,7 @@ class PaymentRequest(models.Model):
             if rec.type != "pay":
                 continue
             if rec.settlement_id:
-                metrics = opm.compute_payment_payable_excluding_self(rec)
+                metrics = opm.compute_payment_payable_excluding_self(rec, evaluation_cache=evaluation_cache)
                 payable = metrics["payable"]
                 precision = metrics["precision"]
                 amount = rec.amount or 0.0

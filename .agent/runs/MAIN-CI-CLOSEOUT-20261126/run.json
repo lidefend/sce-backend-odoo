@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "baseline_sha": "c55e907bdd50a1fdb720839b1aabd8b5cc17fc35",
+  "baseline_sha": "d41a3837428ac88369d5157732583014ced30350",
   "scope": [
     "scripts/ci/main_full_release_dispatch.py",
     "scripts/ci/test_main_full_release_dispatch.py",
@@ -59,7 +59,13 @@
     "scripts/ops/integration_cycle.py",
     "scripts/ops/test_integration_cycle.py",
     "scripts/ci/backend_suite_plan.py",
-    "scripts/ci/test_backend_suite_plan.py"
+    "scripts/ci/test_backend_suite_plan.py",
+    "addons/smart_core/delivery/edition_release_snapshot_service.py",
+    "addons/smart_core/delivery/product_policy_service.py",
+    "addons/smart_core/models/release_management.py",
+    "addons/smart_construction_core/models/core/payment_request.py",
+    "addons/smart_construction_core/models/support/operating_metrics.py",
+    "make/dev.mk"
   ],
   "environment": {
     "kind": "offline",
@@ -117,14 +123,50 @@
         ".agent/context.yaml",
         "make/ci.mk"
       ]
+    },
+    "verify_payment_work_projection_orm": {
+      "target": "verify.payment.work_projection.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/support/operating_metrics.py",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py"
+      ]
+    },
+    "verify_changed_tests_orm": {
+      "target": "verify.changed_tests.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/support/operating_metrics.py",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py"
+      ]
+    },
+    "verify_workflow_contract_be_close_01_orm": {
+      "target": "verify.workflow_contract.be_close_01.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/support/operating_metrics.py",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py"
+      ]
+    },
+    "verify_test_coverage_registry": {
+      "target": "verify.test.coverage.registry",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/models/support/operating_metrics.py",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py"
+      ]
     }
   },
   "blockers": [
-    "Remote integration and repaired exact-main full audit pending."
+    "Exact-main frontend performance medians exceed unchanged budgets: login 3249>3000, my_work 1539>1200, company_switch 2099>2000."
   ],
-  "next_exact_step": "Publish workflow-run selection fix after targeted validation; latest exact-head required PR checks then protected merge; exact-main full audit remains required.",
+  "next_exact_step": "Publish performance followup; verify new HEAD browser and all required checks, protected merge, exact-main full audit. No budget changes or persistent deployment.",
   "id": "MAIN-CI-CLOSEOUT-20261126",
-  "branch": "fix/main-full-authenticated-replay-20261127",
+  "branch": "fix/main-navigation-performance-20261127",
   "status": "verification_pending",
   "goal": ".agent/goals/MAIN-CI-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/main_ci_closeout_20261126.md",
@@ -481,5 +523,46 @@
       "receipt": ".runtime/frontend-dev-validation/executions/20261126T172137Z-2778430-963866431/receipt.json",
       "log": ".runtime/main-ci-1015-partition-iteration.log"
     }
+  },
+  "main_d41_results": {
+    "pr": 1015,
+    "merged": true,
+    "main": "d41a3837428ac88369d5157732583014ced30350",
+    "manifest": ".runtime/main-full-release/d41a3837428ac88369d5157732583014ced30350.json",
+    "frontend_run": 45870907451,
+    "status": "FAILED",
+    "failure_log": ".runtime/main-ci-1015-main-frontend-failed.log",
+    "dispatch_recovery": ".runtime/main-ci-1015-dispatch-recovery.json"
+  },
+  "performance_diagnosis": {
+    "formal_product_layer": "P4",
+    "layer_target": "Isolated source-level diagnosis of exact-main performance failure",
+    "module": "smart_construction_acceptance_fixture",
+    "exclusions": [
+      "budget_relaxation",
+      "persistent_deployment",
+      "frontend_topic_implementation"
+    ],
+    "validation": "local.test.test selected existing fixture class; no full local suite",
+    "repair_layers": {
+      "P0": "Read each native JSON snapshot field once per projection; preserve detached output.",
+      "P1": "Reuse settlement reservation totals only inside caller-owned evaluation pass; keep native fresh execution checks and per-request subtraction."
+    },
+    "receipt_before": ".runtime/test-baseline/1795716939810538559/receipt.json",
+    "receipt_after": ".runtime/test-baseline/1795717112274378014/receipt.json",
+    "profile_comparison_seconds": {
+      "startup": [
+        2.224,
+        1.926
+      ],
+      "work": [
+        0.454,
+        0.195
+      ]
+    },
+    "final_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261126T182733Z-3231859-915366482/receipt.json",
+    "fixture_regression_receipt": ".runtime/test-baseline/1795717487645604494/receipt.json",
+    "payment_regression_receipt": ".runtime/test-baseline/1795717661255258210/receipt.json",
+    "workflow_regression_receipt": ".runtime/test-baseline/1795717682630494464/receipt.json"
   }
 }
