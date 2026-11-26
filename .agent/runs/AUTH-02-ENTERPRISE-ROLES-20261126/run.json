@@ -113,7 +113,9 @@
     "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
     "contracts/generated/contract_structure_fingerprint.json",
     "docs/frontend_productization/decision-authority-inventory-v1.json",
-    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -169,7 +171,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Prepare generated evidence, commit reviewed owned scope and update draft PR1010 via review publication. Remote integration and browser acceptance remain pending.",
+  "next_exact_step": "Publish the minimal fixture repair and verify all four required workflows on the new exact HEAD. Keep Draft; company authority review and browser acceptance remain separate pending phases.",
   "id": "AUTH-02-ENTERPRISE-ROLES-20261126",
   "branch": "feature/auth-02-enterprise-roles-20261126",
   "status": "verification_pending",
@@ -625,5 +627,48 @@
       "deployment",
       "browser acceptance"
     ]
+  },
+  "ci_fixture_identity_repair": {
+    "status": "local_targeted_passed",
+    "layer": "P4 acceptance fixture and validation; P1 product facts unchanged",
+    "authorization": "Owner explicitly requested minimal CI repair, two failing tests and navigation maintenance regression; keep Draft, no catalog expansion, deployment or merge.",
+    "candidate": "6fe24fa90d05024397f997650427f992f588523b",
+    "base": "62b57fc73f9a9ab5e04f0d6cf320571d444b95e5",
+    "failure_classification": "baseline_evidence_defect",
+    "root_cause": "Synthetic fixture scenario selection omitted config.enterprise_initialization and config.business_foundation; count assertion also retained 46.",
+    "logs": [
+      ".runtime/auth02-ci-fixture-failure.log",
+      ".runtime/auth02-ci-policy-failure.log"
+    ],
+    "duplicate_constraint": "Expected rejection in navigation maintenance test, not a third failure.",
+    "scope": [
+      "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+      "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py"
+    ],
+    "runtime": "Registered worktree-scoped disposable local.test only",
+    "remote": "Required exact new HEAD checks; old HEAD cannot qualify",
+    "excluded": [
+      "wider capability catalog",
+      "company execution redesign",
+      "persistent upgrade",
+      "browser acceptance",
+      "merge"
+    ],
+    "unit": {
+      "tests": 40,
+      "log": ".runtime/auth02-ci-fixture-unit.log"
+    },
+    "orm": {
+      "tests": 15,
+      "receipt": ".runtime/test-baseline/1795684057087405663/receipt.json",
+      "log": ".runtime/auth02-ci-fixture-targeted-orm.log",
+      "scope": "Both failing identity tests and all 13 navigation maintenance tests; zero failures/errors."
+    },
+    "remote_status": "pending_new_head",
+    "rollback": "Revert this fixture-only repair; no persistent environment changed.",
+    "generated_evidence": {
+      "status": "passed",
+      "log": ".runtime/auth02-ci-fixture-freeze.log"
+    }
   }
 }
