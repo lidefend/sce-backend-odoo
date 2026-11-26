@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import ast
 import json
 import re
 import unittest
@@ -87,6 +88,34 @@ class ScenarioProductOrganizationTest(unittest.TestCase):
                 self.assertTrue(gap["recommendation"])
                 self.assertTrue(gap["affected_paths"])
 
+    def test_p1_declared_role_pages_use_existing_permission_scenario(self):
+        scenario = next(row for row in self.payload['scenarios'] if row['key'] == 'config.enterprise_access')
+        expected = {'smart_construction_core.' + name for name in (
+            'menu_business_role', 'menu_user_role_assignment', 'menu_business_role_change', 'menu_business_role_event')}
+        pages = [row for row in scenario['pages'] if row['menu_xmlid'] in expected]
+        self.assertEqual({row['menu_xmlid'] for row in pages}, expected)
+        self.assertTrue(all(row['center_key'] == scenario['owner_center'] for row in pages))
+        self.assertEqual({row['declared_intent'] for row in pages}, {'master_data', 'handle', 'view'})
+        for bad in ({'scenario_key': 'missing', 'menu_xmlid': 'x.new'},
+                    {'scenario_key': 'known', 'menu_xmlid': 'x.existing'}):
+            with self.assertRaises(ValueError):
+                builder.apply_declared_page_extensions([{'key': 'known', 'pages': [{'menu_xmlid': 'x.existing'}]}], [bad])
+
+    def test_configuration_structure_follows_handling_order_and_has_no_unassigned_pages(self):
+        rows = [row for row in self.payload['scenarios'] if row['owner_center'] == 'construction.center.product_configuration']
+        self.assertEqual([row['key'] for row in rows], [
+            'config.enterprise_initialization', 'config.business_foundation',
+            'config.enterprise_access', 'config.approval', 'config.presentation', 'config.system_governance'])
+        pages = [page['menu_xmlid'] for row in rows for page in row['pages']]
+        self.assertEqual(len(pages), 18)
+        self.assertEqual(len(set(pages)), 18)
+        self.assertEqual(rows[3]['pages'][0]['menu_xmlid'], 'smart_construction_core.menu_sc_approval_scope')
+        self.assertEqual(rows[4]['pages'][0]['menu_xmlid'], 'smart_construction_core.menu_sc_product_scenario_business_config')
+        with self.assertRaisesRegex(ValueError, 'duplicate'):
+            builder.apply_declared_scenarios([{'key': 'x', 'pages': []}], [dict(
+                key='x', name='X', owner_center='c', objective='x', roles=[], prerequisites=[],
+                result_objects=[], result='x', pages=[{'menu_xmlid': 'x.page'}])])
+
     def test_generated_artifacts_are_current(self):
         self.assertEqual(
             json.loads(builder.JSON_OUTPUT.read_text(encoding="utf-8")),
@@ -121,7 +150,8 @@ class ScenarioProductOrganizationTest(unittest.TestCase):
     def test_retired_scenario_migrations_are_removed_from_fresh_install(self):
         module_root = builder.ROOT / "addons" / "smart_construction_core"
         manifest = (module_root / "__manifest__.py").read_text(encoding="utf-8")
-        self.assertIn("'version': '17.0.0.185'", manifest)
+        version = ast.literal_eval(manifest)["version"]
+        self.assertGreaterEqual(tuple(map(int, version.split("."))), (17, 0, 0, 185))
         for version in ("17.0.0.186", "17.0.0.187"):
             with self.subTest(version=version):
                 self.assertFalse(
@@ -137,33 +167,33 @@ class ScenarioProductOrganizationTest(unittest.TestCase):
             "config/product_scenario_organization_v1.json",
         )
         scenarios = surface["scenarios"]
-        self.assertEqual(len(scenarios), 46)
+        self.assertEqual(len(scenarios), 48)
         direct_pages = surface["direct_platform_pages"]
-        self.assertEqual(len(direct_pages), 16)
+        self.assertEqual(len(direct_pages), 25)
         self.assertEqual(
             len({row["menu_xmlid"] for row in direct_pages}),
-            16,
+            25,
         )
         self.assertEqual(
             {row["kind"] for row in direct_pages},
             {"workbench_direct", "configuration", "platform_initialization"},
         )
-        self.assertEqual(surface["validation"]["direct_platform_count"], 16)
+        self.assertEqual(surface["validation"]["direct_platform_count"], 25)
         self.assertEqual(
             [row["key"] for row in scenarios],
             [row["key"] for row in self.payload["scenarios"]],
         )
         self.assertEqual(
             [row["sequence"] for row in scenarios],
-            list(range(1, 47)),
+            list(range(1, 49)),
         )
         bindings = [
             binding
             for scenario in scenarios
             for binding in scenario["bindings"]
         ]
-        self.assertEqual(len(bindings), 132)
-        self.assertEqual(len({row["menu_key"] for row in bindings}), 132)
+        self.assertEqual(len(bindings), 143)
+        self.assertEqual(len({row["menu_key"] for row in bindings}), 143)
         self.assertEqual(
             {row["menu_key"] for row in bindings},
             set(self.product_pages),

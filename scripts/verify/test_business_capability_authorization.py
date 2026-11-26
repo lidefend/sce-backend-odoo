@@ -20,6 +20,8 @@ def capability(key='project.record.read', **changes):
         'authorization': {
             'version': m.VERSION, 'state': 'verified', 'composable': True,
             'operations': ['read'], 'native_groups': ['fixture.group_read'],
+            'native_group_edges': {'fixture.group_read': ['base.group_user']},
+            'native_model_access': {'project.project': ['read']},
             'dependencies': [], 'exclusions': [], 'verification_refs': ['fixture-only'],
             'scope_policy': 'company_and_record_rules', 'sensitive': False,
         },
@@ -60,6 +62,17 @@ class BusinessCapabilityAuthorizationTests(unittest.TestCase):
         for changes in ({'sensitive': True}, {'operations': ['approve']}):
             self.assertEqual(m.composition_surface(capability(**changes))['reason_code'],
                              'SEPARATE_AUTHORIZATION_REQUIRED')
+
+    def test_native_qualification_boundary_must_be_complete_and_typed(self):
+        for changes in ({'native_group_edges': {}}, {'native_group_edges': []},
+                        {'native_group_edges': {'other.group': []}},
+                        {'native_group_edges': {'fixture.group_read': 'base.group_user'}},
+                        {'native_model_access': {}}, {'native_model_access': []},
+                        {'native_model_access': {'project.project': ['approve']}},
+                        {'native_model_access': {'project.project': ['read', 'read']}},
+                        {'native_model_access': {'project.project': []}}):
+            with self.subTest(changes=changes):
+                self.assertFalse(m.composition_surface(capability(**changes))['composable'])
 
     def test_aliases_and_unreleased_capabilities_are_rejected(self):
         for changes in ({'identity_kind': 'entry_compatibility_alias'}, {'status': 'deprecated'},

@@ -1,0 +1,191 @@
+{
+  "id": "ROLE-VERSION-AUTHORITY-01",
+  "phase": "AUTH-02-R1",
+  "status": "source_implementation_targeted_verified_product_acceptance_pending",
+  "decision": ".agent/decisions/auth02_role_version_authority_v1.yaml",
+  "candidate": {
+    "branch": "feature/auth-02-enterprise-roles-20261126",
+    "head": "85d6e22bcf482a2b69511cfe0f3829cbc73e93aa",
+    "source_state": "owned_dirty_worktree_not_published"
+  },
+  "conclusion": "Existing source projection can be extended. No structural need for a second permission engine. Missing work is immutable business versions, explicit assignment binding, guarded migration and end-to-end product delivery.",
+  "findings": [
+    {
+      "area": "standard_role_sources",
+      "status": "partial",
+      "path": "addons/smart_construction_core/models/support/runtime_user_management.py",
+      "evidence_or_required_change": "Standard roles use the native source bucket and replace_roles. Explicit root identity survives, but per-standard-role business source metadata is not yet recorded. Preserve known roots; never infer roots from implied groups."
+    },
+    {
+      "area": "enterprise_sources",
+      "status": "implemented_targeted_verified",
+      "path": "addons/smart_core/models/res_users_group_authority.py",
+      "evidence_or_required_change": "v2 stores source-to-root sets. Native groups remain execution projection. Real ORM tests cover overlap and source-safe revocation."
+    },
+    {
+      "area": "version_binding",
+      "status": "implemented_targeted_verified",
+      "path": "addons/smart_construction_core/models/support/business_role.py",
+      "evidence_or_required_change": "Stable role identity, separate immutable published editions, assignment foreign-key binding and human-readable frozen business facts. Publishing never updates existing assignments."
+    },
+    {
+      "area": "shared_permissions",
+      "status": "implemented_targeted_verified",
+      "path": "addons/smart_core/security/group_assignment.py",
+      "evidence_or_required_change": "Source union preserves shared roots; native implied closure handles shared dependencies. Broader business capability and method semantics still require qualification."
+    },
+    {
+      "area": "migration",
+      "status": "partial_targeted_verified",
+      "path": "addons/smart_construction_core/models/support/business_role.py",
+      "evidence_or_required_change": "Bounded 50-user batches carry explicit selection, effective model-operation delta, source snapshot, stale-change rejection, atomic rollback, token invalidation and readback. Selected rows now split into independently tracked batches, dispatched by native scheduling with original actor permissions. Whole-company selection UX remains outstanding."
+    },
+    {
+      "area": "revocation",
+      "status": "implemented_targeted_verified",
+      "path": "addons/smart_construction_core/models/support/business_role.py",
+      "evidence_or_required_change": "Removing an effective role is a NEW setting and durable batch. Cancelling a pending batch changes no native user groups, assignment version or token epoch and retains prior review facts."
+    },
+    {
+      "area": "historical_reconciliation",
+      "status": "implemented_targeted_verified",
+      "path": "addons/smart_core/models/group_authority_reconciliation.py",
+      "evidence_or_required_change": "Native definition invalidation now retains v2 source history as unresolved. Explicit confirmation preserves managed sources. Unknown or deleted managed roots are rejected rather than silently reassigned."
+    },
+    {
+      "area": "mapping_immutability",
+      "status": "partial_targeted_verified",
+      "path": "addons/smart_construction_core/services/business_role_capabilities.py",
+      "evidence_or_required_change": "Published bindings retain mapping/graph/ACL evidence and business labels; later binding drift is rejected. Production catalog admission is still draft and full model/field/method qualification remains outstanding."
+    },
+    {
+      "area": "effective_preview",
+      "status": "partial_targeted_verified",
+      "path": "addons/smart_core/models/res_users_group_authority.py",
+      "evidence_or_required_change": "Preview computes final native model-operation differences across all recorded sources and preserves independent company/project constraints. It is not a claim that model ACL differences alone fully describe method and field authority."
+    },
+    {
+      "area": "risk_confirmation",
+      "status": "partial_targeted_verified",
+      "path": "addons/smart_construction_core/models/support/business_role.py",
+      "evidence_or_required_change": "Reuses enterprise-configured sc.approval.policy and native tier.validation, with existing default routing. Enabled but empty rules fail, live instances cannot be bypassed by disabling a policy, completed approval applies once internally. High-risk capability admission remains unavailable pending qualification."
+    },
+    {
+      "area": "native_import",
+      "status": "partial_targeted_verified",
+      "path": "addons/smart_construction_core/tests/test_business_role.py",
+      "evidence_or_required_change": "Native model.load, state/default-context forgery rejection, immutable edition boundaries and native company rules passed. Full import wizard/frontend acceptance remains outstanding."
+    },
+    {
+      "area": "frontend_batch_actions",
+      "status": "partial_targeted_verified",
+      "path": "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+      "evidence_or_required_change": "Actual app.view.config projection verifies native object buttons as toolbar multi-selection methods. Earlier fallback-path observation does not prove a live parser defect. Browser handling and published navigation remain outstanding."
+    }
+  ],
+  "verification": [
+    {
+      "target": "verify.business_role.orm",
+      "status": "passed",
+      "tests": 30,
+      "receipt": ".runtime/test-baseline/1795674943895021594/receipt.json",
+      "coverage": "Immutable business facts; explicit bindings; default/configured native approval; cancellation without effects; new-setting removal; bounded atomic changes; stale-source rejection; native list contract; actual project read and price-write denial."
+    },
+    {
+      "target": "local.test.test MODULE=smart_construction_core TEST_TAGS=runtime_user_management,auth02_native_isolation",
+      "status": "passed",
+      "tests": 46,
+      "receipt": ".runtime/test-baseline/1795675109107204739/receipt.json"
+    },
+    {
+      "target": "verify.backend.model_declaration.guard + verify.sc_data_scope.rule_coverage + verify.role_capability_group_authority.unit",
+      "status": "passed",
+      "log": ".runtime/auth02-final-static.log"
+    },
+    {
+      "target": "scripts.verify.test_frontend_dev_incremental",
+      "status": "passed",
+      "tests": 272,
+      "log": ".runtime/auth02-selector-final.log"
+    },
+    {
+      "target": "verify.business_capability.authorization.unit + verify.system.permission_role.assignment.unit",
+      "status": "passed",
+      "tests": [
+        12,
+        17
+      ],
+      "log": ".runtime/auth02-authority-pure.log"
+    }
+  ],
+  "limits": [
+    "Receipts bind their recorded source fingerprints; later source changes require dependency-aware invalidation.",
+    "No new HEAD remote CI, persistent deployment, frontend migration acceptance or full AUTH-02 closure claimed."
+  ],
+  "remaining_product_gaps": [
+    "Only project.list.open has production composition admission with real native access/navigation regression. Other scene capabilities, handling and sensitive-operation qualification remain to complete; this does not certify the full catalog.",
+    "Selected assignments split into independent atomic batches of at most 50 users; native scheduling and actor revocation are tested. Whole-company selection and browser acceptance remain pending.",
+    "Native model.load and native list contract are tested; full browser import, reviewer workbench and published product navigation are not yet accepted.",
+    "No new clean commit, PR integration, persistent upgrade or deployment is claimed."
+  ],
+  "capability_admission_progress": {
+    "state": "one_capability_qualified",
+    "capability": "project.list.open",
+    "entry_group": "smart_construction_core.group_sc_cap_entry_scope_p11",
+    "native_validation": "Explicit per-capability group edges and model operations replace hardcoded project-only validation. Native identity baseline is retained. No changes to Odoo ACL or rule execution.",
+    "resolved_product_defect": "Initial mapping used p01, while native project ledger requires p11; unpatched navigation regression exposed and verified the repair.",
+    "test_fixture_corrections": [
+      "Foreign-project membership is expected to be refused outside company scope.",
+      "Read ability does not grant native export permission.",
+      "Removing enterprise authority restores the original read baseline rather than deleting baseline ACL rights."
+    ],
+    "earlier_failed_logs": [
+      ".runtime/auth02-project-admission-orm.log",
+      ".runtime/auth02-project-route-diagnostic.log",
+      ".runtime/auth02-project-qualified-orm.log",
+      ".runtime/auth02-project-qualified-final.log",
+      ".runtime/auth02-project-admission-verified.log"
+    ]
+  },
+  "latest_capability_verification": {
+    "target": "local.test.test MODULE=smart_construction_core TEST_TAGS=business_role,capability_registry,capability_verdict_projection",
+    "status": "passed",
+    "tests": 48,
+    "receipt": ".runtime/test-baseline/1795675978724472073/receipt.json",
+    "log": ".runtime/auth02-project-native-baseline-orm.log",
+    "coverage": "35 role tests plus 13 registry/projection tests. Unpatched project capability publication, native navigation, company/member admission, record read/export isolation, independent export source, exact baseline restoration; per-capability group graph and model CRUD boundary."
+  },
+  "entry_visibility_requirement": {
+    "status": "backend_route_and_contract_verified_browser_pending",
+    "confirmed": "Native business entry/action permission decides visibility. Read authority retains the entry even with an empty record-rule-filtered dataset. No access authority means no admitted route; stale direct links are rechecked. Record count is never an entry permission.",
+    "rejected": "Do not use record counts, search existence, or business data changes to hide a read-authorized entry.",
+    "implementation": "Existing native action group/model-ACL admission remains intact; add a regression proving zero visible sample records does not deny the read entry. No data-dependent navigation gate added.",
+    "test_log": ".runtime/auth02-entry-contract-final.log",
+    "environment_recovery_log": ".runtime/auth02-test-recovery.log",
+    "validation_limit": "One changed integration case passed using actual role source, capability registry, EffectiveDeliveryService, RouteAuthorityValidateHandler, ActionDispatcher and V2 assembler. Other 47 cases retain their original 48-test receipt; no browser acceptance claimed.",
+    "receipt": ".runtime/test-baseline/1795676619664826705/receipt.json",
+    "frontend_consumption": {
+      "target": "verify.frontend.action_view_page_actions.unit",
+      "status": "passed",
+      "log": ".runtime/auth02-entry-action-consumption.log",
+      "collection_create_cases": 11
+    }
+  },
+  "incremental_iteration": {
+    "target": "ci.local.iteration",
+    "status": "failed",
+    "classification": "environment_defect",
+    "receipt": ".runtime/frontend-dev-validation/executions/20261126T065456Z-2611908-223861375/receipt.json",
+    "log": ".runtime/auth02-admission-iteration-final.log",
+    "failure": "verify.auth02.native_isolation.orm: worktree-scoped disposable smart_construction_bundle template preparation lost PostgreSQL connection; server entered recovery mode before test collection.",
+    "preparation_log": ".runtime/test-baseline/1795676105076606367/prepare.log",
+    "not_claimed": "This attempt did not pass native isolation or full incremental validation. Prior individual ORM receipts remain original observations, not a replacement pass."
+  },
+  "test_environment_recovery": {
+    "status": "recovered",
+    "failure": "PostgreSQL worker terminated by signal 11 at 06:56:26 UTC; automatic recovery completed at 07:02:36 UTC. No rebuild or volume deletion performed.",
+    "readback": ".runtime/auth02-test-recovery-readback.txt",
+    "governed_up_log": ".runtime/auth02-test-recovery-confirm.log",
+    "subsequent_nonzero_receipt": ".runtime/test-baseline/1795676619664826705/receipt.json"
+  }
+}

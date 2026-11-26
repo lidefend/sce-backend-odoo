@@ -1083,6 +1083,48 @@
       "rule": "rule_sc_scene_company_enablement_allowed_company",
       "file": "addons/smart_construction_scene/security/sc_scene_company_enablement_rules.xml",
       "reason": "bounded in source by a scene-local global ir.rule constraining company_id to the allowed company set; the core ceiling cannot reference a downstream scene model"
+    },
+    {
+      "model": "sc.business.role",
+      "anchor": "company_id",
+      "rule": "rule_sc_business_role_company",
+      "file": "addons/smart_construction_core/security/business_role_security.xml",
+      "reason": "Enterprise role administration and historical authorization facts use one native global rule enforcing licensed company and data-purpose scope."
+    },
+    {
+      "model": "sc.business.role.version",
+      "anchor": "company_id",
+      "rule": "rule_sc_business_role_version_company",
+      "file": "addons/smart_construction_core/security/business_role_security.xml",
+      "reason": "Enterprise role administration and historical authorization facts use one native global rule enforcing licensed company and data-purpose scope."
+    },
+    {
+      "model": "sc.business.role.capability",
+      "anchor": "company_id",
+      "rule": "rule_sc_business_role_capability_company",
+      "file": "addons/smart_construction_core/security/business_role_security.xml",
+      "reason": "Enterprise role administration and historical authorization facts use one native global rule enforcing licensed company and data-purpose scope."
+    },
+    {
+      "model": "sc.user.role.assignment",
+      "anchor": "company_id",
+      "rule": "rule_sc_user_role_assignment_company",
+      "file": "addons/smart_construction_core/security/business_role_security.xml",
+      "reason": "Enterprise role administration and historical authorization facts use one native global rule enforcing licensed company and data-purpose scope."
+    },
+    {
+      "model": "sc.business.role.event",
+      "anchor": "company_id",
+      "rule": "rule_sc_business_role_event_company",
+      "file": "addons/smart_construction_core/security/business_role_security.xml",
+      "reason": "Enterprise role administration and historical authorization facts use one native global rule enforcing licensed company and data-purpose scope."
+    },
+    {
+      "model": "sc.business.role.change",
+      "anchor": "company_id",
+      "rule": "rule_sc_business_role_change_company",
+      "file": "addons/smart_construction_core/security/business_role_security.xml",
+      "reason": "Enterprise role administration and historical authorization facts use one native global rule enforcing licensed company and data-purpose scope."
     }
   ]
 }

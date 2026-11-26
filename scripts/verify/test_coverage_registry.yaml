@@ -1,5 +1,26 @@
 version: 1
 entries:
+- group: business_role
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: "make:verify.business_role.orm :: business_role"
+  reason: Native administration, batch load and company/state authorization boundaries.
+- group: group_authority_sources
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-kernel
+  dispose: class-selected
+  gate: "make:verify.group_authority.sources.orm :: group_authority_sources"
+  reason: Native source overlap, revocation and explicit reconciliation integration.
+- group: auth02_native_isolation
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: "make:verify.auth02.native_isolation.orm :: auth02_native_isolation"
+  reason: Native company and project isolation witnesses, including global/group rule composition.
 - group: auth02_multi_company
   kind: odoo_tag
   status: on-demand

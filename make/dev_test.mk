@@ -2972,7 +2972,7 @@ verify.page_contract_gate_wiring.unit: guard.prod.forbid
 	@python3 scripts/verify/test_page_contract_gate_wiring.py
 
 .PHONY: contract.product_menu.generate
-contract.product_menu.generate: guard.prod.forbid
+contract.product_menu.generate: guard.prod.forbid contract.product_scenario.generate
 	@python3 scripts/ops/promote_product_ten_center_policy.py --write
 
 .PHONY: verify.product.menu.monotonic.unit
@@ -3193,3 +3193,7 @@ verify.capability.maturity: guard.prod.forbid
 	@test -n "$(CAPABILITY_MATURITY_BUNDLE)" || { echo "CAPABILITY_MATURITY_BUNDLE is required" >&2; exit 2; }
 	@test -n "$(CAPABILITY_MATURITY_EDITION)" || { echo "CAPABILITY_MATURITY_EDITION is required" >&2; exit 2; }
 	@python3 scripts/verify/capability_maturity_evidence.py --bundle "$(CAPABILITY_MATURITY_BUNDLE)" --edition "$(CAPABILITY_MATURITY_EDITION)" --report "$(CAPABILITY_MATURITY_REPORT)"
+
+.PHONY: contract.product_scenario.generate
+contract.product_scenario.generate: guard.prod.forbid
+	@python3 scripts/audit/build_scenario_product_organization.py

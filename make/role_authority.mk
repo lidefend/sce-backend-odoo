@@ -229,3 +229,15 @@ verify.business_capability.authorization.unit:
 
 verify.business_capability.authorization.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=capability_registry,capability_verdict_projection
+
+.PHONY: verify.auth02.native_isolation.orm
+verify.auth02.native_isolation.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=auth02_native_isolation
+
+.PHONY: verify.group_authority.sources.orm
+verify.group_authority.sources.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS=group_authority_sources
+
+.PHONY: verify.business_role.orm
+verify.business_role.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=business_role

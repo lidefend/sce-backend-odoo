@@ -3,19 +3,48 @@
   "baseline_sha": "62b57fc73f9a9ab5e04f0d6cf320571d444b95e5",
   "scope": [
     ".agent/active-runs.json",
+    ".agent/decisions/auth02_role_version_authority_v1.yaml",
     ".agent/goals/AUTH-02-ENTERPRISE-ROLES-20261126.yaml",
     ".agent/runs/AUTH-02-ENTERPRISE-ROLES-20261126/run.json",
+    "addons/smart_construction_core/__manifest__.py",
     "addons/smart_construction_core/core_extension_capability_rows.py",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "addons/smart_construction_core/data/product_menu_source.json",
+    "addons/smart_construction_core/data/product_primary_center_baseline_v1.json",
+    "addons/smart_construction_core/data/scenario_product_surface.json",
+    "addons/smart_construction_core/data/tenant/scoped_business_models.v1.json",
+    "addons/smart_construction_core/models/support/__init__.py",
+    "addons/smart_construction_core/models/support/approval_policy.py",
     "addons/smart_construction_core/models/support/business_role.py",
+    "addons/smart_construction_core/models/support/business_role_change.py",
     "addons/smart_construction_core/models/support/runtime_user_management.py",
+    "addons/smart_construction_core/models/support/task_extend.py",
+    "addons/smart_construction_core/models/support/tier_definition_ext.py",
+    "addons/smart_construction_core/security/business_role_security.xml",
+    "addons/smart_construction_core/security/ir.model.access.csv",
+    "addons/smart_construction_core/security/sc_capability_groups.xml",
+    "addons/smart_construction_core/security/sc_data_scope_ceiling_generated.xml",
+    "addons/smart_construction_core/security/sc_role_groups.xml",
     "addons/smart_construction_core/services/business_capability_authorization.py",
+    "addons/smart_construction_core/services/business_role_capabilities.py",
     "addons/smart_construction_core/services/capability_registry.py",
+    "addons/smart_construction_core/tests/__init__.py",
     "addons/smart_construction_core/tests/test_business_role.py",
     "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    "addons/smart_construction_core/tests/test_enterprise_setup_native_contracts.py",
+    "addons/smart_construction_core/tests/test_native_company_project_isolation.py",
     "addons/smart_construction_core/tests/test_runtime_user_management.py",
+    "addons/smart_construction_core/views/support/business_role_views.xml",
+    "addons/smart_construction_core/views/support/enterprise_initialization_views.xml",
+    "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/execute_button.py",
     "addons/smart_core/handlers/login.py",
     "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
     "addons/smart_core/models/__init__.py",
+    "addons/smart_core/models/group_authority_reconciliation.py",
     "addons/smart_core/models/ir_rule_company_authorization.py",
     "addons/smart_core/models/res_users.py",
     "addons/smart_core/models/res_users_group_authority.py",
@@ -28,20 +57,63 @@
     "addons/smart_core/tests/platform_company_test_support.py",
     "addons/smart_core/tests/test_auth_credential_framework.py",
     "addons/smart_core/tests/test_data_space_boundary.py",
+    "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
+    "addons/smart_core/tests/test_group_authority_sources.py",
     "addons/smart_core/tests/test_platform_multi_company.py",
     "addons/smart_core/views/platform_company_access_views.xml",
+    "config/product_menu_contract_v1.json",
+    "config/product_scenario_organization_v1.json",
+    "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
     "docs/ops/iterations/auth02_enterprise_roles_20261126.json",
+    "docs/ops/iterations/auth02_role_version_authority_01.json",
+    "docs/product/product_scenario_organization_v1.md",
+    "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewActionRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewContractActionButtonRuntime.ts",
+    "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    "frontend/apps/web/src/app/contracts/v2/types.ts",
+    "frontend/apps/web/src/app/runtime/actionViewContractActionRuntime.ts",
+    "frontend/packages/schema/src/index.ts",
+    "make/dev_test.mk",
     "make/role_authority.mk",
+    "scripts/audit/build_scenario_product_organization.py",
+    "scripts/audit/test_build_scenario_product_organization.py",
+    "scripts/verify/action_view_contract_action_runtime_smoke.js",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    "scripts/verify/data_scope_declarations.json",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_business_capability_authorization.py",
     "scripts/verify/test_coverage_registry.yaml",
     "scripts/verify/test_frontend_dev_incremental.py",
-    "scripts/verify/test_group_assignment.py"
+    "scripts/verify/test_group_assignment.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "config/product_primary_center_baseline_v1.json",
+    "addons/smart_construction_core/services/product_menu_source.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "addons/smart_construction_core/views/menu_product_configuration_wave1.xml",
+    "addons/smart_core/core/contract_lifecycle.py",
+    "docs/architecture/unified_page_contract_v2/examples/tree_project.json",
+    "docs/architecture/unified_page_contract_v2/examples/form_project.json",
+    "docs/architecture/unified_page_contract_v2/examples/nested_form_relation.json",
+    "docs/architecture/unified_page_contract_v2/examples/list_project.json",
+    "scripts/verify/contract_v2_render_authority_matrix.py",
+    "docs/frontend_productization/rendering-detail/contract-v2-render-authority-matrix-v1.json",
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    "docs/engineering_convergence/e2e_journey_matrix.md",
+    "docs/engineering_convergence/module_dependency_map.md",
+    "docs/engineering_convergence/github_remote_execution_plan.md",
+    "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
+    "contracts/generated/contract_structure_fingerprint.json",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -97,10 +169,461 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish AUTH-02 foundation draft and verify new remote identity; capability qualification, enterprise roles and assignments remain pending.",
+  "next_exact_step": "Prepare generated evidence, commit reviewed owned scope and update draft PR1010 via review publication. Remote integration and browser acceptance remain pending.",
   "id": "AUTH-02-ENTERPRISE-ROLES-20261126",
   "branch": "feature/auth-02-enterprise-roles-20261126",
   "status": "verification_pending",
   "goal": ".agent/goals/AUTH-02-ENTERPRISE-ROLES-20261126.yaml",
-  "record": "docs/ops/iterations/auth02_enterprise_roles_20261126.json"
+  "record": "docs/ops/iterations/auth02_enterprise_roles_20261126.json",
+  "native_isolation_result": {
+    "status": "passed",
+    "tests": 10,
+    "receipt": ".runtime/test-baseline/1795672560634575330/receipt.json",
+    "scope": "native company/project isolation and task company consistency"
+  },
+  "role_version_decision": ".agent/decisions/auth02_role_version_authority_v1.yaml",
+  "role_version_audit": "docs/ops/iterations/auth02_role_version_authority_01.json",
+  "targeted_progress": [
+    {
+      "target": "local.test.test MODULE=smart_construction_core TEST_TAGS=business_role,capability_registry,capability_verdict_projection",
+      "status": "passed",
+      "tests": 48,
+      "receipt": ".runtime/test-baseline/1795675978724472073/receipt.json",
+      "log": ".runtime/auth02-project-native-baseline-orm.log",
+      "coverage": "35 role tests plus 13 registry/projection tests. Unpatched project capability publication, native navigation, company/member admission, record read/export isolation, independent export source, exact baseline restoration; per-capability group graph and model CRUD boundary."
+    },
+    {
+      "target": "local.test.test MODULE=smart_construction_core TEST_TAGS=runtime_user_management,auth02_native_isolation",
+      "status": "passed",
+      "tests": 46,
+      "receipt": ".runtime/test-baseline/1795675109107204739/receipt.json"
+    },
+    {
+      "target": "verify.backend.model_declaration.guard + verify.sc_data_scope.rule_coverage + verify.role_capability_group_authority.unit",
+      "status": "passed",
+      "log": ".runtime/auth02-final-static.log"
+    },
+    {
+      "target": "scripts.verify.test_frontend_dev_incremental",
+      "status": "passed",
+      "tests": 273,
+      "log": ".runtime/auth02-admission-selector.log"
+    },
+    {
+      "target": "verify.business_capability.authorization.unit + verify.system.permission_role.assignment.unit",
+      "status": "passed",
+      "tests": [
+        12,
+        17
+      ],
+      "log": ".runtime/auth02-authority-pure.log"
+    },
+    {
+      "target": "verify.business_capability.authorization.unit",
+      "status": "passed",
+      "tests": 13,
+      "log": ".runtime/auth02-admission-pure-final.log",
+      "supersedes": "12-test capability admission result; source-provenance 17-test result remains unchanged."
+    },
+    {
+      "target": "verify.sc_data_scope.rule_coverage + verify.role_capability_group_authority.unit",
+      "status": "passed",
+      "log": ".runtime/auth02-admission-scope-static.log"
+    },
+    {
+      "target": "local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestBusinessRole.test_released_project_capability_uses_native_access_and_scope_without_mapping_patch",
+      "status": "passed",
+      "tests": 1,
+      "receipt": ".runtime/test-baseline/1795676619664826705/receipt.json",
+      "impact": "Only this existing test method changed: permission-versus-empty-data, route allow/deny, readonly contract and no creation authority. No production code changed this turn."
+    },
+    {
+      "target": "verify.business_role.orm",
+      "status": "failed",
+      "tests": 41,
+      "failures": 1,
+      "errors": 2,
+      "receipt": ".runtime/test-baseline/1795676958009573088/receipt.json"
+    },
+    {
+      "target": "verify.execute_button.authority.unit",
+      "status": "passed",
+      "tests": 38,
+      "log": ".runtime/auth02-collection-contract-final.log"
+    },
+    {
+      "target": "verify.action_view_runtime_smoke.behavior",
+      "status": "passed",
+      "log": ".runtime/auth02-collection-frontend-unit.log",
+      "coverage": "Actual selection runtime submits all selected IDs once and navigates once; missing collection declaration is refused."
+    },
+    {
+      "target": "verify.frontend.typecheck.strict",
+      "status": "passed",
+      "log": ".runtime/auth02-collection-typecheck.log"
+    },
+    {
+      "target": "verify.frontend.contract_basis.unit",
+      "status": "passed",
+      "tests": 15,
+      "log": ".runtime/auth02-collection-basis.log"
+    },
+    {
+      "target": "verify.unified_page_contract.v2.schema + verify.unified_page_contract.v2.assembler",
+      "status": "passed",
+      "log": ".runtime/auth02-collection-schema-final.log"
+    },
+    {
+      "target": "verify.business_role.orm",
+      "status": "passed",
+      "tests": 42,
+      "receipt": ".runtime/test-baseline/1795678346154923254/receipt.json",
+      "log": ".runtime/auth02-collection-native-context-orm.log",
+      "coverage": "Native explicit button context -> parsed recordset declaration -> fresh V2 per-record action authority -> ExecuteButtonHandler.handle -> real multi-assignment grant; 51-user preparation, native scheduling, actor revocation, approval, cancellation and stale authority rejection."
+    },
+    {
+      "target": "make verify.business_role.orm",
+      "status": "passed",
+      "tests": 46,
+      "receipt": ".runtime/test-baseline/1795679296038858952/receipt.json",
+      "log": ".runtime/auth02-initialization-role-orm.log",
+      "coverage": "Native initialization actions, visible role menus, projection identity, import intent and role authorization boundaries; before navigation root placement change."
+    },
+    {
+      "target": "make verify.smart_construction_core.migration_compatibility.orm",
+      "status": "passed",
+      "tests": 19,
+      "receipt": ".runtime/test-baseline/1795679530811486314/receipt.json",
+      "coverage": "Native scenario composition keeps configuration as sibling root and preserves disabled-business navigation restrictions; before configuration completeness extension."
+    }
+  ],
+  "remaining_product_gaps": [
+    "Only project.list.open has production composition admission with real native access/navigation regression. Other scene capabilities, handling and sensitive-operation qualification remain to complete; this does not certify the full catalog.",
+    "Explicit native collection actions and 50-user batch orchestration now have local integration evidence; browser selection/result/wizard journeys and full declared collection capability consistency still require acceptance.",
+    "Native model.load and native list contract are tested; full browser import, reviewer workbench and published product navigation are not yet accepted.",
+    "No new clean commit, PR integration, persistent upgrade or deployment is claimed."
+  ],
+  "source_identity": {
+    "head": "85d6e22bcf482a2b69511cfe0f3829cbc73e93aa",
+    "branch": "feature/auth-02-enterprise-roles-20261126",
+    "status": "owned_dirty_worktree",
+    "receipt_binding": "Each receipt preserves its own exact fingerprint; metadata edits do not rewrite old evidence."
+  },
+  "capability_admission_progress": {
+    "state": "one_capability_qualified",
+    "capability": "project.list.open",
+    "entry_group": "smart_construction_core.group_sc_cap_entry_scope_p11",
+    "native_validation": "Explicit per-capability group edges and model operations replace hardcoded project-only validation. Native identity baseline is retained. No changes to Odoo ACL or rule execution.",
+    "resolved_product_defect": "Initial mapping used p01, while native project ledger requires p11; unpatched navigation regression exposed and verified the repair.",
+    "test_fixture_corrections": [
+      "Foreign-project membership is expected to be refused outside company scope.",
+      "Read ability does not grant native export permission.",
+      "Removing enterprise authority restores the original read baseline rather than deleting baseline ACL rights."
+    ],
+    "earlier_failed_logs": [
+      ".runtime/auth02-project-admission-orm.log",
+      ".runtime/auth02-project-route-diagnostic.log",
+      ".runtime/auth02-project-qualified-orm.log",
+      ".runtime/auth02-project-qualified-final.log",
+      ".runtime/auth02-project-admission-verified.log"
+    ]
+  },
+  "incremental_iteration": {
+    "target": "ci.local.iteration",
+    "status": "failed",
+    "classification": "environment_defect",
+    "receipt": ".runtime/frontend-dev-validation/executions/20261126T065456Z-2611908-223861375/receipt.json",
+    "log": ".runtime/auth02-admission-iteration-final.log",
+    "failure": "verify.auth02.native_isolation.orm: worktree-scoped disposable smart_construction_bundle template preparation lost PostgreSQL connection; server entered recovery mode before test collection.",
+    "preparation_log": ".runtime/test-baseline/1795676105076606367/prepare.log",
+    "not_claimed": "This attempt did not pass native isolation or full incremental validation. Prior individual ORM receipts remain original observations, not a replacement pass."
+  },
+  "entry_visibility_requirement": {
+    "status": "backend_route_and_contract_verified_browser_pending",
+    "confirmed": "Native business entry/action permission decides visibility. Read authority retains the entry even with an empty record-rule-filtered dataset. No access authority means no admitted route; stale direct links are rechecked. Record count is never an entry permission.",
+    "rejected": "Do not use record counts, search existence, or business data changes to hide a read-authorized entry.",
+    "implementation": "Existing native action group/model-ACL admission remains intact; add a regression proving zero visible sample records does not deny the read entry. No data-dependent navigation gate added.",
+    "test_log": ".runtime/auth02-entry-contract-final.log",
+    "environment_recovery_log": ".runtime/auth02-test-recovery.log",
+    "validation_limit": "One changed integration case passed using actual role source, capability registry, EffectiveDeliveryService, RouteAuthorityValidateHandler, ActionDispatcher and V2 assembler. Other 47 cases retain their original 48-test receipt; no browser acceptance claimed.",
+    "receipt": ".runtime/test-baseline/1795676619664826705/receipt.json",
+    "frontend_consumption": {
+      "target": "verify.frontend.action_view_page_actions.unit",
+      "status": "passed",
+      "log": ".runtime/auth02-entry-action-consumption.log",
+      "collection_create_cases": 11
+    }
+  },
+  "test_environment_recovery": {
+    "status": "recovered",
+    "failure": "PostgreSQL worker terminated by signal 11 at 06:56:26 UTC; automatic recovery completed at 07:02:36 UTC. No rebuild or volume deletion performed.",
+    "readback": ".runtime/auth02-test-recovery-readback.txt",
+    "governed_up_log": ".runtime/auth02-test-recovery-confirm.log",
+    "subsequent_nonzero_receipt": ".runtime/test-baseline/1795676619664826705/receipt.json"
+  },
+  "bulk_action_scope": {
+    "owner": "P0 native collection action declaration, existing execute_button handler and generic frontend consumption; P1 authority change lifecycle",
+    "excluded": "No new endpoint, no native Odoo modification, no persistent database writes",
+    "status": "local_targeted_passed_browser_pending",
+    "fact_authority": {
+      "standard_collection_actions": "Existing surface_policies.collection_capabilities.actions; batch_policy remains its selection projection. No changes to standard import/export/archive/activate/delete rules.",
+      "business_collection_actions": "Five P1 native list header buttons explicitly declare execution_scope=recordset in native context. Mere toolbar placement grants nothing. P0 projects the declaration and current effective write authority; frontend only transports it.",
+      "unified_channel": "Existing execute_button intent; no new endpoint. Each target fresh contract, existing model/record/business-scope checks, then one atomic recordset invocation.",
+      "scheduler": "Native system job handles scheduling metadata; business execution drops sudo with_user(original actor), checks current authority and retains failure audit."
+    },
+    "failed_attempts": [
+      {
+        "receipt": ".runtime/test-baseline/1795677581917392838/receipt.json",
+        "status": "failed",
+        "classification": "product_and_test_defects",
+        "reason": "Missing list renderer negotiation; duplicate assignment role recordset; stale test used filtered raw group write."
+      },
+      {
+        "receipt": ".runtime/test-baseline/1795677873285435725/receipt.json",
+        "status": "failed",
+        "classification": "product_and_test_defects",
+        "reason": "Native collection entitlement projection absent; stale test did not actually change authority."
+      },
+      {
+        "log": ".runtime/test-baseline/1795678179191041286/prepare.log",
+        "status": "failed",
+        "classification": "product_defect",
+        "reason": "Native list button rejects options attribute; corrected to supported native context declaration."
+      }
+    ]
+  },
+  "formal_entry_scope": {
+    "owner": "P1 standard enterprise authorization administration within existing organization scenario",
+    "exclusions": "No new center, no raw version menu, no frontend model routing, no persistent runtime mutation",
+    "initialization": "Owner explicitly included initialization menus; add native role/duty actions and maintain existing company/organization/user entries. P1 product_menu_source owns new scenario facts; P4 only projects them."
+  },
+  "navigation_scope_delta": {
+    "owner": "P1 smart_construction_core",
+    "authorization": "Owner requested product configuration parallel to business scenarios, retaining fact-menu composition projection.",
+    "exclusions": [
+      "frontend hardcoded navigation",
+      "new authorization engine",
+      "persistent database upgrade",
+      "deployment"
+    ]
+  },
+  "configuration_scene_scope": {
+    "owner": "P1",
+    "request": "Complete locked configuration scenario structure, fact menu inclusion, user handling order and initialization references.",
+    "native_missing": [
+      "enterprise initialization",
+      "scenario configuration",
+      "business categories",
+      "dictionary",
+      "budget types",
+      "stage requirements",
+      "approval personnel"
+    ],
+    "excluded": [
+      "workflow engine internals",
+      "retired standalone field wizard"
+    ]
+  },
+  "configuration_scene_result": {
+    "status": "local_targeted_passed",
+    "source": "addons/smart_construction_core/data/product_menu_source.json:scenario_definitions",
+    "structure": "Six ordered configuration scenarios; 18 native pages, 11 added to previous formal directory. Runtime reads declared facts, no frontend allowlist.",
+    "initialization": "Native view references 16 action entries in five ordered initialization groups; actual permission-filtered handling catalog tested.",
+    "projection": "Product configuration is a sibling root of business scenarios, driven by navigation_placement in locked center configuration.",
+    "coverage_guard": "Every active native configuration descendant action must have one scenario placement.",
+    "orm": {
+      "tests": 67,
+      "receipt": ".runtime/test-baseline/1795680228123375407/receipt.json",
+      "log": ".runtime/auth02-configuration-complete-final-orm.log"
+    },
+    "static_logs": [
+      ".runtime/auth02-config-complete-final-static.log",
+      ".runtime/auth02-config-inclusion-guard.log",
+      ".runtime/auth02-navigation-shell-unit.log",
+      ".runtime/auth02-navigation-root-guards.log"
+    ],
+    "superseded_failure": {
+      "classification": "validation_tool_defect",
+      "receipt": ".runtime/test-baseline/1795680010204572540/receipt.json",
+      "reason": "Old four-entry assertion superseded by 18 explicit configuration facts; per-entry native authority and scenario assertions retained."
+    },
+    "not_run": [
+      "browser acceptance on deployed candidate",
+      "persistent database module upgrade",
+      "new exact-head remote integration"
+    ],
+    "fact_authority": "P1 scenario_definitions and center navigation_placement; native menu/action/view declarations; runtime applies current principal permissions. Counts are acceptance observations only.",
+    "incremental_registration": {
+      "status": "passed",
+      "log": ".runtime/auth02-config-incremental-mapping.log",
+      "tests": 273,
+      "scope": "Configuration menu overlay selects owned guards; scenario generation wired into existing product-menu generation."
+    },
+    "lane_coverage": {
+      "status": "passed",
+      "log": ".runtime/auth02-config-lane-coverage.log"
+    },
+    "local_iteration": {
+      "status": "not_completed",
+      "logs": [
+        ".runtime/auth02-config-iteration.log",
+        ".runtime/auth02-config-iteration-final.log"
+      ],
+      "reason": "First missing XML mapping and then unreferenced generation target blocked aggregate execution. Both corrected and their focused regressions passed; aggregate remaining targets have not been re-executed.",
+      "followup": "All 73 selected local targets collected through aggregate3 and scoped static/runtime continuation; see local_target_collection. Original aggregate failures retained."
+    }
+  },
+  "contract_digest_repair": {
+    "layer": "P0",
+    "reason": "Published unified page schema digest must bind the changed optional action executionScope field; preserve fail-closed digest guard.",
+    "failure_log": ".runtime/auth02-continue-iteration.log",
+    "status": "passed",
+    "log": ".runtime/auth02-contract-declaration-synced.log",
+    "generator": "make contract.schema.declaration.sync"
+  },
+  "composed_role_journey": {
+    "status": "passed",
+    "tests": 1,
+    "receipt": ".runtime/test-baseline/1795681150958658871/receipt.json",
+    "log": ".runtime/auth02-composed-role-journey.log",
+    "failure_classification": "validation_tool_defect",
+    "fix": "Composed installation needs explicit company scenario activation; test now exercises scenario.activation.set handler after proving role grant alone leaves navigation denied. Activation must not change groups."
+  },
+  "execution_scope_consumption_registration": {
+    "layer": "P4",
+    "reason": "Register actionRule.executionScope as existing rendered/interaction authority; source remains P0 native context and schema, consumed by generic action selection/execution runtime.",
+    "failure_log": ".runtime/auth02-continue-iteration-3.log",
+    "status": "passed",
+    "log": ".runtime/auth02-execution-scope-consumption.log"
+  },
+  "producer_source_evidence_refresh": {
+    "layer": "P4",
+    "reason": "Refresh hashes only for owned assembler, cache handler, typed decoder and types after executionScope addition. Preserve historical input audit, design status, assertions and remediation scope.",
+    "log": ".runtime/auth02-remaining-static.log",
+    "status": "passed",
+    "repair_log": ".runtime/auth02-producer-source-evidence.log"
+  },
+  "local_target_collection": {
+    "status": "targeted_collection_passed_aggregate_receipt_remains_failed",
+    "required_target_count": 73,
+    "aggregate_receipt": ".runtime/frontend-dev-validation/executions/20261126T082002Z-3216710-250817426/receipt.json",
+    "aggregate_passed_targets": [
+      "audit.verification.lane_coverage.check",
+      "verify.action_view_runtime_smoke.behavior",
+      "verify.agent.ledger.unit",
+      "verify.approval.contract_closure.orm",
+      "verify.auth02.native_isolation.orm",
+      "verify.backend.contract_lifecycle.authority",
+      "verify.backend.model_declaration.guard",
+      "verify.backend.navigation_delivery.unit",
+      "verify.business_capability.authorization.orm",
+      "verify.business_capability.authorization.unit",
+      "verify.business_config.formal_list.unit",
+      "verify.business_role.orm",
+      "verify.capability.identity_boundary.orm",
+      "verify.capability.identity_boundary.unit",
+      "verify.contract.entry_equivalence.guard",
+      "verify.daily.permission_truth.capability.orm",
+      "verify.execute_button.authority.unit",
+      "verify.extension.consumers.unit",
+      "verify.extension.lifecycle.orm",
+      "verify.form_structure_authority_unification.unit",
+      "verify.frontend.approval_contract.closure.unit",
+      "verify.frontend.canonical_form_presenter.unit",
+      "verify.frontend.contract_header_action.unit",
+      "verify.frontend.contract_record_action_state.unit"
+    ],
+    "remaining_static_targets": [
+      "verify.frontend.contract_v2_render_authority.unit",
+      "verify.frontend.dev.incremental.unit",
+      "verify.frontend.lint.src",
+      "verify.frontend.navigation_policy.unit",
+      "verify.frontend.navigation_shell.unit",
+      "verify.frontend.role_surface_exposure_declaration.guard",
+      "verify.frontend.systemic.convergence.static",
+      "verify.frontend.typecheck.strict",
+      "verify.industry_business_model_02.data_audit",
+      "verify.local.dev.runtime.performance.unit",
+      "verify.native_advisory.unit",
+      "verify.native_widget.provenance.unit",
+      "verify.navigation.publication_consumers.unit",
+      "verify.p0_c_fix01.action_id.unit",
+      "verify.p0_contract_producer.p0a.backend_unit",
+      "verify.p0_contract_producer.p0a.descriptor_conformance",
+      "verify.p0_contract_producer.p0a.money",
+      "verify.p0_contract_producer.p0a.unit",
+      "verify.p0_contract_producer.p0c.unit",
+      "verify.platform.capability_explorer.unit",
+      "verify.platform.duty.contract.unit",
+      "verify.product.configuration_center.wave1.guard",
+      "verify.product.entry_publication.unit",
+      "verify.product.menu.contract_v1.guard",
+      "verify.product.scenario.organization.unit",
+      "verify.product_center.policy.unit",
+      "verify.project.dashboard.contract",
+      "verify.role_capability_group_authority.unit",
+      "verify.role_surface.landing.contract.unit",
+      "verify.sc_data_scope.rule_coverage",
+      "verify.scenario.center_projection.guard",
+      "verify.semantic.registry.lint",
+      "verify.system.permission_role.assignment.unit",
+      "verify.system_init.menu_boundary.guard",
+      "verify.test.coverage.registry",
+      "verify.unified_page_contract.v2.action",
+      "verify.unified_page_contract.v2.assembler",
+      "verify.unified_page_contract.v2.runtime",
+      "verify.unified_page_contract.v2.schema",
+      "verify.unified_page_contract.v2.status",
+      "verify.workflow_action_semantics.guard"
+    ],
+    "remaining_static_log": ".runtime/auth02-remaining-static.log",
+    "static_failure_repair": ".runtime/auth02-producer-source-evidence.log",
+    "remaining_runtime_targets": [
+      "verify.group_authority.sources.orm",
+      "verify.industry_business_model_02.orm",
+      "verify.p0_c_fix01.action_id.orm",
+      "verify.p0_contract_producer.p0c.orm",
+      "verify.platform.multi_company.orm",
+      "verify.product_center.policy.orm",
+      "verify.runtime_user_management.orm",
+      "verify.smart_construction_core.migration_compatibility.orm"
+    ],
+    "remaining_runtime_log": ".runtime/auth02-remaining-runtime.log",
+    "runtime_test_counts": [
+      5,
+      16,
+      15,
+      15,
+      120,
+      3,
+      36,
+      19
+    ],
+    "carry_scope": "After aggregate3, product P0/P1 and frontend runtime source remained unchanged. Later edits only register executionScope consumption, refresh owned source hashes and generated evidence, and update run metadata. Original failed aggregate receipts retained. No aggregate PASS claimed.",
+    "remote_module_baselines": "deferred_remote",
+    "browser": "not_run"
+  },
+  "generated_evidence_preparation": {
+    "status": "passed",
+    "target": "make ci.delivery.freeze.prepare",
+    "log": ".runtime/auth02-freeze-prepare.log",
+    "scope": "Canonical generation and consistency checks; no runtime deployment."
+  },
+  "trusted_scan_scope": {
+    "status": "planned_only",
+    "log": ".runtime/auth02-trusted-scan-scope.log",
+    "result": "Authority changed; full scanning would be required. No local history scan performed; public_guard remains exact-head remote requirement."
+  },
+  "publication_plan": {
+    "mode": "draft_review",
+    "target": "make pr.push PR_PUBLISH_MODE=review",
+    "local_validation": "73 selected targets collected; original failed aggregate receipts preserved, corresponding failures repaired and retested.",
+    "not_claimed": [
+      "aggregate ci.local.iteration PASS",
+      "independent review",
+      "remote integration",
+      "deployment",
+      "browser acceptance"
+    ]
+  }
 }

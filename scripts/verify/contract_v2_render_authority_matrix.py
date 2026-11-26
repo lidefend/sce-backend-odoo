@@ -60,7 +60,7 @@ EXPECTED = {
         "intent target button visible modifiers invisible visibleProfiles presentation actionSafety submitPolicy tracePolicy "
         "backendIdentity nativeIdentity sourceTrace presentationAuthority presentationPriority sourceActionKey sourceChannel "
         "permissionConstraints entitlementEvaluated allowed enabled disabled reasonCode actionSemantics "
-        "authorizationAllowed businessAvailable reasonMessage required_params requires_reason"
+        "authorizationAllowed businessAvailable reasonMessage required_params requires_reason executionScope"
     ),
     "dataContract": "mainData tableRows relationRows treeData ganttData dictData pagination dataSource dataMeta",
     "dataMeta": (
