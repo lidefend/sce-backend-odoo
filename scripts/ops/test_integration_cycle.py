@@ -55,6 +55,37 @@ class GateTests(unittest.TestCase):
                 self.assertFalse(cycle.checks_ready([
                     self.check(10, 100, "SUCCESS"), self.check(11, 101, state)])[0])
 
+    def test_new_workflow_matrix_supersedes_old_unexpanded_placeholder(self):
+        rows = [self.check(10, 100, "FAILURE", name="suite"),
+                self.check(11, 101, "SUCCESS", name="suite (0)"),
+                self.check(11, 102, "SUCCESS", name="suite (1)"),
+                self.check(11, 103, "SUCCESS", name="required")]
+        for ordered in (rows, rows[::-1]):
+            self.assertEqual(cycle.checks_ready(ordered, required_checks={("gate", "required")}),
+                             (True, [], []))
+
+    def test_new_workflow_cannot_borrow_missing_required_job_from_old_run(self):
+        rows = [self.check(10, 100, "SUCCESS", name="required"),
+                self.check(11, 101, "SUCCESS", name="classify")]
+        ready, failed, pending = cycle.checks_ready(rows, required_checks={("gate", "required")})
+        self.assertFalse(ready)
+        self.assertEqual(failed, [])
+        self.assertIn("gate/required: missing", pending)
+
+    def test_current_matrix_failure_or_pending_still_blocks(self):
+        for state in ("FAILURE", "PENDING", "CANCELLED"):
+            rows = [self.check(10, 100, "SUCCESS", name="suite"),
+                    self.check(11, 101, state, name="suite (0)"),
+                    self.check(11, 102, "SUCCESS", name="required")]
+            with self.subTest(state=state):
+                self.assertFalse(cycle.checks_ready(rows, required_checks={("gate", "required")})[0])
+
+    def test_different_job_name_cannot_hide_ambiguous_workflow_repository(self):
+        old = self.check(10, 100, "FAILURE", name="suite")
+        new = self.check(11, 101, "SUCCESS", name="suite (0)")
+        new["detailsUrl"] = "https://github.com/other/repo/actions/runs/11/job/101"
+        self.assertFalse(cycle.checks_ready([old, new])[0])
+
     def test_same_run_retry_uses_new_job_identity(self):
         self.assertTrue(cycle.checks_ready([
             self.check(10, 100, "CANCELLED"), self.check(10, 101, "SUCCESS")])[0])

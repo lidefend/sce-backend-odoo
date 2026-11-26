@@ -418,6 +418,36 @@ def _company(env, suffix):
     )
 
 
+def _ensure_multi_company_license(env, company):
+    """Explicit platform prerequisite for the fixture's A/B company journeys.
+
+    Only this fixture-owned home company is subscribed. Native membership and
+    data-purpose/project rules still bound each fixture user's access.
+    """
+    baseline = env["sc.entitlement"].sudo()._default_plan()
+    plan = _upsert(
+        env, "sc.subscription.plan", "fe_multi_company_plan",
+        [("code", "=", "acceptance_fixture_multi_company")],
+        {
+            "code": "acceptance_fixture_multi_company",
+            "name": "Acceptance Fixture A/B Company Access",
+            "active": True, "sequence": 999,
+            "multi_company_enabled": True,
+            "feature_flags_json": dict(baseline.feature_flags_json or {}),
+            "limits_json": dict(baseline.limits_json or {}),
+        },
+    )
+    return _upsert(
+        env, "sc.subscription", "fe_multi_company_subscription",
+        [("company_id", "=", company.id), ("plan_id", "=", plan.id)],
+        {
+            "company_id": company.id, "plan_id": plan.id,
+            "state": "active", "is_trial": False,
+            "start_date": False, "end_date": False,
+        },
+    )
+
+
 def _user(env, login, name, company, companies, group_xmlids):
     groups = [_ref(env, "base.group_user"),
               _ref(env, "smart_core.group_smart_core_non_customer_data_user")]
@@ -1616,6 +1646,7 @@ def ensure_fixture(env) -> Dict[str, Any]:
 
     company_a = _company(env, "A")
     company_b = _company(env, "B")
+    _ensure_multi_company_license(env, company_a)
     _ensure_business_scenarios(env, (company_a, company_b))
     scenario_bindings = _ensure_acceptance_scenario_bindings(env)
     from odoo.addons.smart_construction_core.services.product_menu_source import (

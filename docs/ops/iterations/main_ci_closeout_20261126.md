@@ -66,3 +66,40 @@ P4 修复将固定 Node 运行时提前，在选中工具检查或正式全量�
 P4 修复守卫仅识别当前终端解码器中的真实 requiredRecord 调用，补删除读取、注释/字符串伪装、旧接口及无关函数负例。为守卫读取的生产/消费事实补本地选测，守卫自身注册为远端纯检查，前端 PR 单元入口加入 stable_projection 前置目标。保持必需字段集合等价断言，未恢复旧契约或改变产品逻辑。
 
 14 项定向守卫测试、277 项增量执行器测试、8 个本地影响集目标通过；执行日志与 Make 接线 dry-run 见 run.projection_guard_repair。新候选远端结果待验证。本轮从已合并主线新建 fix/main-full-projection-guard-20261126，沿用同一批次记录；前端准备文件已限定路径保全，发布后恢复。
+
+
+### 真实浏览器验收的认证重放参数修复
+
+原主线前端全量运行 45849949930 在 releasedNavigationTargetFor 调用 system.init 时收到 HTTP409 / CONTRACT_VERSION_UNSUPPORTED。首次浏览器启动已成功，后续 bindAuthenticatedIntent.replayIntent 用空 params 替换原请求参数，丢失实际客户端声明。P4 修复同意图重放保留已捕获参数并应用显式覆盖，其他意图保持独立参数；不硬编码协商版本、不放宽后端拒绝。
+
+定向入口 delivery_hardening.guard、standard_preview.unit 全部通过，包含 18/40/140 项 Python 测试与 42 项 Node 测试；最终 ci.local.iteration 3 个目标通过。新增回归模拟缺失协商时返回409的接收方，验证保留、显式错误覆盖被拒绝、不同意图不泄漏启动参数及原始参数不被修改。
+
+本地证据不替代浏览器：新候选通过现有 candidate.required_checks.dispatch 进入完整发布候选验收，包含真实浏览器步骤；通过后受保护合并，再核验新主线全量。前端产品专题仍保持 planned。
+
+
+### 完整候选暴露的 P1 工作流职责守卫残留
+
+候选 31a352f066b69aafc12d43b7a8e72ea238d4641e 的完整 professional_quality_gate 45855811366 在契约架构套件失败：normalizers 拆分守卫仍要求已退役的 P1 工作流注入函数。完整本地套件继续发现责任图守卫存在同源断言。四个远端后端分片均通过，不能把这两个 P4 陈旧断言归因于 ORM 回归。
+
+保留 P1 事实钩子、P0 统一工作流投影的现有设计；更新两处守卫及职责文档，禁止恢复退役注入器，补齐两守卫和文档的本地选测映射。完整 verify.contract.architecture.suite 通过，277 项选测执行器测试通过，缺少事实接口与恢复旧注入器的两项负例均被拒绝。原始证据见 run.contract_normalizer_guard_repair。新候选尚须远端成功；此处不宣称主线已合格。
+
+
+### J11 公司切换 Fixture 许可前提修复
+
+浏览器候选 31a352f06 已越过原协议拒绝，performance probe、J09、J10 通过，J11 公司 B 的 My Work 列表为空。一次性 ORM 在真实 Fixture 上复现：原生 A/B 公司范围查询 B 返回空；原生仅 B 范围触发 PLATFORM_COMPANY_NOT_AUTHORIZED。Fixture 只维护原生公司成员，未配置平台多公司订阅。
+
+补充 Fixture 自有方案及仅绑定主公司 A 的有效订阅，明确支持本 Fixture 的 A/B 切换前提；不修改平台默认方案或生产许可检查。新增真实回归验证 B 发起记录、原生成员交集及撤销许可立即拒绝。首次修复执行两项测试均通过，但运行期间登记元数据改变了全树指纹，受管回执拒绝成功；因此冻结工作树后重跑同一两项，保留无效回执而不改绿。
+
+最终本地回执：2 项专门 ORM 回归和受影响的 16 项 Fixture ORM 均通过；最后 ci.local.iteration 执行 8 个目标并复用 1 个目标，完整通过，ORM 16 项复用未重跑。快照已按登记入口更新。日志 .runtime/main-ci-1015-complete-iteration.log；新候选远端及合并后主线资格仍待完成。
+
+
+### 合并预检的旧矩阵占位结果误判
+
+候选 ec98c82d0 的四项必需检查及完整 release_candidate_gate 全部成功，浏览器 J09/J10/J11 均通过。受保护合并预检却把旧专业质量运行 45861765452 的未展开 backend_suite 失败占位算作当前失败；最新运行 45861861467 已完成全部四分片和 coverage。GitHub 状态为 CLEAN/MERGEABLE。
+
+修复 integration_cycle 先按 workflow 选择最新 run，再处理该 run 内的 job 重试；新矩阵可以替代旧占位。缺少最新必需 job 仍拒绝，不能借旧成功补齐；当前失败/取消/运行中和身份歧义仍阻断。28 项单元测试通过，真实检查载荷读回验证通过；对应工具加入精准选测。仍需新提交的远端检查，未绕过受保护合并。
+
+
+### Fixture-only 增量产品分区修复
+
+候选 ec29a08af 的普通增量专业质量规划失败：仅 Fixture 变化被选出，按职责排除验收模块后 product 集合为空，suite_modules 误把“不适用”当成非法全量空套件。修复只允许增量产品分区为空，明确记录被其他职责分区承接的模块、原因、零分片；全量显式套件仍要求非空，未知模块仍拒绝。既有空计划回读标记 not_applicable，不记测试通过。Fixture 继续由 frontend_release_gate 的 managed ORM 验证。68 项规划单测通过，精确失败 HEAD/Base 的真实规划已回放成功。

@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "baseline_sha": "162bdc3c78558f6ebc5cadef123c9f7a82564121",
+  "baseline_sha": "c55e907bdd50a1fdb720839b1aabd8b5cc17fc35",
   "scope": [
     "scripts/ci/main_full_release_dispatch.py",
     "scripts/ci/test_main_full_release_dispatch.py",
@@ -47,7 +47,19 @@
     ".github/workflows/professional_quality_gate.yml",
     "scripts/ci/test_backend_test_suite_dispatch_contract.py",
     "scripts/verify/frontend_v2_policy_projection_guard.py",
-    "scripts/verify/test_frontend_v2_policy_projection_guard.py"
+    "scripts/verify/test_frontend_v2_policy_projection_guard.py",
+    "scripts/verify/frontend_authenticated_intent.mjs",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py",
+    "scripts/verify/construction_core_extension_contract_normalizers_split_guard.py",
+    "scripts/verify/construction_core_extension_responsibility_map_guard.py",
+    "docs/engineering_convergence/construction_core_extension_responsibility_map.md",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "scripts/ops/integration_cycle.py",
+    "scripts/ops/test_integration_cycle.py",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/test_backend_suite_plan.py"
   ],
   "environment": {
     "kind": "offline",
@@ -110,9 +122,9 @@
   "blockers": [
     "Remote integration and repaired exact-main full audit pending."
   ],
-  "next_exact_step": "Publish followup PR; verify current-head gates and inspect still-running main frontend result before integration.",
+  "next_exact_step": "Publish workflow-run selection fix after targeted validation; latest exact-head required PR checks then protected merge; exact-main full audit remains required.",
   "id": "MAIN-CI-CLOSEOUT-20261126",
-  "branch": "fix/main-full-projection-guard-20261126",
+  "branch": "fix/main-full-authenticated-replay-20261127",
   "status": "verification_pending",
   "goal": ".agent/goals/MAIN-CI-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/main_ci_closeout_20261126.md",
@@ -333,5 +345,141 @@
     "not_run": "new exact-head remote CI",
     "frontend_full_prior_main": "still running; not claimed passed",
     "preparation_stash": "a70819b007a228d7c68bd1dd7e9ae5def819d18e"
+  },
+  "authenticated_replay_repair": {
+    "base": "c55e907bdd50a1fdb720839b1aabd8b5cc17fc35",
+    "failed_main_run": 45849949930,
+    "classification": "validation_tool_defect",
+    "cause": "Probe replaced the successful browser startup params with an empty object, dropping client contract negotiation.",
+    "fix": "Same-intent replay merges captured params with explicit overrides; other intents keep only their own params. No protocol defaults or backend relaxation.",
+    "local_status": "passed",
+    "local_targets": 3,
+    "focused_log": ".runtime/main-ci-replay-focused.log",
+    "iteration_log": ".runtime/main-ci-replay-iteration.log",
+    "remote_requirement": "Full candidate frontend browser release must pass before merging; final exact-main full qualification remains required.",
+    "preparation_stash": "39f0f3f7d389abd975b3304253d75da40335bd26"
+  },
+  "contract_normalizer_guard_repair": {
+    "failed_head": "31a352f066b69aafc12d43b7a8e72ea238d4641e",
+    "failed_run": 45855811366,
+    "failed_job": 140033987575,
+    "classification": "P4 stale boundary assertion",
+    "cause": "Guard required removed P1 workflow injector although P1 now supplies facts and P0 produces canonical workflow contract.",
+    "fix": "Require current P1 profile/evidence hooks and reject restored retired injector; map guard to owning architecture suite.",
+    "tests": {
+      "planner": {
+        "status": "passed",
+        "count": 277,
+        "log": ".runtime/main-ci-1015-planner-final.log"
+      },
+      "negative_mutations": {
+        "status": "passed",
+        "count": 2,
+        "cases": [
+          "missing fact hook rejected",
+          "retired P1 injector rejected"
+        ]
+      },
+      "architecture_suite": {
+        "status": "passed",
+        "log": ".runtime/main-ci-1015-architecture-fixed.log"
+      },
+      "local_iteration": {
+        "status": "passed",
+        "count": 7,
+        "receipt": ".runtime/frontend-dev-validation/executions/20261126T162559Z-2349221-642721949/receipt.json",
+        "log": ".runtime/main-ci-1015-final-iteration.log"
+      }
+    },
+    "candidate_browser_run": 45855811110,
+    "additional_same_cause": "Responsibility map and its guard also required retired P1 injector; corrected to P1 fact hooks/P0 projection and selected both guard/doc changes."
+  },
+  "browser_company_work_failure": {
+    "head": "31a352f066b69aafc12d43b7a8e72ea238d4641e",
+    "run": 45855811110,
+    "job": 140033746906,
+    "log": ".runtime/main-ci-1015-frontend-failed.log",
+    "evidence": ".runtime/1015-frontend-evidence",
+    "passed": [
+      "performance_probe",
+      "J09",
+      "J10"
+    ],
+    "failure": "J11 company B request and response scope correct, but expected initiated fixture payment missing.",
+    "hypothesis": "confirmed by disposable real ORM: native A/B scope returns empty B workspace; B-only scope raises PLATFORM_COMPANY_NOT_AUTHORIZED.",
+    "targeted_orm": {
+      "status": "failed_as_reproducer",
+      "log": ".runtime/main-ci-1015-work-projection-orm.log",
+      "class": "TestFixtureCompanyWorkProjection",
+      "receipt": ".runtime/test-baseline/1795710744685588931/receipt.json"
+    },
+    "repair": "Fixture-owned explicit multi-company subscription for home company A only; retain native company/project/data-purpose boundaries.",
+    "fixed_orm": {
+      "status": "passed",
+      "log": ".runtime/main-ci-1015-work-projection-fixed.log",
+      "invalid_receipt": ".runtime/test-baseline/1795710943185137175/receipt.json",
+      "retry_log": ".runtime/main-ci-1015-work-projection-final.log",
+      "count": 2,
+      "receipt": ".runtime/test-baseline/1795711008300420176/receipt.json"
+    },
+    "affected_orm": {
+      "status": "passed",
+      "count": 16,
+      "receipt": ".runtime/test-baseline/1795711075397657519/receipt.json"
+    },
+    "coverage_snapshot": "Regenerated by make test.coverage.registry.export after new ORM test class; no disposition weakened.",
+    "final_local_iteration": {
+      "status": "passed",
+      "executed_targets": 8,
+      "resumed_targets": 1,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T164107Z-2481720-32971547/receipt.json",
+      "log": ".runtime/main-ci-1015-complete-iteration.log"
+    }
+  },
+  "candidate_ec98_results": {
+    "head": "ec98c82d0fb6c82714e8d0a72eceb943158f0d11",
+    "status": "passed_all_required_and_full_candidate",
+    "runs": {
+      "public": 45861861478,
+      "professional": 45861861467,
+      "frontend": 45861861338,
+      "merge": 45861861336,
+      "release": 45861861432
+    },
+    "browser_journeys": {
+      "J09": "PASS",
+      "J10": "PASS",
+      "J11": "PASS"
+    },
+    "merge_preflight_blocker": "Old superseded professional run 45861765452 unexpanded backend_suite placeholder retained by per-name selection despite latest full workflow success."
+  },
+  "merge_workflow_selection_repair": {
+    "fix": "Select latest run per workflow before same-run job retries; required identities must exist in latest run; malformed/cross-repository identities and current failed/pending jobs still block.",
+    "unit_tests": 28,
+    "unit_log": ".runtime/main-ci-1015-merge-selection-unit.log",
+    "live_payload": ".runtime/main-ci-1015-live-checks.json",
+    "local_iteration": {
+      "status": "passed",
+      "targets": 10,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T171409Z-2709128-911174796/receipt.json",
+      "log": ".runtime/main-ci-1015-merge-selection-iteration.log"
+    }
+  },
+  "empty_product_partition_repair": {
+    "failed_head": "ec29a08af6aff32026137040cebe0faca2d20a02",
+    "failed_run": 45866695170,
+    "failed_job": 140071425432,
+    "log": ".runtime/main-ci-1015-final-plan-failed.log",
+    "cause": "Incremental selected fixture-only modules; product responsibility filtering raised instead of emitting not-applicable zero-shard plan.",
+    "fix": "Only incremental product partitions may be empty, with excluded modules and explicit reason; full suites and unknown module identities still reject; fixture remains owned by frontend managed acceptance.",
+    "unit_tests": 68,
+    "unit_log": ".runtime/main-ci-1015-empty-partition-unit.log",
+    "exact_failed_candidate_replay": ".runtime/main-ci-1015-empty-product-plan.json",
+    "local_iteration": {
+      "status": "passed",
+      "targets": 11,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T172137Z-2778430-963866431/receipt.json",
+      "log": ".runtime/main-ci-1015-partition-iteration.log"
+    }
   }
 }

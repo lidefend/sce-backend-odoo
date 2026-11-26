@@ -1961,6 +1961,12 @@ RULES = (
         "verify.branch.governance.consistency",
     )),
     Rule((
+        "scripts/ops/integration_cycle.py",
+        "scripts/ops/test_integration_cycle.py",
+    ), (
+        "verify.integration.cycle.unit",
+    )),
+    Rule((
         "scripts/ops/quick_input_scope.py",
         "scripts/ops/test_quick_input_scope.py",
     ), (
@@ -1974,6 +1980,9 @@ RULES = (
     )),
     Rule((
         "scripts/verify/construction_core_extension_capability_rows_split_guard.py",
+        "scripts/verify/construction_core_extension_contract_normalizers_split_guard.py",
+        "scripts/verify/construction_core_extension_responsibility_map_guard.py",
+        "docs/engineering_convergence/construction_core_extension_responsibility_map.md",
     ), (
         "verify.contract.architecture.suite",
     )),

@@ -301,8 +301,9 @@ def quick_status(root: Path) -> tuple[int, dict]:
 def checks_ready(rows: Iterable[dict], *, required_checks: Iterable[tuple[str, str]] = ()) -> tuple[bool, list[str], list[str]]:
     """Select latest Actions execution, never the latest successful execution.
 
-    Workflow/name is the check identity; run ID orders executions and job ID
-    orders retries within a run. Completion time and API array order do not:
+    Select the latest run per workflow before selecting jobs. Matrix job names
+    can disappear when a cancelled plan is replaced by its expanded shards.
+    Job ID orders retries within that run. Completion time and API order do not:
     an obsolete run can finish after its replacement. Missing/ambiguous
     identity fails closed. Non-Actions statuses keep their previous treatment.
     """
@@ -310,6 +311,8 @@ def checks_ready(rows: Iterable[dict], *, required_checks: Iterable[tuple[str, s
     pending: list[str] = []
     groups: dict[tuple[str, str], list[tuple[str, int, int, dict]]] = {}
     selected: list[dict] = []
+    latest_runs: dict[str, int] = {}
+    workflow_repositories: dict[str, set[str]] = {}
     for row in rows:
         name = str(row.get("name") or row.get("context") or "unknown")
         if row.get("__typename") != "CheckRun":
@@ -322,9 +325,14 @@ def checks_ready(rows: Iterable[dict], *, required_checks: Iterable[tuple[str, s
             continue
         repo, run, job = match.groups()
         groups.setdefault((workflow, name), []).append((repo, int(run), int(job), row))
-    for (_, name), executions in groups.items():
-        if len({item[0] for item in executions}) != 1:
+        latest_runs[workflow] = max(latest_runs.get(workflow, 0), int(run))
+        workflow_repositories.setdefault(workflow, set()).add(repo)
+    for (workflow, name), executions in groups.items():
+        if len(workflow_repositories[workflow]) != 1:
             pending.append(f"{name}: ambiguous repository identity")
+            continue
+        executions = [item for item in executions if item[1] == latest_runs[workflow]]
+        if not executions:
             continue
         latest = max((item[1], item[2]) for item in executions)
         winners = [item[3] for item in executions if (item[1], item[2]) == latest]

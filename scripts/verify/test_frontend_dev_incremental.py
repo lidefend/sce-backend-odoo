@@ -3295,12 +3295,14 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.construction.policy_maps.unit"],
                 )
-        self.assertEqual(
-            select_targets([
-                "scripts/verify/construction_core_extension_capability_rows_split_guard.py",
-            ]),
-            ["verify.contract.architecture.suite"],
-        )
+        for path in (
+            "scripts/verify/construction_core_extension_capability_rows_split_guard.py",
+            "scripts/verify/construction_core_extension_contract_normalizers_split_guard.py",
+            "scripts/verify/construction_core_extension_responsibility_map_guard.py",
+            "docs/engineering_convergence/construction_core_extension_responsibility_map.md",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), ["verify.contract.architecture.suite"])
 
     def test_primitive_adapter_guard_changes_route_to_their_owned_contract(self) -> None:
         for path in (
@@ -3312,6 +3314,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.frontend.primitive_adapter.unit"],
                 )
+
+    def test_merge_readiness_tools_select_their_owned_unit_checks(self) -> None:
+        for path in ("scripts/ops/integration_cycle.py", "scripts/ops/test_integration_cycle.py"):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), ["verify.integration.cycle.unit"])
 
     def test_publish_mode_change_runs_the_publish_preflight_contract(self) -> None:
         self.assertEqual(

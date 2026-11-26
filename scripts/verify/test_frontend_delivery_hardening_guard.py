@@ -51,11 +51,13 @@ class AuthenticatedIntentProbeTest(unittest.TestCase):
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
 import { bindAuthenticatedIntent, successfulIntentData, authenticateBrowserProbe, assertEntryRequest, fillLoginCredentials } from './scripts/verify/frontend_authenticated_intent.mjs';
+const capturedParams = {client_type:'web_pc',accepted_contract_versions:['2.7.x'],
+ client_contract_capabilities:['probe-captured-capability'],nav_mode:'full'};
 const response = (id=7, status=200, body={data:{user:{id,login:'probe'}}}, headers={authorization:'Bearer test-only'}) => ({
  status:()=>status, json:async()=>body,
  request:()=>({method:()=> 'POST',url:()=> 'https://example.test/t/demo/api/v1/intent',
  allHeaders:async()=>({...headers,'content-length':'99'}),
- postData:()=>JSON.stringify({intent:'system.init',context:{company_id:3},params:{}})})
+ postData:()=>JSON.stringify({intent:'system.init',context:{company_id:3},params:capturedParams})})
 });
 const request = await bindAuthenticatedIntent(response(),7);
 let sent;
@@ -66,6 +68,23 @@ assert.equal(sent.headers.authorization,'Bearer test-only');
 assert.equal(sent.headers['content-length'],undefined);
 assert.equal(sent.headers['X-Odoo-DB'],undefined);
 assert.deepEqual(sent.data.context,{company_id:3});
+assert.deepEqual(sent.data.params,capturedParams);
+// Exercise the original defect: the receiver rejects a request that lost its
+// negotiated parameters instead of giving every probe an unconditional 200.
+const negotiatedContext={request:{post:async(url,options)=>{
+ const supplied=options.data.params;
+ const valid=JSON.stringify(supplied.accepted_contract_versions)===JSON.stringify(capturedParams.accepted_contract_versions)
+   && supplied.client_type===capturedParams.client_type;
+ return valid ? response() : response(7,409,{error:{reason_code:'CONTRACT_VERSION_UNSUPPORTED'}});
+}}};
+await request(negotiatedContext,'system.init',{});
+await assert.rejects(request(negotiatedContext,'system.init',{accepted_contract_versions:['unsupported']}),
+ /CONTRACT_VERSION_UNSUPPORTED/);
+await request(context,'system.init',{nav_mode:'targeted'});
+assert.equal(sent.data.params.nav_mode,'targeted');
+assert.deepEqual(sent.data.params.accepted_contract_versions,capturedParams.accepted_contract_versions);
+assert.equal(capturedParams.nav_mode,'full');
+
 await request(context,'payment.request.available_actions',{id:19});
 assert.deepEqual(sent.data.params,{id:19});
 await assert.rejects(bindAuthenticatedIntent(response(8),7),/principal mismatch/);

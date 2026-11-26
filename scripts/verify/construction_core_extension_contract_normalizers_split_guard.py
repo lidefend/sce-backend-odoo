@@ -86,10 +86,18 @@ def main() -> int:
             "_contract_normalizers.general_contract_tax_contract(contract, source_contract=source_contract)",
             "return _contract_normalizers.model_specific_form_contract_policy(payload)",
             "return _contract_normalizers.form_field_aliases(payload)",
-            "def _sc_inject_workflow_contract(env, contract, source, *, model, view_type):",
+            "def smart_core_workflow_contract_profiles(env):",
+            'return env["sc.workflow.contract.service"].profile_by_model()',
+            "def smart_core_workflow_contract_evidence(env, record):",
+            'return env["sc.workflow.contract.service"]._evidence_gate(record)',
         ]:
             if token not in core_text:
                 errors.append(f"core_extension.py missing contract normalizer split token: {token}")
+
+    # P1 supplies business facts; canonical workflow projection now belongs to
+    # P0. Requiring the retired P1 injector would reverse that boundary.
+    if "_sc_inject_workflow_contract" in core_text:
+        errors.append("P1 must not restore the retired workflow contract injector")
 
     if normalizer_text:
         line_count = len(normalizer_text.splitlines())
