@@ -424,6 +424,37 @@ clean 运行态权威回读：
 仍未执行 143 个业务入口的当前候选页面、角色或办理旅程，也未完成远端 PR CI、主线资格、
 部署和用户验收。
 
+### 2026-11-27 FC-01 canonical selection 声明消费收口
+
+继续核对 relation/selection 消费链时确认，V2 `fieldDescriptor.selection` 已经由解码器
+校验并保留，但 canonical 表单投影只读取 `componentConfig.selection`。当选择项只存在于
+描述符时，控件得到空选项；旧投影还会在缺少 label 时用存储 key 自造标签。这属于 P0
+通用选择语义消费缺陷。
+
+本切片完成：
+
+- canonical/native 表单统一通过 `declaredSelectionOptions` 消费选择项；显式
+  `componentConfig.selection` 优先，否则消费 `fieldDescriptor.selection`；
+- 显式配置存在但 key/label 非法时停机，不静默回退到另一载体；
+- selection 类型没有任何有效选项时抛 `ContractGapError`，不渲染空选择器；
+- 选择标签只接受声明 label，不再把 storage key 当作用户可见标签；
+- 增加描述符独有选择项、非法显式配置、完全缺失声明和静态回退守卫；
+- `frontend_contract_basis_ledger.json` 新增 `fieldDescriptor.selection` 到
+  canonical 控件的声明→消费→停机绑定。
+
+`make ci.local.iteration` 在 `5da6f2521b60a4049aa115927bd10d9f9f91a06d`
+加当前 owned dirty scope 上执行 29 个目标、复用 17 个未变目标，其中 19 个测试目标
+共执行 727 项测试、7 项静态检查，`unmapped_paths=0`，全部退出零。原始回执：
+
+`.runtime/frontend-dev-validation/executions/20261126T233447Z-1051376-403036631/receipt.json`
+
+回执 SHA256：
+`5aaa6d12d93e4536f26e824b059900da96241d618ec45b0f5e8ae9a603cc7a5e`。
+
+该证据只证明当前 dirty 候选的本地精准消费与治理检查。产品提交后仍需按新精确 HEAD
+重建 clean 前端与 Odoo 容器，并在 clean HEAD 重新执行本地增量入口。143 个业务入口的
+当前候选页面、角色或办理旅程仍未执行，远端 PR CI、主线资格、部署和用户验收均未完成。
+
 ### 2026-11-27 FC-01 collection component identity 消费收口
 
 继续检查 V2 列投影时发现，字段描述符已经携带 `componentKey`，但列表列投影只允许

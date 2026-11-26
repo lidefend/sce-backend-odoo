@@ -520,7 +520,9 @@ function snapshot(): ContractV2Snapshot {
           containerId: 'field.state', containerType: 'field', type: 'field', name: 'state', title: '', span: 12,
           children: [], widgetList: [{
             widgetId: 'field.state', widgetType: 'select', fieldCode: 'state', label: 'State', span: 12,
-            semanticType: 'status', capabilities: [], componentConfig: { fieldType: 'selection' },
+            semanticType: 'status', capabilities: [], componentConfig: {
+              fieldType: 'selection', selection: [['draft', 'Draft'], ['done', 'Done']],
+            },
             ownerContainerId: 'field.state',
           }],
         }, {
@@ -1775,13 +1777,53 @@ assert.deepEqual(resolveContractV2EffectiveFormCapabilities(store), {
 });
 assert.equal(store.snapshot.statusContract.globalStatus.effectiveRenderProfile, 'edit');
 const descriptorSelectionSnapshot = snapshot();
-descriptorSelectionSnapshot.layoutContract.containerTree[0].children[1].widgetList[0].fieldDescriptor = {
-  name: 'state', type: 'selection', widget: 'statusbar', selection: [['draft', 'Draft'], ['done', 'Done']],
+const descriptorSelectionWidget = descriptorSelectionSnapshot.layoutContract.containerTree[0].children[1].widgetList[0];
+delete descriptorSelectionWidget.componentConfig.selection;
+descriptorSelectionWidget.fieldDescriptor = {
+  schemaVersion: '1.0.0',
+  fieldCode: 'state',
+  label: 'State',
+  fieldType: 'selection',
+  widgetType: 'select',
+  semanticType: 'status',
+  selection: [['draft', 'Draft'], ['done', 'Done']],
 };
 assert.deepEqual(
   resolveContractV2FieldDescriptorMap(createContractV2Store(descriptorSelectionSnapshot)).state?.selection,
   [['draft', 'Draft'], ['done', 'Done']],
   'native fieldDescriptor selection must remain available to statusbar rendering',
+);
+descriptorSelectionSnapshot.statusContract.widgetStatus.find((status) => status.widgetId === 'field.state')!.visible = true;
+const descriptorSelectionModel = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(descriptorSelectionSnapshot)),
+  'edit',
+);
+const descriptorSelectionField = collectFields(descriptorSelectionModel.zones.primary)
+  .find((field) => field.fieldCode === 'state')!;
+assert.deepEqual(
+  canonicalFieldToFormSection(descriptorSelectionField).selectionOptions,
+  [{ value: 'draft', label: 'Draft' }, { value: 'done', label: 'Done' }],
+  'canonical form controls must consume selection projected by fieldDescriptor',
+);
+assert.throws(
+  () => canonicalFieldToFormSection({
+    ...descriptorSelectionField,
+    componentConfig: {
+      ...descriptorSelectionField.componentConfig,
+      selection: [['draft', '']],
+    },
+  }),
+  { name: 'ContractGapError' },
+  'an explicitly declared malformed component selection must stop instead of falling back to the descriptor',
+);
+assert.throws(
+  () => canonicalFieldToFormSection({
+    ...descriptorSelectionField,
+    componentConfig: { fieldType: 'selection' },
+    fieldDescriptor: { type: 'selection' },
+  }),
+  { name: 'ContractGapError' },
+  'a selection field without a valid selection declaration must stop before rendering an empty control',
 );
 const descriptorWidgetOptionsSnapshot = snapshot();
 const relationScopeSnapshot = snapshot();

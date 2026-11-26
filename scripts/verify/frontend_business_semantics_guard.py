@@ -100,6 +100,18 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     if "['sc.value.duration', 'sc.value.percentage'].includes(declaredComponentKey)" in shape_runtime:
         failures.append("collection projection still hard-codes a partial component identity allowlist")
 
+    canonical_form = _read("pages/contractForm/canonicalFormRenderer.ts", read_text)
+    if "function declaredSelectionOptions(field: CanonicalFormField)" not in canonical_form:
+        failures.append("canonical form projection does not consolidate declared selection authority")
+    if "const selection = declaredSelectionOptions(field);" not in canonical_form:
+        failures.append("canonical form controls do not consume the declared selection projection")
+    if "selectionOptions: selection," not in canonical_form:
+        failures.append("canonical form controls do not consume the declared selection projection")
+    if "selectionOptions: selectionOptions(config.selection)" in canonical_form:
+        failures.append("canonical form controls still read component selection instead of the declared projection")
+    if "String(item[1] ?? item[0] ?? '')" in canonical_form:
+        failures.append("canonical form still synthesizes a selection label from its storage key")
+
     display = _read("utils/display.ts", read_text)
     if "presentDeclaredBusinessValue({" not in display:
         failures.append("[CFG-001] generic display does not delegate declared business values to the shared authority")

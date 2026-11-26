@@ -481,7 +481,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue FC-01 by tracing relation and selection declarations through producer, normalized store, runtime consumers and fail-closed negative cases; update the same run and do not inherit the historical 143-entry browser matrix.",
+  "next_exact_step": "Commit the canonical selection consumer candidate, rebuild the isolated clean runtime from that exact HEAD, verify health and identity readback, then rerun ci.local.iteration on the clean HEAD before continuing the remaining FC-01 relation and semantic coverage matrix.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -712,6 +712,27 @@
       "static_checks": 5,
       "unmapped_paths": 0,
       "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
+    },
+    "fc01_selection_declaration_consumption": {
+      "status": "passed",
+      "stage_identity": "5da6f2521b60a4049aa115927bd10d9f9f91a06d plus the owned canonical-selection dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T233447Z-1051376-403036631/receipt.json",
+      "receipt_sha256": "5aaa6d12d93e4536f26e824b059900da96241d618ec45b0f5e8ae9a603cc7a5e",
+      "executed_targets": 29,
+      "reused_targets": 17,
+      "test_targets": 19,
+      "executed_test_count": 727,
+      "static_checks": 7,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "canonical form controls consume a selection projected only by fieldDescriptor",
+        "an explicit malformed component selection stops instead of falling back to descriptor selection",
+        "a selection field without valid key/label declarations stops before rendering an empty control",
+        "canonical form projection never synthesizes a label from the selection storage key",
+        "the contract-basis ledger now binds fieldDescriptor.selection through declaredSelectionOptions"
+      ],
+      "scope_limit": "Local targeted validation only; clean exact-HEAD runtime, remote PR CI, mainline qualification, the 143-entry browser matrix and user acceptance remain not_run."
     }
   }
 }

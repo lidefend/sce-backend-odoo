@@ -7,6 +7,7 @@ import {
   normalizeDeclaredDigits,
   resolveCurrencyDisplayLabel,
 } from '../../app/presentation/businessValuePresentation';
+import { contractGapError } from '../../app/contract/contractGap';
 import { projectMany2oneCapabilities } from '../../components/template/formSection.mapper';
 import {
   MANY2ONE_CREATE_OPTION,
@@ -30,13 +31,32 @@ function selectionOptions(value: unknown): TemplateSelectOption[] {
   if (!Array.isArray(value)) return [];
   return value.flatMap((item) => {
     if (Array.isArray(item) && item.length >= 2) {
-      return [{ value: String(item[0] ?? ''), label: String(item[1] ?? item[0] ?? '') }];
+      const optionValue = text(item[0]);
+      const optionLabel = text(item[1]);
+      return optionValue && optionLabel ? [{ value: optionValue, label: optionLabel }] : [];
     }
     const row = asRecord(item);
     const optionValue = text(row.value || row.key || row.id);
-    if (!optionValue) return [];
-    return [{ value: optionValue, label: text(row.label || row.name || optionValue) }];
+    const optionLabel = text(row.label || row.name);
+    return optionValue && optionLabel ? [{ value: optionValue, label: optionLabel }] : [];
   });
+}
+
+function declaredSelectionOptions(field: CanonicalFormField): TemplateSelectOption[] {
+  const config = asRecord(field.componentConfig);
+  const descriptor = asRecord(field.fieldDescriptor);
+  const options = Object.prototype.hasOwnProperty.call(config, 'selection')
+    ? selectionOptions(config.selection)
+    : selectionOptions(descriptor.selection);
+  const fieldType = text(field.fieldType || config.fieldType).toLowerCase();
+  if (fieldType === 'selection' && !options.length) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${field.fieldCode || '(unknown)'}.selection`,
+      requiredDeclarationLayer: 'P0:smart_core:field_selection_projection',
+    }, `选择字段 ${field.fieldCode || '(unknown)'} 缺少有效的 selection key/label 声明`);
+  }
+  return options;
 }
 
 function inputValue(value: unknown, fieldType = ''): string | number | boolean | null {
@@ -62,7 +82,7 @@ function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
   const config = asRecord(field.componentConfig);
   const canonicalDescriptor = asRecord(field.fieldDescriptor);
   const configRelationEntry = asRecord(config.relationEntry);
-  const selection = selectionOptions(config.selection).map((option) => [option.value, option.label] as [string, string]);
+  const selection = declaredSelectionOptions(field).map((option) => [option.value, option.label] as [string, string]);
   return {
     ...canonicalDescriptor,
     name: field.fieldCode,
@@ -111,6 +131,7 @@ export function canonicalFieldToFormSection(
   const config = asRecord(field.componentConfig);
   const type = text(field.fieldType || config.fieldType).toLowerCase();
   const descriptor = asRecord(fieldDescriptor(field));
+  const selection = declaredSelectionOptions(field);
   const semanticType = text(descriptor.semanticType || config.semanticType).toLowerCase();
   const presentationType = semanticType === 'money' ? 'monetary' : type;
   const relationshipCollection = fieldIsBusinessRelationCollection(field);
@@ -222,7 +243,7 @@ export function canonicalFieldToFormSection(
     // projected on its own channel so it can never be presented as the value.
     many2oneTextValue: relation?.displayName || selectedRelation?.label || undefined,
     relationQueryKeyword: relationKeyword || undefined,
-    selectionOptions: selectionOptions(config.selection),
+    selectionOptions: selection,
     relationOptions: runtimeRelationOptions.length
       ? runtimeRelationOptions
       : selectionOptions(config.options || config.relationOptions || config.relation_options),

@@ -229,6 +229,21 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         ))
         self.assertTrue(any("partial component identity allowlist" in failure for failure in failures))
 
+    def test_canonical_selection_descriptor_drop_fails(self):
+        failures = guard.validate(lambda path: (
+            "\n".join((
+                "function declaredSelectionOptions(field: CanonicalFormField): TemplateSelectOption[]",
+                "const selection = declaredSelectionOptions(field);",
+                "selectionOptions: selectionOptions(config.selection),",
+                "label: String(item[1] ?? item[0] ?? ''),",
+            ))
+            if path == "pages/contractForm/canonicalFormRenderer.ts"
+            else source(path)
+        ))
+        self.assertTrue(any("declared selection projection" in failure for failure in failures))
+        self.assertTrue(any("component selection" in failure for failure in failures))
+        self.assertTrue(any("selection label from its storage key" in failure for failure in failures))
+
     def test_hard_coded_duration_rounding_fails(self):
         failures = guard.validate(lambda path: source(
             path,
