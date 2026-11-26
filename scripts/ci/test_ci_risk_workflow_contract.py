@@ -225,6 +225,24 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             self.assertIn(gate, names)
             self.assertLess(names.index(pin_name), names.index(gate), f"{gate} must run after the pin")
 
+    def test_professional_tool_and_full_baseline_prepare_locked_decoder_dependencies(self) -> None:
+        workflow = yaml.safe_load(self.text("professional_quality_gate.yml"))
+        steps = workflow["jobs"]["professional_quality_checks"]["steps"]
+        names = [step.get("name") for step in steps]
+        pin = names.index("Install pinned Node.js runtime for the syntax sweep")
+        install = names.index("Install locked frontend verification dependencies")
+        prep = steps[install]
+        self.assertEqual(prep.get("if"), "env.TOOL_CHECKS != '' || github.event_name == 'schedule' || needs.professional_authorization.outputs.candidate_requested == 'true'")
+        self.assertLess(pin, install)
+        self.assertIn("corepack prepare pnpm@9.12.3 --activate", prep["run"])
+        self.assertIn("pnpm -C frontend install --frozen-lockfile", prep["run"])
+        self.assertIn("test -x frontend/apps/web/node_modules/.bin/esbuild", prep["run"])
+        for consumer in (
+            "Run owning tool checks for changed control plane",
+            "Run complete registered offline baseline for formal release",
+        ):
+            self.assertLess(install, names.index(consumer))
+
     def test_professional_gate_prepares_bubblewrap_for_real_sandbox_contract(self) -> None:
         """The workflow contract executes the formal executor's real bwrap tests."""
         workflow = yaml.safe_load(self.text("professional_quality_gate.yml"))
@@ -340,7 +358,9 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         for command in expected_order:
             cursor = full_section.find(command, cursor + 1)
             self.assertGreaterEqual(cursor, 0, command)
-        self.assertNotIn("pnpm -C frontend install", text)
+        # Decoder tool dependencies are required; frontend build/browser work stays in its own lane.
+        self.assertNotIn("pnpm -C frontend/apps/web build", text)
+        self.assertNotIn("playwright install", text)
         self.assertIn("make test.unit test.contract test.e2e.preflight", text)
         self.assertIn("make verify.product.release.version", text)
         governance_section = text.split("- name: Run governance-only quality gate", 1)[1].split(

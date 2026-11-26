@@ -43,7 +43,8 @@
     "frontend/apps/web/src/app/contracts/v2/schema.ts",
     "frontend/apps/web/src/app/contracts/v2/types.ts",
     "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
-    "docs/architecture/p0_contract_producer_01/remediation_design.json"
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    ".github/workflows/professional_quality_gate.yml"
   ],
   "environment": {
     "kind": "offline",
@@ -106,7 +107,7 @@
   "blockers": [
     "Remote integration and repaired exact-main full audit pending."
   ],
-  "next_exact_step": "Complete affected current-contract and classification checks; push PR1013 followup; verify exact-head PR and backend lane evidence, then merge and qualify resulting main with six workflows.",
+  "next_exact_step": "Publish professional verification dependency preparation fix; verify all checks at new exact HEAD before main integration.",
   "id": "MAIN-CI-CLOSEOUT-20261126",
   "branch": "fix/main-ci-impact-precision-20261126",
   "status": "verification_pending",
@@ -258,5 +259,35 @@
       "unrelated worktrees",
       "independent subprotocol versions"
     ]
+  },
+  "professional_dependency_repair": {
+    "failed_head": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
+    "failed_run": 45812171077,
+    "classification": "environment_defect",
+    "root_cause": "Selected contract decoder tooling executes before locked frontend dependencies are installed.",
+    "scope": [
+      ".github/workflows/professional_quality_gate.yml",
+      "scripts/ci/test_ci_risk_workflow_contract.py"
+    ],
+    "validation": {
+      "workflow_regressions": {
+        "status": "passed",
+        "count": 34,
+        "log": ".runtime/main-ci-dependency-regression.log"
+      },
+      "decoder_and_fidelity": {
+        "status": "passed",
+        "decoder_tests": 1,
+        "guard_tests": 41,
+        "log": ".runtime/main-ci-dependency-decoder.log"
+      },
+      "local_iteration": {
+        "status": "passed",
+        "executed": 25,
+        "log": ".runtime/main-ci-dependency-iteration.log"
+      }
+    },
+    "remote_new_head": "not_run",
+    "frontend_preparation": "Preserved locally under .runtime/frontend-topic-preparation-preserved; restore after clean publication; not part of this CI fix."
   }
 }

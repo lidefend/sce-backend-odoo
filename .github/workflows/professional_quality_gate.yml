@@ -342,6 +342,36 @@ jobs:
             bwrap_smoke
           fi
 
+      # `make test.unit` / `make test.contract` run the tracked Node syntax
+      # sweep, which parses `.js` files through `node --input-type` and
+      # therefore depends on the runtime version. Pin it instead of inheriting
+      # whatever the runner image happens to ship.
+      - name: Install pinned Node.js runtime for the syntax sweep
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.17.0
+
+      - name: Restore frontend verification dependency store
+        if: env.TOOL_CHECKS != '' || github.event_name == 'schedule' || needs.professional_authorization.outputs.candidate_requested == 'true'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-node22.17.0-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-node22.17.0-
+
+      # Owning tool targets include the real TypeScript contract decoder.
+      # Prepare its locked dependencies before both selected and full checks.
+      - name: Install locked frontend verification dependencies
+        if: env.TOOL_CHECKS != '' || github.event_name == 'schedule' || needs.professional_authorization.outputs.candidate_requested == 'true'
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@9.12.3 --activate
+          pnpm config set store-dir "${HOME}/.local/share/pnpm/store"
+          pnpm -C frontend install --frozen-lockfile
+          test -x frontend/apps/web/node_modules/.bin/esbuild
+
       - name: Run complete registered offline baseline for formal release
         id: scheduled_baseline
         if: github.event_name == 'schedule' || needs.professional_authorization.outputs.candidate_requested == 'true'
@@ -415,15 +445,6 @@ jobs:
           key: pip-${{ runner.os }}-python-${{ hashFiles('requirements-odoo.txt') }}
           restore-keys: |
             pip-${{ runner.os }}-python-
-
-      # `make test.unit` / `make test.contract` run the tracked Node syntax
-      # sweep, which parses `.js` files through `node --input-type` and
-      # therefore depends on the runtime version. Pin it instead of inheriting
-      # whatever the runner image happens to ship.
-      - name: Install pinned Node.js runtime for the syntax sweep
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: 22.17.0
 
       - name: Run full professional quality gate (serialized artifact writers)
         if: env.PROFESSIONAL_MODE == 'full'

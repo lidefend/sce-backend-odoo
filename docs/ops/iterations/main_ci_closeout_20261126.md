@@ -37,3 +37,12 @@ Explicit pure-check ownership now selects the owning guard locally and remotely 
 Local targeted results and subsequent exact-head remote results are indexed in the active run. Main 0bab522 remains unqualified until a repaired latest-main six-workflow audit succeeds. No persistent deployment or AUTH-02 business acceptance is claimed.
 
 The 791c854 frontend PR gate found a missed source-evidence dependency: the design-fidelity test still pinned the pre-cleanup schema/types bytes. Its focused payment diagnostic passed, but ran before discovering this cheap mismatch. Synchronize only the reviewed decoder digests, derive local fidelity selection from every declared source-evidence path, include the evidence declaration in checkpoint authority, and move standard frontend checks before expensive diagnostics. Preserve the digest assertion and mandatory diagnostic. The whole standard consumer unit batch passed; further results remain in the active run.
+
+
+### 专业质量工具依赖准备修复
+
+精确候选 `e62a4b5dcdf726b3c15292cddde185925b0d5725` 的 frontend_release_gate、public_guard、四个后端分片及 verify_coverage 成功。专业质量 run 45812171077 的 owning-tool 步骤调用实际契约解码器时缺少 esbuild，退出 127；合并门禁联动失败。
+
+P4 修复将固定 Node 运行时提前，在选中工具检查或正式全量离线审计时先安装 frozen-lockfile 依赖并验证 esbuild，复用 pnpm 缓存；保持浏览器和前端构建归原车道。回归同时约束普通工具检查和正式全量基线的准备顺序，替换与真实工具依赖冲突的旧“不得安装前端依赖”断言。
+
+本地工作流回归 34 项、实际解码器 1 项、契约事实守卫 41 项通过；ci.local.iteration 的 25 个影响集检查通过。原始日志见当前 run 的 professional_dependency_repair。新 HEAD 远端验证待执行；未合并、未部署。下一轮前端专题仅本地保全，不随本次 CI 修复发布。
