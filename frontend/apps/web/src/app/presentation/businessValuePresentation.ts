@@ -51,6 +51,10 @@ export type DeclaredBusinessField = {
   currency_field?: string;
   currencyLabel?: string;
   relation?: string;
+  temporal?: {
+    kind: 'date' | 'datetime';
+    timezoneAuthority: 'user' | 'record' | 'not_applicable';
+  };
 };
 
 export type DeclaredBusinessValuePresentation = {
@@ -384,6 +388,35 @@ function resolveDeclaredStatusContract(field: DeclaredBusinessField): {
   return { statusType, selection };
 }
 
+function resolveDeclaredTemporal(
+  field: DeclaredBusinessField,
+  kind: 'date' | 'datetime',
+): NonNullable<DeclaredBusinessField['temporal']> {
+  const temporal = field.temporal;
+  const valid = kind === 'date'
+    ? temporal?.kind === 'date' && temporal.timezoneAuthority === 'not_applicable'
+    : temporal?.kind === 'datetime'
+      && (temporal.timezoneAuthority === 'user' || temporal.timezoneAuthority === 'record');
+  if (!valid) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${field.name || '(unknown)'}.temporal`,
+      requiredDeclarationLayer: 'P0:smart_core:temporal_kind_and_timezone_authority_projection',
+    }, `${kind} 字段缺少匹配的 temporal 声明`);
+  }
+  return temporal;
+}
+
+function resolveUserTimeZone(value: unknown): string {
+  const declared = String(value || '').trim();
+  if (declared) return declared;
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+}
+
 function declaredBusinessFieldType(field: DeclaredBusinessField): ReturnType<typeof normalizeFieldType> {
   const nativeType = normalizeFieldType(field);
   if (nativeType !== 'unknown') return nativeType;
@@ -420,11 +453,16 @@ export function presentDeclaredBusinessValue(input: {
   temporalProfile?: 'compact' | 'full';
   locale?: string;
   fallbackLocales?: string[];
+  timeZone?: string;
+  recordTimeZone?: string;
 }): DeclaredBusinessValuePresentation {
   const emptyText = input.emptyText ?? FIELD_VALUE_EMPTY_TEXT;
   const kind = declaredBusinessValueKind(input.field, input.status);
   const statusContract = kind === 'status'
     ? resolveDeclaredStatusContract(input.field)
+    : null;
+  const temporal = kind === 'date' || kind === 'datetime'
+    ? resolveDeclaredTemporal(input.field, kind)
     : null;
   const declaredDigits = kind === 'money' || kind === 'percentage'
     ? requireDeclaredBusinessDigits(input.field, kind)
@@ -505,12 +543,23 @@ export function presentDeclaredBusinessValue(input: {
   if (kind === 'date' || kind === 'datetime') {
     const temporalText = formatTemporalFieldValue(
       input.value,
+      temporal.kind,
       input.temporalProfile || (kind === 'date' ? 'compact' : 'full'),
+      temporal.timezoneAuthority === 'user'
+        ? resolveUserTimeZone(input.timeZone)
+        : temporal.timezoneAuthority === 'record'
+          ? input.recordTimeZone || (() => {
+              throw contractGapError({
+                kind: 'contract_defect',
+                missing: `field.${input.field.name || '(unknown)'}.temporal.recordTimeZone`,
+                requiredDeclarationLayer: 'P0:smart_core:record_timezone_authority',
+              }, '记录时区权威字段缺少 recordTimeZone');
+            })()
+          : '',
     );
-    const text = kind === 'date' ? temporalText.split(' ', 1)[0] : temporalText;
     return Object.freeze({
-      kind: text ? kind : 'empty',
-      text: text || emptyText,
+      kind: temporalText ? kind : 'empty',
+      text: temporalText || emptyText,
       tone: 'neutral',
       badgeSemantic: 'default',
     });

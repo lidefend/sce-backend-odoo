@@ -111,6 +111,7 @@ import {
   presentCollectionKanbanTitle,
   type CollectionKanbanFieldOption,
 } from '../app/presentation/collectionKanbanPresentation';
+import { useRuntimeTimeZone } from '../app/runtimeTimeZone';
 
 const props = defineProps<{
   title: string;
@@ -144,6 +145,7 @@ const props = defineProps<{
   presentationSemantic?: 'card' | 'workflow_board' | string;
   groupField?: string;
 }>();
+const timeZone = useRuntimeTimeZone();
 const errorCopy = computed(() =>
   resolveErrorCopy(
     props.error || null,
@@ -245,6 +247,7 @@ function semanticCell(field: string, value: unknown, row: Record<string, unknown
     statusFields: statusMetaFields.value,
     fieldSelections: props.fieldSelections,
     columnOptions: props.columnOptions,
+    timeZone: timeZone.value,
   });
   return { text: presentation.text, tone: presentation.tone, badgeSemantic: presentation.badgeSemantic };
 }

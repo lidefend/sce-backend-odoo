@@ -184,6 +184,10 @@ export type One2ManyColumn = {
   selection?: Array<[string, string]>;
   relation?: string;
   digits?: [number, number];
+  temporal?: {
+    kind: 'date' | 'datetime';
+    timezoneAuthority: 'user' | 'record' | 'not_applicable';
+  };
   currencyField?: string;
   currencyLabel?: string;
   relationReadable?: boolean;

@@ -939,6 +939,10 @@ export interface FieldDescriptor {
   editable?: boolean;
   filename?: string;
   digits?: [number, number];
+  temporal?: {
+    kind: 'date' | 'datetime';
+    timezoneAuthority: 'user' | 'record' | 'not_applicable';
+  };
   currency_field?: string;
 }
 

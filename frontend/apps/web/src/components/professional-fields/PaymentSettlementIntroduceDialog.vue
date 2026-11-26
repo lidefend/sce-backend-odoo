@@ -120,7 +120,7 @@
               <span class="settle-history-name" :title="req.name">{{ req.name }}</span>
               <span class="settle-history-state" :class="'is-' + req.state">{{ req.state_label }}</span>
               <span class="settle-history-amount">{{ fmtMoney(req.applied_to_settlement) }}</span>
-              <span class="settle-history-date">{{ formatTemporalFieldValue(req.date_request, 'compact') || FIELD_VALUE_EMPTY_TEXT }}</span>
+              <span class="settle-history-date">{{ formatTemporalFieldValue(req.date_request, 'date', 'compact', timeZone) || FIELD_VALUE_EMPTY_TEXT }}</span>
             </div>
           </div>
         </div>
@@ -198,6 +198,7 @@ import ScInlineState from '../design-system/ScInlineState.vue';
 import { intentRequest } from '../../api/intents';
 import { formatMonetaryDisplayValue } from '../../app/presentation/businessValuePresentation';
 import { FIELD_VALUE_EMPTY_TEXT, formatTemporalFieldValue } from '../../utils/fieldSemantics';
+import { useRuntimeTimeZone } from '../../app/runtimeTimeZone';
 import {
   ratioSettlementApplyAmounts,
   ratioSettlementApplyTotal,
@@ -205,6 +206,7 @@ import {
 } from './paymentSettlementIntroduceModel';
 
 const props = defineProps<{ contract: SettlementIntroduceContract; adapter: RelationFieldAdapter; open: boolean }>();
+const timeZone = useRuntimeTimeZone();
 const emit = defineEmits<{ close: []; introduced: []; 'busy-change': [busy: boolean] }>();
 
 // The dialog renders resolved contract semantics only: every term, action

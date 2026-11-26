@@ -767,6 +767,10 @@ import {
 const route = useRoute();
 const router = useRouter();
 const session = useSessionStore();
+const one2manyColumnDisplayValueForUser = (
+  column: Parameters<typeof one2manyColumnDisplayValue>[0],
+  value: unknown,
+) => one2manyColumnDisplayValue(column, value, session.user?.tz || '');
 const recordPageContract = usePageContract('record');
 const pageSectionEnabled = recordPageContract.sectionEnabled;
 const pageSectionTagIs = recordPageContract.sectionTagIs;
@@ -1931,7 +1935,7 @@ const {
   onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink,
   one2manyRowRecordId, canOpenRelationRecord, openRelationRecord, effectiveFieldDescriptor,
   one2manyEffectiveColumn, one2manyVisibleColumns,
-  one2manyColumnDisplayValue, one2manyColumnInputValue, one2manyColumnInputType, one2manyColumns,
+  one2manyColumnDisplayValue: one2manyColumnDisplayValueForUser, one2manyColumnInputValue, one2manyColumnInputType, one2manyColumns,
   one2manyCreateLabel, one2manyRemovalLabels, one2manyRowErrors, one2manyCellError, one2manyColumnQueryScope, queryOne2manyColumnOptions, one2manyRowHints,
   ensureRelationFieldDescriptors,
   one2manyRowLabel, one2manyRowStateLabel, one2manySummary, isOne2manyHydrating,

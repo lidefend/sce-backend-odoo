@@ -127,6 +127,7 @@ import ScTextarea from '../design-system/ScTextarea.vue';
 import ScRichText from '../content/ScRichText.vue';
 import RestrictedHtmlEditor from '../editor/RestrictedHtmlEditor.vue';
 import { presentDeclaredBusinessValue } from '../../app/presentation/businessValuePresentation';
+import { useRuntimeTimeZone } from '../../app/runtimeTimeZone';
 import type { FormSectionFieldSchema } from '../template/formSection.types';
 import {
   ScTaskActionResolverKey,
@@ -141,6 +142,7 @@ const props = defineProps<{
   placeholder: string;
   hasReadonlyOverride?: boolean;
 }>();
+const timeZone = useRuntimeTimeZone();
 
 const emit = defineEmits<{
   'update:value': [value: string | number | boolean | null];
@@ -190,6 +192,7 @@ const readonlyText = computed(() => presentDeclaredBusinessValue({
   value: normalizedReadonlyValue.value,
   currencyLabel: props.field.currencyLabel,
   emptyText: resolveReadonlyEmptyText(props.field),
+  timeZone: timeZone.value,
 }).text);
 const readonlyDateTimeValue = computed(() => {
   const value = normalizedReadonlyValue.value;

@@ -24,7 +24,7 @@ function normalizedDigits(value: unknown) {
   return digits;
 }
 
-export function formatProductMyWorkFact(fact: ProductMyWorkFact): string {
+export function formatProductMyWorkFact(fact: ProductMyWorkFact, timeZone = ''): string {
   if (fact.display_role === 'money') {
     const money = fact.money;
     if (money?.value == null || !Number.isFinite(Number(money.value))) return FIELD_VALUE_EMPTY_TEXT;
@@ -38,7 +38,7 @@ export function formatProductMyWorkFact(fact: ProductMyWorkFact): string {
     );
   }
   if (fact.display_role === 'datetime') {
-    return formatTemporalFieldValue(fact.value, 'compact') || FIELD_VALUE_EMPTY_TEXT;
+    return formatTemporalFieldValue(fact.value, 'datetime', 'compact', timeZone) || FIELD_VALUE_EMPTY_TEXT;
   }
   return String(fact.value ?? '').trim() || FIELD_VALUE_EMPTY_TEXT;
 }
@@ -46,10 +46,11 @@ export function formatProductMyWorkFact(fact: ProductMyWorkFact): string {
 export function productMyWorkIdentityDisplay(
   label: string,
   amount?: ProductMyWorkFact,
+  timeZone = '',
 ): string {
   const identity = String(label || '').trim();
   if (!identity || amount?.display_role !== 'money') return identity;
-  const amountDisplay = formatProductMyWorkFact(amount).trim();
+  const amountDisplay = formatProductMyWorkFact(amount, timeZone).trim();
   if (!amountDisplay || amountDisplay === FIELD_VALUE_EMPTY_TEXT) return identity;
   const segments = identity.split(/\s+\/\s+/);
   if (!segments.includes(amountDisplay)) return identity;
@@ -68,11 +69,12 @@ export function productMyWorkTaskFacts(
 export function partitionProductMyWorkFacts(
   facts: ProductMyWorkFact[],
   visibleLimit = 3,
+  timeZone = '',
 ): { primary: ProductMyWorkFactPresentation[]; supplementary: ProductMyWorkFactPresentation[] } {
   const rows = facts.map((fact, index) => ({
     key: `${String(fact.key || 'fact')}:${index}`,
     fact,
-    display: formatProductMyWorkFact(fact),
+    display: formatProductMyWorkFact(fact, timeZone),
     index,
   }));
   const businessRows = rows.filter((row) => row.fact.field_group !== 'audit');

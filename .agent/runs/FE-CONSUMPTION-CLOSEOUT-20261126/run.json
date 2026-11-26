@@ -15,21 +15,37 @@
     "docs/ops/iterations/frontend_convergence_next_20261126.md",
     "docs/architecture/p0_contract_producer_01/remediation_design.json",
     "docs/architecture/frontend_contract_basis_ledger.json",
+    "docs/architecture/split_usage_allowlist.json",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/product/frontend_business_entry_acceptance_v1.csv",
+    "frontend/packages/schema/src/index.ts",
     ".agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/run.json",
     ".agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/coverage_matrix.json",
     "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+    "frontend/apps/web/src/App.vue",
     "frontend/apps/web/src/app/contracts/v2/store.ts",
+    "frontend/apps/web/src/app/contracts/actionViewActivityContract.ts",
     "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
     "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
     "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+    "frontend/apps/web/src/app/runtimeTimeZone.ts",
     "frontend/apps/web/src/components/FieldValue.vue",
+    "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+    "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
+    "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+    "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
     "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
+    "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
     "frontend/apps/web/src/components/template/FormSection.vue",
+    "frontend/apps/web/src/components/template/formSection.mapper.ts",
+    "frontend/apps/web/src/components/template/formSection.types.ts",
+    "frontend/apps/web/src/pages/ActivityTemplateNode.vue",
     "frontend/apps/web/src/pages/KanbanPage.vue",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
     "frontend/apps/web/src/pages/ListPage.vue",
     "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
+    "frontend/apps/web/src/pages/contractForm/types.ts",
     "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
     "frontend/apps/web/src/utils/display.ts",
     "frontend/apps/web/src/utils/fieldSemantics.ts",
@@ -40,6 +56,7 @@
     "frontend/apps/web/scripts/contract_shape_projection_test.ts",
     "frontend/apps/web/scripts/professional_business_value_model_test.ts",
     "scripts/verify/frontend_localized_display_contract_test.ts",
+    "scripts/verify/frontend_my_work_approval_guard.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/fe_polish_b1_presentation_test.ts",
     "scripts/verify/frontend_business_semantics_guard.py",
@@ -71,8 +88,8 @@
     "demo_data": false,
     "fixture": false,
     "frontend_build_fingerprint": "f377fa7b8022e64c6e271ca42a7c107f537335642140640ac6d2d29a5a326aef",
-    "health": "passed",
-    "health_note": "The clean profile serves the exact FC-01 product source. A later run/documentation-only update does not change the product surface.",
+    "health": "stale_current_worktree",
+    "health_note": "The clean profile serves the previous FC-01 product source; the temporal declaration changes require a post-commit exact-HEAD rebuild.",
     "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-fc01-health-build-bound.log",
     "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-fc01-entry-identity-build-bound.log",
     "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-fc01-frontend-build.log",
@@ -108,6 +125,8 @@
     "business_semantics": {
       "target": "verify.frontend.business_semantics.unit",
       "inputs": [
+        "frontend/apps/web/src/App.vue",
+        "frontend/apps/web/src/app/runtimeTimeZone.ts",
         "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
         "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
         "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
@@ -131,10 +150,13 @@
     "canonical_form_presenter": {
       "target": "verify.frontend.canonical_form_presenter.unit",
       "inputs": [
+        "frontend/packages/schema/src/index.ts",
+        "frontend/apps/web/src/app/runtimeTimeZone.ts",
         "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
         "frontend/apps/web/src/components/template/FormSection.vue",
         "frontend/apps/web/src/components/template/formSection.mapper.ts",
         "frontend/apps/web/src/components/template/formSection.types.ts",
+        "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
         "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
         "make/frontend.mk"
       ],
@@ -143,8 +165,11 @@
     "my_work_presentation": {
       "target": "verify.frontend.my_work_approval.guard",
       "inputs": [
+        "frontend/apps/web/src/app/runtimeTimeZone.ts",
         "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
         "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+        "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue",
+        "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
         "scripts/verify/fe_polish_b1_presentation_test.ts",
         "scripts/verify/frontend_my_work_approval_guard.py",
         "make/frontend.mk"
@@ -154,8 +179,10 @@
     "action_surface_renderer": {
       "target": "verify.frontend.action_surface_renderer_registry.unit",
       "inputs": [
+        "frontend/apps/web/src/app/runtimeTimeZone.ts",
         "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
         "frontend/apps/web/src/app/contracts/actionViewActivityContract.ts",
+        "frontend/apps/web/src/pages/ActivityTemplateNode.vue",
         "frontend/apps/web/scripts/action_surface_renderer_registry_test.ts",
         "scripts/verify/action_surface_renderer_architecture_guard.py",
         "make/frontend.mk"
@@ -165,6 +192,7 @@
     "payment_settlement_introduce": {
       "target": "verify.frontend.payment_settlement_introduce.amount.unit",
       "inputs": [
+        "frontend/apps/web/src/app/runtimeTimeZone.ts",
         "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
         "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
         "frontend/apps/web/scripts/payment_settlement_introduce_dialog_amount_test.mjs",
@@ -175,6 +203,7 @@
     "hierarchical_worksheet": {
       "target": "verify.frontend.hierarchical_worksheet.unit",
       "inputs": [
+        "frontend/apps/web/src/app/runtimeTimeZone.ts",
         "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
         "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
         "frontend/apps/web/scripts/hierarchical_worksheet_interaction_test.ts",
@@ -200,7 +229,10 @@
     "professional_business_value": {
       "target": "verify.frontend.professional_business_value.unit",
       "inputs": [
+        "frontend/packages/schema/src/index.ts",
+        "frontend/apps/web/src/app/runtimeTimeZone.ts",
         "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
         "frontend/apps/web/src/components/template/FormSection.vue",
         "frontend/apps/web/src/components/professional-fields/professionalBusinessValueModel.ts",
         "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
@@ -214,6 +246,8 @@
     "kanban_consumer": {
       "target": "verify.frontend.collection_kanban_record_card.unit",
       "inputs": [
+        "frontend/packages/schema/src/index.ts",
+        "frontend/apps/web/src/app/runtimeTimeZone.ts",
         "frontend/apps/web/src/pages/KanbanPage.vue",
         "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
         "scripts/verify/frontend_collection_kanban_record_card_guard.py",
@@ -226,6 +260,7 @@
       "target": "verify.frontend.contract_basis.unit",
       "inputs": [
         "docs/architecture/frontend_contract_basis_ledger.json",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
         "scripts/verify/frontend_contract_basis_guard.py",
         "scripts/verify/test_frontend_contract_basis_guard.py",
         "make/frontend.mk"
@@ -235,8 +270,13 @@
     "collection_view_semantics": {
       "target": "verify.frontend.collection_view_semantics.unit",
       "inputs": [
+        "frontend/packages/schema/src/index.ts",
+        "frontend/apps/web/src/app/runtimeTimeZone.ts",
         "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
         "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/types.ts",
         "frontend/apps/web/scripts/collection_view_semantics_test.ts",
         "scripts/verify/collection_view_semantics_guard.py",
         "make/frontend.mk"
@@ -246,6 +286,7 @@
     "contract_shape_projection": {
       "target": "verify.frontend.contract_shape_projection.unit",
       "inputs": [
+        "frontend/packages/schema/src/index.ts",
         "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
         "frontend/apps/web/src/app/contracts/v2/store.ts",
         "frontend/apps/web/scripts/contract_shape_projection_test.ts",
@@ -256,6 +297,8 @@
     "collection_row_cell": {
       "target": "verify.frontend.collection_row_cell.unit",
       "inputs": [
+        "frontend/packages/schema/src/index.ts",
+        "frontend/apps/web/src/app/runtimeTimeZone.ts",
         "frontend/apps/web/src/pages/ListPage.vue",
         "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
         "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
@@ -492,6 +535,25 @@
         "lint, strict typecheck, business semantics, collection semantics, professional values and governance checks remain green at the clean head"
       ],
       "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
+    },
+    "fc01_temporal_declaration_consumption": {
+      "status": "passed",
+      "stage_identity": "f666e67dc2897bd2e273c82657d0a7560d95cd00 plus the owned temporal-consumption dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T224248Z-684804-543451597/receipt.json",
+      "receipt_sha256": "d13b72fed3fc8d102fde5080794ce51f07bf324e707920908d46a3aa3af08faf",
+      "executed_targets": 18,
+      "reused_targets": 27,
+      "executed_test_count": 524,
+      "facts_verified": [
+        "date and datetime values require a matching declared temporal kind and timezone authority",
+        "datetime midnight remains datetime and never downgrades to a date by value shape",
+        "user datetime values convert from the source instant into the provided runtime user timezone",
+        "record timezone authority without recordTimeZone stops with ContractGapError",
+        "temporal metadata is preserved through V2 stores, forms, lists, Kanban, activity surfaces, detail rows and page-block metrics",
+        "the stale business-value split allowlist entry was removed because the temporal split-by-value path is gone"
+      ],
+      "scope_limit": "Local targeted validation only; clean exact-head runtime, remote PR CI, mainline qualification and business-entry browser acceptance remain not_run."
     }
   }
 }

@@ -461,6 +461,7 @@ import {
   monetaryInputStep,
   presentDeclaredBusinessValue,
 } from '../../app/presentation/businessValuePresentation';
+import { useRuntimeTimeZone } from '../../app/runtimeTimeZone';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -543,6 +544,7 @@ const props = withDefaults(defineProps<{
 });
 
 const sceneUiKit = useOptionalSceneUiKit();
+const timeZone = useRuntimeTimeZone();
 const standardFormComposition = useOptionalStandardFormComposition();
 const standardDetailComposition = useOptionalStandardDetailComposition();
 const sectionFormRef = ref<unknown>(null);
@@ -968,6 +970,7 @@ function readonlyText(field: FormSectionFieldSchema) {
     value: relationValue,
     currencyLabel: field.currencyLabel,
     emptyText: resolveReadonlyEmptyText(field),
+    timeZone: timeZone.value,
     temporalProfile: 'full',
   }).text;
 }

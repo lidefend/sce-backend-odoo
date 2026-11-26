@@ -337,6 +337,7 @@ import {
 } from '../app/presentation/collectionAggregatePresentation';
 import { resolveCollectionEmptyStateKind } from '../app/presentation/collectionEmptyStatePresentation';
 import { toneToBadgeSemantic } from '../app/presentation/businessValuePresentation';
+import { useRuntimeTimeZone } from '../app/runtimeTimeZone';
 import ScTable from '../components/design-system/ScTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
@@ -390,6 +391,10 @@ type ColumnOption = {
   relation?: string;
   attachmentRole?: string;
   currencyField?: string;
+  temporal?: {
+    kind: 'date' | 'datetime';
+    timezoneAuthority: 'user' | 'record' | 'not_applicable';
+  };
   digits?: [number, number];
   aggregate?: string;
   sortField?: string;
@@ -524,6 +529,7 @@ const props = defineProps<{
   hasActiveConditions?: boolean;
   onClearConditions?: () => void;
 }>();
+const timeZone = useRuntimeTimeZone();
 const emit = defineEmits<{
   'column-visibility-change': [payload: { visibility: Record<string, boolean> }];
   'column-order-change': [payload: { columnOrder: string[] }];
@@ -1936,6 +1942,8 @@ function columnSemanticInput(field: string) {
     selection: option?.selection,
     digits: option?.digits,
     currencyField: option?.currencyField,
+    temporal: option?.temporal,
+    timeZone: timeZone.value,
   };
 }
 

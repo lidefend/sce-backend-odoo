@@ -1,4 +1,5 @@
 import type { FieldDescriptor } from '@sc/schema';
+import { contractGapError } from '../app/contract/contractGap';
 
 /**
  * 字段语义单一权威。
@@ -155,18 +156,65 @@ export function formatNumericFieldValue(
  * 两者共用同一解析规则，差异是声明式的呈现档位而不是各写一套。
  */
 export type TemporalDisplayProfile = 'compact' | 'full';
+export type TemporalKind = 'date' | 'datetime';
 
 export function formatTemporalFieldValue(
   value: unknown,
+  kind: TemporalKind,
   profile: TemporalDisplayProfile = 'compact',
+  timeZone = '',
 ): string {
   const text = String(value ?? '').trim();
   if (!text) return '';
   const match = text.match(TEMPORAL_PATTERN);
   if (!match) return '';
   const [, date, hour = '00', minute = '00', second = '00'] = match;
-  if (`${hour}:${minute}:${second}` === '00:00:00') return date;
-  return profile === 'full' ? `${date} ${hour}:${minute}:${second}` : `${date} ${hour}:${minute}`;
+  if (kind === 'date') return date;
+  let displayDate = date;
+  let displayHour = hour;
+  let displayMinute = minute;
+  let displaySecond = second;
+  if (timeZone) {
+    const normalized = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(text)
+      ? text.replace(' ', 'T')
+      : `${date}T${hour}:${minute}:${second}Z`;
+    const instant = new Date(normalized);
+    if (Number.isNaN(instant.getTime())) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: 'field.(datetime).value',
+        requiredDeclarationLayer: 'P0:smart_core:temporal_value_projection',
+      }, `时间字段值无法按 ISO 时间解释: ${text}`);
+    }
+    try {
+      const parts = new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hourCycle: 'h23',
+      }).formatToParts(instant);
+      const part = (type: Intl.DateTimeFormatPartTypes) => (
+        parts.find((item) => item.type === type)?.value || ''
+      );
+      displayDate = `${part('year')}-${part('month')}-${part('day')}`;
+      displayHour = part('hour');
+      displayMinute = part('minute');
+      displaySecond = part('second');
+    } catch {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: 'runtime.user_timezone',
+        requiredDeclarationLayer: 'P0:smart_core:user_timezone_authority',
+      }, `运行时用户时区无效: ${timeZone}`);
+    }
+  }
+  return profile === 'full'
+    ? `${displayDate} ${displayHour}:${displayMinute}:${displaySecond}`
+    : `${displayDate} ${displayHour}:${displayMinute}`;
 }
 
 export function containsAttachmentReference(value: unknown): boolean {

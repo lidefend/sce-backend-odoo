@@ -350,6 +350,14 @@ assert.throws(() => activityCellText(12.5, {
   key: 'amount', name: 'x_amount', label: 'Amount', widget: 'monetary', nativeLocator: 'activity/field[name=x_amount]',
   occurrenceIndex: 1, attributes: {}, decorations: [], fieldType: 'monetary', currencyField: 'company_currency_id',
 }, { company_currency_id: [1, 'USD'] }), { name: 'ContractGapError' });
+assert.equal(activityCellText('2026-09-09T00:00:00Z', {
+  key: 'at', name: 'x_at', label: 'At', widget: 'datetime', nativeLocator: 'activity/field[name=x_at]',
+  occurrenceIndex: 1, attributes: {}, decorations: [], fieldType: 'datetime', currencyField: '',
+}, {}, 'UTC'), '2026-09-09 00:00:00');
+assert.equal(activityCellText('2026-09-09T08:30:45Z', {
+  key: 'at', name: 'x_at', label: 'At', widget: 'datetime', nativeLocator: 'activity/field[name=x_at]',
+  occurrenceIndex: 1, attributes: {}, decorations: [], fieldType: 'datetime', currencyField: '',
+}, {}, 'Asia/Shanghai'), '2026-09-09 16:30:45');
 
 const hierarchy = resolveActionSurfaceRenderer({
   semantic: 'hierarchy_browser', label: 'Hierarchy', groupField: '', groupedLanes: false, config: { tree: {} },

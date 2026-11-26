@@ -15,6 +15,10 @@ export type CollectionKanbanFieldOption = {
   selection?: Array<{ value: string; label: string }>;
   digits?: [number, number];
   currencyField?: string;
+  temporal?: {
+    kind: 'date' | 'datetime';
+    timezoneAuthority: 'user' | 'record' | 'not_applicable';
+  };
 };
 
 export function presentCollectionKanbanCell(input: {
@@ -24,6 +28,7 @@ export function presentCollectionKanbanCell(input: {
   statusFields?: readonly string[];
   fieldSelections?: Record<string, Array<{ value: string; label: string }>>;
   columnOptions?: readonly CollectionKanbanFieldOption[];
+  timeZone?: string;
 }) {
   const option = (input.columnOptions || []).find((candidate) => candidate.name === input.field);
   const currencyField = String(option?.currencyField || '').trim();
@@ -38,6 +43,7 @@ export function presentCollectionKanbanCell(input: {
       selection: option?.selection || input.fieldSelections?.[input.field],
       digits: option?.digits,
       currencyField,
+      temporal: option?.temporal,
     },
     value: input.value,
     currencyLabel: currencyField
@@ -45,6 +51,7 @@ export function presentCollectionKanbanCell(input: {
       : '',
     emptyText: FIELD_VALUE_EMPTY_TEXT,
     status: (input.statusFields || []).includes(input.field),
+    timeZone: input.timeZone,
     temporalProfile: 'compact',
   });
 }

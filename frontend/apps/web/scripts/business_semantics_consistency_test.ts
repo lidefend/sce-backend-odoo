@@ -370,19 +370,73 @@ assert.equal(presentCollectionKanbanCell({
 
 const dateValue = '2026-09-09T08:30:45Z';
 assert.equal(presentDeclaredBusinessValue({
-  field: { name: 'business_date', type: 'date' },
+  field: {
+    name: 'business_date',
+    type: 'date',
+    temporal: { kind: 'date', timezoneAuthority: 'not_applicable' },
+  },
   value: dateValue,
   temporalProfile: 'compact',
 }).text, '2026-09-09');
 assert.equal(presentDeclaredBusinessValue({
-  field: { name: 'business_datetime', type: 'datetime' },
+  field: {
+    name: 'business_datetime',
+    type: 'datetime',
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+  },
   value: dateValue,
   temporalProfile: 'full',
+  timeZone: 'UTC',
 }).text, '2026-09-09 08:30:45');
+assert.equal(presentDeclaredBusinessValue({
+  field: {
+    name: 'business_datetime',
+    type: 'datetime',
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+  },
+  value: dateValue,
+  temporalProfile: 'full',
+  timeZone: 'Asia/Shanghai',
+}).text, '2026-09-09 16:30:45');
+assert.equal(presentDeclaredBusinessValue({
+  field: {
+    name: 'midnight_datetime',
+    type: 'datetime',
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+  },
+  value: '2026-09-09T00:00:00Z',
+  temporalProfile: 'full',
+  timeZone: 'UTC',
+}).text, '2026-09-09 00:00:00', 'datetime never downgrades to a date at midnight');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: { name: 'missing_temporal', type: 'datetime' },
+  value: dateValue,
+}), { name: 'ContractGapError' }, 'datetime requires its declared temporal authority');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'mismatched_temporal',
+    type: 'date',
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+  },
+  value: '2026-09-09',
+}), { name: 'ContractGapError' }, 'temporal kind must match the declared field type');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'record_time_datetime',
+    type: 'datetime',
+    temporal: { kind: 'datetime', timezoneAuthority: 'record' },
+  },
+  value: dateValue,
+}), { name: 'ContractGapError' }, 'record timezone authority requires a declared record timezone');
 assert.equal(presentCollectionKanbanCell({
   field: 'business_datetime',
   value: dateValue,
-  columnOptions: [{ name: 'business_datetime', type: 'datetime' }],
+  columnOptions: [{
+    name: 'business_datetime',
+    type: 'datetime',
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+  }],
+  timeZone: 'UTC',
 }).text, '2026-09-09 08:30');
 
 assert.equal(presentDeclaredBusinessValue({

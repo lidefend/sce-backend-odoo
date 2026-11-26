@@ -109,6 +109,10 @@ export type FormSectionFieldSchema = {
   descriptor?: FieldDescriptor;
   fileName?: string;
   digits?: [number, number];
+  temporal?: {
+    kind: 'date' | 'datetime';
+    timezoneAuthority: 'user' | 'record' | 'not_applicable';
+  };
   currencyField?: string;
   currencyLabel?: string;
 };

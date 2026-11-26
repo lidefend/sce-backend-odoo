@@ -21,6 +21,7 @@ export type DisplayFormatOptions = LocalizedDisplayOptions & {
   booleanTrueText?: string;
   booleanFalseText?: string;
   currencyLabel?: string;
+  timeZone?: string;
 };
 
 const DEFAULT_OPTIONS: Required<DisplayFormatOptions> = {
@@ -30,6 +31,7 @@ const DEFAULT_OPTIONS: Required<DisplayFormatOptions> = {
   locale: '',
   fallbackLocales: ['zh_CN', 'en_US'],
   currencyLabel: '',
+  timeZone: '',
 };
 
 function normalizeOptions(options?: DisplayFormatOptions): Required<DisplayFormatOptions> {
@@ -40,6 +42,7 @@ function normalizeOptions(options?: DisplayFormatOptions): Required<DisplayForma
     locale: options?.locale ?? DEFAULT_OPTIONS.locale,
     fallbackLocales: options?.fallbackLocales ?? DEFAULT_OPTIONS.fallbackLocales,
     currencyLabel: options?.currencyLabel ?? DEFAULT_OPTIONS.currencyLabel,
+    timeZone: options?.timeZone ?? DEFAULT_OPTIONS.timeZone,
   };
 }
 
@@ -110,6 +113,7 @@ function formatDeclaredDisplayValue(
       cellRole: field.cellRole,
       selection: field.selection,
       digits: field.digits,
+      temporal: field.temporal,
       currencyField: field.currencyField || field.currency_field,
       currencyLabel: field.currencyLabel,
       relation: field.relation,
@@ -118,6 +122,7 @@ function formatDeclaredDisplayValue(
     currencyLabel: options.currencyLabel,
     emptyText: options.emptyText,
     temporalProfile: 'full',
+    timeZone: options.timeZone,
     locale: options.locale,
     fallbackLocales: options.fallbackLocales,
   });

@@ -353,11 +353,23 @@ mergeOne2manyHydratedRecords({
 });
 assert.deepEqual(monetaryHydratedRow.values.currency_id, [1, 'CNY']);
 assert.equal(
-  one2manyColumnDisplayValue({ name: 'business_date', label: '日期', ttype: 'date', required: false }, '2025-06-10T09:00:00'),
+  one2manyColumnDisplayValue({
+    name: 'business_date',
+    label: '日期',
+    ttype: 'date',
+    required: false,
+    temporal: { kind: 'date', timezoneAuthority: 'not_applicable' },
+  }, '2025-06-10T09:00:00'),
   '2025-06-10',
 );
 assert.equal(
-  one2manyColumnDisplayValue({ name: 'business_time', label: '时间', ttype: 'datetime', required: false }, '2025-06-10T09:00:30'),
+  one2manyColumnDisplayValue({
+    name: 'business_time',
+    label: '时间',
+    ttype: 'datetime',
+    required: false,
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+  }, '2025-06-10T09:00:30', 'UTC'),
   '2025-06-10 09:00',
 );
 assert.equal(
@@ -376,7 +388,13 @@ assert.equal(one2manyColumnDisplayValue(integerColumn, false), '');
 assert.equal(one2manyColumnDisplayValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, true), '是');
 assert.equal(one2manyColumnDisplayValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, false), '否');
 assert.equal(
-  one2manyColumnDisplayValue({ name: 'opened_at', label: '开启时间', ttype: 'datetime', required: false }, '2025-06-10T09:00:00'),
+  one2manyColumnDisplayValue({
+    name: 'opened_at',
+    label: '开启时间',
+    ttype: 'datetime',
+    required: false,
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+  }, '2025-06-10T09:00:00', 'UTC'),
   '2025-06-10 09:00',
 );
 assert.equal(isOne2manyEmptyValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, false), false, 'false is a readable business fact');

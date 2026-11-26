@@ -117,6 +117,7 @@ import { useRouter } from 'vue-router';
 import { executeProductMyWorkAction, type ProductMyWorkAction, type ProductMyWorkFact, type ProductMyWorkItem, type ProductMyWorkWorkspace } from '../../api/myWork';
 import { formatProductMyWorkFact, partitionProductMyWorkFacts, productMyWorkIdentityDisplay } from '../../app/presentation/productMyWorkPresentation';
 import { statusBadgeSemantic } from '../../app/presentation/businessValuePresentation';
+import { useRuntimeTimeZone } from '../../app/runtimeTimeZone';
 import ScActionBar from '../design-system/ScActionBar.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScDialog from '../design-system/ScDialog.vue';
@@ -136,6 +137,7 @@ import ScTextarea from '../design-system/ScTextarea.vue';
 const props = defineProps<{ workspace: ProductMyWorkWorkspace }>();
 const emit = defineEmits<{ refresh: [] }>();
 const router = useRouter();
+const timeZone = useRuntimeTimeZone();
 const activeSection = ref('todo');
 const searchText = ref('');
 const sortMode = ref(props.workspace.presentation.default_sort);
@@ -189,22 +191,23 @@ watch(
 );
 
 function formatFact(fact: ProductMyWorkFact) {
-  return formatProductMyWorkFact(fact);
+  return formatProductMyWorkFact(fact, timeZone.value);
 }
 
 function itemIdentity(item: ProductMyWorkItem) {
   return productMyWorkIdentityDisplay(
     item.record.label,
     item.facts.find((fact) => fact.display_role === 'money'),
+    timeZone.value,
   );
 }
 
 function primaryFacts(item: ProductMyWorkItem) {
-  return partitionProductMyWorkFacts(item.facts, 1).primary;
+  return partitionProductMyWorkFacts(item.facts, 1, timeZone.value).primary;
 }
 
 function supplementaryFacts(item: ProductMyWorkItem) {
-  return partitionProductMyWorkFacts(item.facts, 1).supplementary;
+  return partitionProductMyWorkFacts(item.facts, 1, timeZone.value).supplementary;
 }
 
 function confirmationSummary(item: ProductMyWorkItem) {

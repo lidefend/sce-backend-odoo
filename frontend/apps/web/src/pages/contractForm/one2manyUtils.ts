@@ -180,6 +180,7 @@ export function one2manyColumnsFromSubview(
           required: businessColumn?.required === undefined ? descriptorSemantics.required : Boolean(businessColumn.required),
           readonly: businessColumn?.readonly === undefined ? descriptorSemantics.readonly : Boolean(businessColumn.readonly),
           selection: one2manySelectionOptions(businessColumn?.selection) || descriptorSemantics.selection,
+          ...(descriptor?.temporal ? { temporal: descriptor.temporal } : {}),
         });
         return;
       }
@@ -241,6 +242,7 @@ export function one2manyColumnsFromSubview(
         modifiers: Object.keys(modifiers).length ? modifiers : undefined,
         relationActiveActions: Object.keys(relationActions).length ? relationActions : undefined,
         selection: one2manySelectionOptions(row.selection || businessColumn.selection || descriptor?.selection),
+        ...(descriptor?.temporal ? { temporal: descriptor.temporal } : {}),
       });
     });
   }
@@ -934,7 +936,7 @@ export function one2manyColumnInputValue(column: One2ManyColumn, value: unknown)
   return String(value);
 }
 
-export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknown) {
+export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknown, timeZone = '') {
   const ttype = String(column.ttype || '').trim().toLowerCase();
   if (value === null || value === undefined || (value === false && ttype !== 'boolean')) return '';
   if (ttype === 'json') return formatDisplayValue(value, { ttype }, { emptyText: '' });
@@ -975,8 +977,10 @@ export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknow
       currencyField: column.currencyField,
       currencyLabel: column.currencyLabel,
       selection: column.selection,
+      temporal: column.temporal,
     },
     value,
+    timeZone,
     currencyLabel: column.currencyLabel,
     emptyText: '',
     temporalProfile: 'compact',

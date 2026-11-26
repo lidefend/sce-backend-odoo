@@ -1468,7 +1468,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_business_value_semantics_select_cross_page_executor(self) -> None:
         for path in (
             "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+            "frontend/apps/web/src/app/contracts/actionViewActivityContract.ts",
+            "frontend/apps/web/src/app/runtimeTimeZone.ts",
             "frontend/apps/web/src/pages/KanbanPage.vue",
+            "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
             "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
             "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
             "scripts/verify/frontend_business_semantics_guard.py",

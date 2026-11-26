@@ -60,6 +60,7 @@ import {
   monetaryInputStep,
   statusBadgeSemantic,
 } from '../../app/presentation/businessValuePresentation';
+import { useRuntimeTimeZone } from '../../app/runtimeTimeZone';
 import type { FormSectionFieldSchema } from '../template/formSection.types';
 import {
   businessValueKind,
@@ -73,6 +74,7 @@ const props = defineProps<{
   controlId: string;
   placeholder?: string;
 }>();
+const timeZone = useRuntimeTimeZone();
 
 defineEmits<{ 'update:value': [value: string | number | boolean | null] }>();
 
@@ -115,9 +117,11 @@ const displayText = computed(() => {
         componentKey: props.field.componentKey,
         widget: props.field.widget,
         selection: props.field.selectionOptions,
+        temporal: props.field.temporal,
       },
       value: props.field.inputValue ?? value,
       emptyText: emptyDisplayText.value,
+      timeZone: timeZone.value,
     }).text;
   }
   return String(value ?? emptyDisplayText.value) || emptyDisplayText.value;

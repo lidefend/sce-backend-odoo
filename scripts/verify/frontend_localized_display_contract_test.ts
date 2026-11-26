@@ -130,6 +130,15 @@ for (const relativePath of [
 }
 
 const listColumn = (type: string) => ({ field: 'f', label: 'F', type });
+const temporalColumn = (type: 'date' | 'datetime') => ({
+  field: 'f',
+  label: 'F',
+  type,
+  temporal: {
+    kind: type,
+    timezoneAuthority: type === 'date' ? 'not_applicable' : 'user',
+  },
+});
 
 // 字段语义单一权威：集合（列表）与记录／表单必须给出同一空值、布尔与数值口径。
 assert.equal(formatDisplayValue('', { type: 'char' }), FIELD_VALUE_EMPTY_TEXT);
@@ -168,12 +177,16 @@ assert.equal(formatNumericFieldValue('1234', 'integer'), '1,234');
 assert.equal(formatDisplayValue(1234.5, { type: 'float' }), '1,234.50');
 
 // 日期在两路径一致；datetime 是声明式档位差异（集合 compact、记录／表单 full），不是各写一套规则。
-assert.equal(formatDisplayValue('2026-09-21', { type: 'date' }), '2026-09-21');
-assert.equal(presentListCell({ raw: '2026-09-21', column: listColumn('date') }).text, '2026-09-21');
-assert.equal(formatDisplayValue('2026-09-21T10:17:01Z', { type: 'datetime' }), '2026-09-21 10:17:01');
-assert.equal(presentListCell({ raw: '2026-09-21T10:17:01Z', column: listColumn('datetime') }).text, '2026-09-21 10:17');
+assert.equal(formatDisplayValue('2026-09-21', temporalColumn('date')), '2026-09-21');
+assert.equal(presentListCell({ raw: '2026-09-21', column: temporalColumn('date') }).text, '2026-09-21');
+assert.equal(formatDisplayValue('2026-09-21T10:17:01Z', temporalColumn('datetime'), { timeZone: 'UTC' }), '2026-09-21 10:17:01');
+assert.equal(presentListCell({ raw: '2026-09-21T10:17:01Z', column: temporalColumn('datetime'), timeZone: 'UTC' }).text, '2026-09-21 10:17');
+assert.throws(
+  () => presentListCell({ raw: '2026-09-21', column: listColumn('date') }),
+  { name: 'ContractGapError' },
+);
 assert.doesNotMatch(
-  formatDisplayValue('2026-09-21T10:17:01Z', { type: 'datetime' }),
+  formatDisplayValue('2026-09-21T10:17:01Z', temporalColumn('datetime'), { timeZone: 'UTC' }),
   /T\d{2}:\d{2}:\d{2}Z/,
   '机器格式的 ISO 时间戳不得泄漏到记录／表单取值呈现',
 );

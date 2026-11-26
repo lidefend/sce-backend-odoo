@@ -27,6 +27,7 @@ import {
   resolveCurrencyDisplayLabel,
   type DeclaredBusinessField,
 } from '../app/presentation/businessValuePresentation';
+import { useRuntimeTimeZone } from '../app/runtimeTimeZone';
 import { FIELD_VALUE_EMPTY_TEXT, hasDeclaredAttachmentIdentity } from '../utils/fieldSemantics';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
 
@@ -47,6 +48,7 @@ const props = defineProps<{
   digits?: [number, number];
 }>();
 const attachmentViewerRef = ref<InstanceType<typeof AttachmentViewer> | null>(null);
+const timeZone = useRuntimeTimeZone();
 
 const display = computed(() => {
   return presentDeclaredBusinessValue({
@@ -62,6 +64,7 @@ const display = computed(() => {
     value: props.value,
     currencyLabel: props.currencyLabel || resolveCurrencyDisplayLabel(props.currencyValue),
     emptyText: FIELD_VALUE_EMPTY_TEXT,
+    timeZone: timeZone.value,
   }).text;
 });
 

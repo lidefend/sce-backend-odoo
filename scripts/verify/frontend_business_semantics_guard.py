@@ -25,6 +25,7 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("utils/semantic.ts is a second business-level status/value vocabulary")
 
     authority = _read(AUTHORITY, read_text)
+    field_semantics = _read("utils/fieldSemantics.ts", read_text)
     kanban_adapter = _read(KANBAN_ADAPTER, read_text)
     for marker in (
         "function formatMonetaryDisplayValue(",
@@ -70,6 +71,14 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("status declaration validation must precede empty-value return")
     if "function requireDeclaredBusinessDigits(" not in authority:
         failures.append("money and percentage values do not require declared precision")
+    if "function resolveDeclaredTemporal(" not in authority:
+        failures.append("date and datetime values do not require declared temporal authority")
+    if "temporal.kind" not in authority or "timezoneAuthority" not in authority:
+        failures.append("temporal kind and timezone authority are not consumed")
+    if "if (kind === 'date') return date;" not in field_semantics:
+        failures.append("temporal display does not branch on the declared date kind")
+    if "00:00:00') return date" in field_semantics:
+        failures.append("datetime display still downgrades midnight values by value shape")
     if ".resolvedOptions().maximumFractionDigits" in authority:
         failures.append("monetary precision still falls back to currency-code metadata")
     if "const scale = resolveMonetaryScale(digits);" not in authority:

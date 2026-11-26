@@ -371,6 +371,39 @@ clean 运行态权威回读：
 
 此后只允许修改 run/文档并提交；若再改产品源码或验证依赖，必须重新建立当前候选证据。
 
+### 2026-11-27 FC-01 temporal 声明消费收口
+
+继续检查字段语义时确认，P0 已发布 `fieldDescriptor.temporal.kind` 与
+`timezoneAuthority`，V2 解码器也要求该声明；但业务值展示没有携带 temporal，
+`formatTemporalFieldValue` 还会把 `00:00:00` 的 datetime 按值外形降级成日期。
+这属于“契约已声明、前端未消费”的 P0 通用消费缺陷。
+
+本切片完成：
+
+- date/datetime 业务值必须携带与字段类型匹配的 `temporal`；缺失或冲突抛
+  `ContractGapError`；
+- datetime 不再按午夜值推断日期类型，午夜仍输出时间；
+- `timezoneAuthority=user` 从应用运行时用户时区转换；`record` 权威缺少
+  `recordTimeZone` 时停机；
+- temporal 元数据贯通 V2 字段描述符、规范表单、列表、看板、活动面、主从明细、
+  页面块指标和“我的工作”；
+- 增加缺失 temporal、kind 冲突、午夜、UTC→Asia/Shanghai 转换和记录时区缺口的
+  区分性用例；
+- `frontend_contract_basis_ledger.json` 新增 temporal 的声明→消费→停机绑定；
+- 删除已过期的 business-value split allowlist 项，因为按值外形拆分的路径已退役。
+
+`make ci.local.iteration` 在 `f666e67dc2897bd2e273c82657d0a7560d95cd00`
+加当前 owned dirty scope 上执行 18 个目标、复用 27 个未变目标，本轮执行 524 项测试，
+全部退出零。回执：
+
+`.runtime/frontend-dev-validation/executions/20261126T224248Z-684804-543451597/receipt.json`
+
+回执 SHA256：
+`d13b72fed3fc8d102fde5080794ce51f07bf324e707920908d46a3aa3af08faf`。
+
+产品改动提交后必须按新精确 HEAD 重建 clean 前端与 Odoo 容器；当前运行态仍属于上一
+产品候选。远端 PR CI、主线资格、部署和用户验收均未完成。
+
 
 ### 2026-11-27 开工条件回读
 

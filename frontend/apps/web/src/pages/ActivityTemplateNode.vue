@@ -7,7 +7,7 @@
     :data-widget="node.field.widget || undefined"
   >
     <span v-if="node.field.label" class="activity-template-field__label">{{ node.field.label }}</span>
-    <span class="activity-template-field__value">{{ activityCellText(record[node.field.name], node.field, record) }}</span>
+    <span class="activity-template-field__value">{{ activityCellText(record[node.field.name], node.field, record, timeZone) }}</span>
   </span>
   <div v-else class="activity-template-container" :class="node.classes">
     <span v-if="node.text" class="activity-template-text">{{ node.text }}</span>
@@ -24,9 +24,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { activityCellText, type ActivityTemplateNode } from '../app/contracts/actionViewActivityContract';
+import { useRuntimeTimeZone } from '../app/runtimeTimeZone';
 import { evaluateNativeModifierValue } from './contractForm/nativeLayoutUtils';
 
 const props = defineProps<{ node: ActivityTemplateNode; record: Record<string, unknown> }>();
+const timeZone = useRuntimeTimeZone();
 const fieldClasses = computed(() => {
   const field = props.node.field;
   if (!field) return {};

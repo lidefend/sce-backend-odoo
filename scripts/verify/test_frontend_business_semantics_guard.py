@@ -196,6 +196,30 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         ))
         self.assertTrue(any("currency-code metadata" in failure for failure in failures))
 
+    def test_temporal_authority_consumption_drop_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "function resolveDeclaredTemporal(",
+                "function legacyDeclaredTemporal(",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("declared temporal authority" in failure for failure in failures))
+
+    def test_midnight_datetime_shape_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "if (kind === 'date') return date;",
+                "if (`${hour}:${minute}:${second}` === '00:00:00') return date;",
+            )
+            if path == "utils/fieldSemantics.ts"
+            else None,
+        ))
+        self.assertTrue(any("midnight values" in failure for failure in failures))
+
     def test_my_work_money_precision_fallback_fails(self):
         failures = guard.validate(lambda path: source(
             path,
