@@ -67,7 +67,7 @@ def assert_repository(expected_repository: str) -> None:
     if expected_repository != REPOSITORY:
         raise ValueError(f"repository must be {REPOSITORY}")
     actual = run_command(
-        ["gh", "repo", "view", "--repo", REPOSITORY, "--json", "nameWithOwner",
+        ["gh", "repo", "view", REPOSITORY, "--json", "nameWithOwner",
          "--jq", ".nameWithOwner"]
     ).strip()
     if actual != REPOSITORY:
