@@ -29,7 +29,43 @@ page.on('response', async response => {
     error_count: data.error_count, valid: data.valid, messages: data.messages });
   save();
 });
-async function upload(name, content, decision = 'confirm') {
+function parseCsv(text) {
+  const rows = []; let row = []; let field = ''; let quoted = false;
+  const input = text.replace(/^\uFEFF/, '');
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i];
+    if (char === '"') {
+      if (quoted && input[i + 1] === '"') { field += '"'; i++; }
+      else quoted = !quoted;
+    } else if (!quoted && char === ',') { row.push(field); field = ''; }
+    else if (!quoted && char === '\n') { row.push(field.replace(/\r$/, '')); rows.push(row); row = []; field = ''; }
+    else field += char;
+  }
+  assert.equal(quoted, false);
+  if (field || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+async function exportUpdateIdentities() {
+  await page.getByRole('button', { name: '批量导入', exact: true }).click();
+  const wizard = page.locator('[data-dialog-purpose="native-import"]:visible');
+  await wizard.waitFor({ timeout: 45000 });
+  const downloadPromise = page.waitForEvent('download', { timeout: 45000 });
+  downloadPromise.catch(() => {});
+  const exportResponse = page.waitForResponse(response => bodyOf(response.request()).intent === 'api.data'
+    && bodyOf(response.request()).params?.op === 'export_csv', { timeout: 45000 });
+  await wizard.getByRole('button', { name: '下载更新标识文件', exact: true }).click();
+  const exported = await (await exportResponse).json();
+  report.update_export = { ok: exported.ok, error: exported.error, count: exported.data?.count }; save();
+  assert.equal(exported.ok, true, JSON.stringify(exported.error));
+  assert.ok(exported.data?.count > 0, JSON.stringify(exported));
+  const download = await downloadPromise;
+  const rows = parseCsv(fs.readFileSync(await download.path(), 'utf8'));
+  assert.deepEqual(rows.shift(), ['id', 'name']);
+  assert.ok(rows.length);
+  await wizard.getByRole('button', { name: '取消', exact: true }).last().click();
+  return rows;
+}
+async function upload(name, content, decision = 'confirm', expectedIds = null) {
   report.step = `upload:${name}`; save();
   await page.getByRole('button', { name: '批量导入', exact: true }).click();
   const wizard = page.locator('[data-dialog-purpose="native-import"]:visible');
@@ -107,7 +143,8 @@ async function upload(name, content, decision = 'confirm') {
 
   }
   assert.equal(data.error_count, 0, JSON.stringify(data.messages));
-  assert.equal(data.file_length, 2, 'header is not a data row');
+  assert.equal(data.file_length, expectedIds?.length || 2, 'header is not a data row');
+  if (expectedIds) assert.deepEqual([...data.ids].sort((a, b) => a - b), [...expectedIds].sort((a, b) => a - b), 'preview must address exactly the existing records');
   if (name === 'manual-mapping.csv') {
     await wizard.locator('[data-import-column="1"] input').first().click();
     await page.locator('.t-select-option:visible').getByText('不导入此列', { exact: true }).click();
@@ -129,7 +166,7 @@ async function upload(name, content, decision = 'confirm') {
   assert.equal(result.ok, true, JSON.stringify(result.error || {}));
   assert.equal(result.data.error_count, 0, JSON.stringify(result.data.messages));
   await wizard.getByRole('button', { name: '完成并返回列表', exact: true }).click();
-  await page.getByText(/已导入 2 条记录/).first().waitFor({ timeout: 30000 });
+  await page.getByText(`已导入 ${result.data.imported_count} 条记录`, { exact: true }).first().waitFor({ timeout: 30000 });
   return result.data;
 }
 try {
@@ -206,6 +243,32 @@ try {
   await page.goto(`${BASE}/s/enterprise.setup`, { waitUntil: 'domcontentloaded' });
   await page.locator('button.handling-item[data-action-xmlid]').filter({ hasText: '人员与账号' }).click();
   await page.getByRole('button', { name: '批量导入', exact: true }).waitFor({ timeout: 45000 });
+  if (scope === 'configuration') {
+    const reference = JSON.parse(fs.readFileSync(path.join(OUT, 'reference.json'), 'utf8'));
+    const progress = JSON.parse(fs.readFileSync(path.join(OUT, 'configuration-progress.json'), 'utf8'));
+    const accounts = progress.stages['res.users'].records;
+    const identities = await exportUpdateIdentities();
+    const batches = new Map();
+    for (const account of accounts) {
+      const source = reference.records.find(row => row.xmlid === account.xmlid);
+      const roles = [...source.fields.groups_id.eval.matchAll(/ref\(['"]([^'"]+)['"]\)/g)]
+        .map(match => match[1]).filter(ref => ref.includes('.group_sc_role_'));
+      assert.ok(roles.length);
+      const matches = identities.filter(row => row[1] === account.name);
+      assert.equal(matches.length, 1, `exported identity must be unambiguous: ${account.name}`);
+      const optional = ['lang', 'tz'].filter(field => source.fields[field]?.text);
+      const header = ['id', 'sc_user_role_group_ids/id', ...optional].join(',');
+      if (!batches.has(header)) batches.set(header, { lines: [header], ids: [] });
+      const batch = batches.get(header);
+      batch.lines.push([matches[0][0], `"${roles.join(',')}"`, ...optional.map(field => source.fields[field].text)].join(','));
+      batch.ids.push(account.id);
+    }
+    assert.equal(accounts.length, 21);
+    for (const [index, batch] of [...batches.values()].entries()) {
+      const result = await upload(`enterprise-business-roles-${index}.csv`, batch.lines.join('\n') + '\n', 'confirm', batch.ids);
+      report.cases.push({ name: 'formal_business_role_configuration_import', status: 'passed', ids: result.ids }); save();
+    }
+  } else {
   const authorized = await upload('business-role-assignment.csv',
     'id,sc_user_role_group_ids/id\n__import__.enterprise_bulk_person_a,smart_construction_core.group_sc_role_project_manager\n__import__.enterprise_bulk_person_b,smart_construction_core.group_sc_role_project_manager\n');
   assert.deepEqual(authorized.mapping, ['id', 'sc_user_role_group_ids/id']);
@@ -215,6 +278,7 @@ try {
     'id,sc_user_role_group_ids/id\n__import__.enterprise_bulk_person_a,base.group_system\n__import__.enterprise_bulk_person_b,base.group_system\n', 'forbidden');
   assert.equal(report.imports.filter(row => row.dry_run === false).length, priorWrites);
   report.cases.push({ name: 'platform_role_import_rejected_for_business_admin', status: 'passed' }); save();
+  }
   report.status = 'passed_scoped';
   report.remaining = ['imported_people_role_closure_readback', 'representative_business_journey'];
 } catch (error) {

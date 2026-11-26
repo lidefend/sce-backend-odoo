@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 
-from scripts.dev.enterprise_reconstruction import bootstrap, reference, compare_configuration
+from scripts.dev.enterprise_reconstruction import bootstrap, reference, compare_configuration, authority_manifest, reconcile_reconstruction_authority
 
 
 class EnterpriseReconstructionTests(unittest.TestCase):
@@ -62,6 +62,66 @@ class EnterpriseReconstructionTests(unittest.TestCase):
         result = compare_configuration(reference_data, facts, progress)
         self.assertEqual(result['status'], 'passed')
         self.assertGreater(result['assertions'], 0)
+
+    def test_parity_checks_declared_locale_and_account_kind_including_missing_facts(self):
+        declarations = {'lang': {'text': 'zh_CN'}, 'tz': {'text': 'Asia/Shanghai'},
+                        'share': {'text': 'False'}, 'active': {'text': 'True'},
+                        'groups_id': {'eval': "[(6, 0, [ref('x.group_sc_role_reader')])]"}}
+        reference_data = {'records': [{'xmlid': 'demo.u', 'model': 'res.users', 'fields': declarations}]}
+        user = {'id': 7, 'active': True, 'company_ids': [1], 'groups_id': [2],
+                'lang': 'zh_CN', 'tz': 'Asia/Shanghai', 'share': False}
+        facts = {'res.company': {'rows': [], 'external_ids': {'1': 'base.main_company'}},
+                 'res.users': {'rows': [user]},
+                 'res.groups': {'rows': [{'id': 2, 'implied_ids': []}],
+                                'external_ids': {'2': 'x.group_sc_role_reader'}}}
+        progress = {'stages': {'users': {'records': [{'xmlid': 'demo.u', 'id': 7}]}}}
+        self.assertEqual(compare_configuration(reference_data, facts, progress)['status'], 'passed')
+        for field, wrong in [('lang', 'en_US'), ('tz', 'UTC'), ('share', True)]:
+            expected = user[field]
+            for missing in (False, True):
+                with self.subTest(field=field, missing=missing):
+                    if missing:
+                        user.pop(field)
+                    else:
+                        user[field] = wrong
+                    result = compare_configuration(reference_data, facts, progress)
+                    self.assertEqual([item['field'] for item in result['differences']], [field])
+                    self.assertEqual(result['status'], 'failed')
+                    user[field] = expected
+
+    def test_authority_recovery_rejects_unrecorded_role_writes(self):
+        records = [{'id': value, 'xmlid': 'demo.u' + str(value)} for value in range(7, 28)]
+        progress = {'stages': {'res.users': {'records': records}}, 'writes': []}
+        with self.assertRaisesRegex(AssertionError, 'assignment history'):
+            authority_manifest({'records': []}, progress)
+        progress['writes'] = [{'ok': True, 'model': 'res.users', 'ids': [8],
+                               'fields': ['sc_user_role_group_ids']}]
+        with self.assertRaisesRegex(AssertionError, 'assignment history'):
+            authority_manifest({'records': []}, progress)
+
+    def test_authority_recovery_requires_matching_successful_import_commit(self):
+        records = [{'id': value, 'xmlid': 'demo.u' + str(value)} for value in range(7, 28)]
+        records[0]['xmlid'] = 'smart_construction_demo.user_sc_operation_demo'
+        reference_data = {'records': [{'xmlid': row['xmlid'], 'fields': {
+            'login': {'text': str(row['id'])},
+            'groups_id': {'eval': "[(4, ref('smart_construction_core.group_sc_role_accounting_read'))]"}}}
+            for row in records]}
+        progress = {'stages': {'res.users': {'records': records}}, 'writes': [
+            {'ok': True, 'model': 'res.users', 'ids': [7], 'fields': ['sc_user_role_group_ids']}]}
+        report = {'scope': 'configuration', 'cases': [{'name': 'formal_business_role_configuration_import',
+                  'status': 'passed', 'ids': [7, 8, 9, 10]}], 'imports': []}
+        with self.assertRaisesRegex(AssertionError, 'missing native commit evidence'):
+            authority_manifest(reference_data, progress, report)
+        report['imports'] = [{'phase': 'execute', 'dry_run': False, 'ok': True,
+                              'error_count': 0, 'ids': [7, 8, 9, 10]}]
+        result = authority_manifest(reference_data, progress, report)
+        self.assertIn('smart_construction_core.group_sc_role_accounting_read', result['accounts'][1]['roots'])
+        self.assertEqual(result['accounts'][4]['roots'], ['smart_construction_core.group_sc_internal_user'])
+
+    def test_authority_recovery_rejects_persistent_target_before_model_access(self):
+        with self.assertRaises(AssertionError):
+            reconcile_reconstruction_authority(SimpleNamespace(cr=SimpleNamespace(dbname='sc_dev_demo')),
+                                               {'database': 'sc_dev_demo'}, apply=True)
 
     def test_reference_fingerprint_changes_when_source_changes(self):
         with TemporaryDirectory() as directory:

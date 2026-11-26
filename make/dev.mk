@@ -2066,3 +2066,12 @@ verify.enterprise.reconstruction.parity: guard.prod.forbid verify.enterprise.rec
 .PHONY: verify.enterprise.reconstruction.import_browser
 verify.enterprise.reconstruction.import_browser: guard.prod.forbid verify.enterprise.reconstruction.unit
 	@ROOT_DIR="$(ROOT_DIR)" ENV=dev ENV_FILE="$(RECONSTRUCTION_ENV)" RECONSTRUCTION_OUT="$(RECONSTRUCTION_OUT)" RECONSTRUCTION_IMPORT_SCOPE="$(RECONSTRUCTION_IMPORT_SCOPE)" bash -c 'set -e; source scripts/common/env.sh; test "$$COMPOSE_PROJECT_NAME" = sc-init-6b0769da09e2; test "$$DB_NAME" = sc_init_6b0769da09e2; node scripts/verify/enterprise_reconstruction_import_browser.mjs'
+
+.PHONY: verify.enterprise.reconstruction.authority_recovery
+verify.enterprise.reconstruction.authority_recovery: guard.prod.forbid verify.enterprise.reconstruction.unit
+	@python3 scripts/dev/enterprise_reconstruction.py --authority-manifest --progress "$(RECONSTRUCTION_OUT)/configuration-progress.json" $(if $(RECONSTRUCTION_AUTHORITY_IMPORT_REPORT),--import-report "$(RECONSTRUCTION_AUTHORITY_IMPORT_REPORT)",) --output "$(RECONSTRUCTION_OUT)/authority-manifest.json"
+	@ROOT_DIR="$(ROOT_DIR)" ENV=dev ENV_FILE="$(RECONSTRUCTION_ENV)" FRESH_DB_AUTHORITY_APPLY="$(RECONSTRUCTION_AUTHORITY_APPLY)" bash -c 'set -e; source scripts/common/env.sh; test "$$COMPOSE_PROJECT_NAME" = sc-init-6b0769da09e2; test "$$DB_NAME" = sc_init_6b0769da09e2; export FRESH_DB_AUTHORITY_MANIFEST="$$(cat "$(RECONSTRUCTION_OUT)/authority-manifest.json")"; bash scripts/ops/odoo_shell_exec.sh < scripts/dev/enterprise_reconstruction.py'
+
+.PHONY: verify.enterprise.reconstruction.permissions
+verify.enterprise.reconstruction.permissions: guard.prod.forbid verify.enterprise.reconstruction.unit
+	@ROOT_DIR="$(ROOT_DIR)" ENV=dev ENV_FILE="$(RECONSTRUCTION_ENV)" FRESH_DB_PERMISSION_AUDIT=1 bash -c 'set -e; source scripts/common/env.sh; test "$$COMPOSE_PROJECT_NAME" = sc-init-6b0769da09e2; test "$$DB_NAME" = sc_init_6b0769da09e2; bash scripts/ops/odoo_shell_exec.sh < scripts/dev/enterprise_reconstruction.py'

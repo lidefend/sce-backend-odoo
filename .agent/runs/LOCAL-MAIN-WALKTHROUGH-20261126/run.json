@@ -49,7 +49,35 @@
     "frontend/apps/web/src/views/ActionView.vue",
     "docs/architecture/p0_contract_producer_01/remediation_design.json",
     "addons/smart_core/handlers/ui_contract_v2.py",
-    "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "addons/smart_construction_core/models/support/organization_department.py",
+    "addons/smart_construction_core/views/support/organization_department_views.xml",
+    "addons/smart_construction_core/tests/test_runtime_user_management.py",
+    "addons/smart_construction_core/tests/test_enterprise_setup_native_contracts.py",
+    "addons/smart_core/handlers/api_data.py",
+    "addons/smart_core/tests/test_api_data_list_param_boundaries.py",
+    "addons/smart_construction_core/security/sc_capability_groups.xml",
+    "addons/smart_construction_core/models/support/runtime_user_management.py",
+    "addons/smart_construction_core/views/support/runtime_user_management_views.xml",
+    "addons/smart_construction_core/data/runtime_user_defaults.xml",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_core/models/res_users_group_authority.py",
+    "addons/smart_construction_core/tests/test_group_authority_reconciliation.py",
+    "addons/smart_construction_core/security/runtime_user_permission_groups.xml",
+    "addons/smart_construction_core/security/contract_settlement_capability_bridge.xml",
+    "addons/smart_construction_core/security/sc_role_groups.xml",
+    "addons/smart_construction_core/security/sc_role_entry_groups.xml",
+    "scripts/verify/role_capability_group_authority_guard.py",
+    "scripts/verify/test_role_capability_group_authority_guard.py",
+    "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+    "addons/smart_construction_core/security/ir.model.access.csv",
+    "addons/smart_construction_core/tests/test_system_permission_separation.py",
+    "addons/smart_construction_scene/tests/test_enterprise_initialization_journey.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/role_surface_exposure_declaration_guard.py",
+    "scripts/verify/test_role_surface_exposure_declaration_guard.py",
+    "scripts/release/test_locked_menu_policy_contract.py",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -94,7 +122,7 @@
     "Project-forbidden readiness remains uncovered: capability-only principal lacks entry authority; no implicit permission grant.",
     "Enterprise scenario dependency and role-workspace business validation remain NOT_EVALUATED; readonly initialization navigation does not complete those obligations."
   ],
-  "next_exact_step": "Publish reviewed clean candidate as draft PR. Final native import browser: 10 cases passed on build 3b0b37aa2079ac8969fd4143e0a846765b7c3f98d7561d8c9dc7b7dc8002e2a3/cache v124. Continue remaining enterprise parity and representative business workflow; exact-head remote CI and independent review remain required.",
+  "next_exact_step": "Publish clean updated draft PR 1009; read back exact remote HEAD and CI. Overall business workflow/import coverage remains open.",
   "id": "LOCAL-MAIN-WALKTHROUGH-20261126",
   "branch": "fix/acceptance-authority-gaps-20261126",
   "status": "verification_pending",
@@ -127,8 +155,9 @@
   },
   "local_iteration": {
     "status": "passed",
-    "required_targets": 17,
-    "receipt": ".runtime/frontend-dev-validation/executions/20261126T001210Z-3985969-252071207/receipt.json"
+    "receipt": ".runtime/frontend-dev-validation/executions/20261126T033419Z-1230495-516657407/receipt.json",
+    "executed_targets": 52,
+    "source_identity": "HEAD plus declared dirty scope; subsequent changes limited to result metadata"
   },
   "enterprise_initialization": {
     "status": "passed_scoped",
@@ -238,5 +267,142 @@
       "Self-relation search dialog emitted no display columns and regression test asserted that defect"
     ],
     "remaining": "Full configuration parity and representative business journeys remain unverified"
+  },
+  "initialization_followup": {
+    "status": "local_targeted_passed_runtime_partial",
+    "owner_decision": "Retain configuration ability; initialize common layered product defaults without overwriting existing values.",
+    "layers": {
+      "P0": "native import update export and permission-aware contract",
+      "P1": "public department manager projection; native export capability; native account language/timezone defaults and editable personnel fields",
+      "P4": "actual UI import/parity verification; no business data seeding"
+    },
+    "orm_receipt": ".runtime/test-baseline/1795659548637792680/receipt.json",
+    "orm_tests": 31,
+    "static_log": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/initialization-contracts.log",
+    "remote_integration": "not_run_for_current_dirty_candidate",
+    "persistent_runtime": "unchanged",
+    "runtime": {
+      "database": "sc_init_6b0769da09e2",
+      "upgrade": "passed",
+      "native_identity_export": "passed_25_records",
+      "configuration_batch": "passed_native_ui_import_21_accounts",
+      "failure": null,
+      "log": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/configuration-role-import-8.log"
+    }
+  },
+  "authority_replay": {
+    "layer": "P0 smart_core",
+    "status": "runtime_upgraded_targeted_passed",
+    "orm_tests": 20,
+    "orm_receipt": ".runtime/test-baseline/1795659963338780043/receipt.json",
+    "recovery": "21 accounts confirmed via native wizard after dry-run; permissions and account count unchanged",
+    "recovery_log": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/authority-recovery-apply.log",
+    "current_browser_log": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/configuration-role-import-6.log",
+    "owner_role_fix": {
+      "layer": "P1",
+      "orm_tests": 32,
+      "orm_receipt": ".runtime/test-baseline/1795660400713238884/receipt.json",
+      "static_invariant": "all formal business roles have explicit assignment declarations",
+      "runtime": "passed"
+    }
+  },
+  "configuration_governance": {
+    "status": "verification_pending",
+    "owner_scope": "Keep configuration ability; improve layered initialization; close product configuration declaration defects using native mechanisms.",
+    "implemented": [
+      "one complete authority declaration per affected group relationship",
+      "installed graph replay drift guard and reference-order guard",
+      "explicit assignment declarations for all formal business roles",
+      "native ir.default missing-only initialization with editable language/timezone",
+      "native import/export and authority confirmation without permission changes"
+    ],
+    "graph_equivalence": {
+      "groups": 111,
+      "status": "passed",
+      "artifact": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/authority-declaration-equivalence.json"
+    },
+    "native_xml_reload_orm": {
+      "tests": 21,
+      "status": "passed",
+      "receipt": ".runtime/test-baseline/1795660804979694474/receipt.json"
+    },
+    "remaining": [
+      "current new HEAD required remote integration",
+      "representative business UI workflow",
+      "all create-entry native import coverage"
+    ],
+    "exclusions": [
+      "persistent database writes"
+    ],
+    "permission_scope": "local_passed"
+  },
+  "configuration_permission_audit": {
+    "status": "local_permission_scope_passed",
+    "scope": "all business configuration responsibilities, native ACLs, menu/actions, nested relations and method dependencies",
+    "inventory": {
+      "models": 64,
+      "actions": 68,
+      "menus": 77,
+      "evidence": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/config-permissions-before.json"
+    },
+    "fixes": [
+      "hr.employee read/write for native relation selection and department cascade; native HR field and company boundaries retained",
+      "read-only workflow definition/node relations under existing company rules"
+    ],
+    "local_targeted": "runtime_user_management,system_permission_separation,group_authority_reconciliation",
+    "remote_integration": "not_run_current_dirty_candidate",
+    "scheduled_release": "excluded: ordinary PR iteration",
+    "exclusions": [
+      "persistent database writes",
+      "platform administration grants"
+    ],
+    "first_orm": "106 collected: existing reverse-membership test used no-op link; new scene assertion wrongly placed in core-only module. Corrected test setup and owning-module placement, assertions retained.",
+    "orm": {
+      "status": "passed",
+      "count": 133,
+      "receipt": ".runtime/test-baseline/1795662031529193385/receipt.json"
+    },
+    "static": {
+      "status": "passed",
+      "business_configuration_tests": 198,
+      "log": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/config-capabilities-static.log"
+    },
+    "owning_module_baselines": {
+      "smart_core": "deferred_remote",
+      "smart_construction_core": "deferred_remote",
+      "smart_construction_scene": "deferred_remote"
+    },
+    "runtime_upgrade": "passed",
+    "remaining": [
+      "publish clean draft candidate and verify new HEAD remote CI",
+      "overall acceptance: representative business workflow and all create-entry import coverage"
+    ],
+    "readback": {
+      "models": 66,
+      "actions": 68,
+      "menus": 77,
+      "view_errors": 0,
+      "relation_permission_gaps": 0,
+      "log": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/config-permissions-after.json"
+    },
+    "iteration_mapping": "10 previously unmapped changed source paths registered to owning targeted tests and deferred remote baselines",
+    "configuration_parity": {
+      "status": "passed",
+      "assertions": 398,
+      "differences": 0,
+      "evidence": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/reconstruction/parity.json"
+    },
+    "browser": {
+      "status": "saved_and_verified_by_parity",
+      "evidence": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/reconstruction/browser-report.json"
+    },
+    "iteration_blocker": null,
+    "guard_adapter": "Shared manifest-ordered group graph replaces three incomplete two-file readers; existing reachability assertions preserved.",
+    "selector_unit_tests": 269,
+    "iteration": {
+      "status": "passed",
+      "executed_targets": 52,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T033419Z-1230495-516657407/receipt.json"
+    }
   }
 }

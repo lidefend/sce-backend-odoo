@@ -6,7 +6,8 @@ import { launchChromium } from './playwright_runtime.mjs';
 
 const OUT = process.env.RECONSTRUCTION_OUT;
 const BASE = 'http://127.0.0.1:19083/t/clean';
-const SOURCE = 'f1bc398c4a32d8f7cb4ef16c7f35d99c264d339d';
+const SOURCE = process.env.SC_SOURCE_REVISION;
+assert.match(SOURCE || '', /^[0-9a-f]{40}$/);
 assert.equal(process.env.DB_NAME, 'sc_init_6b0769da09e2');
 assert.equal(process.env.COMPOSE_PROJECT_NAME, 'sc-init-6b0769da09e2');
 assert.ok(OUT && process.env.FRESH_DB_PASSWORD);
@@ -162,7 +163,7 @@ try {
   if (previous) {
     assert.equal(previous.runtime.database, report.runtime.database);
     report.prior_configuration_build = previous.runtime.frontend_build_sha256; // data progress, not a current-build test receipt
-    assert.equal(previous.source, SOURCE);
+    report.prior_configuration_source = previous.source; // only committed data identities are reused
   }
   await page.goto(`${BASE}/login`, { waitUntil: 'domcontentloaded' });
   await page.locator('#login-username').fill('init_business_admin');
@@ -243,7 +244,7 @@ try {
         if (!ref) continue;
         const target = field === 'manager_id' ? employeeId(ref) : binding.get(ref);
         assert.ok(target);
-        if (actual[field]?.[0] !== target.id) updates.push({ record, field, target });
+        if (actual[field]?.[0] !== target.id) updates.push({ record, field: field === 'manager_id' ? 'sc_manager_public_id' : field, target });
       }
     }
     for (const employee of reference.records.filter(row => row.model === 'hr.employee')) {
@@ -293,19 +294,14 @@ try {
       await page.goto(url.href, { waitUntil: 'domcontentloaded' });
       await page.locator('[data-semantic-component="ContractFormPage"][data-state="ok"]:visible').waitFor({ timeout: 30000 });
       const field = page.locator('[data-field-name="sc_user_permission_group_ids"]:visible');
-      for (const group of expected) {
-        if (await field.locator('.t-tag').filter({ hasText: group.name }).count()) continue;
-        const input = field.locator('input:visible').first();
-        await input.click(); await input.fill(group.name);
-        await page.locator('.t-select-option:visible').filter({ hasText: group.name }).first().click();
-        await input.press('Escape');
-      }
-      const write = page.waitForResponse(res => bodyOf(res.request()).intent === 'api.data' && bodyOf(res.request()).params?.op === 'write');
-      await page.locator('button[data-action-ref="form.save"]:visible').click();
-      assert.equal((await (await write).json()).ok, true);
+      // Roles are assigned by the actual native import batch. This step only
+      // verifies the resulting user-facing labels; do not repeat per-user writes.
+      const userFacts = JSON.parse(fs.readFileSync(path.join(OUT, 'configuration-facts.json'), 'utf8'))['res.users'];
+      const saved = userFacts.rows.find(row => row.id === account.id);
+      assert.ok(expected.every(group => saved.groups_id.includes(group.id)), 'native role import must precede UI readback');
       await page.reload({ waitUntil: 'domcontentloaded' });
       await page.locator('[data-semantic-component="ContractFormPage"][data-state="ok"]:visible').waitFor({ timeout: 30000 });
-      for (const group of expected) assert.ok((await field.innerText()).includes(group.name));
+      for (const group of expected) await field.getByText(group.name, { exact: false }).first().waitFor({ timeout: 20000 });
       roles.records.push({ xmlid: account.xmlid, user_id: account.id, groups: refs, status: 'passed' }); save();
     }
     roles.status = roles.records.length === businessUsers.length ? 'passed' : 'partial';

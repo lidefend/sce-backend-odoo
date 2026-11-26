@@ -25,7 +25,6 @@ from __future__ import annotations
 import ast
 import csv
 import json
-import re
 import sys
 from pathlib import Path
 
@@ -34,19 +33,16 @@ ROOT = Path(__file__).resolve().parents[2]
 POLICY_PATH = ROOT / "addons/smart_construction_core/core_extension_policy_maps.py"
 UNIVERSE_PATH = ROOT / "docs/product/frontend_business_entry_acceptance_v1.csv"
 DECLARATIONS_PATH = ROOT / "config/frontend/role_surface_exposure_declarations_v1.json"
-GROUP_SOURCE_PATHS = (
-    ROOT / "addons/smart_construction_core/security/sc_role_groups.xml",
-    ROOT / "addons/smart_construction_core/security/sc_capability_groups.xml",
-)
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+from scripts.verify.role_capability_group_authority_guard import group_graph, manifest_group_xml_paths
+
+GROUP_SOURCE_PATHS = tuple(manifest_group_xml_paths())
 
 SCHEMA_VERSION = "role-surface-exposure-declarations/v1"
 DELIVERY_MODES = ("declared_whitelist", "capability_discover", "denied")
 DELIVERED_FIELDS = ("primary_menu_xmlids", "role_home_menu_xmlids")
 DEFAULT_MODULE = "smart_construction_core."
-
-_RECORD_RE = re.compile(r'<record id="([^"]+)" model="res\.groups">(.*?)</record>', re.S)
-_IMPLIED_RE = re.compile(r'<field name="implied_ids"\s+eval="([^"]*)"', re.S)
-_REF_RE = re.compile(r"ref\(\s*'([^']+)'\s*\)")
 
 
 def _qualify(xmlid: str, default_module: str = DEFAULT_MODULE) -> str:
@@ -57,18 +53,8 @@ def _qualify(xmlid: str, default_module: str = DEFAULT_MODULE) -> str:
 
 
 def load_group_graph(paths=GROUP_SOURCE_PATHS) -> dict[str, list[str]]:
-    """Parse res.groups ``implied_ids`` declarations from the role/capability XML."""
-    graph: dict[str, list[str]] = {}
-    for path in paths:
-        text = Path(path).read_text(encoding="utf-8")
-        for match in _RECORD_RE.finditer(text):
-            group = _qualify(match.group(1))
-            implied = _IMPLIED_RE.search(match.group(2))
-            refs: list[str] = []
-            if implied:
-                refs = [_qualify(ref) for ref in _REF_RE.findall(implied.group(1))]
-            graph[group] = refs
-    return graph
+    """Use the native manifest order and shared relation-command semantics."""
+    return {group: sorted(edges) for group, edges in group_graph(list(paths)).items()}
 
 
 def group_closure(group: str, graph: dict[str, list[str]]) -> set[str]:

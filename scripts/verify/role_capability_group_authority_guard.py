@@ -77,6 +77,31 @@ def group_graph(paths: list[Path]) -> dict[str, set[str]]:
     return graph
 
 
+def replay_drift_violations(paths: list[Path]) -> list[dict]:
+    """Every XML write must preserve the installed graph during unchanged reload."""
+    graph = group_graph(paths)
+    errors = []
+    for path in paths:
+        for record in ET.parse(path).findall(".//record[@model='res.groups']"):
+            group = _qualify(record.get("id") or "")
+            for field in record.findall("field[@name='implied_ids']"):
+                before = set(graph[group])
+                for command in _commands(field.get("eval") or ""):
+                    operation = int(command[0])
+                    if operation == 6:
+                        graph[group] = {_qualify(value) for value in command[2]}
+                    elif operation in (3, 4):
+                        values = command[1] if isinstance(command[1], (list, tuple)) else [command[1]]
+                        values = {_qualify(value) for value in values}
+                        if operation == 4:
+                            graph[group].update(values)
+                        else:
+                            graph[group].difference_update(values)
+                if graph[group] != before:
+                    errors.append({"code": "GROUP_DEFINITION_REPLAY_DRIFT", "group": group, "path": str(path)})
+    return errors
+
+
 def reference_order_violations(paths: list[Path]) -> list[dict]:
     defined = set()
     errors = []
@@ -227,6 +252,7 @@ def main() -> int:
     paths = manifest_group_xml_paths()
     report = reference_order_violations(paths)
     report.extend(violations(group_graph(paths)))
+    report.extend(replay_drift_violations(paths))
     report.extend(acceptance_role_authority_violations())
     if report:
         print("role_capability_group_authority_guard FAIL")

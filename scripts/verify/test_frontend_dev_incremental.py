@@ -2659,6 +2659,34 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.frontend.contract_fidelity.plan.unit"],
                 )
 
+    def test_configuration_permission_sources_select_owning_validation(self) -> None:
+        for path in (
+            "addons/smart_construction_core/data/runtime_user_defaults.xml",
+            "addons/smart_construction_core/models/support/organization_department.py",
+            "addons/smart_construction_core/models/support/runtime_user_management.py",
+            "addons/smart_construction_core/security/runtime_user_permission_groups.xml",
+            "addons/smart_construction_core/views/support/organization_department_views.xml",
+            "addons/smart_construction_core/views/support/runtime_user_management_views.xml",
+        ):
+            with self.subTest(path=path):
+                selected = select_targets([path])
+                self.assertIn("verify.runtime_user_management.orm", selected)
+                self.assertIn("verify.smart_construction_core.module_baseline", selected)
+        for path in ("addons/smart_construction_core/security/ir.model.access.csv",
+                     "addons/smart_construction_core/security/contract_settlement_capability_bridge.xml"):
+            self.assertIn("verify.role_capability_group_authority.unit", select_targets([path]))
+        for path in ("addons/smart_core/handlers/api_data.py",
+                     "addons/smart_core/models/res_users_group_authority.py"):
+            self.assertIn("verify.smart_core.close_02.module_baseline", select_targets([path]))
+
+    def test_shared_group_parser_selects_all_reachability_consumers(self) -> None:
+        self.assertTrue({
+            "verify.role_capability_group_authority.unit",
+            "verify.role_surface.landing.contract.unit",
+            "verify.frontend.role_surface_exposure_declaration.guard",
+            "verify.frontend.delivery_hardening.guard",
+        }.issubset(select_targets(["scripts/verify/role_capability_group_authority_guard.py"])))
+
     def test_native_role_and_personnel_changes_select_their_orm_owners(self) -> None:
         self.assertEqual(
             select_targets(["addons/smart_core/security/group_assignment.py"]),

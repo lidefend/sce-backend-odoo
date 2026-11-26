@@ -9,6 +9,7 @@ from scripts.verify.role_capability_group_authority_guard import (
     group_graph,
     manifest_group_xml_paths,
     reference_order_violations,
+    replay_drift_violations,
     violations,
 )
 
@@ -38,6 +39,24 @@ def _with_record(record: str) -> str:
 
 
 class RoleCapabilityGroupAuthorityGuardTest(unittest.TestCase):
+    def test_installed_group_declarations_replay_without_intermediate_changes(self):
+        self.assertEqual(replay_drift_violations(manifest_group_xml_paths()), [])
+
+    def test_guard_rejects_reset_then_restore_despite_same_final_graph(self):
+        text = _with_record("""
+          <record id="group_sc_role_example" model="res.groups">
+            <field name="implied_ids" eval="[(6, 0, [])]"/>
+          </record>
+          <record id="group_sc_role_example" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('group_sc_cap_entry_scope_p01'))]"/>
+          </record>
+        """)
+        self.assertEqual(_graph(text), _graph(VALID))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "groups.xml"
+            path.write_text(text)
+            self.assertEqual(len(replay_drift_violations([path])), 2)
+
     def test_role_can_reach_entry_only_through_capability(self):
         graph = _graph(VALID)
         self.assertEqual(

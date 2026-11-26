@@ -1228,3 +1228,7 @@ operation entry、受管嵌套 Make 和真实 HTTP 登录复用隔离入口声�
 `make verify.enterprise.reconstruction.parity` 在同一一次性库只读核对配置，逐项比较部门父级、人员关联与权限闭包；创建数量相同或存在额外授权均不能冒充配置一致。
 
 `make verify.enterprise.reconstruction.import_browser` 通过用户实际批量导入按钮上传合成 CSV，验证预检、字段映射、确认/取消、外部 ID 更新及错误行拒绝。仅写同一一次性载体，不以脚本逐条建档替代导入验收。
+
+`make verify.enterprise.reconstruction.authority_recovery` 仅恢复上述一次性库中、当前浏览器创建/赋权记录可证明来源的 21 个账号授权来源。默认 dry-run；`RECONSTRUCTION_AUTHORITY_APPLY=1` 调用原生来源确认向导并保留审计记录。逐账号断言权限集合及账号数量不变，不作业务配置，不替代用户办理验收；未知历史、目标或闭包不匹配则拒绝。
+
+`make verify.enterprise.reconstruction.permissions` 只读盘点同一已登记一次性库的配置管理员原生菜单、动作、ACL、关联字段和视图按钮；以真实业务身份探测并回滚，不替代业务写入验收。

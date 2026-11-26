@@ -1992,6 +1992,7 @@ RULES = (
     )),
     Rule((
         "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/role_capability_group_authority_guard.py",
         "scripts/verify/test_frontend_delivery_hardening_guard.py",
         "scripts/verify/error_state_component_test.cjs",
         "addons/smart_construction_core/views/core/settlement_views.xml",
@@ -2177,6 +2178,7 @@ RULES = (
         "addons/smart_core/views/ui_menu_config_policy_views.xml",
         "config/frontend/role_surface_exposure_declarations_v1.json",
         "scripts/verify/role_surface_exposure_declaration_guard.py",
+        "scripts/verify/role_capability_group_authority_guard.py",
         "scripts/release/test_locked_menu_policy_contract.py",
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
         "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
@@ -2611,6 +2613,25 @@ RULES = (
         "verify.unified_page_contract.v2.assembler",
         "verify.contract.entry_equivalence.guard",
     )),
+    Rule((
+        "addons/smart_construction_core/data/runtime_user_defaults.xml",
+        "addons/smart_construction_core/models/support/organization_department.py",
+        "addons/smart_construction_core/models/support/runtime_user_management.py",
+        "addons/smart_construction_core/security/runtime_user_permission_groups.xml",
+        "addons/smart_construction_core/views/support/organization_department_views.xml",
+        "addons/smart_construction_core/views/support/runtime_user_management_views.xml",
+    ), ("verify.runtime_user_management.orm", "verify.smart_construction_core.module_baseline")),
+    Rule((
+        "addons/smart_construction_core/security/contract_settlement_capability_bridge.xml",
+        "addons/smart_construction_core/security/ir.model.access.csv",
+    ), ("verify.role_capability_group_authority.unit", "verify.smart_construction_core.module_baseline")),
+    Rule((
+        "addons/smart_core/models/res_users_group_authority.py",
+    ), ("verify.system.permission_role.assignment.unit", "verify.smart_core.close_02.module_baseline",
+        "verify.smart_construction_core.module_baseline")),
+    Rule((
+        "addons/smart_core/handlers/api_data.py",
+    ), ("verify.smart_core.api_data_import.unit", "verify.smart_core.close_02.module_baseline")),
     Rule((
         "addons/smart_core/security/group_assignment.py",
         "scripts/verify/test_group_assignment.py",

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import unittest
+from tempfile import TemporaryDirectory
 from pathlib import Path
 
 from scripts.verify.role_surface_exposure_declaration_guard import (
@@ -135,6 +136,18 @@ class RoleSurfaceExposureDeclarationGuardTest(unittest.TestCase):
         declarations["roles"]["role_a"]["identity_groups"] = ["t.role_missing"]
         errors = validate(declarations, policy, entries, {}, closures)
         self.assertTrue(any("identity groups unresolvable" in row for row in errors))
+
+    def test_group_replay_preserves_edges_on_metadata_only_updates(self):
+        with TemporaryDirectory() as directory:
+            paths = [Path(directory) / name for name in ('roles.xml', 'bridge.xml')]
+            paths[0].write_text("""<odoo><record id="role" model="res.groups">
+                <field name="implied_ids" eval="[(6, 0, [ref('cap')])]"/>
+                </record><record id="cap" model="res.groups"/></odoo>""")
+            paths[1].write_text("""<odoo><record id="role" model="res.groups"><field name="name">Role</field></record>
+                <record id="cap" model="res.groups"><field name="implied_ids" eval="[(4, ref('entry'))]"/></record></odoo>""")
+            graph = load_group_graph(paths)
+            self.assertEqual(group_closure('smart_construction_core.role', graph), {
+                'smart_construction_core.role', 'smart_construction_core.cap', 'smart_construction_core.entry'})
 
     def test_repository_declarations_match_the_acceptance_universe(self):
         declarations = json.loads(Path(DECLARATIONS_PATH).read_text(encoding="utf-8"))

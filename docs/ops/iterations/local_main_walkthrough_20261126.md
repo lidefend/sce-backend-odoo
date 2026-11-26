@@ -105,3 +105,32 @@ Final local result for this import increment: `make ci.local.iteration` passed a
 
 
 Publication candidate: replace the raw parsing-options disclosure with the existing `ScDisclosure` adapter and propagate the dialog busy state. The final ten-case actual browser run, including toggling header parsing and requiring a new preview, passed on build `3b0b37aa2079ac8969fd4143e0a846765b7c3f98d7561d8c9dc7b7dc8002e2a3` / cache v124 (`import-disclosure-browser.log`, current `reconstruction/import-report.json`). Strict typecheck and generated-evidence preparation passed after this correction; `component_driver_takeover_inventory` reports zero raw/unassessed surfaces. Prepare a draft PR for review and exact-head remote CI; keep full enterprise acceptance open.
+
+
+2026-11-26 acceptance continuation: PR1009 is draft at `1d054da717b540e726b96d5c67666aad56a0b318`; the current P0/P1/P4 follow-up remains a dirty candidate. Real browser export exposed empty-selection parameter rejection and missing native export authority. The P0 adapter now accepts an empty selection as a scoped export, delegates import-compatible identifiers to native `export_data`, surfaces access rejection, and declares the update-export button from native authority. P1 business configuration capability explicitly includes native export; experience role does not. Public employee projection retains native department `manager_id` without granting private HR access.
+
+Owner clarified: keep configuration capability while initializing common product defaults. P1 `runtime_user_defaults.xml` seeds missing native `ir.default` language/timezone values only; existing global/company defaults and existing accounts remain unchanged. Personnel UI retains editable language/timezone fields. Real disposable-install ORM passed **31 tests**, including automatic account defaults, editable preferences, repeated initialization preservation, company override, export authority, and department manager isolation: `.runtime/test-baseline/1795659548637792680/receipt.json`. Static native declaration checks passed (65 tests), reconstruction parity tests passed (6). Runtime activation is limited to the registered disposable database; persistent environment is unchanged. Expanded parity uncovered actual locale differences plus already-known role/manager/parent differences; XML boolean text comparison was corrected with a negative regression. No full enterprise acceptance, new remote integration, or merge is claimed.
+
+
+Disposable runtime upgrade/restart completed for the initialization follow-up. Actual frontend native identifier export succeeded (25 scoped readable rows). The following 21-account batch was rejected at precheck with `GROUP_AUTHORITY_ORIGIN_UNRESOLVED`; no execute request was sent (`configuration-role-import-4.log`). Source shows group-definition writes invalidate affected user authority snapshots, including module XML reloads. Preserve this failure as an open product initialization/reload issue; do not fabricate provenance, bypass the guard, or call enterprise parity passed. Next investigation must distinguish unchanged definition replay from real permission changes and retain native explicit authority reconciliation for records already unresolved.
+
+
+Configuration normalization is now part of the owner-authorized acceptance scope. P0 no-op group writes preserve provenance only if direct edges, members and effective memberships are unchanged; real changes and unknown origins still fail closed. P1 duplicate definitions had a second defect: reset-then-restore XML sequences invalidated provenance even with an equivalent final graph. Consolidate affected relationships into one complete declaration while retaining role composition in `sc_role_groups.xml`. All **111 groups** have an unchanged final graph relative to this normalization's input; the replay guard rejects intermediate drift even when the final graph matches. Native XML conversion/reload regression passed **21 ORM tests** (`.runtime/test-baseline/1795660804979694474/receipt.json`). Earlier personnel/default/owner-role regressions passed **32 ORM tests** (`.runtime/test-baseline/1795660400713238884/receipt.json`).
+
+Existing synthetic accounts with invalidated snapshots are recovered only through the existing explicit confirmation wizard as the installed platform administrator, with original UI creation/write journals and successful native import receipts as the root-assignment basis. Dry-run/apply assert identical permission sets and account counts, retain native confirmation audits, and write no business configuration. This is test-carrier recovery, not user acceptance evidence. The business administrator's real import remains the configuration authority. Current retry: `configuration-role-import-8.log`. Only the registered disposable database was upgraded; persistent environments and PR1009's remote HEAD remain unchanged.
+
+### 配置管理员全量权限排查（2026-11-26，继续收口）
+
+按所有者要求，从单点部门负责人问题扩大到配置管理员全部配置职责。P1 直接 ACL 补齐 `hr.employee` 读取/修改，供原生部门负责人联动及办公资产保管人选择使用；继续沿用原生公司记录规则和 `hr.group_hr_user` 私有字段保护，不增加 HR 用户组或平台管理员。流程实例关联的 `sc.workflow.def`、`sc.workflow.node` 增加只读 ACL，定义修改仍拒绝。
+
+P4 通过同一一次性库、真实业务配置身份盘点 64 个原始模型、68 个动作、77 个菜单及嵌套关联字段；清单中已纳入正式入口的菜单未出现组拦截。盘点保留 `inventory_only`：空表读取不替代真实记录操作，旧平台目录不等同于当前正式配置入口。工具入口为 `make verify.enterprise.reconstruction.permissions`。
+
+198 项配置静态测试、133 项 ORM 定向测试通过；后者包含原生 ACL、公司隔离、私有 HR 字段读写拒绝、办公资产领用归还、角色赋撤、企业初始化、编号规则、系统参数发布回滚和表单配置闭环。ORM 回执：`.runtime/test-baseline/1795662031529193385/receipt.json`。首次 ORM 发现的测试问题已修正：反向成员断言使用真实新成员变化，场景模型权限断言归属场景模块。当前正在升级已登记一次性库，尚不宣称实际 UI 关系和完整配置一致性收口；不写持久数据库。
+
+升级与真实页面回读结果：`smart_construction_core` 已在 `sc_init_6b0769da09e2` 升级并重启；升级后盘点为 66 个模型、68 个动作、77 个菜单，视图加载和嵌套关联权限错误均为零。用户页面完成剩余部门负责人和父级关系保存，随后 398 项配置一致性断言通过、差异为零（`reconstruction/parity.json`）。角色界面 21 个账号回读通过，场景配置阶段通过。原始浏览器结果的 `saved_pending_parity` 已由后续只读一致性结果验证，不改写原始回执。
+
+提交增量检查追加通过权限/授权 107 项、权限缓存与导航 84 项、安装升级生命周期 2 项 ORM；当前停在前端组件生成清单过期，归类为生成证据缺陷，刷新后续跑。所有上述数量分别来自各自回执，存在覆盖重叠，不累加宣称独立测试总数。整体业务事项闭环和新 HEAD 远端集成仍未宣称完成。
+
+权限图消费方复核补充：导航曝光守卫、角色落点测试、前端交付守卫此前只读取两份 XML；统一声明后会遗漏能力桥。三处现复用按 manifest 加载顺序处理关系命令的共享图。既有 131 项入口断言和权限断言不变，相关守卫通过，新增元数据更新不清空已有关系的回归。增量选测同时登记这些消费方依赖，269 项执行器测试通过。批量后续检查的一项描述符 ORM 进程成功，但期间 P4 工具文件变动导致回执失效；按失败保留，待冻结源码后复验，不计为通过。
+
+最终本地增量门禁通过：52 个目标，无未执行项，回执 `.runtime/frontend-dev-validation/executions/20261126T033419Z-1230495-516657407/receipt.json`。此前失效的描述符回执已在固定输入的最终执行中复验通过。配置管理员本轮权限缺口完成本地收口；整体状态仍为 `verification_pending`，保留新 HEAD 必需远端集成、代表性业务事项闭环和全创建入口批量导入覆盖，不把 PR 更新或配置一致性当成整体产品验收完成。
