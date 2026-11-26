@@ -405,6 +405,23 @@ class NavDispatcher:
             menus = su_env["ir.ui.menu"].browse(list(mids)).exists()
             menu_map = {m.id: m for m in menus}
 
+        # Menu existence was checked in one native recordset above. Resolve
+        # their polymorphic actions and XMLIDs in batches too; walking a tree
+        # must not repeat exists()/get_external_id() for every menu and action.
+        action_ids = {}
+        for menu in menu_map.values():
+            action = menu.action
+            if action:
+                action_ids.setdefault(action._name, set()).add(action.id)
+        action_map, xmlids = {}, {}
+        if menu_map:
+            xmlids.update({("ir.ui.menu", key): value for key, value in
+                           su_env["ir.ui.menu"].browse(sorted(menu_map)).get_external_id().items()})
+        for model, ids in action_ids.items():
+            records = su_env[model].browse(sorted(ids)).exists()
+            action_map.update({(model, record.id): record for record in records})
+            xmlids.update({(model, key): value for key, value in records.get_external_id().items()})
+
         def to_action_dict(act: Optional[Any]):
             if not act or not isinstance(act, Mapping):
                 return None
@@ -417,6 +434,9 @@ class NavDispatcher:
             return d
 
         def xmlid_of(rec) -> Optional[str]:
+            key = (rec._name, rec.id)
+            if key in xmlids:
+                return xmlids[key] or None
             try:
                 mapping = rec.sudo().get_external_id()
                 if mapping:
@@ -478,10 +498,10 @@ class NavDispatcher:
         def resolve_action_by_menu(menu_id) -> Optional[Any]:
             try:
                 m = menu_map.get(int(menu_id))
-                if not m or not m.exists():
+                if not m:
                     return None
                 act = m.action
-                return act if act and act.exists() else None
+                return action_map.get((act._name, act.id)) if act else None
             except Exception:
                 return None
 
@@ -504,7 +524,7 @@ class NavDispatcher:
                 mid = node.get("menu_id") or node.get("id")
                 if mid:
                     menu_rec = menu_map.get(int(mid))
-                    if menu_rec and menu_rec.exists():
+                    if menu_rec:
                         node.setdefault("sequence", getattr(menu_rec, "sequence", None))
                         mx = xmlid_of(menu_rec)
                         if mx:

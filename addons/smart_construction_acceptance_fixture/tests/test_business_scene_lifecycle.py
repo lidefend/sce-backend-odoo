@@ -548,3 +548,52 @@ class TestFixtureCompanyWorkProjection(TransactionCase):
             with self.assertRaises(UserError):
                 request._check_not_overpay_settlement()
             self.assertEqual(queries.call_count, 2)
+
+    def test_batched_native_scene_references_match_env_ref_and_do_not_cache_deletions(self):
+        from odoo.addons.smart_construction_core.services.scenario_surface_projection import _native_xmlid_ids
+        menus = self.env['ir.ui.menu'].sudo().search([], limit=30)
+        references = [value for value in menus.get_external_id().values() if value]
+        missing = 'smart_construction_core.nonexistent_menu_for_batch_probe'
+        expected = {}
+        for xmlid in references:
+            record = self.env.ref(xmlid, raise_if_not_found=False)
+            if record:
+                expected[xmlid] = record.id
+        before = self.env.cr.sql_log_count
+        self.assertEqual(_native_xmlid_ids(self.env, references + references), expected)
+        self.assertLessEqual(self.env.cr.sql_log_count - before, 1)
+        self.assertEqual(_native_xmlid_ids(self.env, references + [missing]), expected)
+        # Native XMLID metadata can outlive a deleted record. The batched read
+        # must perform exists() again on each call rather than retain a grant.
+        menu = self.env['ir.ui.menu'].sudo().create({'name': 'Disposable projection identity'})
+        self.env['ir.model.data'].sudo().create({
+            'module': 'smart_construction_acceptance_fixture', 'name': 'batch_identity_probe',
+            'model': 'ir.ui.menu', 'res_id': menu.id,
+        })
+        xmlid = 'smart_construction_acceptance_fixture.batch_identity_probe'
+        self.assertEqual(_native_xmlid_ids(self.env, [xmlid]), {xmlid: menu.id})
+        menu.unlink()
+        self.assertEqual(_native_xmlid_ids(self.env, [xmlid]), {})
+
+    def test_native_nav_enrichment_batches_xmlids_and_preserves_metadata(self):
+        from odoo.addons.smart_core.app_config_engine.services.dispatchers.nav_dispatcher import NavDispatcher
+        menus = self.env['ir.ui.menu'].sudo().with_context(**{'ir.ui.menu.full_list': True}).search([])
+        menus = menus.filtered(lambda menu: menu.action and menu.action._name == 'ir.actions.act_window')[:20]
+        self.assertGreater(len(menus), 5)
+        expected = {menu.id: {
+            'menu_xmlid': menu.get_external_id()[menu.id],
+            'action_xmlid': menu.action.get_external_id()[menu.action.id],
+            'action_id': menu.action.id, 'model': menu.action.res_model,
+        } for menu in menus}
+        tree = [{'menu_id': menu.id} for menu in menus]
+        original = type(menus).get_external_id
+        calls = []
+        def menu_xmlids(records):
+            calls.append(records.ids)
+            return original(records)
+        with patch.object(type(menus), 'get_external_id', menu_xmlids):
+            NavDispatcher(self.env, self.env)._enrich_nav_models(tree)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(set(calls[0]), set(menus.ids))
+        for node in tree:
+            self.assertEqual({key: node[key] for key in expected[node['menu_id']]}, expected[node['menu_id']])

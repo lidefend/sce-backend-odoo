@@ -681,6 +681,21 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.industry_business_model_02.orm", targets)
                 self.assertIn("verify.industry_business_model_02.data_audit", targets)
 
+    def test_navigation_projection_selects_real_identity_and_policy_consumers(self):
+        for path in (
+            "addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py",
+            "addons/smart_core/delivery/product_center_policy.py",
+            "addons/smart_core/delivery/product_policy_service.py",
+            "addons/smart_construction_core/services/scenario_surface_projection.py",
+        ):
+            with self.subTest(path=path):
+                targets = set(select_targets([path]))
+                self.assertIn("verify.navigation.projection.orm", targets)
+                self.assertNotIn("verify.payment.work_projection.orm", targets)
+        self.assertNotIn("verify.navigation.projection.orm", select_targets([
+            "addons/smart_construction_core/models/core/payment_request.py",
+        ]))
+
     def test_payment_reservation_and_projection_select_real_orm_consumers(self):
         for path in (
             "addons/smart_construction_core/models/support/operating_metrics.py",
@@ -1762,18 +1777,20 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.scenario.center_projection.guard",
             ],
         )
-        for path in (
-            "addons/smart_construction_core/services/scenario_surface_projection.py",
-            "scripts/verify/scenario_center_projection_guard.py",
-        ):
+        expected_by_path = {
+            "addons/smart_construction_core/services/scenario_surface_projection.py": [
+                "verify.navigation.projection.orm",
+                "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
+            ],
+            "scripts/verify/scenario_center_projection_guard.py": [
+                "verify.navigation.publication_consumers.unit",
+                "verify.scenario.center_projection.guard",
+            ],
+        }
+        for path, expected in expected_by_path.items():
             with self.subTest(path=path):
-                self.assertEqual(
-                    select_targets([path]),
-                    [
-                        "verify.navigation.publication_consumers.unit",
-                        "verify.scenario.center_projection.guard",
-                    ],
-                )
+                self.assertEqual(select_targets([path]), expected)
 
     def test_moved_industry_orm_selects_both_owning_module_baselines(self):
         self.assertEqual(select_targets([

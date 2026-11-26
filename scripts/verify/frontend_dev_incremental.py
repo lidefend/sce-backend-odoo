@@ -2280,6 +2280,12 @@ RULES = (
         "verify.smart_construction_core.migration_compatibility.orm",
     )),
     Rule((
+        "addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py",
+        "addons/smart_core/delivery/product_center_policy.py",
+        "addons/smart_core/delivery/product_policy_service.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+    ), ("verify.navigation.projection.orm",)),
+    Rule((
         "addons/smart_construction_core/services/scenario_surface_projection.py",
         "addons/smart_construction_core/services/scenario_product_declarations.py",
         "addons/smart_core/core/navigation_identity.py",

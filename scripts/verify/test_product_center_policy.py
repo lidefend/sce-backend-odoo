@@ -76,6 +76,26 @@ def legacy_policy():
 
 
 class ProductCenterPolicyTest(unittest.TestCase):
+    def test_nested_menu_payloads_are_detached_once_per_output(self):
+        copies = []
+        class CountedList(list):
+            def __deepcopy__(self, memo):
+                copies.append(1)
+                return deepcopy(list(self), memo)
+        shared = CountedList([{"value": "original"}])
+        policy = legacy_policy()
+        for group in policy["menu_groups"]:
+            for menu in group["menus"]:
+                menu["nested"] = shared
+        count = sum(len(group["menus"]) for group in policy["menu_groups"])
+        result = CENTER.normalize_product_policy(policy, legacy_center_resolver=legacy_resolver)
+        self.assertEqual(len(copies), count)
+        menus = [menu for group in result["menu_groups"] for menu in group["menus"]]
+        menus[0]["nested"][0]["value"] = "changed"
+        self.assertEqual(shared[0]["value"], "original")
+        self.assertTrue(all(menu["nested"][0]["value"] == "original" for menu in menus[1:]))
+
+
     def test_legacy_name_keys_map_once_to_stable_identity(self):
         normalized = CENTER.normalize_product_policy(
             legacy_policy(),

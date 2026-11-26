@@ -180,6 +180,6 @@
     "fix/p1-role-capability-authority-20261126": ".agent/runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/run.json",
     "fix/acceptance-authority-gaps-20261126": ".agent/runs/LOCAL-MAIN-WALKTHROUGH-20261126/run.json",
     "feature/auth-02-enterprise-roles-20261126": ".agent/runs/AUTH-02-ENTERPRISE-ROLES-20261126/run.json",
-    "fix/main-navigation-performance-20261127": ".agent/runs/MAIN-CI-CLOSEOUT-20261126/run.json"
+    "fix/main-navigation-batch-projection-20261127": ".agent/runs/MAIN-CI-CLOSEOUT-20261126/run.json"
   }
 }

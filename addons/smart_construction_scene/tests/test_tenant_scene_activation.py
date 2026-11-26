@@ -115,9 +115,19 @@ class NativeRecordsetDouble(list):
         return {record.id: record.get_external_id().get(record.id, '') for record in self}
 
 
+def _native_xmlid_model(mapping):
+    return types.SimpleNamespace(_xmlid_to_res_model_res_id=lambda reference, raise_if_not_found=False:
+        ('ir.ui.menu', mapping[reference]) if reference in mapping else (False, False))
+
+
+def _native_menu_browse(ids, existing):
+    return types.SimpleNamespace(exists=lambda: types.SimpleNamespace(
+        ids=[mid for mid in ids if mid in existing]))
+
+
 def _runtime_model(name, env):
     """ORM transport fixture; production readers never consult this seed file."""
-    if name not in ("sc.product.scenario", "ir.ui.menu"):
+    if name not in ("sc.product.scenario", "ir.ui.menu", "ir.model.data"):
         return None
     surface = scenario_surface.load_surface()
     index = scenario_surface.build_menu_index(surface, parent_by_menu={
@@ -128,6 +138,8 @@ def _runtime_model(name, env):
                                      sc_scenario_exempt=location["location"] != "scenario")
         menu.get_external_id = lambda number=number, key=key: {number: key}
         menus[key] = menu
+    if name == "ir.model.data":
+        return _native_xmlid_model({key: menu.id for key, menu in menus.items()})
     records = list(menus.values())
     if name == "sc.product.scenario":
         records = []
@@ -153,7 +165,8 @@ def _runtime_model(name, env):
             ]
             records.append(types.SimpleNamespace(code=row["key"], name=row.get("name", row["key"]),
                                                  active=True, sequence=10, entry_ids=bindings))
-    model = types.SimpleNamespace(search=lambda domain: NativeRecordsetDouble(records))
+    model = types.SimpleNamespace(search=lambda domain: NativeRecordsetDouble(records),
+        browse=lambda ids: _native_menu_browse(ids, {row.id for row in records}))
     model.sudo = lambda: model
     model.with_context = lambda **kwargs: model
     return model
@@ -2427,6 +2440,13 @@ class TestMaintainedScenarioScope(unittest.TestCase):
         class Env:
             cr = types.SimpleNamespace(dbname="execution_db")
 
+            def __getitem__(self, name):
+                if name == 'ir.model.data':
+                    return _native_xmlid_model({'project.menu_ledger': menu.id})
+                if name == 'ir.ui.menu':
+                    return types.SimpleNamespace(browse=lambda ids: _native_menu_browse(ids, {menu.id}))
+                raise KeyError(name)
+
             def ref(self, xmlid, raise_if_not_found=False):
                 return menu if xmlid == "project.menu_ledger" else None
 
@@ -2467,6 +2487,9 @@ class TestMaintainedScenarioScope(unittest.TestCase):
                 def with_context(self, **kwargs):
                     return self
 
+                def browse(self, ids):
+                    return _native_menu_browse(ids, {menu.id})
+
                 def search(self, domain):
                     return [menu]
 
@@ -2474,6 +2497,8 @@ class TestMaintainedScenarioScope(unittest.TestCase):
                 cr = types.SimpleNamespace(dbname="tenant_db")
 
                 def __getitem__(self, model_name):
+                    if model_name == "ir.model.data":
+                        return _native_xmlid_model({"project.menu_ledger": menu.id})
                     if model_name == "ir.ui.menu":
                         return MenuModel()
                     raise KeyError(model_name)

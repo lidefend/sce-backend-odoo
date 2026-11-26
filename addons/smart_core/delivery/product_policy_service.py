@@ -218,7 +218,7 @@ class ProductPolicyService:
                                                 separators=(",", ":")).encode("utf-8")).hexdigest()
             if digest != payload.get("policy_sha256"):
                 raise ValueError("PUBLISHED_PRODUCT_POLICY_DIGEST_MISMATCH")
-            return self._normalize_policy(copy.deepcopy(policy))
+            return self._normalize_policy(policy)
         registry_models = getattr(getattr(self.env, "registry", None), "models", {})
         if "sc.edition.release.snapshot" not in registry_models:
             return None
@@ -449,7 +449,7 @@ class ProductPolicyService:
         fallback_reason: str = "",
         access_allowed: bool = True,
     ) -> dict:
-        row = copy.deepcopy(payload if isinstance(payload, dict) else {})
+        row = dict(payload) if isinstance(payload, dict) else {}
         row["edition_diagnostics"] = {
             "requested_product_key": requested_product_key,
             "requested_base_product_key": requested_base_product_key,

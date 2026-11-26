@@ -121,10 +121,10 @@ def _sync_capabilities(
 ) -> list[Any]:
     capabilities = policy.get("capabilities")
     if not isinstance(capabilities, list):
-        return capabilities
+        return copy.deepcopy(capabilities)
     result = []
     for raw in capabilities:
-        row = copy.deepcopy(raw) if isinstance(raw, dict) else raw
+        row = copy.deepcopy(raw)
         if isinstance(row, dict):
             center = menu_centers.get(_menu_identity(row))
             if center:
@@ -148,10 +148,16 @@ def normalize_product_policy(
 ) -> dict[str, Any]:
     """Normalize center identity while preserving labels, order and placement."""
 
-    normalized = copy.deepcopy(policy) if isinstance(policy, dict) else {}
-    groups = normalized.get("menu_groups")
+    source = policy if isinstance(policy, dict) else {}
+    groups = source.get("menu_groups")
     if not isinstance(groups, list):
-        return normalized
+        return copy.deepcopy(source)
+    # Each output subtree is detached once. Copying the entire policy, then
+    # every group and every menu again multiplies startup work for no benefit.
+    normalized = copy.deepcopy({
+        key: value for key, value in source.items()
+        if key not in {"menu_groups", "capabilities"}
+    })
     resolved_groups: dict[str, dict[str, Any]] = {}
     menu_centers: dict[str, dict[str, Any]] = {}
     for index, raw_group in enumerate(groups):
@@ -183,7 +189,7 @@ def normalize_product_policy(
                 "PRODUCT_CENTER_DEFINITION_CONFLICT",
                 f"center {key!r} has different label or sequence",
             )
-        group = copy.deepcopy(raw_group)
+        group = copy.deepcopy({key: value for key, value in raw_group.items() if key != "menus"})
         group.update(
             {
                 "center_key": key,
@@ -194,7 +200,7 @@ def normalize_product_policy(
                 "sequence": sequence,
             }
         )
-        menus = group.get("menus")
+        menus = raw_group.get("menus")
         next_menus = []
         for raw_menu in menus if isinstance(menus, list) else []:
             if not isinstance(raw_menu, dict):
@@ -238,7 +244,7 @@ def normalize_product_policy(
             _text(row.get("center_key")),
         ),
     )
-    normalized["capabilities"] = _sync_capabilities(normalized, menu_centers)
+    normalized["capabilities"] = _sync_capabilities(source, menu_centers)
     return normalized
 
 

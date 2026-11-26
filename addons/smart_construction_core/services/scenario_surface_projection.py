@@ -795,6 +795,7 @@ def _resolved_scenario_menu_id(
     menu_key: str,
     location: dict[str, Any],
     surface: dict[str, Any],
+    resolved_xmlids=None,
 ) -> int:
     """Resolve one scenario reference to the menu ID used by the current DB."""
     reference = _text(menu_key)
@@ -805,6 +806,8 @@ def _resolved_scenario_menu_id(
             return 0
         return _int_or(reference.split(":", 1)[1], 0)
     if "." in reference:
+        if resolved_xmlids is not None:
+            return resolved_xmlids.get(reference, 0)
         ref = getattr(env, "ref", None)
         if callable(ref):
             try:
@@ -815,6 +818,35 @@ def _resolved_scenario_menu_id(
     return _int_or(location.get("menu_id"), 0)
 
 
+def _native_xmlid_ids(env, references):
+    """Resolve native identities with one existence query per model.
+
+    This is env.ref's XMLID lookup and existence check, without repeating that
+    query per scene location. ACL and company qualification stay downstream;
+    no result survives this projection call.
+    """
+    if not references:
+        return {}
+    resolved, by_model = {}, {}
+    data = env["ir.model.data"]
+    for reference in set(references):
+        try:
+            model, record_id = data._xmlid_to_res_model_res_id(reference, raise_if_not_found=False)
+        except Exception:
+            continue
+        if model and record_id:
+            resolved[reference] = (model, record_id)
+            by_model.setdefault(model, set()).add(record_id)
+    existing = {}
+    for model, record_ids in by_model.items():
+        try:
+            existing[model] = set(env[model].browse(sorted(record_ids)).exists().ids)
+        except Exception:
+            existing[model] = set()
+    return {reference: record_id for reference, (model, record_id) in resolved.items()
+            if record_id in existing[model]}
+
+
 def _resolved_menu_index(env, surface: dict[str, Any]) -> dict[str, dict[str, Any]]:
     """Normalize declared menu references to execution-database identities.
 
@@ -823,7 +855,11 @@ def _resolved_menu_index(env, surface: dict[str, Any]) -> dict[str, dict[str, An
     database; a coincident number in a foreign database is not a mapping.
     """
     index: dict[str, dict[str, Any]] = {}
-    for menu_key, location in build_menu_index(surface).items():
+    declared_index = build_menu_index(surface)
+    resolved_xmlids = _native_xmlid_ids(
+        env, [_text(key) for key in declared_index if "." in _text(key) and not _text(key).startswith("menu:")],
+    ) if env is not None else None
+    for menu_key, location in declared_index.items():
         numeric_reference = _text(menu_key).startswith("menu:")
         declared_locations = _scenario_locations(location)
         resolved_locations = []
@@ -833,6 +869,7 @@ def _resolved_menu_index(env, surface: dict[str, Any]) -> dict[str, dict[str, An
                 menu_key,
                 declared_location,
                 surface,
+                resolved_xmlids,
             )
             if menu_id <= 0:
                 continue
@@ -841,7 +878,7 @@ def _resolved_menu_index(env, surface: dict[str, Any]) -> dict[str, dict[str, An
                 "menu_id": menu_id,
             })
 
-        menu_id = _resolved_scenario_menu_id(env, menu_key, location, surface)
+        menu_id = _resolved_scenario_menu_id(env, menu_key, location, surface, resolved_xmlids)
         if menu_id <= 0 and resolved_locations:
             menu_id = int(resolved_locations[0]["menu_id"])
         if numeric_reference and menu_id <= 0:
