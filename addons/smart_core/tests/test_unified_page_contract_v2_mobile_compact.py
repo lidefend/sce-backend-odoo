@@ -304,6 +304,28 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(compile_relation_domain("[('id', '=', -1)]")["tree"]["kind"], "sequence")
         self.assertEqual(compile_relation_domain("[('id', '=', parent.project_id)]")["dependencies"], ["parent.project_id"])
 
+    def test_compiled_relation_domain_survives_final_wire_projection(self):
+        from odoo.addons.smart_core.core.native_relation_domain import compile_relation_domain
+        for raw in ["[('id', 'not child_of', id)]", "[('company_id', '=', company_id)]", "evil()"]:
+            with self.subTest(raw=raw):
+                widget = assembler._field_widget({
+                    "name": "parent_id", "type": "many2one", "relation": "hr.department", "domain": raw,
+                }, layout_type="form")
+                snapshot = {"layoutContract": {"containerTree": [{"widgetList": [widget]}]},
+                            "pageInfo": {"model": "hr.department"}}
+                wire = assembler._upgrade_contract_v2_field_descriptors(snapshot)
+                descriptor = wire["layoutContract"]["containerTree"][0]["widgetList"][0]["fieldDescriptor"]
+                self.assertEqual(descriptor["domain"], raw)
+                self.assertEqual(descriptor["domainExpression"], compile_relation_domain(raw))
+                self.assertNotIn("domain_expression", descriptor)
+                if raw == "[('id', 'not child_of', id)]":
+                    fixture = json.loads((REPO_ROOT / "frontend/apps/web/scripts/fixtures/native_relation_domain.json").read_text())
+                    self.assertEqual(descriptor, fixture["finalWireDescriptor"])
+                # The final wire, not the pre-normalization widget, is what the
+                # client consumes. Unsupported expressions must survive too.
+                if raw == "evil()":
+                    self.assertEqual(descriptor["domainExpression"]["kind"], "unsupported")
+
     def test_source_context_preserves_selected_form_identity(self):
         ui = {"views": {"form": {"meta": {"projection_identity": {"source_view_id": 731}}}}}
         self.assertEqual(assembler._ui_source_context({"view_id": 42}, ui)["formViewId"], 731)

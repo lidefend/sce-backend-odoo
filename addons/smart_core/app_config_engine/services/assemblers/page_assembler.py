@@ -4408,6 +4408,23 @@ class PageAssembler:
         search = {"filters": [], "group_by": [], "facets": {"enabled": True}}
         governance = {}
         source_trace = {}
+        if relation and relation == model_name:
+            # Avoid recursively compiling the same view, but still publish a
+            # usable selection surface from the model's authorized field metadata.
+            Model = self.env[relation]
+            rec_name = str(getattr(Model, "_rec_name", "") or "display_name").strip()
+            fields_map = Model.fields_get([rec_name, "display_name"])
+            name = rec_name if rec_name in fields_map else "display_name"
+            descriptor = fields_map.get(name) or {}
+            if descriptor.get("string") and descriptor.get("type"):
+                columns = [{
+                    "name": name,
+                    "label": descriptor["string"],
+                    "type": descriptor["type"],
+                    "widget": descriptor["type"],
+                    "optional": "",
+                }]
+            read_fields = list(dict.fromkeys(["id", "display_name", name]))
         if not relation or (model_name and relation == model_name):
             return {
                 "columns": columns,

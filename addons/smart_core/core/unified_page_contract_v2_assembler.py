@@ -1260,8 +1260,13 @@ def _strict_field_descriptor(
         value = config.get(key)
         if value is None:
             value = legacy.get(key)
+        if value is None and key == "domainExpression":
+            # Native occurrences compile snake_case metadata before the final
+            # wire descriptor is normalized to camelCase. Keep that expression
+            # (including explicit unsupported declarations) with its raw domain.
+            value = legacy.get("domain_expression")
         if value is not None:
-            descriptor[key] = value
+            descriptor[key] = deepcopy(value)
     for key in ("relationEntry", "widgetOptions", "subview", "formStructureRole"):
         value = config.get(key)
         if not isinstance(value, dict):

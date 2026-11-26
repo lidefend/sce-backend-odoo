@@ -4746,3 +4746,21 @@ assert.throws(
   'a field-owned widget still has to match its owning field occurrence',
 );
 console.log('nested container and owning field widget identity separation: passed');
+
+// A fresh api.data read can supply a relation absent from the page snapshot.
+const hydratedRelation = canonicalFieldToFormSection({
+  ...relationField, value: { id: 852, displayName: '', model: 'project.project' },
+}, {
+  relationKeyword: () => 'uncommitted search',
+  filteredRelationOptions: () => [],
+  selectedRelationOptions: () => [{ id: 999, label: 'Wrong record' }, { id: 852, label: 'Readback Project' }],
+  relationCreateMode: () => 'none',
+  relationInlineCreate: () => ({ enabled: false, createOnNoMatch: false, nameField: '' }),
+  relationCreateLabel: () => '', relationInlineCreateLabel: () => '',
+  canOpenRelationRecord: () => false, relationOpenLabel: () => '', relationSearchLabel: () => '',
+});
+assert.equal(presentDeclaredBusinessValue({
+  field: { name: 'project_id', type: 'many2one' }, value: hydratedRelation.relationValue,
+}).text, 'Readback Project');
+assert.equal(hydratedRelation.inputValue, 852);
+console.log('[canonical_form_presenter_test] PASS hydrated relation label cases=1');

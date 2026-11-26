@@ -226,12 +226,23 @@ export async function unlinkRecord(params: {
 }
 
 export type ApiDataImportMessage = {
+  row_label?: string;
   type: string;
   message: string;
   record?: Record<string, unknown> | null;
 };
 
+export type NativeImportField = {
+  id: string; name?: string; string: string; type: string;
+  required?: boolean; fields?: NativeImportField[];
+};
 export type ApiDataImportContract = {
+  phase?: 'describe' | 'inspect' | 'validate' | 'execute';
+  native_fields?: NativeImportField[];
+  native_templates?: Array<{ label: string; template: string }>;
+  native_options?: Record<string, unknown>;
+  option_fields?: Array<{ name: string; label: string; type: "boolean" | "text" }>;
+  wizard?: Record<string, string>;
   model: string;
   file_name: string;
   file_digest: string;
@@ -256,6 +267,7 @@ export async function importRecords(params: {
   fields?: Array<string | false>;
   columns?: string[];
   dryRun?: boolean;
+  phase?: 'describe' | 'inspect' | 'validate' | 'execute';
   hasHeaders?: boolean;
   options?: Record<string, unknown>;
   context?: Record<string, unknown>;
@@ -272,6 +284,7 @@ export async function importRecords(params: {
       fields: params.fields,
       columns: params.columns,
       dry_run: Boolean(params.dryRun),
+      phase: params.phase,
       has_headers: params.hasHeaders,
       options: params.options ?? {},
       context: params.context ?? {},

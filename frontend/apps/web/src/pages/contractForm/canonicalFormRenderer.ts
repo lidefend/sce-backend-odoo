@@ -114,7 +114,7 @@ export function canonicalFieldToFormSection(
   const semanticType = text(descriptor.semanticType || config.semanticType).toLowerCase();
   const presentationType = semanticType === 'money' ? 'monetary' : type;
   const relationshipCollection = fieldIsBusinessRelationCollection(field);
-  const relation = type === 'many2one' ? relationValue(field.value) : null;
+  let relation = type === 'many2one' ? relationValue(field.value) : null;
   const runtimeRelationOptions = type === 'many2one' && relationProjection
     ? relationProjection.filteredRelationOptions(field.fieldCode)
       .filter((option): option is NonNullable<typeof option> => Boolean(option))
@@ -128,6 +128,12 @@ export function canonicalFieldToFormSection(
       !relation || String(option.id) === String(relation.id)
     ))
     : undefined;
+  // The read response may hydrate a selected record after the page snapshot.
+  // Preserve its authoritative label alongside the id for readonly consumers;
+  // a transient search keyword is never a record display name.
+  if (relation && !relation.displayName && selectedRelation?.label) {
+    relation = { ...relation, displayName: selectedRelation.label };
+  }
   const relationKeyword = type === 'many2one' && relationProjection
     ? relationProjection.relationKeyword(field.fieldCode)
     : '';
@@ -204,7 +210,7 @@ export function canonicalFieldToFormSection(
     inputPlaceholder: field.placeholder || undefined,
     span: field.span,
     value: relation ? relation.displayName : field.value,
-    relationValue: field.value,
+    relationValue: relation || field.value,
     inputValue: relation ? relation.id : inputValue(field.value, type),
     dateRangeEndField: dateRangeEndField || undefined,
     dateRangeEndInputValue: dateRangeEnd
