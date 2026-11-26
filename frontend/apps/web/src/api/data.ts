@@ -241,6 +241,7 @@ export type ApiDataImportContract = {
   native_fields?: NativeImportField[];
   native_templates?: Array<{ label: string; template: string }>;
   native_options?: Record<string, unknown>;
+  update_export?: { enabled: boolean; fields: string[]; import_compatible: boolean; label: string; empty_label: string };
   option_fields?: Array<{ name: string; label: string; type: "boolean" | "text" }>;
   wizard?: Record<string, string>;
   model: string;
@@ -416,6 +417,7 @@ export async function writeRecordV6Raw(params: {
 
 export async function exportRecordsCsv(params: {
   model: string;
+  importCompatible?: boolean;
   fields?: string[] | '*';
   domain?: unknown[];
   ids?: number[];
@@ -429,6 +431,7 @@ export async function exportRecordsCsv(params: {
     intent: 'api.data',
     params: {
       op: 'export_csv',
+      import_compatible: params.importCompatible ?? false,
       model: params.model,
       fields: params.fields ?? ['id', 'name'],
       domain: params.domain ?? [],

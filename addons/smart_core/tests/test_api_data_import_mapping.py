@@ -53,8 +53,11 @@ class NativeImportPhaseTests(unittest.TestCase):
                         'preview': [['external'], ['Example']], 'file_length': 3, 'options': {'has_headers': True}}
         importer = SimpleNamespace(parse_preview=lambda options, count: self.preview,
             execute_import=lambda *args, **kwargs: self.executions.append((args, kwargs)) or {'ids': [1, 2]})
-        self.handler.env = {'x.sample': SimpleNamespace(check_access_rights=lambda operation: None),
-                            'base_import.import': SimpleNamespace(create=lambda values: importer, get_fields_tree=lambda model: self.preview['fields'])}
+        class Env(dict):
+            is_admin = lambda self: False
+            user = SimpleNamespace(has_group=lambda xmlid: xmlid == 'base.group_allow_export')
+        self.handler.env = Env({'x.sample': SimpleNamespace(_rec_name="name", check_access_rights=lambda operation, **kwargs: True),
+                            'base_import.import': SimpleNamespace(create=lambda values: importer, get_fields_tree=lambda model: self.preview['fields'])})
         self.payload = {'params': {'model': 'x.sample', 'file_name': 'sample.csv',
                                    'file': base64.b64encode(b'id,name\na,A\nb,B\n').decode(), 'phase': 'inspect'}}
 
@@ -65,6 +68,14 @@ class NativeImportPhaseTests(unittest.TestCase):
         self.assertTrue(result['data']['native_options']['has_headers'])
         self.assertIn('has_headers', [field['name'] for field in result['data']['option_fields']])
         self.assertEqual(self.executions, [])
+
+    def test_update_export_requires_native_export_authority(self):
+        describe = lambda: self.handler.handle({'params': {'model': 'x.sample', 'phase': 'describe'}})
+        self.assertTrue(describe()['data']['update_export']['enabled'])
+        self.handler.env.user = SimpleNamespace(has_group=lambda xmlid: False)
+        self.assertFalse(describe()['data']['update_export']['enabled'])
+        self.handler.env.is_admin = lambda: True
+        self.assertTrue(describe()['data']['update_export']['enabled'])
 
     def test_describe_preserves_native_templates(self):
         templates = [{'label': 'Template', 'template': '/sample/static/template.xlsx'}]

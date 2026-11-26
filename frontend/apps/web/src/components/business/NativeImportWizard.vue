@@ -10,6 +10,7 @@
     <div v-if="templates.length"><p>{{ labels.templates_label }}</p>
       <a v-for="item in templates" :key="item.template" :href="item.template" download>{{ item.label }}</a>
     </div>
+    <ScButton v-if="updateExport?.enabled" :disabled="busy" @click="exportUpdateFile">{{ updateExport.label }}</ScButton>
     <ScFileField :key="session" :accept="labels.file_accept" :choose-label="labels.choose_file_label"
       :empty-label="labels.empty_file_label" :disabled="busy" @change="selectFile" />
     <ScDisclosure :title="labels.options_label" :disabled="busy">
@@ -48,7 +49,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { importRecords, type ApiDataImportContract, type NativeImportField } from '../../api/data';
+import { exportRecordsCsv, importRecords, type ApiDataImportContract, type NativeImportField } from '../../api/data';
 import { fileToBase64 } from '../../api/files';
 import { contractGapError } from '../../app/contract/contractGap';
 import ScDialog from '../design-system/ScDialog.vue';
@@ -65,6 +66,7 @@ const session = ref(0);
 const selectedFile = ref<File | null>(null);
 const inspected = ref(false);
 const completed = ref<ApiDataImportContract | null>(null);
+const updateExport = ref<ApiDataImportContract['update_export']>();
 const templates = ref<NonNullable<ApiDataImportContract['native_templates']>>([]);
 const optionFields = ref<NonNullable<ApiDataImportContract['option_fields']>>([]);
 const options = ref<Record<string, unknown>>({});
@@ -114,6 +116,13 @@ async function open(input: Input): Promise<ApiDataImportContract | null> {
       throw contractGapError({ kind: 'contract_defect', missing: 'native_import.option_fields',
         requiredDeclarationLayer: 'P0:smart_core:base_import' }, '原生导入解析选项契约缺失');
     }
+    if (!described.update_export || typeof described.update_export.enabled !== 'boolean'
+      || described.update_export.import_compatible !== true || !described.update_export.fields.length
+      || !described.update_export.label || !described.update_export.empty_label) {
+      throw contractGapError({ kind: 'contract_defect', missing: 'native_import.update_export',
+        requiredDeclarationLayer: 'P0:smart_core:base_import' }, '原生导入更新标识契约缺失');
+    }
+    updateExport.value = described.update_export;
     inputContext = input; request = null; selectedFile.value = null; session.value += 1;
     inspected.value = false; completed.value = null;
     contract.value = described; mapping.value = [];
@@ -122,6 +131,19 @@ async function open(input: Input): Promise<ApiDataImportContract | null> {
     messages.value = []; message.value = ''; validated.value = false; visible.value = true;
     return new Promise(resolve => { resolveResult = resolve; });
   } finally { busy.value = false; }
+}
+async function exportUpdateFile() {
+  if (busy.value || !inputContext || !updateExport.value?.enabled) return;
+  busy.value = true; message.value = '';
+  try {
+    const result = await exportRecordsCsv({ model: inputContext.model, context: inputContext.context,
+      fields: updateExport.value.fields, importCompatible: updateExport.value.import_compatible });
+    if (!result.count) { message.value = updateExport.value.empty_label; return; }
+    const link = document.createElement('a');
+    link.href = `data:${result.mime_type};base64,${result.content_b64}`;
+    link.download = result.file_name; link.click();
+  } catch (error) { message.value = error instanceof Error ? error.message : String(error); }
+  finally { busy.value = false; }
 }
 function invalidatePreview() {
   inspected.value = false; validated.value = false; mapping.value = [];

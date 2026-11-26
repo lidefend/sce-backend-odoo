@@ -348,6 +348,14 @@ class ApiDataImportHandler(BaseIntentHandler):
                     "headers": [], "mapping": [], "preview": [], "file_length": 0,
                     "native_fields": Kernel.get_fields_tree(model), "native_options": dict(DEFAULT_IMPORT_OPTIONS),
                     "native_templates": templates, "wizard": self._wizard_contract(),
+                    "update_export": {
+                        "enabled": bool(Model.check_access_rights("read", raise_exception=False)
+                            and (self.env.is_admin() or self.env.user.has_group("base.group_allow_export"))),
+                        "fields": list(dict.fromkeys(["id", Model._rec_name or "id"])),
+                        "import_compatible": True,
+                        "label": _("下载更新标识文件"),
+                        "empty_label": _("当前范围没有可导出的记录"),
+                    },
                     "option_fields": self._option_fields(),
                     "dry_run": True, "ids": [], "imported_count": 0, "messages": [], "error_count": 0, "valid": False,
                 }, "meta": {"source_authority": self._source_authority_contract(model)}}

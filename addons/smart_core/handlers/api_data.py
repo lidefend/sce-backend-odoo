@@ -2614,7 +2614,7 @@ class ApiDataHandler(BaseIntentHandler):
         if domain_error:
             return domain_error
         raw_ids = self._dig(p, "ids", None)
-        if raw_ids is None or (isinstance(raw_ids, str) and not raw_ids.strip()):
+        if raw_ids is None or raw_ids == [] or (isinstance(raw_ids, str) and not raw_ids.strip()):
             ids = []
         else:
             ids, ids_error = self._read_ids_param(p)
@@ -2684,20 +2684,32 @@ class ApiDataHandler(BaseIntentHandler):
             }
             return data, meta
 
-        try:
-            rows = recs.read(fields_safe)
-        except AccessError as ae:
-            _logger.warning("export_csv AccessError on %s, fallback fields. err=%s", model, ae)
-            safe_min = ["id", "name"] if "name" in env_model._fields else ["id"]
-            fields_safe = self._filter_readable_fields(env_model, safe_min)
-            rows = recs.read(fields_safe)
-        rows = self._normalize_display_rows(env_model, rows)
+        import_compatible = self._get_bool(p, "import_compatible", False)
+        if import_compatible:
+            # Native export owns external-ID generation and relational encoding.
+            # Reuse the same scoped recordset; never rebuild an unrestricted search.
+            fields_safe = list(dict.fromkeys(["id"] + fields_safe))
+            try:
+                native = recs.export_data(fields_safe)
+            except (AccessError, UserError) as exc:
+                return self._err(403, str(exc))
+            column_labels = {field_name: field_name for field_name in fields_safe}
+            csv_rows = native["datas"]
+        else:
+            try:
+                rows = recs.read(fields_safe)
+            except AccessError as ae:
+                _logger.warning("export_csv AccessError on %s, fallback fields. err=%s", model, ae)
+                safe_min = ["id", "name"] if "name" in env_model._fields else ["id"]
+                fields_safe = self._filter_readable_fields(env_model, safe_min)
+                rows = recs.read(fields_safe)
+            rows = self._normalize_display_rows(env_model, rows)
+            csv_rows = [[self._format_csv_value(row.get(col)) for col in fields_safe] for row in rows]
 
         buf = io.StringIO()
         writer = csv.writer(buf)
         writer.writerow([column_labels.get(field_name) or field_name for field_name in fields_safe])
-        for row in rows:
-            writer.writerow([self._format_csv_value(row.get(col)) for col in fields_safe])
+        writer.writerows(csv_rows)
         raw = buf.getvalue().encode("utf-8-sig")
         b64 = base64.b64encode(raw).decode("ascii")
         stamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
@@ -2706,7 +2718,7 @@ class ApiDataHandler(BaseIntentHandler):
             "file_name": f"{model.replace('.', '_')}_{stamp}.csv",
             "mime_type": "text/csv",
             "content_b64": b64,
-            "count": len(rows),
+            "count": len(csv_rows),
             "fields": fields_safe,
             "column_labels": column_labels,
         }
@@ -2714,7 +2726,7 @@ class ApiDataHandler(BaseIntentHandler):
             "op": "export_csv",
             "model": model,
             "source_authority": self._source_authority_contract(model, "export_csv"),
-            "count": len(rows),
+            "count": len(csv_rows),
             "limit": limit,
             "project_scope": project_scope_meta,
             "record_scope": project_scope_meta,

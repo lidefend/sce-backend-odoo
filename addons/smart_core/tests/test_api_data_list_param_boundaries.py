@@ -693,6 +693,72 @@ class TestApiDataListParamBoundaries(unittest.TestCase):
         self.assertTrue(base64.b64decode(data["content_b64"]).decode("utf-8-sig").startswith("记录ID,项目名称"))
         self.assertIn(("name", "ilike", "绵阳"), model.search_domains[0])
 
+    def test_import_compatible_export_uses_native_ids_and_scoped_records(self):
+        self_test = self
+        field = lambda field_type, store=True, groups="", string="": types.SimpleNamespace(
+            type=field_type,
+            store=store,
+            groups=groups,
+            string=string,
+        )
+
+        class _Recordset:
+            def read(self, fields):
+                raise AssertionError("import-compatible export must use the native exporter")
+
+            def export_data(self, fields):
+                self_test.assertEqual(fields, ["id", "name"])
+                return {"datas": [["__export__.x_model_1", "绵阳项目"]]}
+
+        class _Model:
+            _name = "x.model"
+            _rec_name = "name"
+
+            def __init__(self):
+                self.env = None
+                self._fields = {"id": field("integer", string="标识"), "name": field("char", string="名称")}
+                self.search_domains = []
+
+            def with_context(self, ctx):
+                self.context = ctx
+                return self
+
+            def search(self, domain, order=None, limit=None):
+                self.search_domains.append(list(domain or []))
+                return _Recordset()
+
+        class _Env(dict):
+            pass
+
+        user = types.SimpleNamespace(has_group=lambda group: True)
+        env = _Env()
+        env.user = user
+        env.context = {}
+        env.lang = "zh_CN"
+        model = _Model()
+        model.env = env
+        env["x.model"] = model
+        handler = _load_handler().ApiDataHandler(env=env)
+
+        data, meta = handler._op_export_csv(
+            "x.model",
+            {"ids": [], "q": "绵阳", "fields": ["name"], "import_compatible": True, "column_labels": {"name": "项目名称"}},
+            {},
+            False,
+        )
+
+        self.assertEqual(data["count"], 1)
+        self.assertEqual(meta["count"], 1)
+        self.assertEqual(data["column_labels"], {"id": "id", "name": "name"})
+        import base64
+        self.assertTrue(base64.b64decode(data["content_b64"]).decode("utf-8-sig").startswith("id,name"))
+        self.assertIn(("name", "ilike", "绵阳"), model.search_domains[0])
+
+        self.assertIn("__export__.x_model_1", base64.b64decode(data["content_b64"]).decode("utf-8-sig"))
+        denied = {"ok": False, "error": {"code": "DENIED_BY_RECORD_SCOPE"}}
+        handler._ensure_records_in_record_scope = lambda *args: denied
+        self.assertEqual(handler._op_export_csv("x.model", {"ids": [99], "fields": ["name"], "import_compatible": True}, {}, False), denied)
+
     def test_safe_eval_runtime_supports_allowed_company_ids(self):
         module = _load_handler()
 
