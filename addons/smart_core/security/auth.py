@@ -244,7 +244,7 @@ def _validated_token_principal(payload, user, env):
         or role_xmlids != tuple(sorted(set(role_xmlids)))
     ):
         raise AccessDenied("Token 身份范围无效")
-    current_companies = set(user.company_ids.ids)
+    current_companies = set(user._sc_authorized_company_ids())
     if not set(allowed_company_ids).issubset(current_companies):
         raise AccessDenied("Token 公司范围已失效")
     if role_xmlids != _current_role_xmlids(user):
@@ -340,7 +340,7 @@ def get_principal_from_token():
             "credential_id": "",
             "scopes": ("interactive",),
             "company_id": int(user.company_id.id or 0),
-            "allowed_company_ids": tuple(user.company_ids.ids),
+            "allowed_company_ids": tuple(user._sc_authorized_company_ids()),
             "role_xmlids": (),
         }
 

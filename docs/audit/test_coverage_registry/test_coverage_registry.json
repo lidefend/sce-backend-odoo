@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 232,
+    "odoo_tags": 233,
     "gated": 5,
-    "on_demand": 90,
-    "unwired": 137,
-    "odoo_tag_declarations": 469,
+    "on_demand": 92,
+    "unwired": 136,
+    "odoo_tag_declarations": 470,
     "gated_declarations": 107,
-    "uncovered_declarations": 362,
+    "uncovered_declarations": 363,
     "ci_unit_scripts": 24,
     "ci_unit_scripts_wired": 24,
     "ci_unit_scripts_unwired": 0
@@ -760,6 +760,20 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "auth02_multi_company",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_platform_multi_company.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.platform.multi_company.orm :: auth02_multi_company,sc_auth_credential,data_space_boundary,data_space_identity_"
+      ],
+      "disposition": "class-selected"
+    },
+    {
       "group": "auth_signup",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -1113,7 +1127,8 @@
       ],
       "owner": "platform-team",
       "evidence": [
-        "make:verify.local.dev.data_space_boundary.orm :: data_space_boundary"
+        "make:verify.local.dev.data_space_boundary.orm :: data_space_boundary",
+        "make:verify.platform.multi_company.orm :: auth02_multi_company,sc_auth_credential,data_space_boundary,data_space_identity_"
       ],
       "disposition": "class-selected"
     },
@@ -1141,7 +1156,8 @@
       ],
       "owner": "platform-team",
       "evidence": [
-        "make:verify.local.dev.data_space_identity_enrollment.orm :: data_space_identity_enrollment"
+        "make:verify.local.dev.data_space_identity_enrollment.orm :: data_space_identity_enrollment",
+        "make:verify.platform.multi_company.orm :: auth02_multi_company,sc_auth_credential,data_space_boundary,data_space_identity_"
       ],
       "disposition": "class-selected"
     },
@@ -1155,7 +1171,8 @@
       ],
       "owner": "platform-team",
       "evidence": [
-        "make:verify.local.dev.data_space_uncached_membership.orm :: data_space_uncached_membership"
+        "make:verify.local.dev.data_space_uncached_membership.orm :: data_space_uncached_membership",
+        "make:verify.platform.multi_company.orm :: auth02_multi_company,sc_auth_credential,data_space_boundary,data_space_identity_"
       ],
       "disposition": "class-selected"
     },
@@ -2060,7 +2077,8 @@
       ],
       "owner": "platform-team",
       "evidence": [
-        "make:verify.local.dev.platform_database_governance.orm :: platform_database_governance"
+        "make:verify.local.dev.platform_database_governance.orm :: platform_database_governance",
+        "make:verify.platform.multi_company.orm :: auth02_multi_company,sc_auth_credential,data_space_boundary,data_space_identity_"
       ],
       "disposition": "class-selected"
     },
@@ -2534,14 +2552,16 @@
     },
     {
       "group": "sc_auth_credential",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_core/tests/test_auth_credential_framework.py"
       ],
       "owner": "platform-team",
-      "evidence": [],
+      "evidence": [
+        "make:verify.platform.multi_company.orm :: auth02_multi_company,sc_auth_credential,data_space_boundary,data_space_identity_"
+      ],
       "disposition": "wire-pending"
     },
     {

@@ -1414,7 +1414,9 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ] if path != "addons/smart_core/handlers/system_init.py" else [
                         "verify.backend.navigation_delivery.unit",
                         "verify.platform.duty.contract.unit",
+                        "verify.platform.multi_company.orm",
                         "verify.scenario.center_projection.guard",
+                        "verify.smart_core.close_02.module_baseline",
                         "verify.system_init.menu_boundary.guard",
                     ],
                 )
@@ -2686,6 +2688,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "verify.frontend.role_surface_exposure_declaration.guard",
             "verify.frontend.delivery_hardening.guard",
         }.issubset(select_targets(["scripts/verify/role_capability_group_authority_guard.py"])))
+
+    def test_platform_company_policy_selects_native_and_credential_regressions(self):
+        for path in (
+            'addons/smart_core/models/ir_rule_company_authorization.py',
+            'addons/smart_core/security/platform_company_access.py',
+            'addons/smart_core/handlers/system_init.py',
+            'addons/smart_core/models/subscription.py',
+            'addons/smart_core/security/auth.py',
+        ):
+            with self.subTest(path=path):
+                self.assertIn('verify.platform.multi_company.orm', select_targets([path]))
+                self.assertIn('verify.smart_core.close_02.module_baseline', select_targets([path]))
 
     def test_native_role_and_personnel_changes_select_their_orm_owners(self) -> None:
         self.assertEqual(

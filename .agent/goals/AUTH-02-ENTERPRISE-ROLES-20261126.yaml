@@ -1,0 +1,11 @@
+schema_version: 1
+goal:
+  id: AUTH-02-ENTERPRISE-ROLES-20261126
+  status: verification_pending
+  title: AUTH-02 enterprise business roles
+  objective: Compose published business capabilities into company-owned roles with controlled allocation and source-safe revocation.
+  formal_product_layer: P0 source provenance and platform entitlement; P1 enterprise role product
+  layer_target: Native permission composition
+  module: [smart_core, smart_construction_core]
+  standard_vs_user_specific: standard
+  exclusions: [new_permission_engine, dynamic_enterprise_res_groups, persistent_deployment]

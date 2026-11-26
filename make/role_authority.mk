@@ -1,4 +1,8 @@
 # P4 offline role declaration inventory; never an authorization/runtime gate.
+.PHONY: verify.platform.multi_company.orm
+verify.platform.multi_company.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS=auth02_multi_company,sc_auth_credential,data_space_boundary,data_space_identity_enrollment,data_space_uncached_membership,platform_database_governance
+
 .PHONY: verify.daily.demo.walkthrough.policy daily.demo.walkthrough.ui
 verify.daily.demo.walkthrough.policy: guard.prod.forbid
 	@node --check scripts/verify/daily_demo_walkthrough_ui.mjs

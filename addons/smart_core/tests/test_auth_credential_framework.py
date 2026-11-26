@@ -15,6 +15,7 @@ from odoo.modules.registry import Registry
 from odoo.tests.common import HttpCase, tagged
 
 from .entry_namespace_test_support import configure_test_entry_namespace
+from .platform_company_test_support import license_multi_company
 
 from odoo.addons.smart_core.models.auth_credential_policy import SERVICE_CONTEXT_KEY
 from odoo.addons.smart_core.core.handler_registry import HANDLER_REGISTRY
@@ -59,6 +60,7 @@ class TestAuthCredentialFramework(HttpCase):
             env["ir.config_parameter"].sudo().set_param("sc.jwt.secret", self.jwt_secret)
             company_a = env["res.company"].sudo().create({"name": f"Auth Company A {suffix}"})
             company_b = env["res.company"].sudo().create({"name": f"Auth Company B {suffix}"})
+            license_multi_company(env, company_a)
             user = env["res.users"].sudo().create({
                 "name": f"Auth Machine Owner {suffix}",
                 "login": f"auth_machine_owner_{suffix}",

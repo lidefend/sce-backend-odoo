@@ -1,0 +1,124 @@
+{
+  "id": "AUTH-02-ENTERPRISE-ROLES-20261126",
+  "baseline": "62b57fc73f9a9ab5e04f0d6cf320571d444b95e5",
+  "status": "verification_pending",
+  "owner_decisions": [
+    "Pause representative business acceptance",
+    "Reuse native Odoo security and existing source tracking",
+    "Platform authorization controls whether multi-company is enabled",
+    "Multi-company licensing is platform-owned",
+    "Group companies may share one tenant; independent enterprises remain separate customer databases"
+  ],
+  "confirmed_inventory": {
+    "standard_roles": 22,
+    "capability_group_declarations": 73,
+    "assignability_declarations": 53
+  },
+  "unresolved": [
+    "Enterprise role company-specific execution needs proof beyond global groups_id",
+    "Capability closure approval must precede enterprise combinability; entry visibility is not a business ACL",
+    "Subscription activation policy for existing multi-company tenants requires a separate disclosed deployment migration; current implementation is not deployed"
+  ],
+  "validation": {
+    "local": "required",
+    "remote_module_baselines": "deferred_remote",
+    "scheduled_release": "excluded; implementation only",
+    "initial_targeted_orm": {
+      "passed": 8,
+      "receipt": ".runtime/test-baseline/1795668662250404680/receipt.json",
+      "limit": "before native rule cache integration; not final candidate evidence"
+    },
+    "existing_suite_first_attempt": {
+      "status": "failed",
+      "receipt": ".runtime/test-baseline/1795668873931925920/receipt.json",
+      "cause": "Legacy positive multi-company tests lacked platform licensing; assertions retained and explicit synthetic licensing added"
+    },
+    "native_rule_bootstrap_attempt": {
+      "status": "failed",
+      "log": ".runtime/test-baseline/1795668997325332687/prepare.log",
+      "cause": "Recursive metadata fetch in sudo rule cache key; corrected to retain native sudo bypass"
+    },
+    "old_platform_manifest_guard": {
+      "status": "failed",
+      "classification": "preexisting_baseline_guard_debt",
+      "log": ".runtime/auth02-platform-manifest.log",
+      "proof": "All offending sources and guard identical to baseline 62b57fc; stale role-bound ACL assertion plus preexisting usage-counter accesses. Trial guard edit reverted, no production guard weakened."
+    },
+    "native_rule_suite_attempt": {
+      "status": "failed_receipt",
+      "assertions_passed": 119,
+      "receipt": ".runtime/test-baseline/1795669032523909462/receipt.json",
+      "reason": "Source fingerprint changed while task metadata updated; not candidate pass. Re-run after all edits."
+    },
+    "core_suite_after_native_cache_fix": {
+      "status": "passed",
+      "count": 119,
+      "receipt": ".runtime/test-baseline/1795669139681481464/receipt.json",
+      "limit": "Before final UTC validity and system.init scope corrections; final gate still required"
+    },
+    "business_admin_first_attempt": {
+      "status": "failed",
+      "receipt": ".runtime/test-baseline/1795669190145874821/receipt.json",
+      "reason": "Cross-company department validation test was intercepted by missing platform license. Explicit license added so the original ValidationError assertion remains exercised."
+    },
+    "selector_unit": {
+      "status": "passed",
+      "count": 270,
+      "log": ".runtime/auth02-selector-unit-2.log"
+    },
+    "final_gate": {
+      "status": "passed",
+      "executed_targets": 13,
+      "not_run": [],
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T050506Z-1841844-347928994/receipt.json",
+      "log": ".runtime/auth02-final-gate.log"
+    },
+    "final_platform_orm": {
+      "status": "passed",
+      "count": 120,
+      "receipt": ".runtime/test-baseline/1795669523697617510/receipt.json"
+    },
+    "final_business_admin_orm": {
+      "status": "passed",
+      "count": 36,
+      "receipt": ".runtime/test-baseline/1795669739240341149/receipt.json"
+    }
+  },
+  "stages": [
+    {
+      "id": "AUTH-02.1",
+      "scope": "Platform-owned intra-tenant multi-company licensing, native company upper bound, live revocation and expiry",
+      "status": "local_validation_passed_remote_pending"
+    },
+    {
+      "id": "AUTH-02.2",
+      "scope": "Published business authorization catalog with closure/ACL evidence and sensitive capability exclusions",
+      "status": "pending"
+    },
+    {
+      "id": "AUTH-02.3",
+      "scope": "Company-owned enterprise role definitions, lifecycle, assignments, source-safe native projection and revocation",
+      "status": "pending"
+    },
+    {
+      "id": "AUTH-02.4",
+      "scope": "Contract-driven administration, native batch import, role/company/revocation behavior validation",
+      "status": "pending"
+    }
+  ],
+  "scope_boundaries": {
+    "platform_company_flag": "Intra-tenant company licensing only; not permission to mix independent customers",
+    "native_rules": "Native Odoo ACL/record rules remain executor; company context and rule-cache identity consume live platform scope",
+    "migration": "Default false is deliberate; existing multi-company tenants need reviewed platform entitlement activation before any deployment. No automatic backfill or persistent writes."
+  },
+  "capability_inventory": {
+    "artifact": ".runtime/auth02-capability-inventory.json",
+    "status": "inventory_only",
+    "limits": "Only P0/P1 declared group graph and ACL rows. External groups, record rules and method checks remain unresolved. No capability approved for enterprise composition.",
+    "known_write_model_counts": {
+      "project_read": 26,
+      "contract_read": 25
+    }
+  },
+  "next_exact_step": "Publish reviewable AUTH-02.1 draft; exact-head remote integration and independent review remain required. Continue later stages without claiming enterprise role delivery."
+}

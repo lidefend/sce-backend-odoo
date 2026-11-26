@@ -1,0 +1,99 @@
+{
+  "schema_version": 2,
+  "baseline_sha": "62b57fc73f9a9ab5e04f0d6cf320571d444b95e5",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/AUTH-02-ENTERPRISE-ROLES-20261126.yaml",
+    ".agent/runs/AUTH-02-ENTERPRISE-ROLES-20261126/run.json",
+    "addons/smart_construction_core/models/support/business_role.py",
+    "addons/smart_construction_core/models/support/runtime_user_management.py",
+    "addons/smart_construction_core/tests/test_business_role.py",
+    "addons/smart_construction_core/tests/test_runtime_user_management.py",
+    "addons/smart_core/handlers/login.py",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/models/__init__.py",
+    "addons/smart_core/models/ir_rule_company_authorization.py",
+    "addons/smart_core/models/res_users.py",
+    "addons/smart_core/models/res_users_group_authority.py",
+    "addons/smart_core/models/subscription.py",
+    "addons/smart_core/security/auth.py",
+    "addons/smart_core/security/credential_service.py",
+    "addons/smart_core/security/group_assignment.py",
+    "addons/smart_core/security/platform_company_access.py",
+    "addons/smart_core/tests/__init__.py",
+    "addons/smart_core/tests/platform_company_test_support.py",
+    "addons/smart_core/tests/test_auth_credential_framework.py",
+    "addons/smart_core/tests/test_data_space_boundary.py",
+    "addons/smart_core/tests/test_platform_multi_company.py",
+    "addons/smart_core/views/platform_company_access_views.xml",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/auth02_enterprise_roles_20261126.json",
+    "make/role_authority.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_group_assignment.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Registered worktree-scoped disposable local.test carrier; standing owner test authorization only; no persistent upgrade."
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "P0 source provenance and platform entitlement; P1 catalog, role lifecycle and assignment ORM; native contract views."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Exact new PR head P0/P1 integration and owning smart_core/smart_construction_core module baselines; deferred_remote."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "Release qualification is evaluated after mainline integration by schedule or explicit owner full dispatch on exact main head/tree; it grants candidate-build eligibility only, distinguishes scheduled_mainline from operator_full_audit, and does not substitute for exact-head PR CI or deployment."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Frontend validation carrying shared contract targets must consume the passed backend channel receipt for the same run and source identity."
+    }
+  },
+  "checks": {
+    "platform_company": {
+      "target": "verify.platform.multi_company.orm",
+      "inputs": [
+        "addons/smart_construction_core/models/support/runtime_user_management.py",
+        "addons/smart_construction_core/tests/test_runtime_user_management.py",
+        "addons/smart_core/handlers/login.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/models/ir_rule_company_authorization.py",
+        "addons/smart_core/models/res_users.py",
+        "addons/smart_core/models/subscription.py",
+        "addons/smart_core/security/auth.py",
+        "addons/smart_core/security/credential_service.py",
+        "addons/smart_core/security/platform_company_access.py",
+        "addons/smart_core/tests/__init__.py",
+        "addons/smart_core/tests/platform_company_test_support.py",
+        "addons/smart_core/tests/test_auth_credential_framework.py",
+        "addons/smart_core/tests/test_data_space_boundary.py",
+        "addons/smart_core/tests/test_platform_multi_company.py",
+        "addons/smart_core/views/platform_company_access_views.xml",
+        "make/role_authority.mk"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish AUTH-02.1 draft, verify exact-head remote CI, then continue AUTH-02.2 capability catalog qualification; enterprise roles are not implemented yet.",
+  "id": "AUTH-02-ENTERPRISE-ROLES-20261126",
+  "branch": "feature/auth-02-enterprise-roles-20261126",
+  "status": "verification_pending",
+  "goal": ".agent/goals/AUTH-02-ENTERPRISE-ROLES-20261126.yaml",
+  "record": "docs/ops/iterations/auth02_enterprise_roles_20261126.json"
+}

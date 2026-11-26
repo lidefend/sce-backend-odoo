@@ -8,6 +8,24 @@ from typing import Any
 from odoo import fields
 
 
+def platform_authorized_company_ids(user):
+    """Intersect native grants with the home company's platform subscription.
+
+    Company selection in request context must never select the licensing plan.
+    Read the plan on each resolution so expiry/revocation also affects sessions
+    issued before the subscription changed. No entitlement row is written.
+    """
+    user.ensure_one()
+    home = user.sudo().company_id
+    granted = set(user.sudo().company_ids.ids)
+    if not home or home.id not in granted:
+        return []
+    plan = user.env['sc.entitlement'].sudo()._resolve_plan(home)
+    if plan and plan.active and plan.multi_company_enabled:
+        return sorted(granted)
+    return [home.id]
+
+
 def platform_entitlement_payload(env, user) -> dict[str, Any]:
     try:
         payload = env["sc.entitlement"].get_payload(user)

@@ -94,7 +94,7 @@ def _principal_for_user(user, *, database, principal_type, auth_method, credenti
         raise AccessDenied("credential principal is inactive")
     if not namespace_id or not audience:
         namespace_id, audience = _namespace_binding(user, database)
-    allowed = tuple(sorted(set(int(value) for value in user.company_ids.ids)))
+    allowed = tuple(user._sc_authorized_company_ids())
     company_id = int(user.company_id.id or 0)
     if not company_id or company_id not in allowed:
         raise AccessDenied("credential principal company is invalid")
@@ -239,7 +239,7 @@ def issue_machine_api_key(
     if not normalized_name or len(normalized_name) > 120:
         raise ValidationError("credential name is required and must not exceed 120 characters")
     normalized_scopes = _normalized_scopes(scopes)
-    current_companies = set(actor_user.company_ids.ids)
+    current_companies = set(actor_user._sc_authorized_company_ids())
     requested_companies = set(int(value) for value in (company_ids or current_companies))
     if not requested_companies or not requested_companies.issubset(current_companies):
         raise AccessError("credential company scope exceeds the current user")

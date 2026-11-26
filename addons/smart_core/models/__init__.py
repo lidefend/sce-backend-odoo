@@ -6,6 +6,7 @@ from . import subscription
 from . import release_management
 from . import login_routing
 from . import res_users
+from . import ir_rule_company_authorization
 from . import app_action_gateway
 from . import ui_base_contract_asset
 from . import ui_base_contract_asset_event_trigger

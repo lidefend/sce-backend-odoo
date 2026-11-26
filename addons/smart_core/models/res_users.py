@@ -5,6 +5,7 @@ from odoo.addons.smart_core.security.data_space import (
     NON_CUSTOMER_DATA_USER_GROUP, principal_data_purposes, registration_scope_domain,
 )
 from odoo.addons.smart_core.security.platform_admin import platform_admin_group_xmlids
+from odoo.addons.smart_core.security.platform_company_access import platform_authorized_company_ids
 
 
 class ResUsers(models.Model):
@@ -14,6 +15,9 @@ class ResUsers(models.Model):
     NO_BUSINESS_FACT_AUTHORITY = True
 
     token_version = fields.Integer(default=0)
+
+    def _sc_authorized_company_ids(self):
+        return platform_authorized_company_ids(self)
 
     def _sc_resolved_group_ids(self, group_xmlids):
         """Resolve governed group external ids without reading any membership."""
@@ -65,7 +69,7 @@ class ResUsers(models.Model):
         )
         # env.companies validates caller-supplied allowed_company_ids. It must
         # be evaluated with su=False even when an internal caller used sudo.
-        company_ids = caller.env.companies.ids
+        company_ids = sorted(set(caller.env.companies.ids) & set(caller._sc_authorized_company_ids()))
         registrations = caller.env["sc.tenant.company.registration"].sudo().search(
             registration_scope_domain(company_ids, purposes)
         )

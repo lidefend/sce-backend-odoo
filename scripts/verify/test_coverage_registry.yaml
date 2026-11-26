@@ -1,5 +1,12 @@
 version: 1
 entries:
+- group: auth02_multi_company
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-kernel
+  dispose: class-selected
+  gate: 'make:verify.platform.multi_company.orm :: auth02_multi_company'
+  reason: Incremental selection covers platform licensing, native rule caches, token revocation and company scope. Exact execution remains separately evidenced.
 - group: role_capability_authority
   kind: odoo_tag
   status: unwired

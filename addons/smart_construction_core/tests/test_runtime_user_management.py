@@ -12,6 +12,9 @@ class TestRuntimeUserManagement(BusinessTransactionCase):
         super().setUpClass()
         # The suite owns a registered synthetic company inside the rollback transaction.
         cls.env.user.write({"company_ids": [(4, cls.env.company.id)]})
+        # This suite's operating principal belongs to its synthetic company;
+        # native membership in several companies no longer grants a license.
+        cls.env.user.write({"company_id": cls.env.company.id})
 
     def _create_runtime_user(self, login, name, managed=False):
         return self.env["res.users"].with_context(no_reset_password=True).create(
@@ -130,6 +133,8 @@ class TestRuntimeUserManagement(BusinessTransactionCase):
 
     def test_department_public_manager_rejects_other_company(self):
         admin = self._create_business_config_admin("department_other_company_admin")
+        from odoo.addons.smart_core.tests.platform_company_test_support import license_multi_company
+        license_multi_company(self.env, admin.company_id)
         other = self.env["res.company"].create({"name": "Department Manager Other Company"})
         admin.write({"company_ids": [(4, other.id)]})
         employee = self.env["hr.employee"].create({"name": "Other Company Manager", "company_id": other.id})
@@ -260,6 +265,30 @@ class TestRuntimeUserManagement(BusinessTransactionCase):
                     "company_ids": [(6, 0, [])],
                 }
             )
+
+    def test_business_admin_company_assignment_requires_platform_license(self):
+        admin = self._create_business_config_admin('auth02_business_company_admin')
+        other = self.env['res.company'].create({'name': 'AUTH02 permitted group company'})
+        admin.write({'company_ids': [Command.link(other.id)]})
+        target = self._create_runtime_user('auth02_business_target', 'AUTH02 target', managed=True)
+        Users = self.env['res.users'].with_user(admin)
+        requested = {'company_ids': [Command.set([self.env.company.id, other.id])]}
+        with self.assertRaises(ValidationError):
+            Users._sc_runtime_user_safe_vals(requested, existing_user=target)
+        from odoo.addons.smart_core.tests.platform_company_test_support import license_multi_company
+        license_multi_company(self.env, admin.company_id)
+        prepared = Users._sc_runtime_user_safe_vals(requested, existing_user=target)
+        self.assertEqual(prepared['company_ids'], requested['company_ids'])
+        Users.browse(target.id).write(requested)
+        self.assertEqual(set(target.company_ids.ids), {self.env.company.id, other.id})
+
+    def test_business_admin_cannot_enable_platform_multicompany(self):
+        admin = self._create_business_config_admin('auth02_no_platform_license_admin')
+        plan = self.env['sc.subscription.plan'].create({
+            'name': 'AUTH02 platform-only license', 'code': 'auth02-business-denied',
+        })
+        with self.assertRaises(AccessError):
+            plan.with_user(admin).write({'multi_company_enabled': True})
 
     def test_runtime_user_incremental_company_commands_preserve_main_company(self):
         other_company = self.env["res.company"].create({"name": "Runtime Scope Other Company"})

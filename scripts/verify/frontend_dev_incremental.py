@@ -2630,6 +2630,22 @@ RULES = (
     ), ("verify.system.permission_role.assignment.unit", "verify.smart_core.close_02.module_baseline",
         "verify.smart_construction_core.module_baseline")),
     Rule((
+        "addons/smart_core/models/__init__.py",
+        "addons/smart_core/models/res_users.py",
+        "addons/smart_core/models/subscription.py",
+        "addons/smart_core/models/ir_rule_company_authorization.py",
+        "addons/smart_core/security/platform_company_access.py",
+        "addons/smart_core/security/auth.py",
+        "addons/smart_core/security/credential_service.py",
+        "addons/smart_core/handlers/login.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/views/platform_company_access_views.xml",
+        "addons/smart_core/tests/test_platform_multi_company.py",
+        "addons/smart_core/tests/platform_company_test_support.py",
+        "addons/smart_core/tests/test_auth_credential_framework.py",
+        "addons/smart_core/tests/test_data_space_boundary.py",
+    ), ("verify.platform.multi_company.orm", "verify.smart_core.close_02.module_baseline")),
+    Rule((
         "addons/smart_core/handlers/api_data.py",
     ), ("verify.smart_core.api_data_import.unit", "verify.smart_core.close_02.module_baseline")),
     Rule((
