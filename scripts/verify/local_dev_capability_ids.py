@@ -5,6 +5,12 @@ from odoo.addons.smart_construction_core.services import capability_registry
 from odoo.addons.smart_construction_core.handlers.product_configuration_capability import ProductConfigurationCapabilityCatalogHandler
 from odoo.addons.smart_core.handlers.system_init import _resolve_startup_delivery_identity, _load_platform_release_gate
 from odoo.addons.smart_core.delivery.product_policy_service import ProductPolicyService
+def diagnostic_json_default(value):
+    if isinstance(value, (set, frozenset)):
+        return sorted(value)
+    raise TypeError('Unsupported diagnostic JSON type: ' + type(value).__name__)
+
+
 assert env.cr.dbname == 'sc_dev_demo'
 cases = []
 for key, xmlid in (
@@ -46,4 +52,4 @@ facts = {}
 for model in ('project.project', 'payment.request', 'tier.review', 'sc.approval.policy', 'construction.contract', 'construction.contract.income', 'construction.contract.expense'):
     facts[model] = env[model].sudo().with_context(active_test=False).search_read([], ['id', 'write_date'], order='id')
 print('LOCAL_DEV_CAPABILITY_JSON=' + json.dumps({'database': env.cr.dbname, 'cases': cases,
-      'business_fingerprint': hashlib.sha256(json.dumps(facts, sort_keys=True, default=str).encode()).hexdigest()}, ensure_ascii=True))
+      'business_fingerprint': hashlib.sha256(json.dumps(facts, sort_keys=True, default=str).encode()).hexdigest()}, ensure_ascii=True, default=diagnostic_json_default))

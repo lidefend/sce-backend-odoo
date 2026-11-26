@@ -590,25 +590,25 @@ async function navigateEntry(page, navTarget) {
   // from reloading the route directly: the latter bypasses scene initialization
   // and can produce a blank shell even though the menu journey renders.
   const ancestors = await leaf.evaluate((element) => {
-    const rows = [];
+    const keys = [];
     for (let parent = element.parentElement; parent; parent = parent.parentElement) {
-      if (parent.matches?.('[data-navigation-key][aria-expanded]')) {
-        rows.push({
-          key: parent.getAttribute('data-navigation-key'),
-          opened: parent.getAttribute('aria-expanded') === 'true',
-        });
+      if (parent.matches?.('[data-navigation-node="canonical"][data-navigation-key]')) {
+        keys.push(parent.getAttribute('data-navigation-key'));
       }
     }
-    return rows.reverse();
+    return keys.reverse();
   });
-  for (const ancestor of ancestors) {
-    if (ancestor.opened) continue;
-    const row = page.locator(
-      `[data-navigation-key="${ancestor.key}"] [data-navigation-toggle="submenu"]`,
+  for (let index = 0; index < ancestors.length; index += 1) {
+    const child = index + 1 < ancestors.length
+      ? page.locator(`[data-navigation-key="${ancestors[index + 1]}"]`).first()
+      : leaf;
+    if (await child.isVisible()) continue;
+    const toggle = page.locator(
+      `[data-navigation-key="${ancestors[index]}"] [data-navigation-toggle="submenu"]`,
     ).first();
-    await row.waitFor({ state: 'visible', timeout: 5000 });
-    await row.click();
-    await sleep(200);
+    await toggle.waitFor({ state: 'visible', timeout: 5000 });
+    await toggle.click();
+    await child.waitFor({ state: 'visible', timeout: 5000 });
   }
   await leaf.waitFor({ state: 'visible', timeout: 5000 });
   await leaf.click();

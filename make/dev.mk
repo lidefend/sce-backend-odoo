@@ -2010,3 +2010,9 @@ verify.acceptance.artifact.unit: guard.prod.forbid
 verify.workspace.entry_authority.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_bundle \
 	  TEST_TAGS=/smart_construction_bundle:TestWorkspaceExclusiveRoleRoutes,/smart_construction_bundle:TestPublishedRoleReplacementMenus,company_project_refund_workspace,current_account_workspace,team_loan_deduction_workspace
+
+.PHONY: verify.local.dev.capability.tooling.unit
+verify.local.dev.capability.tooling.unit: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_local_dev_capability_tooling
+	@node --check scripts/verify/local_dev_capability_browser.mjs
+	@bash -n scripts/verify/local_dev_capability_browser.sh

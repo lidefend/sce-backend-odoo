@@ -1,0 +1,107 @@
+{
+  "schema_version": 2,
+  "baseline_sha": "de58eaf376a1e27877d73ce2527f5548f9f11eba",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/runs/LOCAL-MAIN-WALKTHROUGH-20261126/run.json",
+    ".agent/goals/LOCAL-MAIN-WALKTHROUGH-20261126.yaml",
+    "docs/ops/iterations/local_main_walkthrough_20261126.md",
+    "scripts/verify/local_dev_capability_ids.py",
+    "scripts/verify/local_dev_capability_browser.sh",
+    "scripts/verify/local_dev_capability_browser.mjs",
+    "scripts/verify/business_entry_matrix_browser.mjs",
+    "frontend/apps/web/src/views/SceneView.vue",
+    "frontend/apps/web/src/app/sceneEntryContract.ts",
+    "frontend/apps/web/scripts/scene_entry_contract_test.ts",
+    "scripts/verify/test_local_dev_capability_tooling.py",
+    "make/dev.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "docs/product/frontend_business_entry_acceptance_v1.csv",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Owner explicitly confirmed disclosed persistent core upgrade, data-preserving deployment and user walkthrough on 2026-11-26."
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make verify.frontend.business_entry.evidence_scope.unit; make local.dev.health local.dev.entry_identity.verify; make verify.frontend.business_entry.matrix.incremental",
+      "reason": "Deploy identity, health, user-visible readiness and role/capability behavior on persistent sc-local-dev."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "public_guard, merge_policy_gate, professional_quality_gate, frontend_release_gate on new PR HEAD",
+      "reason": "P0 scene lifecycle and P4 walkthrough tooling changes require new exact-head PR integration; merged deployment checks cannot be inherited."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "Release qualification is evaluated after mainline integration by schedule or explicit owner full dispatch on exact main head/tree; it grants candidate-build eligibility only, distinguishes scheduled_mainline from operator_full_audit, and does not substitute for exact-head PR CI or deployment."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Frontend validation carrying shared contract targets must consume the passed backend channel receipt for the same run and source identity."
+    }
+  },
+  "checks": {
+    "matrix_tooling": {
+      "target": "verify.frontend.business_entry.evidence_scope.unit",
+      "inputs": [
+        "scripts/verify/business_entry_matrix_browser.mjs",
+        "scripts/verify/business_entry_matrix_incremental.py",
+        "scripts/verify/business_entry_matrix_model.mjs"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "New exact-head PR integration and independent review remain pending.",
+    "Readiness project-forbidden principal lacks entry authority; no implicit permission grant.",
+    "Original full matrix failure evidence remains historical; direct URL denial and business-write workflows were not executed."
+  ],
+  "next_exact_step": "Publish reviewed draft PR through governed Make targets; inspect its exact-head remote integration. Preserve user-acceptance coverage gaps.",
+  "id": "LOCAL-MAIN-WALKTHROUGH-20261126",
+  "branch": "fix/local-main-walkthrough-20261126",
+  "status": "verification_pending",
+  "goal": ".agent/goals/LOCAL-MAIN-WALKTHROUGH-20261126.yaml",
+  "record": "docs/ops/iterations/local_main_walkthrough_20261126.md",
+  "full_walkthrough": {
+    "status": "failed",
+    "completeness": "complete",
+    "entries": 132,
+    "entry_failures": 29,
+    "authority_login_failures": 3,
+    "evidence": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/full-matrix-v2/summary.json",
+    "business_writes": "not_run",
+    "direct_access_denial": "not_run",
+    "navigation_denial_entries": 90
+  },
+  "scene_fix": {
+    "status": "passed",
+    "scope": "four continuous scene entries including record details and eligible negative-role navigation",
+    "evidence": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/scene-fix-browser/summary.json",
+    "build": "51b189832e650980b4014ee84b213cd4bd1223fc391ef746bd57b34f761f50ed",
+    "identity": "de58eaf376a1e27877d73ce2527f5548f9f11eba plus declared dirty frontend scope"
+  },
+  "frontend_candidate": {
+    "build_sha256": "32b7e086c58462089eb963bcee1b8a32bc3542c89e3a866a82e21073bd67132c",
+    "backend_source_revision": "de58eaf376a1e27877d73ce2527f5548f9f11eba",
+    "state": "development_candidate_not_mainline",
+    "browser_evidence": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/final-scene-browser/summary.json",
+    "browser_status": "passed"
+  },
+  "local_iteration": {
+    "status": "passed",
+    "required_targets": 16,
+    "receipt": ".runtime/frontend-dev-validation/executions/20261125T235809Z-3885804-86999833/receipt.json"
+  }
+}

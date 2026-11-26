@@ -2069,6 +2069,12 @@ RULES = (
         "verify.frontend.list_optional_columns.unit",
     )),
     Rule((
+        "scripts/verify/local_dev_capability_",
+        "scripts/verify/test_local_dev_capability_tooling.py",
+    ), (
+        "verify.local.dev.capability.tooling.unit",
+    )),
+    Rule((
         "scripts/verify/business_entry_matrix_",
         "scripts/verify/business_entry_negative_closures.mjs",
         "scripts/verify/released_navigation_target.mjs",

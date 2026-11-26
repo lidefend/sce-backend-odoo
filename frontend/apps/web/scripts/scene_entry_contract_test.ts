@@ -1,6 +1,7 @@
 import { strict as assert } from 'node:assert';
 import {
   ownsSceneRoute,
+  ownsSceneActivity,
   shouldHydrateSceneContent,
   resolveSceneRuntimeDiagnostic,
   resolveSceneContractEntryIntent,
@@ -31,6 +32,20 @@ equal(ownsSceneRoute('scene'), true);
 for (const foreign of ['scene-home', 'scene-my-work', 'business-config', 'action', 'record', '', null, undefined]) {
   equal(ownsSceneRoute(foreign), false, `foreign route must not be owned: ${String(foreign)}`);
 }
+
+// Two cached pages share route.name=scene; only the active instance may react.
+const safety = { routeName: 'scene', active: true, instanceKey: 'scene:safety:all', currentKey: 'scene:safety:all' };
+equal(ownsSceneActivity(safety), true);
+equal(ownsSceneActivity({ ...safety, currentKey: 'scene:diary:all' }), false,
+  'old scene must not hydrate or redirect the new scene before deactivation');
+equal(ownsSceneActivity({ ...safety, active: false }), false,
+  'late hydration cannot commit after deactivation');
+equal(ownsSceneActivity({ ...safety, currentKey: 'scene:safety:record-context:24' }), false,
+  'same scene under another record context belongs to a separate cache instance');
+equal(ownsSceneActivity({ ...safety, routeName: 'record' }), false);
+equal(ownsSceneActivity({ ...safety, instanceKey: '', currentKey: '' }), false);
+equal(ownsSceneActivity({ ...safety, active: true }), true,
+  'returning to the retained scene restores ownership');
 
 const base = { declaredTarget: { intent: 'project.dashboard.enter' }, queryEntryIntent: undefined, querySceneIntent: undefined };
 
