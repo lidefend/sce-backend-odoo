@@ -26,7 +26,7 @@ SUITE_NAMES = ('product', 'demo', 'acceptance')
 MODULE_SETS_PATH = 'config/tenant/module_sets.v1.json'
 
 
-def suite_modules(suite: str, modules: list[str], graph: dict) -> list[str]:
+def suite_modules(suite: str, modules: list[str], graph: dict, *, allow_empty: bool = False) -> list[str]:
     """Partition runnable modules by their delivery responsibility."""
     if suite not in SUITE_NAMES:
         raise ValueError(f'unsupported backend suite: {suite}')
@@ -48,7 +48,7 @@ def suite_modules(suite: str, modules: list[str], graph: dict) -> list[str]:
             responsibility = 'product'
         if responsibility == suite:
             selected.append(name)
-    if not selected:
+    if not selected and not allow_empty:
         raise ValueError(f'backend suite has no runnable modules: {suite}')
     return selected
 
@@ -233,10 +233,18 @@ def build_plan(
             base, head, '--',
         ).splitlines()
         selected = impact.select(paths, impact.snapshot(base), after)
+        owned_modules = suite_modules(suite, selected['modules'], after, allow_empty=True)
         selected = {
             **selected,
-            'modules': suite_modules(suite, selected['modules'], after),
+            'modules': owned_modules,
+            'responsibility_excluded_modules': sorted(set(selected['modules']) - set(owned_modules)),
         }
+        if not owned_modules:
+            # An incremental product partition may legitimately be empty when
+            # only a separately owned fixture/demo (or no ORM module) changed.
+            # Full explicit suites remain nonzero; this plan emits no shards
+            # and is reported as not_applicable, never as executed tests.
+            selected['reasons'] = list(selected.get('reasons') or []) + ['no_product_modules_after_partition']
     else:
         # Preserve the original nightly/dispatch discovery: a manifest and
         # tests directory, including non-installable pure-Python test modules.

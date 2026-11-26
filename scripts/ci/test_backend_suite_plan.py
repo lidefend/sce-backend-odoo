@@ -294,6 +294,34 @@ class ShardPlanTest(unittest.TestCase):
         self.assertEqual(plan['suite'], 'product')
         self.assertEqual(plan['changed_test_coverage'], coverage[:1])
 
+    def test_focused_fixture_only_product_partition_is_explicitly_not_applicable(self):
+        fixture = 'smart_construction_acceptance_fixture'
+        graph = {fixture: {'prefix': f'addons/{fixture}/', 'depends': set(), 'manifest_depends': set()}}
+        for selected_modules in ([fixture], []):
+            selected = {'modules': selected_modules, 'mode': 'impact', 'reasons': ['owned_change']}
+            with self.subTest(modules=selected_modules), \
+                    patch.object(planner.impact, 'snapshot', return_value=graph), \
+                    patch.object(planner.impact, 'select', return_value=selected), \
+                    patch.object(planner.impact, 'git') as git, \
+                    patch.object(planner.changed_coverage, 'changed_tests', return_value=[]):
+                git.side_effect = lambda *args: {
+                    ('rev-parse', '--verify', 'base^{commit}'): 'b' * 40,
+                    ('rev-parse', '--verify', 'head^{commit}'): 'a' * 40,
+                    ('diff', '--no-renames', '--name-only', 'b' * 40, 'a' * 40, '--'): f'addons/{fixture}/tools/fixture.py',
+                    ('diff', '--no-renames', '--diff-filter=D', '--name-only', 'b' * 40, 'a' * 40, '--'): '',
+                }[args]
+                plan = planner.build_focused_plan('base', 'head')
+            self.assertEqual(plan['modules'], [])
+            self.assertEqual(plan['shards'], [])
+            self.assertEqual(plan['responsibility_excluded_modules'], selected_modules)
+            self.assertIn('no_product_modules_after_partition', plan['reasons'])
+            planner.verify_execution_coverage(plan, [])
+        with self.assertRaisesRegex(ValueError, 'no runnable modules'):
+            planner.suite_modules('product', [fixture], graph)
+        self.assertEqual(planner.suite_modules('acceptance', [fixture], graph), [fixture])
+        with self.assertRaisesRegex(ValueError, 'missing from graph'):
+            planner.suite_modules('product', ['unknown'], graph, allow_empty=True)
+
     def test_full_plan_demands_registered_managed_methods(self):
         module = planner.changed_coverage.MANAGED_MODULE
         graph = {module: {'depends': set(), 'tests': True, 'prefix': f'addons/{module}/'}}

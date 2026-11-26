@@ -98,3 +98,8 @@ P4 修复守卫仅识别当前终端解码器中的真实 requiredRecord 调用�
 候选 ec98c82d0 的四项必需检查及完整 release_candidate_gate 全部成功，浏览器 J09/J10/J11 均通过。受保护合并预检却把旧专业质量运行 45861765452 的未展开 backend_suite 失败占位算作当前失败；最新运行 45861861467 已完成全部四分片和 coverage。GitHub 状态为 CLEAN/MERGEABLE。
 
 修复 integration_cycle 先按 workflow 选择最新 run，再处理该 run 内的 job 重试；新矩阵可以替代旧占位。缺少最新必需 job 仍拒绝，不能借旧成功补齐；当前失败/取消/运行中和身份歧义仍阻断。28 项单元测试通过，真实检查载荷读回验证通过；对应工具加入精准选测。仍需新提交的远端检查，未绕过受保护合并。
+
+
+### Fixture-only 增量产品分区修复
+
+候选 ec29a08af 的普通增量专业质量规划失败：仅 Fixture 变化被选出，按职责排除验收模块后 product 集合为空，suite_modules 误把“不适用”当成非法全量空套件。修复只允许增量产品分区为空，明确记录被其他职责分区承接的模块、原因、零分片；全量显式套件仍要求非空，未知模块仍拒绝。既有空计划回读标记 not_applicable，不记测试通过。Fixture 继续由 frontend_release_gate 的 managed ORM 验证。68 项规划单测通过，精确失败 HEAD/Base 的真实规划已回放成功。

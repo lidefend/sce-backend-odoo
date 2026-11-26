@@ -57,7 +57,9 @@
     "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "scripts/ops/integration_cycle.py",
-    "scripts/ops/test_integration_cycle.py"
+    "scripts/ops/test_integration_cycle.py",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/test_backend_suite_plan.py"
   ],
   "environment": {
     "kind": "offline",
@@ -461,6 +463,23 @@
       "targets": 10,
       "receipt": ".runtime/frontend-dev-validation/executions/20261126T171409Z-2709128-911174796/receipt.json",
       "log": ".runtime/main-ci-1015-merge-selection-iteration.log"
+    }
+  },
+  "empty_product_partition_repair": {
+    "failed_head": "ec29a08af6aff32026137040cebe0faca2d20a02",
+    "failed_run": 45866695170,
+    "failed_job": 140071425432,
+    "log": ".runtime/main-ci-1015-final-plan-failed.log",
+    "cause": "Incremental selected fixture-only modules; product responsibility filtering raised instead of emitting not-applicable zero-shard plan.",
+    "fix": "Only incremental product partitions may be empty, with excluded modules and explicit reason; full suites and unknown module identities still reject; fixture remains owned by frontend managed acceptance.",
+    "unit_tests": 68,
+    "unit_log": ".runtime/main-ci-1015-empty-partition-unit.log",
+    "exact_failed_candidate_replay": ".runtime/main-ci-1015-empty-product-plan.json",
+    "local_iteration": {
+      "status": "passed",
+      "targets": 11,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T172137Z-2778430-963866431/receipt.json",
+      "log": ".runtime/main-ci-1015-partition-iteration.log"
     }
   }
 }
