@@ -340,9 +340,25 @@ FE-S01 继续保持阻断，直到完整语义矩阵完成。
 回执 SHA256：
 `5f1b2cb17f943681971243064839449ed4e95b57a55266d6e98aa001a3accb73`。
 
-当前 clean 服务仍指向提交前的上一候选；这些产品改动尚未进入运行态。下一动作是先形成
-新的干净提交，再按该精确 HEAD 重建 clean 前端并执行当前候选的启动与契约读取回读。
-远端 PR CI、主线资格、部署和用户验收均未完成。
+产品改动已提交为 `913de131b32bcf1c7788b2f4171581a0e937111f`。按该精确 SHA
+重建 clean 前端后，生产结构构建通过并生成指纹
+`f377fa7b8022e64c6e271ca42a7c107f537335642140640ac6d2d29a5a326aef`。
+
+clean 运行态权威回读：
+
+- `/t/clean/api/runtime-version` 同时返回源码
+  `913de131b32bcf1c7788b2f4171581a0e937111f` 与前端构建指纹
+  `f377fa7b8022e64c6e271ca42a7c107f537335642140640ac6d2d29a5a326aef`；
+- 根路径 `/build-info.json` 返回同一源码 SHA；
+- `local.clean.health` 与 `local.clean.entry_identity.verify` 均通过；
+- project/database/dbfilter 仍为 `sc-local-clean` / `sc_clean` / `^sc_clean$`，
+  namespace 为 `clean` / `ns_c6fed472e939`。
+
+租户前缀 `/t/clean/build-info.json` 会回落到 SPA HTML，这是入口路由行为，不能当作
+构建身份 JSON；本次已保留该诊断文件并用根路径 JSON 完成回读。
+
+该证据只证明当前 clean 环境、构建和启动身份，不证明 143 个业务入口的页面、角色或办理
+流程。远端 PR CI、主线资格、部署和用户验收均未完成。
 
 
 ### 2026-11-27 开工条件回读

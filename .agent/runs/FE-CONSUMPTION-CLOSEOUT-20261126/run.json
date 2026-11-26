@@ -63,18 +63,21 @@
     "dbfilter": "^sc_clean$",
     "namespace_alias": "clean",
     "namespace_id": "ns_c6fed472e939",
-    "source_revision": "7293a927e99254c5a9bff522fe520b61cb67dde6",
+    "source_revision": "913de131b32bcf1c7788b2f4171581a0e937111f",
     "modules": [
       "smart_construction_bundle",
       "sc_norm_engine"
     ],
     "demo_data": false,
     "fixture": false,
-    "frontend_build_fingerprint": "d7aca7a969c082a96cdcca68501a31ece7c8d8e678a6179089b632a189c6c6f9",
-    "health": "stale_current_worktree",
-    "health_note": "The clean profile still serves the previous tracked candidate; the FC-01 precision changes require a post-commit exact-HEAD rebuild.",
-    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-health.log",
-    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-entry-identity.log",
+    "frontend_build_fingerprint": "f377fa7b8022e64c6e271ca42a7c107f537335642140640ac6d2d29a5a326aef",
+    "health": "passed",
+    "health_note": "The clean profile serves the exact FC-01 product source. A later run/documentation-only update does not change the product surface.",
+    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-fc01-health-build-bound.log",
+    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-fc01-entry-identity-build-bound.log",
+    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-fc01-frontend-build.log",
+    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-fc01-runtime-version-build-bound.json",
+    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-fc01-build-info-build-bound.json",
     "authority": "Owner-directed isolated clean development profile; existing dev/sample/acceptance/customer data and volumes are excluded."
   },
   "verification_responsibility": {
@@ -454,6 +457,25 @@
         "the action-surface test has nonzero TAP execution evidence and its stale zero-reference disposition is removed"
       ],
       "scope_limit": "Local targeted evidence only; browser behavior, exact-HEAD clean runtime, remote PR CI and mainline qualification remain not_run."
+    },
+    "fc01_clean_runtime_identity": {
+      "status": "passed",
+      "product_source_revision": "913de131b32bcf1c7788b2f4171581a0e937111f",
+      "frontend_build_fingerprint": "f377fa7b8022e64c6e271ca42a7c107f537335642140640ac6d2d29a5a326aef",
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "namespace_id": "ns_c6fed472e939",
+      "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-fc01-health-build-bound.log",
+      "health_log_sha256": "3edb53ae8eaa7889b0a03472c49ccafd09763cf079679d2ff182f7f669dd4550",
+      "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-fc01-entry-identity-build-bound.log",
+      "entry_identity_log_sha256": "08a8d638a4b2744492f8eb760b91130ef319be7d52b7865598a735375722dc78",
+      "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-fc01-runtime-version-build-bound.json",
+      "runtime_version_log_sha256": "2b9a04033bf2a96bbc8d73f3df9f29501a3a037fda2365512553e04574f98fa3",
+      "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-fc01-build-info-build-bound.json",
+      "build_info_log_sha256": "ebbe35b4b2220e8c75aaf371914a360a3ca61bfd08c482042b3d5960b922a5e8",
+      "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-fc01-frontend-build.log",
+      "frontend_build_log_sha256": "7fb49f724601a916f894331c3b665e767767c15c6ed52595c2196ef8995e9bad",
+      "scope_limit": "Environment, build and runtime identity readback only; it is not a business-entry browser journey or product acceptance."
     }
   }
 }
