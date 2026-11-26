@@ -94,7 +94,7 @@ async function relation(field, label, expectedId) {
 
 async function checkVisible(scope) {
   const input = scope.locator('input[type="checkbox"]').first();
-  if (!await input.isChecked()) await scope.locator('label.t-checkbox').first().click();
+  if (!await input.isChecked()) await scope.locator('[data-semantic-primitive="ScCheckbox"]').first().click();
   assert.equal(await input.isChecked(), true);
 }
 

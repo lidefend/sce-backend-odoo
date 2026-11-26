@@ -22,6 +22,9 @@ REQUIRED_WORKFLOWS = {
     ".github/workflows/frontend_release_gate.yml",
     ".github/workflows/merge_policy_gate.yml",
 }
+MAINLINE_REQUIRED_WORKFLOWS = REQUIRED_WORKFLOWS | {
+    ".github/workflows/auxiliary_backend_suite.yml",
+}
 
 
 def _full_sha(value: Any, name: str) -> str:
@@ -74,10 +77,14 @@ def build_condition(
             )
     elif current_main is not None:
         raise ValueError("pull request conditions do not accept a current main")
+    required_workflows = (
+        MAINLINE_REQUIRED_WORKFLOWS
+        if event in {"schedule", "workflow_dispatch"} else REQUIRED_WORKFLOWS
+    )
     by_workflow: dict[str, dict[str, Any]] = {}
     for run in runs:
         path = str(run.get("path") or "")
-        if path not in REQUIRED_WORKFLOWS:
+        if path not in required_workflows:
             raise ValueError(f"unexpected workflow: {path}")
         if path in by_workflow:
             raise ValueError(f"duplicate workflow: {path}")
@@ -107,7 +114,7 @@ def build_condition(
             if observed_slot != schedule_slot:
                 raise ValueError(f"scheduled slot mismatch: {path}")
         by_workflow[path] = run
-    missing = REQUIRED_WORKFLOWS - set(by_workflow)
+    missing = required_workflows - set(by_workflow)
     if missing:
         raise ValueError("missing workflows: " + ", ".join(sorted(missing)))
     kind = {

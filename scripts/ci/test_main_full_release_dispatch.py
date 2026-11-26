@@ -47,6 +47,9 @@ class DispatchTest(unittest.TestCase):
             command.assert_not_called()
 
     def test_make_entry_and_scheduled_owner_are_wired(self) -> None:
+        self.assertIn("auxiliary_backend_suite.yml", dispatch.WORKFLOWS)
+        self.assertLess(dispatch.WORKFLOWS.index("auxiliary_backend_suite.yml"),
+                        dispatch.WORKFLOWS.index("release_candidate_gate.yml"))
         makefile = (dispatch.ROOT / "make/ci.mk").read_text(encoding="utf-8")
         for required in (
             "release.main_full: guard.prod.forbid",

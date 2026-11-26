@@ -23,6 +23,7 @@ WORKFLOWS = (
     "professional_quality_gate.yml",
     "frontend_release_gate.yml",
     "merge_policy_gate.yml",
+    "auxiliary_backend_suite.yml",
     "release_candidate_gate.yml",
 )
 RUN_FIELDS = (

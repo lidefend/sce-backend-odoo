@@ -421,9 +421,10 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   * 仅用于 owner 显式发起的 exact-main operator full audit；
   * 要求 clean worktree、权威 `origin/main` 等于 `EXPECTED_MAIN`；
   * 依次触发 `public_guard`、`professional_quality_gate`、`frontend_release_gate`、
-    `merge_policy_gate`、`release_candidate_gate` 的 `workflow_dispatch` run；
-  * 只接受触发后新增、head/branch/event 完全匹配的五个 run，禁止采用旧 run；
-  * 等待并验证五个 run 全部成功；`release_candidate_gate` 必须是最终聚合成功者；
+    `merge_policy_gate`、`auxiliary_backend_suite`、`release_candidate_gate` 的 `workflow_dispatch` run；
+  * 只接受触发后新增、head/branch/event 完全匹配的六个 run，禁止采用旧 run；
+  * 等待并验证六个 run 全部成功；`auxiliary_backend_suite` 覆盖独立 demo/acceptance 全套，
+    `release_candidate_gate` 必须等待该套件并成为最终聚合成功者；
   * 该结果记录为 `operator_full_audit`，不得冒充 `scheduled_mainline`；
   * 不授权部署，不替代 PR 精确 HEAD 集成检查。
 

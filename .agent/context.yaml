@@ -192,6 +192,7 @@ verification_responsibility:
         - professional_quality_gate.yml
         - frontend_release_gate.yml
         - merge_policy_gate.yml
+        - auxiliary_backend_suite.yml
         - release_candidate_gate.yml
       nested_scope: product_suite_full_all_tests_plus_independent_demo_and_acceptance_suites
       release_condition_kinds:
