@@ -188,3 +188,6 @@ from . import test_chatter_timeline_authorization_orm
 from . import test_dictionary_scope_delivery
 from . import test_permission_contract_runtime_uid
 from . import test_form_structure_surface_capability_orm
+
+from . import test_native_company_project_isolation
+from . import test_business_role

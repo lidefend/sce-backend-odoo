@@ -11,6 +11,10 @@ class ProjectTask(models.Model):
     _name = "project.task"
     _inherit = ["project.task", "sc.delete.guard.mixin", "tier.validation"]
 
+    # Use the native ORM consistency mechanism for industry task ownership.
+    _check_company_auto = True
+    project_id = fields.Many2one(check_company=True)
+
     _state_field = "sc_state"
     _state_from = ["draft"]
     _state_to = ["ready"]

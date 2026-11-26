@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_business_role_tree" model="ir.ui.view">
+        <field name="name">sc.business.role.tree</field><field name="model">sc.business.role</field>
+        <field name="arch" type="xml"><tree string="企业业务角色" import="1">
+            <field name="name"/><field name="code"/><field name="company_id"/><field name="current_version_id"/><field name="state"/>
+        </tree></field>
+    </record>
+    <record id="view_business_role_form" model="ir.ui.view">
+        <field name="name">sc.business.role.form</field><field name="model">sc.business.role</field>
+        <field name="arch" type="xml"><form string="企业业务角色"><header>
+            <button name="action_new_version" type="object" string="调整角色能力" invisible="state != 'enabled'" class="oe_highlight"/>
+            <button name="action_disable" type="object" string="停用角色" invisible="state != 'enabled'"/>
+            <button name="action_enable" type="object" string="启用角色" invisible="state != 'disabled'"/>
+            <field name="state" widget="statusbar"/>
+        </header><sheet><group>
+            <field name="name"/><field name="code" readonly="id"/>
+            <field name="company_id" readonly="id" options="{'no_create': True}"/><field name="current_version_id"/>
+            <field name="description"/>
+        </group><notebook><page string="能力变更记录"><field name="version_ids"><tree create="0" edit="0" delete="0">
+            <field name="name"/><field name="state"/><field name="published_at"/><field name="published_by"/>
+        </tree></field></page><page string="用户分配"><field name="assignment_ids"><tree create="0" edit="0" delete="0">
+            <field name="user_id"/><field name="company_id"/><field name="version_id"/><field name="state"/>
+        </tree></field></page></notebook></sheet></form></field>
+    </record>
+    <record id="view_business_role_version_tree" model="ir.ui.view">
+        <field name="name">sc.business.role.version.tree</field><field name="model">sc.business.role.version</field>
+        <field name="arch" type="xml"><tree string="角色能力方案" import="1">
+            <field name="role_id"/><field name="company_id"/><field name="state"/><field name="published_at"/>
+        </tree></field>
+    </record>
+    <record id="view_business_role_version_form" model="ir.ui.view">
+        <field name="name">sc.business.role.version.form</field><field name="model">sc.business.role.version</field>
+        <field name="arch" type="xml"><form string="角色能力方案"><header>
+            <button name="action_publish" type="object" string="发布能力调整" invisible="state != 'draft'" class="oe_highlight" confirm="发布不改变已有用户的权限；请另外预览受影响用户并确认授权调整。"/>
+            <field name="state" widget="statusbar"/>
+        </header><sheet><group>
+            <field name="role_id" readonly="id" options="{'no_create': True}"/>
+            <field name="company_id"/><field name="description" readonly="state != 'draft'"/>
+            <field name="published_at"/><field name="published_by"/>
+            <field name="published_role_name" invisible="state != 'published'"/>
+            <field name="published_capabilities_text" invisible="state != 'published'"/>
+        </group><field name="capability_line_ids" readonly="state != 'draft'"><tree editable="bottom">
+            <field name="capability_key"/>
+        </tree></field></sheet></form></field>
+    </record>
+    <record id="view_user_role_assignment_tree" model="ir.ui.view">
+        <field name="name">sc.user.role.assignment.tree</field><field name="model">sc.user.role.assignment</field>
+        <field name="arch" type="xml"><tree string="企业角色分配" import="1"><header>
+            <button name="action_activate" type="object" string="授权选中用户" context="{'execution_scope': 'recordset'}"/>
+            <button name="action_prepare_adjustment" type="object" string="调整选中用户的角色职责" context="{'execution_scope': 'recordset'}"/>
+            <button name="action_revoke" type="object" string="移除选中用户的角色职责" context="{'execution_scope': 'recordset'}"/>
+        </header><field name="user_id"/><field name="role_id"/><field name="company_id"/><field name="version_id"/><field name="state"/><field name="note"/></tree></field>
+    </record>
+    <record id="view_user_role_assignment_form" model="ir.ui.view">
+        <field name="name">sc.user.role.assignment.form</field><field name="model">sc.user.role.assignment</field>
+        <field name="arch" type="xml"><form string="企业角色分配"><header>
+            <button name="action_activate" type="object" string="授权生效" invisible="state == 'active'" class="oe_highlight"/>
+            <button name="action_revoke" type="object" string="移除此角色职责" invisible="state != 'active'" confirm="这是一笔新的授权设置，将按企业审批配置办理，历史事实和其他授权来源保留。"/>
+            <field name="state" widget="statusbar"/>
+        </header><sheet><group>
+            <field name="role_id" readonly="id" domain="[('state', '=', 'enabled')]" options="{'no_create': True}"/>
+            <field name="version_id" readonly="1" domain="[('role_id', '=', role_id), ('state', '=', 'published')]" options="{'no_create': True}"/>
+            <field name="user_id" readonly="id" domain="[('sc_runtime_company_maintainable', '=', True)]" options="{'no_create': True}"/>
+            <field name="company_id"/><field name="note"/>
+        </group></sheet></form></field>
+    </record>
+    <record id="view_business_role_event_tree" model="ir.ui.view">
+        <field name="name">sc.business.role.event.tree</field><field name="model">sc.business.role.event</field>
+        <field name="arch" type="xml"><tree string="企业角色授权记录" create="0" edit="0" delete="0" import="0">
+            <field name="create_date"/><field name="role_id"/><field name="assignment_id"/><field name="company_id"/><field name="actor_id"/><field name="action"/><field name="version_id"/><field name="summary"/>
+        </tree></field>
+    </record>
+    <record id="action_business_role" model="ir.actions.act_window"><field name="name">企业业务角色</field><field name="res_model">sc.business.role</field><field name="view_mode">tree,form</field><field name="view_id" ref="view_business_role_tree"/></record>
+    <record id="action_business_role_version" model="ir.actions.act_window"><field name="name">角色能力方案</field><field name="res_model">sc.business.role.version</field><field name="view_mode">tree,form</field><field name="view_id" ref="view_business_role_version_tree"/></record>
+    <record id="action_user_role_assignment" model="ir.actions.act_window"><field name="name">企业角色分配</field><field name="res_model">sc.user.role.assignment</field><field name="view_mode">tree,form</field><field name="view_id" ref="view_user_role_assignment_tree"/></record>
+    <record id="action_business_role_event" model="ir.actions.act_window"><field name="name">企业角色授权记录</field><field name="res_model">sc.business.role.event</field><field name="view_mode">tree</field><field name="view_id" ref="view_business_role_event_tree"/></record>
+    <menuitem id="menu_business_role" name="企业业务角色" parent="menu_sc_business_config_center" action="action_business_role" sequence="45" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_user_role_assignment" name="企业角色分配" parent="menu_sc_business_config_center" action="action_user_role_assignment" sequence="46" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <menuitem id="menu_business_role_event" name="企业角色授权记录" parent="menu_sc_business_config_center" action="action_business_role_event" sequence="48" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+    <record id="view_business_role_change_tree" model="ir.ui.view">
+        <field name="name">sc.business.role.change.tree</field><field name="model">sc.business.role.change</field>
+        <field name="arch" type="xml"><tree string="角色授权调整" import="0"><header>
+            <button name="action_preview" type="object" string="预览选中批次" context="{'execution_scope': 'recordset'}"/>
+            <button name="action_schedule" type="object" string="确认批量办理" confirm="按每批预览的用户及权限变化提交后台办理；各批独立处理并遵循企业审批配置。" context="{'execution_scope': 'recordset'}"/>
+        </header>
+            <field name="name"/><field name="role_id"/><field name="company_id"/><field name="operation"/>
+            <field name="affected_count"/><field name="executed_count"/><field name="failed_count"/><field name="state"/><field name="queue_state"/>
+        </tree></field>
+    </record>
+    <record id="view_business_role_change_form" model="ir.ui.view">
+        <field name="name">sc.business.role.change.form</field><field name="model">sc.business.role.change</field>
+        <field name="arch" type="xml"><form string="角色授权调整"><header>
+            <button name="action_preview" type="object" string="预览用户权限变化" invisible="state != 'draft'" class="oe_highlight"/>
+            <button name="action_execute" type="object" string="确认办理本批调整" invisible="state != 'preview' or queue_state == 'queued'" class="oe_highlight" confirm="请确认本批用户和有效权限差异。按企业审批配置办理，生效前重新检查授权事实；有变化则拒绝旧预览。"/>
+            <button name="action_cancel" type="object" string="取消本次待办调整" invisible="state not in ('draft', 'preview')" groups="smart_construction_core.group_sc_cap_business_config_admin" confirm="取消不会改变用户现有权限。"/>
+            <button name="validate_tier" type="object" string="批准授权调整" invisible="state != 'preview' or not can_review"/>
+            <button name="reject_tier" type="object" string="驳回授权调整" invisible="state != 'preview' or not can_review"/>
+            <field name="can_review" invisible="1"/><field name="state" widget="statusbar"/>
+        </header><sheet><group>
+            <field name="validation_status"/><field name="name" readonly="state != 'draft'"/><field name="role_id" readonly="id" options="{'no_create': True}"/>
+            <field name="company_id"/><field name="operation" readonly="id"/><field name="batch_limit"/>
+            <field name="affected_count"/><field name="retained_count"/>
+            <field name="preview_by"/><field name="preview_at"/><field name="queue_state"/><field name="scheduled_by"/><field name="scheduled_at"/>
+        </group><field name="assignment_ids" groups="smart_construction_core.group_sc_cap_business_config_admin" readonly="state != 'draft'" domain="[('role_id', '=', role_id), ('state', '!=' if operation == 'grant' else '=', 'active')]" options="{'no_create': True}">
+            <tree create="0" edit="0"><field name="user_id"/><field name="role_id"/><field name="version_id"/><field name="state"/></tree>
+        </field><group><field name="impact_text" nolabel="1"/></group>
+        <group string="处理结果"><field name="confirmed_by"/><field name="completed_at"/><field name="executed_count"/><field name="failed_count"/><field name="result_text"/><field name="cancelled_by"/><field name="cancelled_at"/><field name="cancelled_review_text"/><field name="completed_review_text"/></group>
+        </sheet></form></field>
+    </record>
+    <record id="action_business_role_change" model="ir.actions.act_window"><field name="name">角色授权调整</field><field name="res_model">sc.business.role.change</field><field name="view_mode">tree,form</field><field name="view_id" ref="view_business_role_change_tree"/></record>
+    <menuitem id="menu_business_role_change" name="角色授权调整" parent="menu_sc_business_config_center" action="action_business_role_change" sequence="47" groups="smart_construction_core.group_sc_cap_business_config_admin"/>
+</odoo>

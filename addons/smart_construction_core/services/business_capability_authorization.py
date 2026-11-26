@@ -18,6 +18,22 @@ def _strings(value):
     return isinstance(value, list) and all(isinstance(x, str) and x.strip() == x and x for x in value) and len(value) == len(set(value))
 
 
+def _native_boundary(contract):
+    """Trusted, explicit qualification boundary; never an ACL implementation."""
+    graph = contract.get('native_group_edges')
+    access = contract.get('native_model_access')
+    return (
+        isinstance(graph, dict) and bool(graph)
+        and _strings(list(graph))
+        and all(_strings(edges) for edges in graph.values())
+        and set(contract.get('native_groups', [])) <= set(graph)
+        and isinstance(access, dict) and bool(access)
+        and _strings(list(access))
+        and all(_strings(ops) and bool(ops) and set(ops) <= {'read', 'write', 'create', 'unlink'}
+                for ops in access.values())
+    )
+
+
 def composition_surface(definition):
     """Public business-only verdict; no native group or evidence internals."""
     reason = "AUTHORIZATION_UNDECLARED"
@@ -37,6 +53,7 @@ def composition_surface(definition):
             and _strings(contract.get("operations")) and contract["operations"]
             and set(contract["operations"]) <= OPERATIONS
             and _strings(contract.get("native_groups")) and contract["native_groups"]
+            and _native_boundary(contract)
             and _strings(contract.get("dependencies"))
             and _strings(contract.get("exclusions"))
             and _strings(contract.get("verification_refs")) and contract["verification_refs"]

@@ -63,7 +63,7 @@ class TestEnterpriseSetupNativeContracts(unittest.TestCase):
                 button.get("name"),
                 button.get("data-sc-remediation"),
             )
-            for button in group.findall("button")
+            for button in _arch(view).findall(".//button") if button.get("data-sc-remediation")
         }
         self.assertEqual(actual, {
             "企业信息": ("%(action_sc_enterprise_company)d", "enterprise.info"),
@@ -78,6 +78,64 @@ class TestEnterpriseSetupNativeContracts(unittest.TestCase):
         self.assertIn("allowed_company_ids[0]", _field_text(action, "domain"))
         self.assertIn("'create': False", _field_text(action, "context"))
         self.assertIn("group_sc_cap_business_config_admin", _field_text(action, "groups_id"))
+
+    def test_initialization_role_actions_reference_the_same_native_product_actions(self):
+        initialization = _root('views/support/enterprise_initialization_views.xml')
+        group = _arch(_record(initialization, 'view_sc_enterprise_initialization_form')).find(
+            ".//group[@name='enterprise_role_authority']")
+        self.assertIsNotNone(group)
+        actions = ['action_business_role', 'action_user_role_assignment',
+                   'action_business_role_change', 'action_business_role_event']
+        self.assertEqual([button.get('name') for button in group.findall('button') if not button.get('data-sc-remediation')],
+                         ['%(' + name + ')d' for name in actions])
+        self.assertTrue(all(button.get('type') == 'action' for button in group.findall('button')))
+        roles = _root('views/support/business_role_views.xml')
+        for name in actions:
+            self.assertEqual(_record(roles, name).get('model'), 'ir.actions.act_window')
+        for menu in roles.findall('menuitem'):
+            self.assertEqual(menu.get('parent'), 'menu_sc_business_config_center')
+            self.assertEqual(menu.get('groups'), 'smart_construction_core.group_sc_cap_business_config_admin')
+
+    def test_every_active_native_configuration_page_is_collected(self):
+        import runpy
+        import json
+        module = runpy.run_path(str(CORE_DIR / 'services/product_menu_source.py'))
+        facts = module['native_facts']()
+        source = json.loads((CORE_DIR / 'data/product_menu_source.json').read_text())
+        declared = {p['menu_xmlid'] for row in source['scenario_definitions'] for p in row['pages']}
+        root = 'smart_construction_core.menu_sc_business_config_center'
+        actual = set()
+        for xmlid, fact in facts.items():
+            if xmlid == root or fact.get('type') != 'ir.ui.menu' or not fact.get('action'):
+                continue
+            chain = []
+            current = xmlid
+            while current in facts and current not in chain:
+                chain.append(current)
+                current = facts[current].get('parent_id')
+            if root in chain and all(facts[key].get('active') != 'False' for key in chain):
+                actual.add(xmlid)
+        self.assertEqual(actual, declared)
+        self.assertEqual(len(actual), 18)
+
+    def test_initialization_handling_order_and_references_are_native(self):
+        import runpy
+        facts = runpy.run_path(str(CORE_DIR / 'services/product_menu_source.py'))['native_facts']()
+        view = _arch(_record(_root('views/support/enterprise_initialization_views.xml'), 'view_sc_enterprise_initialization_form'))
+        self.assertEqual([g.get('name') for g in view.findall('./sheet/group')], [
+            'enterprise_bootstrap', 'enterprise_business_foundation', 'enterprise_role_authority',
+            'enterprise_approval_configuration', 'enterprise_scenario_configuration'])
+        buttons = view.findall('.//button')
+        self.assertEqual(len(buttons), 16)
+        self.assertEqual(len({b.get('name') for b in buttons}), 16)
+        for button in buttons:
+            self.assertEqual(button.get('type'), 'action')
+            name = button.get('name')
+            self.assertTrue(name.startswith('%(') and name.endswith(')d'))
+            xmlid = 'smart_construction_core.' + name[2:-2]
+            self.assertIn(xmlid, facts)
+            self.assertEqual(facts[xmlid]['type'], 'ir.actions.act_window')
+            self.assertNotEqual(xmlid, 'smart_construction_core.action_sc_enterprise_initialization')
 
     def test_enterprise_and_organization_entries_preserve_scope_and_editability(self):
         initialization = _root("views/support/enterprise_initialization_views.xml")

@@ -73,7 +73,7 @@ class ResUsers(models.Model):
 
     @api.model
     def _sc_internal_group(self):
-        return self.env.ref("smart_construction_core.group_sc_internal_user", raise_if_not_found=False)
+        return self.env.ref("smart_construction_core.group_sc_cap_internal_identity", raise_if_not_found=False)
 
     @api.model
     def _sc_assignable_groups(self):

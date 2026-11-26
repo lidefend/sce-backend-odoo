@@ -59,7 +59,10 @@ class TestScenarioDirectInitialization(TransactionCase):
             self.env,
             load_maintained_runtime_surface(self.env),
         )
-        self.assertEqual(len(DIRECT_CONFIGURATION_MENU_XMLIDS), 4)
+        from ..services.product_menu_source import load_source
+        expected_scenarios = {page['menu_xmlid']: row['key'] for row in load_source()['scenario_definitions'] for page in row['pages']}
+        self.assertEqual(len(DIRECT_CONFIGURATION_MENU_XMLIDS), 18)
+        self.assertEqual(set(DIRECT_CONFIGURATION_MENU_XMLIDS), set(expected_scenarios))
         for xmlid in DIRECT_CONFIGURATION_MENU_XMLIDS:
             with self.subTest(xmlid=xmlid):
                 menu = self.env.ref(xmlid)
@@ -71,13 +74,7 @@ class TestScenarioDirectInitialization(TransactionCase):
                     ('menu_id', '=', menu.id),
                 ], limit=1)
                 self.assertTrue(entry)
-                self.assertEqual(entry.scenario_id.code, "config.presentation"
-                                 if xmlid in {
-                                     "smart_construction_core.menu_sc_business_config_workbench",
-                                     "smart_construction_core.menu_ui_form_field_policy_business_config",
-                                     "smart_construction_core.menu_ui_menu_config_policy_business_config",
-                                 }
-                                 else "config.approval")
+                self.assertEqual(entry.scenario_id.code, expected_scenarios[xmlid])
 
     def test_upgrade_preserves_direct_declarations_and_revoked_generic_entries(self):
         Scenario = self.env['sc.product.scenario']
@@ -254,6 +251,7 @@ class TestScenarioDirectInitialization(TransactionCase):
         self.assertNotIn("workspace.home.workbench", center_keys)
         self.assertNotIn("construction.center.administration", center_keys)
         self.assertIn("construction.center.product_configuration", center_keys)
+        self.assertEqual([node["label"] for node in projected["nav"]], ["产品配置"])
 
         workbench_entry = Entry.search([
             ("menu_id", "=", menus[
@@ -292,6 +290,8 @@ class TestScenarioDirectInitialization(TransactionCase):
         }
         self.assertIn("workspace.home.workbench", center_keys)
         self.assertIn("construction.center.administration", center_keys)
+        self.assertEqual([node["label"] for node in projected["nav"]], ["业务场景", "产品配置"])
+        self.assertNotIn("产品配置", [node["label"] for node in projected["nav"][0]["children"]])
 
     def test_bound_business_page_still_cannot_claim_direct_exemption(self):
         menu = self.env.ref("smart_construction_core.menu_sc_user_payment_apply")

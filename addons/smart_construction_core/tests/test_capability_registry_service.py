@@ -48,7 +48,7 @@ class TestCapabilityRegistryService(TransactionCase):
         definitions = capability_registry.capability_definitions()
         self.assertTrue(definitions)
         for row in definitions:
-            self.assertFalse(row['role_composition']['composable'], row['key'])
+            self.assertEqual(row['role_composition']['composable'], row['key'] == 'project.list.open', row['key'])
         from ..services.business_capability_authorization import CapabilityCompositionError
         with self.assertRaises(CapabilityCompositionError):
             capability_registry.resolve_role_capabilities(['contract.settlement.audit'])

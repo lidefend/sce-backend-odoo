@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from copy import deepcopy
 import re
 import time
 from typing import Any
 
 from .business_capability_authorization import composition_surface, resolve_composition
+from .business_role_capabilities import AUTHORIZATIONS
 
 from odoo import _
 from odoo.addons.smart_construction_scene import scene_registry
@@ -170,7 +172,9 @@ def capability_groups() -> list[dict[str, Any]]:
 def capability_definitions() -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     for idx, item in enumerate(_CAPABILITIES, start=1):
-        row = dict(item)
+        row = deepcopy(item)
+        if row["key"] in AUTHORIZATIONS:
+            row["authorization"] = deepcopy(AUTHORIZATIONS[row["key"]])
         row["role_composition"] = composition_surface(row)
         row.setdefault("sequence", idx * 10)
         out.append(row)
