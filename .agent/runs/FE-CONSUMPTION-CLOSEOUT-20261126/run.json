@@ -52,14 +52,14 @@
     "dbfilter": "^sc_clean$",
     "namespace_alias": "clean",
     "namespace_id": "ns_c6fed472e939",
-    "source_revision": "38fa636e7932e4fcea72aa1d5a1366c5e9e30e2a",
+    "source_revision": "7293a927e99254c5a9bff522fe520b61cb67dde6",
     "modules": [
       "smart_construction_bundle",
       "sc_norm_engine"
     ],
     "demo_data": false,
     "fixture": false,
-    "frontend_build_fingerprint": "aded6b78e3b74b4fea5ef1b660c8c85679ca035c33ec391fdc33b7e9abf26e9a",
+    "frontend_build_fingerprint": "d7aca7a969c082a96cdcca68501a31ece7c8d8e678a6179089b632a189c6c6f9",
     "health": "passed",
     "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-health.log",
     "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-entry-identity.log",

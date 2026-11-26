@@ -280,6 +280,34 @@ FC-00 至此完成“从当前正式事实推导唯一入口矩阵”的职责�
 3 个受登记逻辑站点、0 个未闭合契约缺陷。该扩展仍未证明全仓所有语义消费面已覆盖；
 FE-S01 继续保持阻断，直到完整语义矩阵完成。
 
+### 2026-11-27 切换到隔离 clean 开发库
+
+所有者要求后续开发只使用干净库。当前 `sc_clean` 原状态不健康：默认健康契约要求
+`sc_norm_engine`，但模块未安装且 `sc_norm_specialty` 关系不存在；clean namespace
+也未建立。处理没有回退到 `sc_dev_demo`。
+
+受管目标：
+
+- `make local.clean.rebuild LOCAL_CLEAN_MODULES=smart_construction_bundle
+  CONFIRM_LOCAL_CLEAN_REBUILD=REBUILD_ISOLATED_REHEARSAL`
+- `make local.clean.install LOCAL_CLEAN_MODULES=sc_norm_engine`
+- `make local.clean.entry_identity.ensure`
+
+最终 clean 身份：
+
+- project `sc-local-clean`，database `sc_clean`，dbfilter `^sc_clean$`；
+- 三个专属卷 `sc_local_clean_{db,redis,odoo}_data`；
+- `SC_ALLOW_DEMO_DATA=0`，无 fixture/客户数据；
+- 模块 `smart_construction_bundle`、`sc_norm_engine`；
+- backend source revision `7293a927e99254c5a9bff522fe520b61cb67dde6`；
+- namespace `clean` / `ns_c6fed472e939`；
+- frontend build fingerprint
+  `d7aca7a969c082a96cdcca68501a31ece7c8d8e678a6179089b632a189c6c6f9`。
+
+`local.clean.health`、`local.clean.entry_identity.verify` 和
+`/t/clean/api/runtime-version` 均通过。该运行态属于环境与启动证据，不等于 143 个业务
+入口的页面、角色或办理验收。
+
 
 ### 2026-11-27 开工条件回读
 
