@@ -8,7 +8,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from scripts.ci.release_condition import REQUIRED_WORKFLOWS, build_condition
+from scripts.ci.release_condition import REQUIRED_WORKFLOWS, MAINLINE_REQUIRED_WORKFLOWS, build_condition
 
 
 HEAD = "a" * 40
@@ -36,7 +36,8 @@ def run(path: str, index: int, *, event: str = "schedule",
 
 class ReleaseConditionTests(unittest.TestCase):
     def runs(self, event: str = "schedule") -> list[dict]:
-        return [run(path, index, event=event) for index, path in enumerate(sorted(REQUIRED_WORKFLOWS))]
+        required = REQUIRED_WORKFLOWS if event == "pull_request" else MAINLINE_REQUIRED_WORKFLOWS
+        return [run(path, index, event=event) for index, path in enumerate(sorted(required))]
 
     def build(self, runs: list[dict], event: str = "schedule",
               head_branch: str | None = None,
@@ -65,8 +66,21 @@ class ReleaseConditionTests(unittest.TestCase):
         self.assertFalse(result["deployment_ready"])
         self.assertEqual(
             {row["workflow"] for row in result["required_workflows"]},
-            REQUIRED_WORKFLOWS,
+            MAINLINE_REQUIRED_WORKFLOWS,
         )
+
+    def test_mainline_requires_successful_same_head_auxiliary_suite(self) -> None:
+        auxiliary = ".github/workflows/auxiliary_backend_suite.yml"
+        for event in ("schedule", "workflow_dispatch"):
+            rows = self.runs(event)
+            with self.subTest(event=event, case="missing"), self.assertRaisesRegex(ValueError, "missing workflows"):
+                self.build([row for row in rows if row["path"] != auxiliary], event=event)
+            for field, value in (("conclusion", "failure"), ("head_sha", "c" * 40),
+                                 ("event", "push"), ("status", "in_progress")):
+                broken = copy.deepcopy(rows)
+                next(row for row in broken if row["path"] == auxiliary)[field] = value
+                with self.subTest(event=event, field=field), self.assertRaises(ValueError):
+                    self.build(broken, event=event)
 
     def test_explicit_candidate_keeps_the_same_exact_identity(self) -> None:
         result = self.build(

@@ -54,6 +54,22 @@ class ReleaseCandidateGateContractTests(unittest.TestCase):
         self.assertIn("GITHUB_STEP_SUMMARY", self.workflow)
         self.assertIn("release_candidate_gate", self.workflow)
 
+    def test_mainline_dependency_selection_includes_auxiliary_without_expanding_pr(self) -> None:
+        workflow = yaml.safe_load(self.workflow)
+        step = next(row for row in workflow["jobs"]["wait_for_candidate_checks"]["steps"]
+                    if row.get("name") == "Wait for exact-head candidate checks")
+        selection = 'required=' + step["run"].split('required=', 1)[1].split('runs_file=', 1)[0]
+        for event in ("schedule", "workflow_dispatch", "pull_request"):
+            with self.subTest(event=event):
+                result = subprocess.run(
+                    ["bash", "-ec", selection + '\n printf "%s\\n" "${required[@]}"'],
+                    env={**os.environ, "GITHUB_EVENT_NAME": event}, text=True, capture_output=True,
+                    check=True,
+                )
+                names = set(result.stdout.splitlines())
+                self.assertEqual("auxiliary_backend_suite.yml" in names, event != "pull_request")
+                self.assertEqual(len(names), 4 if event == "pull_request" else 5)
+
     def test_release_gate_materializes_exact_machine_readable_condition(self) -> None:
         self.assertIn("scripts/ci/release_condition.py", self.workflow)
         self.assertIn("release-condition.json", self.workflow)

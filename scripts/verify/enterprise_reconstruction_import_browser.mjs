@@ -83,7 +83,7 @@ async function upload(name, content, decision = 'confirm', expectedIds = null) {
   assert.equal(inspected.data.phase, 'inspect');
   if (name === 'business-jobs.csv') {
     await wizard.getByRole('button', { name: '文件解析选项', exact: true }).click();
-    const headers = wizard.locator('label.t-checkbox').filter({ hasText: '首行为列标题' });
+    const headers = wizard.locator('[data-semantic-primitive="ScCheckbox"]').filter({ hasText: '首行为列标题' });
     await headers.click();
     assert.equal(await wizard.getByRole('button', { name: '校验数据', exact: true }).isDisabled(), true);
     await headers.click();
@@ -101,7 +101,7 @@ async function upload(name, content, decision = 'confirm', expectedIds = null) {
     const nameField = inspected.data.native_fields.find(field => field.id === 'name');
     assert.ok(nameField);
     await wizard.locator('[data-import-column="1"] input').first().click();
-    await page.locator('.t-select-option:visible').getByText(nameField.string, { exact: true }).click();
+    await page.getByRole('listitem').getByText(nameField.string, { exact: true }).click();
     assert.equal(await wizard.getByRole('button', { name: '确认导入', exact: true }).isDisabled(), true);
   }
   const validationPromise = page.waitForResponse(response => bodyOf(response.request()).intent === 'api.data.import'
@@ -147,11 +147,11 @@ async function upload(name, content, decision = 'confirm', expectedIds = null) {
   if (expectedIds) assert.deepEqual([...data.ids].sort((a, b) => a - b), [...expectedIds].sort((a, b) => a - b), 'preview must address exactly the existing records');
   if (name === 'manual-mapping.csv') {
     await wizard.locator('[data-import-column="1"] input').first().click();
-    await page.locator('.t-select-option:visible').getByText('不导入此列', { exact: true }).click();
+    await page.getByRole('listitem').getByText('不导入此列', { exact: true }).click();
     assert.equal(await confirm.isDisabled(), true);
     await wizard.locator('[data-import-column="1"] input').first().click();
     const nameField = inspected.data.native_fields.find(field => field.id === 'name');
-    await page.locator('.t-select-option:visible').getByText(nameField.string, { exact: true }).click();
+    await page.getByRole('listitem').getByText(nameField.string, { exact: true }).click();
     assert.equal(await confirm.isDisabled(), true);
     const revalidation = page.waitForResponse(response => bodyOf(response.request()).params?.phase === 'validate');
     await wizard.getByRole('button', { name: '校验数据', exact: true }).click();

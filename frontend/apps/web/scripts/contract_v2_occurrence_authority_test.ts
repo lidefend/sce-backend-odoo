@@ -197,7 +197,7 @@ const snapshot = {
   },
 };
 
-const strictSnapshot = structuredClone(snapshot) as any;
+const strictSnapshot = structuredClone(snapshot);
 strictSnapshot.pageInfo.contractVersion = '2.7.0';
 const strictField = fieldNode('validation_status', 'field.validation_status.occ.strict', 1);
 const strictViewIdentity = {

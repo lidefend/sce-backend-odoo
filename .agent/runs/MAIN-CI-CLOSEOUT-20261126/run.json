@@ -1,13 +1,23 @@
 {
   "schema_version": 2,
-  "baseline_sha": "7de60b0781c73c2ad2246454981673e303d9568f",
+  "baseline_sha": "9c4ed0b114b8df444e1ee952cb08a6603ba25d2e",
   "scope": [
     "scripts/ci/main_full_release_dispatch.py",
     "scripts/ci/test_main_full_release_dispatch.py",
     ".agent/active-runs.json",
     ".agent/runs/MAIN-CI-CLOSEOUT-20261126/run.json",
     ".agent/goals/MAIN-CI-CLOSEOUT-20261126.yaml",
-    "docs/ops/iterations/main_ci_closeout_20261126.md"
+    "docs/ops/iterations/main_ci_closeout_20261126.md",
+    ".github/workflows/release_candidate_gate.yml",
+    "scripts/ci/release_condition.py",
+    "scripts/ci/test_release_condition.py",
+    "scripts/ci/test_release_candidate_gate.py",
+    "docs/ops/codex_execution_allowlist.md",
+    ".agent/context.yaml",
+    "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
+    "scripts/verify/enterprise_reconstruction_browser.mjs",
+    "scripts/verify/enterprise_reconstruction_import_browser.mjs",
+    "config/contract/page_contract_v1_retirement_manifest.json"
   ],
   "environment": {
     "kind": "offline",
@@ -46,12 +56,33 @@
         "make/ci.mk"
       ],
       "kind": "offline"
+    },
+    "scheduled_gates": {
+      "target": "verify.ci.scheduled_gates",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ci/main_full_release_dispatch.py",
+        "scripts/ci/test_main_full_release_dispatch.py",
+        ".agent/active-runs.json",
+        ".agent/runs/MAIN-CI-CLOSEOUT-20261126/run.json",
+        ".agent/goals/MAIN-CI-CLOSEOUT-20261126.yaml",
+        "docs/ops/iterations/main_ci_closeout_20261126.md",
+        ".github/workflows/release_candidate_gate.yml",
+        "scripts/ci/release_condition.py",
+        "scripts/ci/test_release_condition.py",
+        "scripts/ci/test_release_candidate_gate.py",
+        "docs/ops/codex_execution_allowlist.md",
+        ".agent/context.yaml",
+        "make/ci.mk"
+      ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "Publish dispatcher fix through protected PR, require its exact-head checks, then run operator full audit against resulting main.",
+  "blockers": [
+    "Remote integration and repaired exact-main full audit pending."
+  ],
+  "next_exact_step": "Publish mainline suite dependency and verification-script repairs, validate exact PR head, then dispatch all six workflows on merged main and verify release-condition evidence.",
   "id": "MAIN-CI-CLOSEOUT-20261126",
-  "branch": "fix/main-ci-closeout-20261126",
+  "branch": "fix/main-ci-suite-closure-20261126",
   "status": "verification_pending",
   "goal": ".agent/goals/MAIN-CI-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/main_ci_closeout_20261126.md",
@@ -73,6 +104,39 @@
       "status": "failed",
       "reason": "Invalid gh repo view --repo; no workflow dispatched",
       "log": ".runtime/main-full-release-7de60b0.log"
+    },
+    "pr1011": {
+      "status": "merged",
+      "merge_sha": "9c4ed0b114b8df444e1ee952cb08a6603ba25d2e",
+      "all_four_required_checks": "passed"
+    },
+    "main_9c4ed0b_frontend": {
+      "status": "failed",
+      "run_id": 45802300668,
+      "log": ".runtime/main-ci-frontend-failed.log",
+      "failures": [
+        "vendor-specific selectors in reconstruction verification scripts",
+        "explicit any in contract occurrence regression"
+      ]
+    },
+    "suite_closure_local": {
+      "status": "passed",
+      "scheduled_guards": ".runtime/main-ci-suite-targeted.log",
+      "frontend_targeted": ".runtime/main-ci-frontend-targeted.log",
+      "iteration": ".runtime/main-ci-suite-iteration-2.log",
+      "executed_incremental_targets": 6,
+      "browser_end_to_end": "not_run; no persistent environment or database mutation authorized"
+    },
+    "main_9c4ed0b_professional": {
+      "status": "failed",
+      "job_id": 139848490286,
+      "log": ".runtime/main-ci-professional-failed.log",
+      "reason": "Retirement manifest expects assembler snapshot 2.5.0, actual assembler/snapshot are 2.7.0"
+    },
+    "contract_version_repair": {
+      "status": "passed",
+      "log": ".runtime/main-ci-contract-version.log",
+      "scope": "retirement manifest matches existing 2.7.0 assembler and architecture snapshot; no runtime version change"
     }
   }
 }
