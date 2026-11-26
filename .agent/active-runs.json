@@ -178,6 +178,6 @@
     "fix/backend-iteration-lane-closure-20261124": ".agent/runs/BACKEND-ITERATION-LANE-CLOSURE-20261124/run.json",
     "fix/feedback-node-semantic-filter-20261126": ".agent/runs/P0-FEEDBACK-FIELD-NODE-SEMANTIC-FILTER-20261126/run.json",
     "fix/p1-role-capability-authority-20261126": ".agent/runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/run.json",
-    "fix/local-main-walkthrough-20261126": ".agent/runs/LOCAL-MAIN-WALKTHROUGH-20261126/run.json"
+    "fix/acceptance-closure-20261126": ".agent/runs/LOCAL-MAIN-WALKTHROUGH-20261126/run.json"
   }
 }

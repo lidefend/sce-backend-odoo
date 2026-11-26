@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "baseline_sha": "de58eaf376a1e27877d73ce2527f5548f9f11eba",
+  "baseline_sha": "8a5d547965cf6ac1b525efcd3e78d2a742388a23",
   "scope": [
     ".agent/active-runs.json",
     ".agent/runs/LOCAL-MAIN-WALKTHROUGH-20261126/run.json",
@@ -67,13 +67,12 @@
     }
   },
   "blockers": [
-    "Bound recheck reproduced settlement-order detail and material-purchase loading failures; interrupted after known failures, not accepted.",
-    "Readiness project-forbidden principal lacks entry authority; no implicit permission grant.",
-    "New exact-head remote PR integration pending; full user acceptance is not established."
+    "Project-forbidden readiness remains uncovered: capability-only principal lacks entry authority; no implicit permission grant.",
+    "Enterprise scenario dependency and role-workspace business validation remain NOT_EVALUATED; readonly initialization navigation does not complete those obligations."
   ],
-  "next_exact_step": "Publish draft PR with passed enterprise initialization scope, scene ownership safeguards and explicit unresolved full-walkthrough failures; diagnose remaining detail/loading behavior separately without erasing failed evidence.",
+  "next_exact_step": "Publish the P4 diagnostics and acceptance record; bind remote integration to the new PR head. Full product acceptance remains pending the explicitly recorded business and role coverage gaps.",
   "id": "LOCAL-MAIN-WALKTHROUGH-20261126",
-  "branch": "fix/local-main-walkthrough-20261126",
+  "branch": "fix/acceptance-closure-20261126",
   "status": "verification_pending",
   "goal": ".agent/goals/LOCAL-MAIN-WALKTHROUGH-20261126.yaml",
   "record": "docs/ops/iterations/local_main_walkthrough_20261126.md",
@@ -129,5 +128,47 @@
       "场景依赖",
       "角色工作空间交付"
     ]
+  },
+  "original_baseline_sha": "de58eaf376a1e27877d73ce2527f5548f9f11eba",
+  "merged_pr": {
+    "number": 1007,
+    "commit": "8a5d547965cf6ac1b525efcd3e78d2a742388a23"
+  },
+  "acceptance_continuation": {
+    "base": "8a5d547965cf6ac1b525efcd3e78d2a742388a23",
+    "layer": "P4 verification tooling and evidence only",
+    "scope": "Capture failing browser surface; serial recheck of the original 29 failed entries on merged runtime. No business data writes or principal grants.",
+    "runtime_frontend_build_sha256": "32b7e086c58462089eb963bcee1b8a32bc3542c89e3a866a82e21073bd67132c",
+    "residual_recheck": {
+      "status": "passed",
+      "entries": 2,
+      "evidence": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/main-residual/summary.json"
+    },
+    "remaining_recheck": {
+      "status": "passed",
+      "entries": 27,
+      "evidence": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/main-failed-remaining/summary.json"
+    },
+    "tooling_unit": {
+      "status": "passed",
+      "log": ".runtime/agent-runs/LOCAL-MAIN-WALKTHROUGH-20261126/acceptance-tooling-unit.log"
+    },
+    "summary": {
+      "entries_passed": 29,
+      "detail_passed": 22,
+      "detail_skipped_empty": 6,
+      "detail_not_applicable": 1,
+      "navigation_denial_passed": 15,
+      "navigation_denial_no_disjoint_candidate": 14,
+      "direct_access_denial": "not_run",
+      "business_writes": "not_run"
+    },
+    "local_iteration": {
+      "status": "passed",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T002549Z-4077678-650593035/receipt.json"
+    },
+    "runtime_health": "passed",
+    "freeze_prepare": "passed",
+    "review": "Sole executor source review: diagnostic-only change; bounded capture errors are recorded; assertion and outcome rules unchanged. No independent agent was used per owner instruction."
   }
 }

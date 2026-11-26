@@ -1532,6 +1532,21 @@ async function main() {
     } else if (entryProblems.length && !record.status) {
       record.status = 'assertion-failed';
     }
+    if (entryProblems.length || record.status === 'exception') {
+      const artifactStem = entryKey.replace(/[^a-zA-Z0-9_.-]/g, '_');
+      fs.mkdirSync(OUT_DIR, { recursive: true });
+      record.failure_artifacts = {};
+      try {
+        const screenshotPath = path.join(OUT_DIR, `${artifactStem}.failure.png`);
+        await page.screenshot({ path: screenshotPath, fullPage: true, timeout: 10000 });
+        record.failure_artifacts.screenshot = screenshotPath;
+        const bodyPath = path.join(OUT_DIR, `${artifactStem}.failure.txt`);
+        fs.writeFileSync(bodyPath, await page.locator('body').innerText({ timeout: 5000 }));
+        record.failure_artifacts.body = bodyPath;
+      } catch (error) {
+        record.failure_artifacts.error = String(error.message || error);
+      }
+    }
     record.final_url = page.url();
     record.console_errors = consoleErrors.slice(lastConsoleMark);
     record.duration_ms = Date.now() - entryStartedAt;
