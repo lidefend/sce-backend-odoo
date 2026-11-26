@@ -2,6 +2,23 @@
   "schema_version": "ci-path-ownership/v1",
   "categories": [
     {
+      "id": "contract_stable_projection_guard",
+      "patterns": [
+        "scripts/verify/frontend_v2_policy_projection_guard.py",
+        "scripts/verify/test_frontend_v2_policy_projection_guard.py",
+        "scripts/verify/ui_contract_v2_contract_boundary_guard.py"
+      ],
+      "risk": "standard",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.unified_page_contract.v2.stable_projection"
+      ],
+      "local_targeted": true
+    },
+    {
       "id": "contract_design_evidence",
       "patterns": [
         "docs/architecture/p0_contract_producer_01/*.json"

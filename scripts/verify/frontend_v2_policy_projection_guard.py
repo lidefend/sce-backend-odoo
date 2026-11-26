@@ -633,7 +633,18 @@ def _interface_fields(source: str, interface_name: str) -> set[str]:
 
 
 def _strict_required_object_reads(source: str) -> set[str]:
-    return set(re.findall(r"readAliasedObject\(root, '([^']+)', \[\], '\$', issues\)", source))
+    # Match executable calls in the current terminal decoder, not retired alias
+    # helpers, prose, string literals, or unrelated helper functions.
+    body = _function_body(source, "decodeContractV2Snapshot")
+    tokens = re.compile(
+        r"//[^\n]*|/\*.*?\*/|"
+        r"(?P<call>(?<![\w.])requiredRecord\s*\(\s*root\s*,\s*"
+        r"(?P<quote>['\"])(?P<key>\w+)(?P=quote)\s*,\s*['\"]\$['\"]"
+        r"\s*,\s*issues\s*\))|"
+        r"'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\"|`(?:\\.|[^`\\])*`",
+        re.DOTALL,
+    )
+    return {match.group("key") for match in tokens.finditer(body) if match.group("call")}
 
 
 def _function_body(source: str, function_name: str) -> str:

@@ -32,6 +32,9 @@ def module(deps=()):
 class PathOwnershipRegistryTest(unittest.TestCase):
     def test_current_contract_guards_select_real_checks_without_orm(self):
         cases = {
+            "scripts/verify/frontend_v2_policy_projection_guard.py": "verify.unified_page_contract.v2.stable_projection",
+            "scripts/verify/test_frontend_v2_policy_projection_guard.py": "verify.unified_page_contract.v2.stable_projection",
+            "scripts/verify/ui_contract_v2_contract_boundary_guard.py": "verify.unified_page_contract.v2.stable_projection",
             "scripts/verify/unified_page_contract_v2_intent_guard.py": "verify.unified_page_contract.v2.intent",
             "scripts/verify/test_web_unified_page_contract_v2_guard_row_identity.py": "verify.unified_page_contract.v2.web_consumer",
             "scripts/verify/web_contract_v2_frontend_architecture_guard.py": "verify.unified_page_contract.v2.web_architecture",

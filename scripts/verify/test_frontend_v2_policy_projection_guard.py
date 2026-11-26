@@ -100,5 +100,41 @@ class RefusalMarkerGuardTest(unittest.TestCase):
         self.assertIn('buttonStatus.visibilityExplanation enum must be', output)
 
 
+
+
+class RequiredObjectReadTests(unittest.TestCase):
+    def wrap(self, body):
+        return "export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {\n" + body + "\n}"
+
+    def test_current_source_matches_backend_required_set(self):
+        expected = set(json.loads(guard.BACKEND_SCHEMA.read_text())["required"])
+        self.assertEqual(expected, guard._strict_required_object_reads(guard.STRICT_SCHEMA.read_text()))
+
+    def test_multiline_and_double_quote_calls_are_recognized(self):
+        self.assertEqual({"meta"}, guard._strict_required_object_reads(self.wrap(
+            'const meta = requiredRecord(\n root, "meta", "$", issues\n);')))
+
+    def test_removed_required_read_is_detected_even_with_comment_decoy(self):
+        source = guard.STRICT_SCHEMA.read_text()
+        source = source.replace("requiredRecord(root, 'pageInfo', '$', issues)", "root.pageInfo")
+        source = source.replace("const root = asRecord(value);", "const root = asRecord(value);\n// requiredRecord(root, 'pageInfo', '$', issues)")
+        self.assertNotIn("pageInfo", guard._strict_required_object_reads(source))
+
+    def test_literals_and_retired_alias_helpers_cannot_satisfy_reads(self):
+        body = """
+// requiredRecord(root, 'pageInfo', '$', issues)
+/* requiredRecord(root, 'layoutContract', '$', issues) */
+const prose = "requiredRecord(root, 'statusContract', '$', issues)";
+const template = `requiredRecord(root, 'dataContract', '$', issues)`;
+readAliasedObject(root, 'meta', [], '$', issues);
+requiredRecord(other, 'runtimeContract', '$', issues);
+"""
+        self.assertEqual(set(), guard._strict_required_object_reads(self.wrap(body)))
+
+    def test_unrelated_function_does_not_supply_missing_terminal_read(self):
+        source = self.wrap("return snapshot;") + "\nfunction unrelated() { requiredRecord(root, 'meta', '$', issues); }"
+        self.assertEqual(set(), guard._strict_required_object_reads(source))
+
+
 if __name__ == '__main__':
     unittest.main()

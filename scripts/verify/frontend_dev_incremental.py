@@ -152,6 +152,39 @@ class Rule:
 
 
 RULES = (
+    # Stable projection guards read these producer and consumer facts together.
+    Rule((
+        'addons/smart_construction_core/core_extension_policy_maps.py',
+        'addons/smart_core/core/unified_page_contract_v2_assembler.py',
+        'addons/smart_core/core/unified_page_contract_v2_runtime.py',
+        'addons/smart_core/handlers/ui_contract_v2.py',
+        'addons/smart_core/handlers/ui_contract_v2_adapters.py',
+        'addons/smart_core/handlers/ui_contract_v2_projection.py',
+        'addons/smart_core/utils/contract_governance_capabilities.py',
+        'addons/smart_core/utils/delete_policy.py',
+        'addons/smart_core/utils/native_modifier.py',
+        'docs/architecture/unified_page_contract_v2/enum_registry.json',
+        'docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json',
+        'frontend/apps/web/scripts/low_code_global_stability_acceptance.mjs',
+        'frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts',
+        'frontend/apps/web/src/app/action_runtime/useActionViewContentDisplayRuntime.ts',
+        'frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts',
+        'frontend/apps/web/src/app/action_runtime/useActionViewDisplayComputedRuntime.ts',
+        'frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts',
+        'frontend/apps/web/src/app/action_runtime/useActionViewPageDisplayStateRuntime.ts',
+        'frontend/apps/web/src/app/action_runtime/useActionViewSurfaceIntentRuntime.ts',
+        'frontend/apps/web/src/app/contracts/unifiedPageContractV2.ts',
+        'frontend/apps/web/src/app/contracts/v2/schema.ts',
+        'frontend/apps/web/src/app/contracts/v2/store.ts',
+        'frontend/apps/web/src/app/contracts/v2/types.ts',
+        'frontend/apps/web/src/pages/ContractFormPage.vue',
+        'frontend/apps/web/src/pages/contractForm/canonicalFormActionExecutor.ts',
+        'frontend/apps/web/src/pages/contractForm/contractFormHeaderCanonicalActions.ts',
+        'frontend/apps/web/src/views/ActionView.vue',
+        'scripts/verify/frontend_v2_policy_projection_guard.py',
+        'scripts/verify/test_frontend_v2_policy_projection_guard.py',
+        'scripts/verify/ui_contract_v2_contract_boundary_guard.py',
+    ), ("verify.unified_page_contract.v2.stable_projection",)),
     Rule(tuple(json.loads((ROOT / "docs/architecture/p0_contract_producer_01/remediation_design.json")
                           .read_text(encoding="utf-8"))["source_evidence"]) + (
         "docs/architecture/p0_contract_producer_01/remediation_design.json",

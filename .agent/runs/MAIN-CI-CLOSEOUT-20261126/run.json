@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "baseline_sha": "0bab52252d1c12b78749b3eb838aaabfbacd61ff",
+  "baseline_sha": "162bdc3c78558f6ebc5cadef123c9f7a82564121",
   "scope": [
     "scripts/ci/main_full_release_dispatch.py",
     "scripts/ci/test_main_full_release_dispatch.py",
@@ -45,7 +45,9 @@
     "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
     "docs/architecture/p0_contract_producer_01/remediation_design.json",
     ".github/workflows/professional_quality_gate.yml",
-    "scripts/ci/test_backend_test_suite_dispatch_contract.py"
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/verify/frontend_v2_policy_projection_guard.py",
+    "scripts/verify/test_frontend_v2_policy_projection_guard.py"
   ],
   "environment": {
     "kind": "offline",
@@ -108,9 +110,9 @@
   "blockers": [
     "Remote integration and repaired exact-main full audit pending."
   ],
-  "next_exact_step": "Push new candidate, confirm automatic product/demo/acceptance scheduling and current-head checks, merge when eligible; then exact-main full qualification.",
+  "next_exact_step": "Publish followup PR; verify current-head gates and inspect still-running main frontend result before integration.",
   "id": "MAIN-CI-CLOSEOUT-20261126",
-  "branch": "fix/main-ci-impact-precision-20261126",
+  "branch": "fix/main-full-projection-guard-20261126",
   "status": "verification_pending",
   "goal": ".agent/goals/MAIN-CI-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/main_ci_closeout_20261126.md",
@@ -312,5 +314,24 @@
     ],
     "previous_auxiliary_results": "success; superseded by new implementation candidate",
     "next_exact_step": "Push new candidate, confirm automatic product/demo/acceptance scheduling and current-head checks, merge when eligible; then exact-main full qualification."
+  },
+  "projection_guard_repair": {
+    "base": "162bdc3c78558f6ebc5cadef123c9f7a82564121",
+    "failed_run": 45849942244,
+    "classification": "validation_tool_defect",
+    "cause": "Required object guard still recognized retired readAliasedObject, while current decoder uses requiredRecord; affected selection omitted stable projection.",
+    "fix": "Recognize executable requiredRecord calls in terminal decoder; register full guard source inputs, remote pure ownership and PR unit prerequisite.",
+    "validation": {
+      "stable_projection_tests": 14,
+      "incremental_tests": 277,
+      "local_targets": 8,
+      "status": "passed",
+      "log": ".runtime/main-ci-projection-iteration-final.log",
+      "focused_log": ".runtime/main-ci-projection-focused-final.log",
+      "pr_dependency_dry_run": ".runtime/main-ci-projection-pr-wiring.log"
+    },
+    "not_run": "new exact-head remote CI",
+    "frontend_full_prior_main": "still running; not claimed passed",
+    "preparation_stash": "a70819b007a228d7c68bd1dd7e9ae5def819d18e"
   }
 }

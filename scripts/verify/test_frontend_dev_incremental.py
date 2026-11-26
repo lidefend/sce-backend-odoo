@@ -228,7 +228,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertTrue(select_channel_targets(backend_targets, CHANNEL_BACKEND))
         self.assertFalse(select_channel_targets(backend_targets, CHANNEL_FRONTEND))
         self.assertTrue(select_channel_targets(frontend_targets, CHANNEL_FRONTEND))
-        self.assertFalse(select_channel_targets(frontend_targets, CHANNEL_BACKEND))
+        self.assertEqual(["verify.unified_page_contract.v2.stable_projection"],
+                         select_channel_targets(frontend_targets, CHANNEL_BACKEND))
         mixed = select_iteration_targets([backend_path, frontend_path])
         mixed_partition = channel_target_sets(
             mixed,
@@ -414,7 +415,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             frontend_targets,
             paths=[frontend],
         )
-        self.assertEqual([], frontend_partition["backend"])
+        self.assertEqual(["verify.unified_page_contract.v2.stable_projection"], frontend_partition["backend"])
         self.assertTrue(frontend_partition["frontend"])
         self.assertEqual(
             [],
@@ -2104,6 +2105,20 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertIn("verify.frontend.contract_fidelity.plan.unit", select_targets([path]))
 
+    def test_stable_projection_all_declared_read_inputs_select_guard(self):
+        import re
+        target = "verify.unified_page_contract.v2.stable_projection"
+        guards = ("scripts/verify/frontend_v2_policy_projection_guard.py",
+                  "scripts/verify/ui_contract_v2_contract_boundary_guard.py")
+        paths = set(guards) | {"scripts/verify/test_frontend_v2_policy_projection_guard.py"}
+        for guard_path in guards:
+            paths.update(re.findall(r'ROOT / "([^"]+)"', (ROOT / guard_path).read_text()))
+        for path in paths:
+            with self.subTest(path=path):
+                self.assertIn(target, select_targets([path]))
+        self.assertNotIn(target, select_targets(["docs/ops/unrelated_note.md"]))
+        self.assertNotIn(target, select_targets(["frontend/apps/web/src/components/Unrelated.vue"]))
+
     def test_contract_visibility_proof_inputs_select_their_executors(self) -> None:
         self.assertEqual(
             select_targets([
@@ -2118,6 +2133,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.frontend.lint.src",
                 "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
+                "verify.unified_page_contract.v2.stable_projection",
             ],
         )
         for path in (
@@ -2132,7 +2148,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                         "verify.backend.contract_lifecycle.authority",
                         "verify.frontend.contract_v2_render_authority.unit",
                         "verify.unified_page_contract.v2.schema",
-                    ],
+                    ] + (["verify.unified_page_contract.v2.stable_projection"]
+                         if path.endswith("unified_page_contract_v2.schema.json") else []),
                 )
         for path in (
             "scripts/verify/contract_v2_render_authority_matrix.py",
@@ -2297,7 +2314,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.form_structure_authority_unification.unit"],
+                    ["verify.form_structure_authority_unification.unit",
+                     "verify.unified_page_contract.v2.stable_projection"],
                 )
 
     def test_backend_security_guard_selects_its_own_tests(self) -> None:
@@ -2729,6 +2747,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
             "addons/smart_core/core/unified_page_contract_v2_runtime.py": [
                 "verify.unified_page_contract.v2.runtime",
+                "verify.unified_page_contract.v2.stable_projection",
             ],
             "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py": [
                 "verify.unified_page_contract.v2.runtime",
