@@ -7,7 +7,8 @@
     "Reuse native Odoo security and existing source tracking",
     "Platform authorization controls whether multi-company is enabled",
     "Multi-company licensing is platform-owned",
-    "Group companies may share one tenant; independent enterprises remain separate customer databases"
+    "Group companies may share one tenant; independent enterprises remain separate customer databases",
+    "Reuse scenario-oriented business capability identities for enterprise role composition; native groups remain internal mappings, never user-facing choices."
   ],
   "confirmed_inventory": {
     "standard_roles": 22,
@@ -82,6 +83,33 @@
       "status": "passed",
       "count": 36,
       "receipt": ".runtime/test-baseline/1795669739240341149/receipt.json"
+    },
+    "composition": {
+      "status": "passed",
+      "targets": [
+        "verify.business_capability.authorization.unit",
+        "verify.business_capability.authorization.orm",
+        "ci.local.iteration"
+      ],
+      "limits": "No production capability admitted. No enterprise-role grants, approval delegation, company-specific role projection or persistent database writes.",
+      "first_gate": {
+        "status": "failed",
+        "receipt": ".runtime/frontend-dev-validation/executions/20261126T051936Z-1942205-360888313/receipt.json",
+        "classification": "generated_coverage_snapshot_stale",
+        "passed_targets": 17,
+        "failed_target": "verify.test.coverage.registry"
+      },
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T052529Z-1989166-136746295/receipt.json",
+      "executed_targets": 7,
+      "reused_targets": 11,
+      "unit_count": 12,
+      "catalog_orm_count": 13,
+      "identity_orm_count": 32,
+      "permission_truth_orm_count": 84,
+      "platform_orm_count": 120,
+      "user_management_orm_count": 36,
+      "selector_count": 271,
+      "generated_preflight": ".runtime/auth02-composition-generated-check.log"
     }
   },
   "stages": [
@@ -92,8 +120,8 @@
     },
     {
       "id": "AUTH-02.2",
-      "scope": "Published business authorization catalog with closure/ACL evidence and sensitive capability exclusions",
-      "status": "pending"
+      "scope": "Extend existing business capability catalog with composition qualification, dependencies, exclusions and business-only verdict; no capability qualified yet.",
+      "status": "contract_locally_validated_capability_qualification_pending"
     },
     {
       "id": "AUTH-02.3",
@@ -120,5 +148,5 @@
       "contract_read": 25
     }
   },
-  "next_exact_step": "Publish reviewable AUTH-02.1 draft; exact-head remote integration and independent review remain required. Continue later stages without claiming enterprise role delivery."
+  "next_exact_step": "Publish foundation draft PR; qualify concrete business operations and source-tracked company-scoped assignments before enabling enterprise roles."
 }

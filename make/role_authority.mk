@@ -222,3 +222,10 @@ daily.demo.scenario.configure: guard.prod.forbid verify.daily.demo.business_read
 	@ssh -o BatchMode=yes -o ConnectTimeout=10 sc-root \
 	  'test "$$(git -C /opt/projects/repos/sce-product-odoo rev-parse HEAD)" = "$(DAILY_RUNTIME_EXPECTED_SHA)" && python3 /opt/projects/repos/sce-product-odoo/scripts/ops/daily_runtime_duty_odoo_shell.py --duty demo --database sc_demo --env SC_SCENARIO_CONFIGURATION_PHASE=$(SC_SCENARIO_CONFIGURATION_PHASE) --env SC_SCENARIO_CONFIGURATION_CONFIRM=EXEMPT_FIVE_APPROVED_DEMO_MAINTENANCE_MENUS' \
 	  < scripts/ops/daily_demo_scenario_configuration.py
+
+.PHONY: verify.business_capability.authorization.unit verify.business_capability.authorization.orm
+verify.business_capability.authorization.unit:
+	@python3 -m unittest scripts/verify/test_business_capability_authorization.py
+
+verify.business_capability.authorization.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=capability_registry,capability_verdict_projection

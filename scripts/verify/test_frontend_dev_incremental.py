@@ -51,6 +51,18 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_business_capability_authorization_selects_contract_and_projection_checks(self):
+        for path in (
+            'addons/smart_construction_core/services/business_capability_authorization.py',
+            'addons/smart_construction_core/services/capability_registry.py',
+            'addons/smart_construction_core/core_extension_capability_rows.py',
+        ):
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                self.assertIn('verify.business_capability.authorization.unit', targets)
+                self.assertIn('verify.business_capability.authorization.orm', targets)
+                self.assertIn('verify.smart_construction_core.module_baseline', targets)
+
     def test_channel_targets_partition_without_losing_shared_or_union_members(self):
         targets = {
             "verify.frontend.lint.src",
@@ -2144,8 +2156,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(
             select_targets(["addons/smart_construction_core/services/capability_registry.py"]),
             [
+                "verify.business_capability.authorization.orm",
+                "verify.business_capability.authorization.unit",
                 "verify.capability.identity_boundary.unit",
                 "verify.daily.permission_truth.capability.orm",
+                "verify.smart_construction_core.module_baseline",
             ],
         )
         for path in (
@@ -2293,13 +2308,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(
             select_targets(["addons/smart_construction_core/services/capability_registry.py"]),
             [
+                "verify.business_capability.authorization.orm",
+                "verify.business_capability.authorization.unit",
                 "verify.capability.identity_boundary.unit",
                 "verify.daily.permission_truth.capability.orm",
+                "verify.smart_construction_core.module_baseline",
             ],
         )
         self.assertEqual(
             select_targets(["addons/smart_construction_core/tests/test_capability_registry_service.py"]),
             [
+                "verify.business_capability.authorization.orm",
+                "verify.business_capability.authorization.unit",
                 "verify.capability.identity_boundary.orm",
                 "verify.daily.permission_truth.capability.orm",
                 "verify.smart_construction_core.module_baseline",

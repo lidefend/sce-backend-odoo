@@ -4,8 +4,8 @@
   "counts": {
     "odoo_tags": 233,
     "gated": 5,
-    "on_demand": 92,
-    "unwired": 136,
+    "on_demand": 93,
+    "unwired": 135,
     "odoo_tag_declarations": 470,
     "gated_declarations": 107,
     "uncovered_declarations": 363,
@@ -861,20 +861,22 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "make:verify.capability.identity_boundary.orm :: /TestCapabilityRegistryService (class selection)"
+        "make:verify.business_capability.authorization.orm :: capability_registry,capability_verdict_projection"
       ],
       "disposition": "wire-pending"
     },
     {
       "group": "capability_verdict_projection",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_capability_registry_service.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.business_capability.authorization.orm :: capability_registry,capability_verdict_projection"
+      ],
       "disposition": "known-gap"
     },
     {

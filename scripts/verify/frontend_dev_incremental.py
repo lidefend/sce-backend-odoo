@@ -2646,6 +2646,14 @@ RULES = (
         "addons/smart_core/tests/test_data_space_boundary.py",
     ), ("verify.platform.multi_company.orm", "verify.smart_core.close_02.module_baseline")),
     Rule((
+        "addons/smart_construction_core/services/business_capability_authorization.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/core_extension_capability_rows.py",
+        "addons/smart_construction_core/tests/test_capability_registry_service.py",
+        "scripts/verify/test_business_capability_authorization.py",
+    ), ("verify.business_capability.authorization.unit", "verify.business_capability.authorization.orm",
+        "verify.smart_construction_core.module_baseline")),
+    Rule((
         "addons/smart_core/handlers/api_data.py",
     ), ("verify.smart_core.api_data_import.unit", "verify.smart_core.close_02.module_baseline")),
     Rule((
