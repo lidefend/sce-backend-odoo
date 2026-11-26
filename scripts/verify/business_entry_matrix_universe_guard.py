@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail closed when the business-entry matrix drifts from the 132-page product surface."""
+"""Fail closed when the business-entry matrix drifts from the declared product surface."""
 
 from __future__ import annotations
 
@@ -20,8 +20,8 @@ FIXTURE_PATH = (
 )
 
 SCHEMA = "business_entry_acceptance_universe_guard.v1"
-EXPECTED_PAGES = 132
-EXPECTED_ACTION_ROWS = 131
+EXPECTED_PAGES = 143
+EXPECTED_ACTION_ROWS = 142
 EXPECTED_SCENE_ROWS = 1
 
 
@@ -129,10 +129,10 @@ def validate_documents(scenario, matrix_rows, exposure, policy, fixture_scenario
 
     strategy = policy.get("policy_strategy") or {}
     if int(strategy.get("effective_menu_count_per_product") or 0) != EXPECTED_PAGES:
-        errors.append("formal product policy effective menu count is not 132")
+        errors.append(f"formal product policy effective menu count is not {EXPECTED_PAGES}")
     counts = strategy.get("menu_count_by_product") or {}
     if int(counts.get("construction.standard") or 0) != EXPECTED_PAGES:
-        errors.append("construction.standard policy menu count is not 132")
+        errors.append(f"construction.standard policy menu count is not {EXPECTED_PAGES}")
 
     if fixture_scenarios is not None:
         scenario_keys = {str(row.get("key") or "").strip() for row in scenario.get("scenarios") or []}

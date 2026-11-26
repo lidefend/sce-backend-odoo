@@ -346,6 +346,7 @@ import {
   FIELD_VALUE_EMPTY_TEXT,
   containsAttachmentReference,
   formatNumericFieldValue,
+  hasDeclaredAttachmentIdentity,
   isNumericFieldType,
 } from '../utils/fieldSemantics.ts';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
@@ -386,6 +387,8 @@ type ColumnOption = {
   aggregationField?: string;
   dataType?: string;
   componentKey?: string;
+  relation?: string;
+  attachmentRole?: string;
   currencyField?: string;
   digits?: [number, number];
   aggregate?: string;
@@ -740,7 +743,8 @@ function semanticCell(field: string, value: unknown, relationItems: Array<{ id: 
     ? normalizeListRelationValue(value, row?.[valueField])
     : value;
   const rawText = typeof value === 'string' ? value : '';
-  const attachmentText = rawText && containsAttachmentReference(rawText)
+  const attachmentText = hasDeclaredAttachmentIdentity(columnSemanticInput(field))
+    && rawText && containsAttachmentReference(rawText)
     ? formatAttachmentReferenceValue(rawText)
     : '';
   const currencyLabel = option?.currencyField && row
@@ -769,8 +773,13 @@ function mobileRecordFacts(row: Record<string, unknown>): CollectionMobileRecord
     };
   });
 }
-function attachmentLinks(value: unknown) {
-  return parseAttachmentReferenceLinks(value);
+function attachmentLinks(field: string, value: unknown) {
+  return hasAttachmentIdentity(field)
+    ? parseAttachmentReferenceLinks(value)
+    : [];
+}
+function hasAttachmentIdentity(field: string) {
+  return hasDeclaredAttachmentIdentity(columnSemanticInput(field));
 }
 async function previewAttachmentLink(link: { name: string; url: string }, row: Record<string, unknown>) {
   attachmentPreviewError.value = '';
@@ -844,7 +853,7 @@ function collectionRowCellProps(row: Record<string, unknown>, field: string) {
   const value = columnValue(row, field);
   const relationItems = relationDisplayItems(row, field);
   const presentation = semanticCell(field, value, relationItems, row);
-  const links = attachmentLinks(value);
+  const links = attachmentLinks(field, value);
   let kind: CollectionRowCellKind = 'text';
   if (isFavoriteColumn(field)) kind = 'favorite';
   else if (isStatusLikeColumn(field)) kind = 'status';
@@ -1922,6 +1931,8 @@ function columnSemanticInput(field: string) {
     componentKey: option?.componentKey,
     widget: option?.widget,
     cellRole: option?.cellRole,
+    relation: option?.relation,
+    attachmentRole: option?.attachmentRole,
     selection: option?.selection,
     digits: option?.digits,
     currencyField: option?.currencyField,

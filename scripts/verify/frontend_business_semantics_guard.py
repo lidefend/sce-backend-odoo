@@ -59,20 +59,27 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         authority,
     ):
         failures.append("status type identity must be explicitly selection or char")
-    if not re.search(
-        r"const statusContract = kind === 'status'\s*"
-        r"\? resolveDeclaredStatusContract\(input\.field\)\s*"
-        r": null;\s*"
-        r"if \(isEmptyFieldValue\(input\.value\)\)",
-        authority,
-    ):
+    status_contract_marker = (
+        "const statusContract = kind === 'status'\n"
+        "    ? resolveDeclaredStatusContract(input.field)\n"
+        "    : null;"
+    )
+    status_position = authority.find(status_contract_marker)
+    empty_position = authority.find("if (isEmptyFieldValue(input.value))", status_position + 1)
+    if status_position < 0 or empty_position < 0:
         failures.append("status declaration validation must precede empty-value return")
+    if "function requireDeclaredBusinessDigits(" not in authority:
+        failures.append("money and percentage values do not require declared precision")
     if "presentDeclaredBusinessValue" not in kanban_adapter:
         failures.append("Kanban adapter does not consume declared business-value semantics")
 
     display = _read("utils/display.ts", read_text)
     if "presentDeclaredBusinessValue({" not in display:
         failures.append("[CFG-001] generic display does not delegate declared business values to the shared authority")
+    if "missing: 'fieldDescriptor'" not in display or "formatUndeclaredDisplayValue" in display:
+        failures.append("[CFG-001] generic display retains an undeclared value-formatting fallback")
+    if "containsAttachmentReference(" in display:
+        failures.append("[CFG-010] generic display still infers attachment behavior from text appearance")
     for forbidden in (
         "isSelectionFieldType",
         "isScalarRelationFieldType",
@@ -118,6 +125,11 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("ListPage still derives status columns from field names")
     if "COLLECTION_NUMERIC_EMPTY_TEXT" in list_page:
         failures.append("ListPage still renders missing numeric values as zero")
+    if (
+        "function hasAttachmentIdentity(field: string)" not in list_page
+        or "return hasDeclaredAttachmentIdentity(columnSemanticInput(field));" not in list_page
+    ):
+        failures.append("[CFG-010] ListPage does not require declared attachment identity")
 
     list_cells = _read("pages/listPage/listCellPresentation.ts", read_text)
     if "presentDeclaredBusinessValue" not in list_cells:
@@ -169,8 +181,11 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("Professional fields do not consume the platform empty-value rule")
 
     field_value = _read("components/FieldValue.vue", read_text)
+    if "hasDeclaredAttachmentIdentity(props.field)" not in field_value:
+        failures.append("[CFG-010] FieldValue does not require declared attachment identity")
     for marker in (
         "return presentDeclaredBusinessValue({",
+        "hasDeclaredAttachmentIdentity(props.field)",
         "componentKey: props.componentKey",
         "widget: props.widget",
         "cellRole: props.cellRole",
@@ -179,6 +194,8 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     ):
         if marker not in field_value:
             failures.append(f"[CFG-004] FieldValue drops declared semantic marker {marker}")
+    if "computed(() => parseAttachmentReferenceLinks(props.value))" in field_value:
+        failures.append("[CFG-010] FieldValue derives attachment actions from value appearance")
 
     base_control = _read(
         "components/professional-fields/ProfessionalBaseFieldControl.vue",
@@ -207,10 +224,14 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
             failures.append(f"[CFG-004] FormSection drops declared semantic marker {marker}")
 
     kanban = _read("pages/KanbanPage.vue", read_text)
-    if "function formatValue(value: unknown, field?: string)" not in kanban:
-        failures.append("[CFG-004] Kanban title formatting does not accept a field descriptor key")
-    if "(props.columnOptions || []).find((candidate) => candidate.name === field)" not in kanban:
-        failures.append("[CFG-004] Kanban title fallback does not resolve its declared column option")
+    if "presentCollectionKanbanTitle({" not in kanban:
+        failures.append("[CFG-004] Kanban title does not consume the declared title adapter")
+    row_title_start = kanban.find("function rowTitle(")
+    row_title_end = kanban.find("\n}", row_title_start + 1)
+    row_title = kanban[row_title_start:row_title_end] if row_title_start >= 0 else ""
+    for forbidden in ("formatValue(", "row.name", "row.display_name", "String(row.id"):
+        if forbidden in row_title:
+            failures.append(f"[CFG-004] Kanban title retains an undeclared fallback: {forbidden}")
 
     native_canvas = _read("pages/contractForm/ContractFormNativeCanvas.vue", read_text)
     if "resolveReadonlyEmptyText(field, '未填写')" in native_canvas:

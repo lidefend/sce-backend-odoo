@@ -241,4 +241,35 @@ check(presentCollectionKanbanCell({
   columnOptions: [percentageOption],
 }).text, '12.5000%', 'Kanban consumes projected percentage identity and precision');
 
+// Attachment actions cross the same producer as any other field identity. A
+// relation target and role are both required before List or FieldValue may
+// expose link behavior.
+const attachmentWidget = {
+  widgetId: 'invoice-evidence',
+  fieldCode: 'invoice_evidence_ids',
+  label: '发票证据',
+  widgetType: 'many2many',
+  componentConfig: { fieldType: 'many2many' },
+  fieldDescriptor: {
+    fieldCode: 'invoice_evidence_ids',
+    fieldType: 'many2many',
+    relation: 'ir.attachment',
+    attachmentRole: 'invoice_evidence',
+  },
+};
+const attachmentStore = {
+  snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
+  widgetsById: new Map([[attachmentWidget.widgetId, attachmentWidget]]),
+  widgetsByFieldCode: new Map([[attachmentWidget.fieldCode, attachmentWidget]]),
+  widgetsByFieldCodeAll: new Map([[attachmentWidget.fieldCode, [attachmentWidget]]]),
+  widgetStatusById: new Map(),
+  primaryDataSource: {},
+} as unknown as ContractV2NormalizedStore;
+const attachmentOption = runtime.resolveListColumnOptions(
+  attachmentStore,
+  { columns: ['invoice_evidence_ids'] },
+)[0];
+check(attachmentOption?.relation, 'ir.attachment', 'collection projection preserves attachment relation identity');
+check(attachmentOption?.attachmentRole, 'invoice_evidence', 'collection projection preserves attachment role');
+
 console.log(`[frontend.contract.shape.projection] PASS cases=${cases}`);

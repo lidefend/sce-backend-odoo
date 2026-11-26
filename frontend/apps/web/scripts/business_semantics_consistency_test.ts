@@ -7,8 +7,9 @@ import {
   statusBadgeSemantic,
 } from '../src/app/presentation/businessValuePresentation';
 import { presentCollectionKanbanCell } from '../src/app/presentation/collectionKanbanPresentation';
+import { presentCollectionKanbanTitle } from '../src/app/presentation/collectionKanbanPresentation';
 import { formatProductMyWorkFact } from '../src/app/presentation/productMyWorkPresentation';
-import { FIELD_VALUE_EMPTY_TEXT } from '../src/utils/fieldSemantics';
+import { FIELD_VALUE_EMPTY_TEXT, hasDeclaredAttachmentIdentity } from '../src/utils/fieldSemantics';
 import { isListAttachmentCountColumn, presentListCell } from '../src/pages/listPage/listCellPresentation';
 import { formatDisplayValue } from '../src/utils/display';
 
@@ -79,7 +80,33 @@ const declaredPercentage = presentDeclaredBusinessValue({
 assert.equal(declaredPercentage.kind, 'percentage');
 assert.equal(declaredPercentage.text, '12.5000%');
 assert.equal(formatBusinessPercentage(12.5, FIELD_VALUE_EMPTY_TEXT, [16, 4]), declaredPercentage.text);
-assert.equal(formatBusinessPercentage(12.5), '12.5%');
+assert.throws(
+  () => formatBusinessPercentage(12.5),
+  { name: 'ContractGapError' },
+  'percentage precision must come from the field contract',
+);
+assert.throws(
+  () => presentDeclaredBusinessValue({
+    field: { name: 'undeclared_ratio', type: 'float', componentKey: 'sc.value.percentage' },
+    value: 12.5,
+  }),
+  { name: 'ContractGapError' },
+  'declared percentages cannot use a frontend precision fallback',
+);
+assert.throws(
+  () => presentDeclaredBusinessValue({
+    field: {
+      name: 'undeclared_money',
+      type: 'monetary',
+      componentKey: 'sc.value.money',
+      currencyField: 'currency_id',
+    },
+    value: 12.5,
+    currencyLabel: 'CNY',
+  }),
+  { name: 'ContractGapError' },
+  'currency code cannot substitute for missing money precision',
+);
 assert.equal(presentDeclaredBusinessValue({
   field: { name: 'declared_quantity', type: 'float', componentKey: 'sc.input.number', digits: [16, 6] },
   value: 12.5,
@@ -347,7 +374,13 @@ assert.equal(presentDeclaredBusinessValue({
 }).text, FIELD_VALUE_EMPTY_TEXT);
 assert.equal(presentListCell({
   raw: null,
-  column: { field: 'amount', label: '金额', type: 'monetary', cellRole: 'money' },
+  column: {
+    field: 'amount',
+    label: '金额',
+    type: 'monetary',
+    cellRole: 'money',
+    digits: [16, 2],
+  },
   numeric: true,
 }).text, FIELD_VALUE_EMPTY_TEXT, 'missing list amounts are not business zeroes');
 assert.equal(isListAttachmentCountColumn({
@@ -393,11 +426,56 @@ assert.throws(() => formatDisplayValue('missing', {
   type: 'selection',
   selection: [['pending', '待处理']],
 }), { name: 'ContractGapError' }, 'generic display delegates selection semantics to the authority');
+assert.throws(
+  () => formatDisplayValue('business text without a field descriptor'),
+  { name: 'ContractGapError' },
+  'business values without a field descriptor must stop instead of using an appearance-based formatter',
+);
+assert.equal(
+  formatDisplayValue('合同.pdf | /web/content/123', { type: 'char' }),
+  '合同.pdf | /web/content/123',
+  'ordinary character fields retain their complete text even when it resembles an attachment reference',
+);
 assert.equal(formatDisplayValue(12.5, {
   type: 'float',
   componentKey: 'sc.value.percentage',
   digits: [16, 4],
 }), '12.5000%', 'generic display delegates percentage identity and digits');
+
+const titleColumnOptions = [{
+  name: 'declared_title',
+  type: 'char',
+}];
+assert.equal(presentCollectionKanbanTitle({
+  titleField: 'declared_title',
+  value: '合同甲',
+  columnOptions: titleColumnOptions,
+}), '合同甲');
+assert.throws(
+  () => presentCollectionKanbanTitle({
+    titleField: '',
+    value: '合同甲',
+    columnOptions: titleColumnOptions,
+  }),
+  { name: 'ContractGapError' },
+  'Kanban cannot synthesize a title field',
+);
+assert.throws(
+  () => presentCollectionKanbanTitle({
+    titleField: 'missing_title',
+    value: '合同甲',
+    columnOptions: titleColumnOptions,
+  }),
+  { name: 'ContractGapError' },
+  'Kanban cannot format a title without its declared column option',
+);
+
+assert.equal(hasDeclaredAttachmentIdentity({
+  relation: 'ir.attachment',
+  attachmentRole: 'invoice_evidence',
+}), true);
+assert.equal(hasDeclaredAttachmentIdentity({ relation: 'ir.attachment' }), false);
+assert.equal(hasDeclaredAttachmentIdentity({ type: 'char', attachmentRole: 'invoice_evidence' }), false);
 
 const relationField = { name: 'project_id', type: 'many2one' };
 assert.deepEqual(presentDeclaredBusinessValue({

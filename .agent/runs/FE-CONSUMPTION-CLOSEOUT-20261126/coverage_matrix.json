@@ -1,0 +1,3364 @@
+{
+  "schema_version": 1,
+  "id": "FE-CONSUMPTION-CLOSEOUT-20261126",
+  "kind": "source_findings_to_behavior_evidence",
+  "reference_sha": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
+  "execution_baseline_sha": "a92114f0efb6733253d827e3a9985af21ab96be6",
+  "activation_recheck": {
+    "source_observations": 11,
+    "changed_source_observations": 0,
+    "conclusion": "all prepared source digests match the qualified execution baseline; no historical rescan required"
+  },
+  "fc_00": {
+    "status": "completed",
+    "completed": [
+      "qualified-main source observation recheck",
+      "132-to-143 declaration drift resolved against the current product policy and scenario organization",
+      "143 formal units derived into one matrix with source hashes, carriers, declared responsibilities and consumer families",
+      "first consumer-chain facts for value formatting, attachment identity, precision and Kanban title"
+    ],
+    "pending_runtime": [
+      "current-candidate page, role, company and business-journey evidence for the 143 declared units"
+    ],
+    "declared_counts": {
+      "units": 143,
+      "action_units": 142,
+      "scene_units": 1,
+      "pending_units": 55,
+      "current_runtime_checked": 0
+    }
+  },
+  "fc_01_first_slice": {
+    "status": "local_targeted_passed",
+    "facts_verified": [
+      "field descriptor required before business value formatting",
+      "money and percentage precision require declared digits",
+      "attachment link behavior requires ir.attachment plus attachmentRole through V2 store and column projection",
+      "Kanban title consumes title_field and its field descriptor without name/display_name/id fallback",
+      "AUTH-02 added 11 released product-configuration pages and the acceptance universe now matches 143",
+      "affected-file selection reopens the declaration universe and evidence scope for the current inputs",
+      "public activation/recovery transport is a bounded exact-route exception, not a general direct API escape",
+      "money/percentage precision, attachment role and Kanban title now have declaration-consumer-stop-behavior ledger bindings"
+    ],
+    "browser": "not_run",
+    "remote_ci": "not_run"
+  },
+  "not_a_product_acceptance_receipt": true,
+  "coverage_boundary": "One formal product-entry universe derived from current declarations plus 11 source-grounded consumer findings. Declared acceptance status is preserved as provenance; current-candidate runtime coverage is not inherited and remains not_run until exercised.",
+  "rows": [
+    {
+      "id": "FE-S01",
+      "task": "FC-01",
+      "observation": "coverage_boundary_confirmed",
+      "source_reference_sha": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
+      "sources": [
+        {
+          "path": "docs/architecture/frontend_contract_basis_ledger.json",
+          "sha256": "ea27f04d45a25b67ba821b080d1f631d1aef60720177d0788bc2560528a4f482"
+        }
+      ],
+      "planned_discriminating_cases": [
+        "缺少适用声明时真实消费者拒绝",
+        "未登记消费面不得由分页守卫 PASS 推定通过"
+      ],
+      "behavior_status": "new_semantic_bindings_verified_full_coverage_extension_pending",
+      "evidence": [
+        "verify.frontend.contract_basis.unit test_count=15 bindings=24",
+        "verify.p0_contract_producer.p0a.unit test_count=72"
+      ],
+      "blocking_for_topic_completion": true
+    },
+    {
+      "id": "FE-S02",
+      "task": "FC-03",
+      "observation": "branch_confirmed_exposure_not_verified",
+      "source_reference_sha": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
+      "sources": [
+        {
+          "path": "frontend/apps/web/src/utils/display.ts",
+          "sha256": "da4fcf3decca12088442b7903d35cddf28680a43d8acb06a6f0b3171a1002ad7"
+        }
+      ],
+      "planned_discriminating_cases": [
+        "有描述符的关系/selection 保留身份与标签",
+        "业务值缺描述符不得按外观解释",
+        "纯文本工具用途与业务消费分开验证"
+      ],
+      "behavior_status": "consumer_behavior_verified_browser_not_run",
+      "evidence": [
+        "verify.frontend.business_semantics.unit test_count=22",
+        "verify.frontend.collection_view_semantics.unit test_count=82"
+      ],
+      "blocking_for_topic_completion": true
+    },
+    {
+      "id": "FE-S03",
+      "task": "FC-03",
+      "observation": "fallback_confirmed_upstream_guarantee_not_verified",
+      "source_reference_sha": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
+      "sources": [
+        {
+          "path": "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+          "sha256": "f343cf87a0215d9842994d15179fd76a29f800919aaf15ed59c6be9b94318fee"
+        }
+      ],
+      "planned_discriminating_cases": [
+        "声明的 digits 在表单列表卡片一致",
+        "缺 digits 不按百分比默认两位或货币标签猜精度",
+        "0、负数、超过 100 的数值不被改写"
+      ],
+      "behavior_status": "consumer_behavior_verified_browser_not_run",
+      "evidence": [
+        "verify.frontend.business_semantics.unit test_count=22",
+        "verify.frontend.professional_business_value.unit test_count=39"
+      ],
+      "blocking_for_topic_completion": true
+    },
+    {
+      "id": "FE-S04",
+      "task": "FC-03",
+      "observation": "text_driven_path_confirmed_runtime_not_verified",
+      "source_reference_sha": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
+      "sources": [
+        {
+          "path": "frontend/apps/web/src/components/FieldValue.vue",
+          "sha256": "19206c45cd70c842aaaaad751750fad1b211bc79ad9ce13230d0536b696d1663"
+        },
+        {
+          "path": "frontend/apps/web/src/utils/display.ts",
+          "sha256": "da4fcf3decca12088442b7903d35cddf28680a43d8acb06a6f0b3171a1002ad7"
+        }
+      ],
+      "planned_discriminating_cases": [
+        "有完整附件身份及角色的值走已授权附件动作",
+        "形似附件的普通字符值仍是文本",
+        "缺归属或角色时不从 URL 拼接恢复权限"
+      ],
+      "behavior_status": "consumer_behavior_verified_browser_not_run",
+      "evidence": [
+        "verify.frontend.business_semantics.unit test_count=22",
+        "verify.frontend.contract_shape_projection.unit test_count=25",
+        "verify.frontend.collection_row_cell.unit test_count=9"
+      ],
+      "blocking_for_topic_completion": true
+    },
+    {
+      "id": "FE-S05",
+      "task": "FC-03",
+      "observation": "fallback_chain_confirmed_runtime_not_verified",
+      "source_reference_sha": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
+      "sources": [
+        {
+          "path": "frontend/apps/web/src/pages/KanbanPage.vue",
+          "sha256": "0fb57b541ecda3f21fb85c3528b0fa5a0044b48693420ae521d51cfcc9eaf268"
+        }
+      ],
+      "planned_discriminating_cases": [
+        "后端声明的标题字段按语义显示",
+        "合法空值与缺描述符分开处理",
+        "不凭 name/display_name/id 自创替代业务标题"
+      ],
+      "behavior_status": "consumer_behavior_verified_browser_not_run",
+      "evidence": [
+        "verify.frontend.business_semantics.unit test_count=22",
+        "verify.frontend.collection_kanban_record_card.unit test_count=11"
+      ],
+      "blocking_for_topic_completion": true
+    },
+    {
+      "id": "FE-S06",
+      "task": "FC-06",
+      "observation": "lifecycle_proof_gap",
+      "source_reference_sha": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
+      "sources": [
+        {
+          "path": "frontend/apps/web/src/components/business/NativeImportWizard.vue",
+          "sha256": "2762ed2d3c45ac32b92e10d06dccc2a07434571d390d4074f1db56d6cf052589"
+        },
+        {
+          "path": "frontend/apps/web/src/app/action_runtime/useActionViewCollectionActionRuntime.ts",
+          "sha256": "08638f4911b365679c15ce1e3f989d0140374afe9fc269933f7c204669c372cc"
+        },
+        {
+          "path": "frontend/apps/web/src/api/client.ts",
+          "sha256": "f992d272bddf128737330bce2e086c822e5b76c1f28cc7627080879c5ec792ef"
+        },
+        {
+          "path": "frontend/apps/web/src/app/contextEpoch.ts",
+          "sha256": "33c8d879882d6717277d4d427655c61014dda9f5c75b326392e651aabfd72ed6"
+        }
+      ],
+      "planned_discriminating_cases": [
+        "关闭/卸载时 Promise 有确定结算且 busy 恢复",
+        "切公司后旧结果不回写新页面",
+        "响应已返回但后续回调迟到时仍校验归属",
+        "不把已有全局取消误判为不存在"
+      ],
+      "behavior_status": "not_verified",
+      "evidence": [],
+      "blocking_for_topic_completion": true
+    },
+    {
+      "id": "FE-S07",
+      "task": "FC-06",
+      "observation": "apparently_unused_static_scope_only",
+      "source_reference_sha": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
+      "sources": [
+        {
+          "path": "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
+          "sha256": "1d727df0cdf35d8f65734695605631c1b001ceb9264bcad60f43f39ec3872349"
+        },
+        {
+          "path": "frontend/apps/web/src/app/action_runtime/useActionViewCollectionActionRuntime.ts",
+          "sha256": "08638f4911b365679c15ce1e3f989d0140374afe9fc269933f7c204669c372cc"
+        }
+      ],
+      "planned_discriminating_cases": [
+        "确认静态/动态/外部消费者后才移除旧函数",
+        "用户导入回归走 NativeImportWizard 而非旧辅助函数"
+      ],
+      "behavior_status": "not_verified",
+      "evidence": [],
+      "blocking_for_topic_completion": true
+    },
+    {
+      "id": "FE-S08",
+      "task": "FC-07",
+      "observation": "maintenance_risk_not_functional_defect",
+      "source_reference_sha": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
+      "sources": [
+        {
+          "path": "frontend/apps/web/src/views/ActionView.vue",
+          "sha256": "f97beb1c405218d2b007e9ba981b1be94cabc12f31852e1862f054fe22879903"
+        },
+        {
+          "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
+          "sha256": "9909d8d19b041a59cd7427854627b93d16b31b1d30d9d729ee08c4aa506e1929"
+        },
+        {
+          "path": "frontend/apps/web/src/pages/ListPage.vue",
+          "sha256": "e3707d74089ac37201bf3775c8f055f0d568c5e85453b4066be2200d4e68771b"
+        },
+        {
+          "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
+          "sha256": "49853e281d51a1d03295a8915617a7933eebb88cb1de0ab10e78e8aabbb5237b"
+        },
+        {
+          "path": "frontend/apps/web/src/stores/session.ts",
+          "sha256": "d02cf4b01dbc03ff31ce934e994a075f4c02ae90fb9dc029c9c7065cce63771a"
+        }
+      ],
+      "planned_discriminating_cases": [
+        "共享状态有唯一所有者且卸载后不能影响新实例",
+        "只有责任混杂被证实时局部分离，行为不变"
+      ],
+      "behavior_status": "not_verified",
+      "evidence": [],
+      "blocking_for_topic_completion": true
+    },
+    {
+      "id": "FE-S09",
+      "task": "FC-07",
+      "observation": "registered_bypass_requires_assessment",
+      "source_reference_sha": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
+      "sources": [
+        {
+          "path": "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+          "sha256": "deeb8cd1c28e2c74693e2f15bfb00423da9c6ac07f979c96a818f9535601914b"
+        },
+        {
+          "path": "frontend/apps/web/src/components/template/NativeNodeComponent.vue",
+          "sha256": "45652ce665fcf95e2546218ac62b5bd57caa697f330a2097d2df0de24df4e69d"
+        },
+        {
+          "path": "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue",
+          "sha256": "0b5ce809309ed7121d295c2818a3b77e4a42f7d32c0935b28a0139f73a33b999"
+        }
+      ],
+      "planned_discriminating_cases": [
+        "逐项证明状态、键盘、焦点与清理行为",
+        "保留或归一均需证据，不能只改标签清零"
+      ],
+      "behavior_status": "not_verified",
+      "evidence": [],
+      "blocking_for_topic_completion": true
+    },
+    {
+      "id": "FE-S10",
+      "task": "FC-01",
+      "observation": "validation_dependency_risk",
+      "source_reference_sha": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
+      "sources": [
+        {
+          "path": "docs/architecture/p0_contract_producer_01/remediation_design.json",
+          "sha256": "515ddaccf79a322279d5d9009958a8f7acd2c3a9c6d6a502ad348e4c9add33bc"
+        },
+        {
+          "path": "scripts/verify/frontend_dev_incremental.py",
+          "sha256": "31afda60d01762ba5d831819992d332952bf8148d71d8b6181f729d758db031d"
+        },
+        {
+          "path": "config/ci/path_ownership_v1.json",
+          "sha256": "73b5ded1a2e7e8bf0f04279460b4c392acdedb1e4c79cd01d6b1b1f7bf5a3bd1"
+        }
+      ],
+      "planned_discriminating_cases": [
+        "声明依赖变动选中真实生产者及消费者断言",
+        "旧页面协议继续拒绝",
+        "证据过期不能复用，未影响证据不机械重跑"
+      ],
+      "behavior_status": "selection_dependency_verified_current_runtime_not_run",
+      "evidence": [
+        "verify.frontend.dev.incremental.unit test_count=280",
+        "verify.frontend.business_entry.matrix.universe test_count=5",
+        "verify.frontend.business_entry.evidence_scope.unit test_count=201"
+      ],
+      "blocking_for_topic_completion": true
+    },
+    {
+      "id": "FE-S11",
+      "task": "FC-01",
+      "observation": "architecture_boundary_to_resolve",
+      "source_reference_sha": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
+      "sources": [
+        {
+          "path": "frontend/apps/web/src/services/accountActivation.ts",
+          "sha256": "43b5a6040baf9215f0984e28482cf0458cd3c6935dc1339985fa066d1b1d174f"
+        },
+        {
+          "path": "frontend/apps/web/src/api/intents.ts",
+          "sha256": "6477025fc26ab80902065bd5e094dbc6376ff7d520883b1bf5bc479605a15fd2"
+        }
+      ],
+      "planned_discriminating_cases": [
+        "列出未登录认证端点与业务执行通道的权威边界",
+        "取得明确平台裁定前不删除认证引导也不新增豁免"
+      ],
+      "behavior_status": "platform_boundary_resolved_current_runtime_not_run",
+      "evidence": [
+        "verify.frontend.intent_channel.guard test_count=8",
+        "docs/architecture/user_identity_activation_and_saas_boundary_v1.md#Enterprise activation protocol"
+      ],
+      "blocking_for_topic_completion": true
+    }
+  ],
+  "formal_entry_universe": {
+    "status": "declared_universe_validated_runtime_coverage_pending",
+    "derivation": "config/product_scenario_organization_v1.json + docs/product/frontend_business_entry_acceptance_v1.csv + role exposure declarations + formal product menu policy",
+    "source_files": {
+      "docs/product/frontend_business_entry_acceptance_v1.csv": "188000f2d9dddb4c5ed70273b71808ddb53931c65c3edd4e393c9a90f8e177af",
+      "config/product_scenario_organization_v1.json": "50f3d4c2652bb15cc4abea53b8d57a82aef69cc3a592c08e63bd793874f15f8c",
+      "config/frontend/role_surface_exposure_declarations_v1.json": "3211d070b01499797178fd6098ac090fb51b4e0a9bf57ea4fb77c7cf3a49072e",
+      "scripts/verify/baselines/formal_business_product_menu_policy_v1.json": "e0588a0cef49160716f2a51fec08848b6148238a4d3388a9788cafaaac1ff361"
+    },
+    "counts": {
+      "declared_units": 143,
+      "action_units": 142,
+      "scene_units": 1,
+      "declared_pending": 55,
+      "declared_passed_provenance_only": 88,
+      "current_runtime_checked": 0
+    },
+    "by_domain": {
+      "released_product_policy": 1,
+      "产品配置": 18,
+      "会计账务中心": 6,
+      "供应链与资源中心": 19,
+      "合同中心": 8,
+      "工作台": 5,
+      "成本中心": 4,
+      "报表中心": 5,
+      "税务中心": 9,
+      "行政中心": 8,
+      "财务中心": 14,
+      "项目中心": 46
+    },
+    "by_declared_consumer_family": {
+      "ActionView": 129,
+      "BusinessConfigSurfaceView": 2,
+      "ContractFormPage": 136,
+      "KanbanPage": 4,
+      "ListPage": 129,
+      "MenuConfigView": 2,
+      "MyWorkView": 1,
+      "MyWorkspace": 1,
+      "SceneView": 2,
+      "collectionKanbanPresentation": 4,
+      "listCellPresentation": 129
+    },
+    "entries": [
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_my_work",
+        "label": "我的工作",
+        "domain": "工作台",
+        "model": "project.project",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_my_work",
+        "scenario_key": "work.my_queue",
+        "rendering_path": "场景导航入口 /s/my_work.workspace；原生 action 作为 ACL/兼容载体；MyWorkView 消费后端工作项契约",
+        "declared_consumer_family": [
+          "MyWorkView",
+          "SceneView"
+        ],
+        "query_responsibility": "我的工作待办、审批、最近动作及上下文汇总：我的工作",
+        "write_responsibility": "本批不改业务写职责；工作项动作按既有 intent/ACL 验证",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "2220f1f37f5050ff7ea6f3aa4cb0b43801bc4b993d6cb45f6bf0185faccf5712"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_operating_metrics_project",
+        "label": "数据总览",
+        "domain": "工作台",
+        "model": "sc.operating.metrics.project",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_operating_metrics_project",
+        "scenario_key": "reporting.project_portfolio",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]; pivot:pivot [readable_fallback]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：数据总览",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "4c0ac6c3f2600ea63e68a423f8c5e665b5ee18fd227bffab33aa56c0423d59e8"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_project_kanban",
+        "label": "项目看板",
+        "domain": "工作台",
+        "model": "project.project",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_project_dashboard",
+        "scenario_key": "reporting.project_portfolio",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; kanban:workflow_board [ready]; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "KanbanPage",
+          "ListPage",
+          "collectionKanbanPresentation",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：项目看板",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "4f4d0446a0c2ee974f4cfff4065ee963be88fdfff5db4b4bddcbc13445be6b02"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_workbench_my_todo_fact",
+        "label": "待办事项",
+        "domain": "工作台",
+        "model": "sc.workbench.item",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_workbench_task_center",
+        "scenario_key": "work.my_queue",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：待办事项",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "4515dac285fd4b46ecf8d0b9f4c7bca1193f06f0b4cfcf176a811cb643f2ba50"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_message_notification_v1",
+        "label": "消息通知",
+        "domain": "工作台",
+        "model": "mail.notification",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_message_notification_v1",
+        "scenario_key": "work.my_queue",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：消息通知",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "bebfe1f40210c334d032c18ef0744be133b0dbdf172c1a6ae4534d6735c69787"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_project_initiation",
+        "label": "新项目立项",
+        "domain": "项目中心",
+        "model": "project.project",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_project_initiation",
+        "scenario_key": "project.initiation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ContractFormPage"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口不宣称提供独立列表：新项目立项",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "6a17bf72a7af391852fa7647e5a3353fa7649424134f91d7ebf2fd142c10292e"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_project_project",
+        "label": "项目台账",
+        "domain": "项目中心",
+        "model": "project.project",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_project_list",
+        "scenario_key": "project.initiation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：项目台账",
+        "write_responsibility": "名称、客户、日期、说明、责任明细保存；不推进生命周期",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "f8815d8988e601296f0fa1f3a2450d70b7ee93a3d9e94581470c417bc9509113"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_project_lifecycle_v1",
+        "label": "项目启停管理",
+        "domain": "项目中心",
+        "model": "project.project",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_project_lifecycle_v1",
+        "scenario_key": "project.initiation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：项目启停管理",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "aee2a5dc2f233dd92b940d66baee6f06a20c45ea4ffd2a8db490f0a11cf48639"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_customer_partner",
+        "label": "客户档案",
+        "domain": "项目中心",
+        "model": "res.partner",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_customer_partner",
+        "scenario_key": "project.initiation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：客户档案",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "4a9a259c970de11871bbbb2148a9b0defab27fa91444233dab50cff975fc3a18"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_supplier_partner",
+        "label": "供应商档案",
+        "domain": "项目中心",
+        "model": "res.partner",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_supplier_partner",
+        "scenario_key": "supply.supplier_management",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：供应商档案",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "10898a4fd20b4744f4f038a76251aad378dda1794dacf73bf98a6f3627e631c3"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_partner_blacklist_v1",
+        "label": "客商黑名单",
+        "domain": "项目中心",
+        "model": "res.partner",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_partner_blacklist_v1",
+        "scenario_key": "supply.supplier_management",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：客商黑名单",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "6527e25942302895a434767304d5744cb969d97f7bc72e034112e3f24cb0d9d7"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_tender_information_v1",
+        "label": "招标信息",
+        "domain": "项目中心",
+        "model": "tender.opportunity",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_tender_information_v1",
+        "scenario_key": "project.tender",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：招标信息",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "f3750f773437199e37ac84628b759c2af66de7c6272bff3dcc8e3e2b28fbbf60"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_project_tender",
+        "label": "投标项目",
+        "domain": "项目中心",
+        "model": "tender.bid",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_tender_bid",
+        "scenario_key": "project.tender",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：投标项目",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "de012fa15ad76dc65dc2c8ee92563cefe85698d4562630c4b14b7283c7735665"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_tender_document_v1",
+        "label": "标书管理",
+        "domain": "项目中心",
+        "model": "tender.document",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_tender_document_v1",
+        "scenario_key": "project.tender",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：标书管理",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "8f96acbef381328ca208176a8193b6408efb5aca2d302986ced943e3f13e57b7"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_tender_guarantee",
+        "label": "投标保证金",
+        "domain": "项目中心",
+        "model": "tender.guarantee",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_tender_guarantee",
+        "scenario_key": "project.tender",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：投标保证金",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "09f7dbcaee5f4f749a98fbc66025ff1de650e80127eaaed0d6e0146c14ca0ae2"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_tender_won",
+        "label": "中标管理",
+        "domain": "项目中心",
+        "model": "tender.bid",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_tender_won",
+        "scenario_key": "project.tender",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：中标管理",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "6650e532404dadcf03f5fa43f4a7fc84bb653b454919baa1c3318811df2c7f9e"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_safety_issue",
+        "label": "安全检查",
+        "domain": "项目中心",
+        "model": "sc.safety.issue",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_safety_issue",
+        "scenario_key": "project.safety",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：安全检查",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "4d56cfeb56ff3a678e61ac2a6fbdb0f6dd184ce2d7a86d6d9192fb0df4abce9c"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_quality_acceptance_v1",
+        "label": "质量验收",
+        "domain": "项目中心",
+        "model": "sc.quality.acceptance",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_quality_acceptance_v1",
+        "scenario_key": "project.quality",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：质量验收",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "b953ec779bc0f86b1f08734cb31f8d7e0918c4f6dbadaacaa5349b89d6fddc81"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_project_documents",
+        "label": "工程资料",
+        "domain": "项目中心",
+        "model": "sc.project.document",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_project_document",
+        "scenario_key": "project.delivery_record",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：工程资料",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "4344097edb29410cfc6b1a17856222154c3b7822326a87f4db9390ad55b86b3d"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_construction_diary",
+        "label": "施工日志",
+        "domain": "项目中心",
+        "model": "sc.construction.diary",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_construction_diary",
+        "scenario_key": "project.delivery_record",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：施工日志",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "158dfb1090512ff5a96049911499664dc10ab8574fbb9c7a638a037a2dfef2db"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_construction_progress",
+        "label": "施工进度",
+        "domain": "项目中心",
+        "model": "project.progress.entry",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_project_progress_entry",
+        "scenario_key": "project.delivery_record",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：施工进度",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "a389ee023e33117eb1e7481ce0f4b3e0b6f2e786ab9b6f0b5d49ea1fe0aa8786"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_site_variation_v1",
+        "label": "签证变更",
+        "domain": "项目中心",
+        "model": "sc.site.variation",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_site_variation_v1",
+        "scenario_key": "project.delivery_record",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：签证变更",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "8e1ed9d89e142e7c61f41a67aa0ea64adb328de2cc62956548222bfc3b995fa2"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_labor_realname_v1",
+        "label": "劳务实名制",
+        "domain": "项目中心",
+        "model": "sc.labor.worker",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_labor_realname_v1",
+        "scenario_key": "resource.labor",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：劳务实名制",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "db2af6186d73cc147ec9f48541b93bfe60ed1b04a4fe6dfc6e563f4ad9ee2ab1"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_labor_cost_v1",
+        "label": "劳务成本登记",
+        "domain": "项目中心",
+        "model": "sc.labor.usage",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_labor_cost_v1",
+        "scenario_key": "resource.labor",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：劳务成本登记",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "b9b7b51c1bb4e7bbf3437a5571dd24f5fdbce2a553e348582676d237ad20ac18"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_labor_deduction_v1",
+        "label": "劳务扣款明细",
+        "domain": "项目中心",
+        "model": "sc.labor.deduction",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_labor_deduction_v1",
+        "scenario_key": "resource.labor",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：劳务扣款明细",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "557c54089a98a1e41eba11156c42c347502ecc51dede35a43ca1c127d040b144"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_inbound",
+        "label": "材料入库",
+        "domain": "项目中心",
+        "model": "sc.material.inbound",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_material_inbound_handling",
+        "scenario_key": "supply.inventory",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：材料入库",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "01641a7127d197bd6dc84c887b49e09a21bfd7b36596e44db6b1588ccdaa693f"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_outbound",
+        "label": "材料出库",
+        "domain": "项目中心",
+        "model": "sc.material.outbound",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_material_outbound",
+        "scenario_key": "supply.inventory",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：材料出库",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "fe7bd82f6b248ad85799b517f730c6d16ad62ae640f7c6d4b4c18f89d8afc853"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_material_return_v1",
+        "label": "材料退货",
+        "domain": "项目中心",
+        "model": "sc.material.supplier.return",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_material_supplier_return",
+        "scenario_key": "supply.inventory",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：材料退货",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "31f3feb1f8c38225c16adb7377cc13ce3d1dc70f1d0b320f11f01935c7d077a0"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_equipment_shift_v1",
+        "label": "机械台班登记",
+        "domain": "项目中心",
+        "model": "sc.equipment.usage",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_equipment_usage",
+        "scenario_key": "resource.equipment",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：机械台班登记",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "16e8a12184a5380737d48a4dc16e5eff15a3c1fe640187a37574d2733ac2e5e2"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_subcontract_cost_v1",
+        "label": "分包成本登记",
+        "domain": "项目中心",
+        "model": "sc.subcontract.register",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_subcontract_register",
+        "scenario_key": "resource.subcontract",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：分包成本登记",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "a6e1710acf9ee3ed8a45a6fe0e81687b44d8cf21f63f9dfb02132bfea046c00e"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_subcontract_variation_v1",
+        "label": "分包签证费用",
+        "domain": "项目中心",
+        "model": "sc.site.variation",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_subcontract_variation_v1",
+        "scenario_key": "resource.subcontract",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：分包签证费用",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "7ae48cb152f3bff902e9c3a8630701b79097fa91e0cc51d59e662f2f1ebe1430"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_project_payroll_v1",
+        "label": "薪资核算清单",
+        "domain": "项目中心",
+        "model": "sc.hr.payroll.document",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_project_payroll_v1",
+        "scenario_key": "admin.payroll",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：薪资核算清单",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "fea6042a5c020f0dcb37fe08da03f4a5661482746d1b2243608d12c86cca8674"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_project_salary_payment_v1",
+        "label": "薪资发放登记",
+        "domain": "项目中心",
+        "model": "sc.hr.salary.payment",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_project_salary_payment_v1",
+        "scenario_key": "admin.payroll",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：薪资发放登记",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "fda018e4b6aaa76e420334b8e339dcf20302b1a1b8aeebb591f0f110521b19cc"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+        "label": "班组借/扣款登记",
+        "domain": "项目中心",
+        "model": "sc.team.loan.deduction.workspace",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_team_loan_deduction_v1",
+        "scenario_key": "finance.intercompany",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ContractFormPage"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口不宣称提供独立列表：班组借/扣款登记",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "f72afa625601f4b75a03f75dcd4dc5987827d2dd52d76219097be32286f3add1"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_p1_income_contract",
+        "label": "收入合同",
+        "domain": "合同中心",
+        "model": "construction.contract.income",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_construction_contract_income",
+        "scenario_key": "contract.registration",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:hierarchical_worksheet [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ContractFormPage"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：收入合同",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "f6c12e81043a8794c4ac02a7224d0a1658d878dad51c94d658f4785fb8f4ce93"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_p1_expense_contract",
+        "label": "支出合同",
+        "domain": "合同中心",
+        "model": "construction.contract.expense",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_construction_contract_expense",
+        "scenario_key": "contract.registration",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:hierarchical_worksheet [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ContractFormPage"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：支出合同",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "60a4f6954e50e761dd7bcd3a435bff5fc12157f7f93035e5b04bac9ee161bb6f"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_p1_contract_change",
+        "label": "合同变更",
+        "domain": "合同中心",
+        "model": "sc.contract.change",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_contract_change",
+        "scenario_key": "contract.change",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：合同变更",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "0f085158164726c043a021d933abae1351dae2f34021bf6d8c6aa5b640a17d73"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_p1_daily_contract",
+        "label": "日常合同",
+        "domain": "合同中心",
+        "model": "sc.general.contract",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_general_contract",
+        "scenario_key": "contract.registration",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：日常合同",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "985274652a68642352bbf616d6a459a96f914d0b3847e00d2892496925e142aa"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_general_contract_settlement_v1",
+        "label": "日常合同结算",
+        "domain": "合同中心",
+        "model": "sc.settlement.order",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_general_contract_settlement_v1",
+        "scenario_key": "contract.settlement",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：日常合同结算",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "1e4df1b787a58abe920310b78b867b4d06bf469dc7605c39d322a6e3ca43b78c"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_p1_income_settlement",
+        "label": "收入结算",
+        "domain": "合同中心",
+        "model": "sc.settlement.order",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_settlement_order_income",
+        "scenario_key": "contract.settlement",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:hierarchical_worksheet [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ContractFormPage"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：收入结算",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "efcdefc186fccb05042107357d9bda3463aaf53c2ef067e7ce64ea204a7f70c0"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_p1_expense_settlement",
+        "label": "支出结算",
+        "domain": "合同中心",
+        "model": "sc.settlement.order",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_settlement_order_expense",
+        "scenario_key": "contract.settlement",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:hierarchical_worksheet [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ContractFormPage"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：支出结算",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "496c17faabe6b01d488edb9848ff814399fa8cb821164f17ff6acf37ea321d18"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_p1_project_budget",
+        "label": "项目预算",
+        "domain": "成本中心",
+        "model": "project.cost.plan",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_project_budget",
+        "scenario_key": "cost.budgeting",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：项目预算",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "240fa886cf93d86e52eb70734df0286ce651f83cbaa64565c077015f3d0729d9"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_p1_cost_plan",
+        "label": "成本计划编制",
+        "domain": "成本中心",
+        "model": "project.cost.plan",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_project_cost_plan",
+        "scenario_key": "cost.budgeting",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：成本计划编制",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "c4f2569f386a3dc868e600affc758c3f77a17c409c873cfe5c8aa9df71481e2a"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_p1_cost_ledger",
+        "label": "成本归集",
+        "domain": "成本中心",
+        "model": "project.cost.ledger",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_project_cost_ledger",
+        "scenario_key": "cost.collection",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]; pivot:pivot [readable_fallback]; graph:graph [readable_fallback]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：成本归集",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "9c89a4b0fb59d84c556dfc2c98479c6a7474a0c6b1b82294316347296b86cecb"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_p1_profit_analysis",
+        "label": "项目盈亏分析",
+        "domain": "成本中心",
+        "model": "project.profit.compare",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_project_profit_compare",
+        "scenario_key": "cost.analysis",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]; pivot:pivot [readable_fallback]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：项目盈亏分析",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "93101e145448097a2b6d2170eb8a737b2212e3902959378f1b12c67add046bcc"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_receipt_income",
+        "label": "收款登记",
+        "domain": "财务中心",
+        "model": "sc.receipt.income",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_receipt_income",
+        "scenario_key": "finance.receipt",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：收款登记",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "a1f6a26ae51f69e9dc1cfdccbc9846d39af93d79dea1a04ea814d35b7420206c"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_user_payment_apply",
+        "label": "付款申请",
+        "domain": "财务中心",
+        "model": "payment.request",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_payment_request_user_payment_apply",
+        "scenario_key": "finance.payment_approval",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：付款申请",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "365c57524d24317c9bde3705343aeb322f67cc1c94309c2c2cb70044c5cca13a"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_payment_execution",
+        "label": "实付登记",
+        "domain": "财务中心",
+        "model": "sc.payment.execution",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_payment_execution_actual_outflow",
+        "scenario_key": "finance.payment_execution",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:hierarchical_worksheet [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ContractFormPage"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：实付登记",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "dcf7e40a205cd0f8ee3487a57263748cf09810b324db27fcc00f441871bba104"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_reimbursement_request",
+        "label": "费用报销",
+        "domain": "财务中心",
+        "model": "sc.expense.claim",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_expense_claim_reimbursement_request",
+        "scenario_key": "finance.expense_advance",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：费用报销",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "003f48e6b62d0b113978d1df678d58eec32da184599c3ccae47bc2947fec7873"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_current_account_v1",
+        "label": "往来款登记",
+        "domain": "财务中心",
+        "model": "sc.current.account.workspace",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_current_account_v1",
+        "scenario_key": "finance.intercompany",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ContractFormPage"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口不宣称提供独立列表：往来款登记",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "eb61f3267581b1dddaf70fe459010778be2d0379adca538b76d050eddb55ab7f"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_user_income",
+        "label": "公司收入",
+        "domain": "财务中心",
+        "model": "sc.receipt.income",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_receipt_income_user_income",
+        "scenario_key": "finance.receipt",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：公司收入",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "6922b88b32c2b455649a43c9dd28ab1192f60dcb4fd4886e363e374c4055ec43"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_company_finance_expense",
+        "label": "公司支出",
+        "domain": "财务中心",
+        "model": "sc.payment.execution",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_payment_execution_company_finance_expense",
+        "scenario_key": "finance.payment_execution",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：公司支出",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "640248c051c8a649b9e4687ca3581ca7104ec6e5cc7d5f6b94a26b0cdbed1b70"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_deduction_bill",
+        "label": "公司&项目扣款",
+        "domain": "财务中心",
+        "model": "sc.expense.claim",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_expense_claim_deduction_bill",
+        "scenario_key": "finance.deduction",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：公司&项目扣款",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "7cdb169dd2485d7f355029c7ae9183c328ebfa7c66b261c8cee328b25780b333"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+        "label": "公司&项目退款",
+        "domain": "财务中心",
+        "model": "sc.company.project.refund.workspace",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_company_project_refund_v1",
+        "scenario_key": "finance.intercompany",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ContractFormPage"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口不宣称提供独立列表：公司&项目退款",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "32c51f3d60392c9a176c8c288416c5f906abb3df001cd5a22bcd84b5e522968b"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_advance_fund",
+        "label": "备用金",
+        "domain": "财务中心",
+        "model": "sc.expense.claim",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_expense_claim_advance_fund",
+        "scenario_key": "finance.expense_advance",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：备用金",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "877498635e894b17d075c91fa0d8f212d978e562c169662ce4f081de7504d4c4"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_funding_plan_summary",
+        "label": "资金汇总",
+        "domain": "财务中心",
+        "model": "project.funding.baseline",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_project_funding_baseline_summary",
+        "scenario_key": "finance.cash_ledger",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：资金汇总",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "7c3738adff8b20c678a09e087996d89ad396bf987c36ed6d7ad8fb2c9540e596"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_tax_certificate_registration_user",
+        "label": "外经证",
+        "domain": "税务中心",
+        "model": "sc.tax.certificate.registration",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_tax_certificate_registration_user",
+        "scenario_key": "tax.external_certificate",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：外经证",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "754b1f054176fe04058adbc50dc53ede30ff6a87980843ef490eb042aa34b695"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_invoice_prepaid_tax_user",
+        "label": "预缴登记",
+        "domain": "税务中心",
+        "model": "sc.invoice.registration",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_invoice_prepaid_tax_user",
+        "scenario_key": "tax.prepayment",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：预缴登记",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "a0761a61c72c633af81fbbc37144b7bfbad27e69a68f141c3c257d168185f0cd"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_invoice_application_user",
+        "label": "开票申请",
+        "domain": "税务中心",
+        "model": "sc.invoice.registration",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_invoice_application_user",
+        "scenario_key": "tax.output_invoice",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：开票申请",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "2db13562604614b2b4c79aeb6887d2a6b9fbf812887ca44590d028900edfefbc"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_invoice_registration_user",
+        "label": "销项开票",
+        "domain": "税务中心",
+        "model": "sc.invoice.registration",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_invoice_registration_user",
+        "scenario_key": "tax.output_invoice",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：销项开票",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "3169c1244120b2d7b6c3fd70f3c06779d8114df9b893a5131f6ea176f28c995b"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_output_invoice_change_registration",
+        "label": "发票红冲",
+        "domain": "税务中心",
+        "model": "sc.output.invoice.adjustment",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_output_invoice_change_registration",
+        "scenario_key": "tax.output_invoice",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：发票红冲",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "3268d4b0624350b6a7327d6e27ae6a486b3861be6e4ba564c79bd0a7ffcbfc0d"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_invoice_input",
+        "label": "进项发票",
+        "domain": "税务中心",
+        "model": "sc.invoice.registration",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_invoice_input",
+        "scenario_key": "tax.input_invoice",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：进项发票",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "d9a8d95077704b60b27a9b7d33ab8ea79bf17e0909a47d12708f5e462f072acb"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_tax_deduction_registration_user",
+        "label": "税额抵扣",
+        "domain": "税务中心",
+        "model": "sc.tax.deduction.registration",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_tax_deduction_registration_user",
+        "scenario_key": "tax.deduction",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：税额抵扣",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "3809f44d23c1547238697d927c020d686f97ede3ea5c934d78a5bcca2ab077fc"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_project_tax_deduction_v1",
+        "label": "项目专项抵扣",
+        "domain": "税务中心",
+        "model": "sc.tax.deduction.registration",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_project_tax_deduction_v1",
+        "scenario_key": "tax.deduction",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：项目专项抵扣",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "cf3597b60386a8f0f0e73110c5ee7c5d01f092a22f989ce518efd2494e90dab6"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_tax_filing_v1",
+        "label": "税务申报",
+        "domain": "税务中心",
+        "model": "sc.tax.filing",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_tax_filing_v1",
+        "scenario_key": "tax.filing",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：税务申报",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "68628a48292748d5bbcbba2367d06b798f8f20abaa7722a8ca8b517b547b0879"
+      },
+      {
+        "menu_xmlid": "account.menu_action_move_journal_line_form",
+        "label": "日记账分录",
+        "domain": "会计账务中心",
+        "model": "account.move",
+        "carrier": "action",
+        "action_xmlid": "account.action_move_journal_line",
+        "scenario_key": "accounting.entry_posting",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [declared]; kanban: [declared]; form:form_structure [declared]; activity: [declared]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "KanbanPage",
+          "ListPage",
+          "collectionKanbanPresentation",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：日记账分录",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "70b4db7f448c5259f32624e84bb1f58e44ab273f87948db699abb82629ceab65"
+      },
+      {
+        "menu_xmlid": "account.menu_action_account_moves_all",
+        "label": "日记账项目",
+        "domain": "会计账务中心",
+        "model": "account.move.line",
+        "carrier": "action",
+        "action_xmlid": "account.action_account_moves_all",
+        "scenario_key": "accounting.entry_posting",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [declared]; kanban: [declared]; pivot: [declared]; graph: [declared]",
+        "declared_consumer_family": [
+          "ActionView",
+          "KanbanPage",
+          "ListPage",
+          "collectionKanbanPresentation",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：日记账项目",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "12461cca89ee15e34446f32fde34f9846d9232ce6115cf126ff02c1520164dd7"
+      },
+      {
+        "menu_xmlid": "account.menu_action_account_form",
+        "label": "会计科目表",
+        "domain": "会计账务中心",
+        "model": "account.account",
+        "carrier": "action",
+        "action_xmlid": "account.action_account_form",
+        "scenario_key": "accounting.foundation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [declared]; kanban: [declared]; form:form_structure [declared]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "KanbanPage",
+          "ListPage",
+          "collectionKanbanPresentation",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：会计科目表",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "76bc3fc50e5963b95374adb0aebb499e0df8e84b5fe580cc4446d0f8f4b14c93"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_account_journal_foundation",
+        "label": "日记账",
+        "domain": "会计账务中心",
+        "model": "account.journal",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_account_journal_foundation",
+        "scenario_key": "accounting.foundation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：日记账",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "7f26982a6c64d5f5b3be97856b6a6cd72f679592305c8a618613f779e79b9e2d"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_analytic_account_foundation",
+        "label": "分析账户",
+        "domain": "会计账务中心",
+        "model": "account.analytic.account",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_analytic_account_foundation",
+        "scenario_key": "accounting.foundation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：分析账户",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "e8c522c9572259fd42883948c4e651fb523b78576b844dba73c3c36fe8045393"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_analytic_distribution_foundation",
+        "label": "分析分配模型",
+        "domain": "会计账务中心",
+        "model": "account.analytic.distribution.model",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_analytic_distribution_foundation",
+        "scenario_key": "accounting.foundation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：分析分配模型",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "58705e852423fc7004cc3951f7c99d0dc5d264bc6559e10a4d162f0c6ce1ee2b"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_project_operation_statistics_report",
+        "label": "项目报表",
+        "domain": "报表中心",
+        "model": "sc.operating.metrics.project",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_project_operation_statistics_report",
+        "scenario_key": "reporting.operating_review",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]; pivot:pivot [readable_fallback]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：项目报表",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "ead5eab6f8c20a558713bb5873a177196cdae2277803fa4120a03c33daf826d6"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_comprehensive_cost_statistics_report",
+        "label": "成本报表",
+        "domain": "报表中心",
+        "model": "sc.comprehensive.cost.summary",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_comprehensive_cost_statistics_report",
+        "scenario_key": "reporting.operating_review",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]; pivot:pivot [readable_fallback]; graph:graph [readable_fallback]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：成本报表",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "884de33b4fecb70987690f2835e294f55e07db170666446d0266e6bcd01f7e90"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_fund_daily_summary",
+        "label": "资金报表",
+        "domain": "报表中心",
+        "model": "sc.fund.daily.summary",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_fund_daily_summary",
+        "scenario_key": "reporting.operating_review",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]; pivot:pivot [readable_fallback]; graph:graph [readable_fallback]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：资金报表",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "96691b6490dd6a801644620fcb1831c046099f882c0f55e82d24c7c34d692676"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_tax_report_v1",
+        "label": "税务报表",
+        "domain": "报表中心",
+        "model": "sc.tax.filing",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_tax_report_v1",
+        "scenario_key": "reporting.operating_review",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; pivot:pivot [readable_fallback]; graph:graph [readable_fallback]; tree:table [ready]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：税务报表",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "6d05046e47afc5f13fe8b3232533e1d265c5b4dde41b8c26e8a953fb1c17e214"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_labor_subcontract_report_v1",
+        "label": "劳务分包报表",
+        "domain": "报表中心",
+        "model": "sc.labor.subcontract.report",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_labor_subcontract_report_v1",
+        "scenario_key": "reporting.operating_review",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; pivot:pivot [readable_fallback]; graph:graph [readable_fallback]; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：劳务分包报表",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "5d76dff195837b25c0bbdacec499a8b8a85ef427feba97d7c3dab28af8ec0fd3"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_organization_department",
+        "label": "部门管理",
+        "domain": "行政中心",
+        "model": "hr.department",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_organization_department",
+        "scenario_key": "admin.organization",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：部门管理",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "4cc934694d365db5058604aafec934343372178b1b75676c2ee8d7cdec1ca4bf"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_job_management_v1",
+        "label": "岗位管理",
+        "domain": "行政中心",
+        "model": "hr.job",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_job_management_v1",
+        "scenario_key": "admin.organization",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：岗位管理",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "44cccf2a45dc900b237df9d8feff71eda3f936fa67ed1bbe860fc48c671eea43"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_runtime_user_management",
+        "label": "人员档案",
+        "domain": "行政中心",
+        "model": "res.users",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_runtime_user_management",
+        "scenario_key": "admin.organization",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：人员档案",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "d519c1ba7d1cc953275c8cff43068fb2f13949322b278f9bf37c2eca123c7d49"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_certificate_registration",
+        "label": "证书管理",
+        "domain": "行政中心",
+        "model": "sc.document.admin.document",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_certificate_registration",
+        "scenario_key": "admin.documents",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：证书管理",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "e7b6765c883e0fbf5f3c16c5da9d2b00652e3cc7e1ec719297385d3d3092f0a8"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_social_fund_v1",
+        "label": "社保公积",
+        "domain": "行政中心",
+        "model": "sc.hr.payroll.document",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_social_fund_v1",
+        "scenario_key": "admin.payroll",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：社保公积",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "ed89cc3da245d2f526a1cc5f87d183d9465971c3c137a464b4b924ff60e10ea8"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_payroll_management",
+        "label": "工资薪酬",
+        "domain": "行政中心",
+        "model": "sc.hr.payroll.document",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_payroll_management",
+        "scenario_key": "admin.payroll",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：工资薪酬",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "b6c1564391df872e98c3a061013832c0fedbed97f31154c5876f48a26418b3e2"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_office_asset_v1",
+        "label": "办公资产",
+        "domain": "行政中心",
+        "model": "sc.office.asset",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_office_asset_v1",
+        "scenario_key": "admin.assets",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：办公资产",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "4a3d5bf35b36e5aae2b1014b6b7a2dd6b7f4158c636199f29e29cc8654eaf96e"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_policy_document_v1",
+        "label": "制度文件",
+        "domain": "行政中心",
+        "model": "sc.document.admin.document",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_policy_document_v1",
+        "scenario_key": "admin.documents",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：制度文件",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "2239e9b9d0fb53d696fdede03314c6e8133b4ae1e597505e4e32b63d5759c988"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_business_config_workbench",
+        "label": "表单配置",
+        "domain": "产品配置",
+        "model": "ui.business.config.contract",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_business_config_workbench",
+        "scenario_key": "config.presentation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; admin:business_config_surface [declared: action context sc_web_route=/admin/business-config overrides tree/form]",
+        "declared_consumer_family": [
+          "BusinessConfigSurfaceView",
+          "MenuConfigView"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：表单配置",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "690bfa6eba188f3a0b849c681a9401dcc9402307f530d5cc0b1dc6b9ac58b2b4"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_approval_policy",
+        "label": "流程审批配置",
+        "domain": "产品配置",
+        "model": "sc.approval.policy",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_approval_policy",
+        "scenario_key": "config.approval",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：流程审批配置",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "96681d5334222a8e4f3029dae4e3a35934a030e4d3ee0862b7cb3b6db5c6a7fb"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_ui_form_field_policy_business_config",
+        "label": "字段管理",
+        "domain": "产品配置",
+        "model": "ui.form.field.policy",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_ui_form_field_policy_business_config",
+        "scenario_key": "config.presentation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：字段管理",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "b6134809544f440398f3e8327e3cb332e9f8d5b0dc89b477222bf2ef0e9684ce"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_data_permission_v1",
+        "label": "数据权限",
+        "domain": "产品配置",
+        "model": "res.users",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_data_permission_v1",
+        "scenario_key": "config.enterprise_access",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：数据权限",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "3b034bb172fce1216af109b3909c6f90fe91b8d13e4f19088fe7cd1f635caa12"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_system_parameter_v1",
+        "label": "系统参数",
+        "domain": "产品配置",
+        "model": "sc.product.system.settings",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_system_parameter_v1",
+        "scenario_key": "config.system_governance",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ContractFormPage"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口不宣称提供独立列表：系统参数",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "0cabc48a3edbb208d1a38f59be0580390b9759973d3f9acd339528c769a9c114"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_numbering_rule_v1",
+        "label": "编码规则",
+        "domain": "产品配置",
+        "model": "ir.sequence",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_numbering_rule_v1",
+        "scenario_key": "config.system_governance",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：编码规则",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "passed",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "1be2a9342fc0cccc665618149e58283afec1664c37dc5d6c4a3737356dcb1f9b"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_ui_menu_config_policy_business_config",
+        "label": "菜单配置",
+        "domain": "产品配置",
+        "model": "ui.menu.config.policy",
+        "carrier": "action",
+        "action_xmlid": "smart_core.action_ui_menu_config_policy",
+        "scenario_key": "config.presentation",
+        "rendering_path": "admin:business_config_surface [ready]; tree:table [native fallback]; 后端 action context sc_web_route=/admin/menu-config → 菜单配置专用面板",
+        "declared_consumer_family": [
+          "ActionView",
+          "BusinessConfigSurfaceView",
+          "ListPage",
+          "MenuConfigView",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "读取菜单配置面板、角色与菜单树；刷新后回读",
+        "write_responsibility": "按后端配置管理员权限验证允许的配置保存；未验收前不承诺写入通过",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "83f9913d2a2be8f7e2a8d68fe24977e77347986a2ce1f104b1fa5e7ca61ff0ee"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_project_quick_create",
+        "label": "快速创建项目",
+        "domain": "项目中心",
+        "model": "project.project",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_project_initiation_quick",
+        "scenario_key": "project.initiation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：快速创建项目",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "e06076eb9700d0b014f54c538fe03c035e67533157f1e51caa28d5eb12e331b3"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_tender_registration_fee",
+        "label": "投标报名费申请",
+        "domain": "项目中心",
+        "model": "tender.doc.purchase",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_tender_registration_fee",
+        "scenario_key": "project.tender",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：投标报名费申请",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "a3fd504b7c44924a67b27fca1f60ea26d21d9bd555d678cca7d7b811f7470fa5"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_tender_opening",
+        "label": "开标记录",
+        "domain": "项目中心",
+        "model": "tender.opening",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_tender_opening",
+        "scenario_key": "project.tender",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：开标记录",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "fc6fab9bc296448c14ad0e0bf4e04ca4a23b3c74754be28cf4881a621ec66759"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_plan",
+        "label": "计划管理",
+        "domain": "项目中心",
+        "model": "sc.plan",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_plan",
+        "scenario_key": "project.planning",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：计划管理",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "f28b3963aba218f61fbb91d54d9050ad3b6e46793c57b4cba4667c92d21654b9"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_plan_report",
+        "label": "计划汇报",
+        "domain": "项目中心",
+        "model": "sc.plan.report",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_plan_report",
+        "scenario_key": "project.planning",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：计划汇报",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "142ba60e65e9edfabe00175eec49352701ccbc2db3578a68147686b6cbcdc3ef"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_quality_standard_v2",
+        "label": "质量标准",
+        "domain": "项目中心",
+        "model": "sc.check.standard",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_check_standard",
+        "scenario_key": "project.quality",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：质量标准",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "79eff28ca5ec7703165c3119244373fff9741c2216253aaf1abd8f0a2ccaa6d2"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_quality_issue",
+        "label": "质量检查",
+        "domain": "项目中心",
+        "model": "sc.quality.issue",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_quality_issue",
+        "scenario_key": "project.quality",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：质量检查",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "8f439b5945076d6fb6fcf299cfdcbd89074834f0e1a28306ca01237f082f3d0f"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_quality_site_photo_v2",
+        "label": "现场影像",
+        "domain": "项目中心",
+        "model": "sc.site.photo.batch",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_site_photo_batch",
+        "scenario_key": "project.quality",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：现场影像",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "0dfba4136b1831be0b7d5ac8fb99b43085fbedcd0ac8e7672ab7bc1132985007"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_quality_rectification",
+        "label": "质量整改",
+        "domain": "项目中心",
+        "model": "sc.quality.rectification",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_quality_rectification",
+        "scenario_key": "project.quality",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：质量整改",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "cf80280c8c4c9bea1a3c1aa47ea746bc090305582250f48f4279a9a554bdec40"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_quality_recheck",
+        "label": "质量复验",
+        "domain": "项目中心",
+        "model": "sc.quality.recheck",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_quality_recheck",
+        "scenario_key": "project.quality",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：质量复验",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "6f81f017fe2d1087625dcad48bd3966c9061d0967618321baf1d57f47cc5793e"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_safety_risk_library_v2",
+        "label": "风险库",
+        "domain": "项目中心",
+        "model": "sc.risk.library",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_risk_library",
+        "scenario_key": "project.safety",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：风险库",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "f7444a767961030ed204fa54a856390a6584b23bd7a84e8a8a22f4e50dd49858"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_safety_hazard_source_v2",
+        "label": "危险源",
+        "domain": "项目中心",
+        "model": "sc.hazard.source",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_hazard_source",
+        "scenario_key": "project.safety",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：危险源",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "c487d4c2c2052f2b145b44be6c7599484ac3d4db6702547ea824afaa790d5cf0"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_safety_plan_v2",
+        "label": "安全方案",
+        "domain": "项目中心",
+        "model": "sc.safety.plan",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_safety_plan",
+        "scenario_key": "project.safety",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：安全方案",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "c3f66cbf395ad61f475a7c525aced3e79f6ef6d600822678a4f2d498a747893f"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_safety_disclosure_v2",
+        "label": "安全交底",
+        "domain": "项目中心",
+        "model": "sc.safety.disclosure",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_safety_disclosure",
+        "scenario_key": "project.safety",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：安全交底",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "95bd66e0159914b6820b1d9ec2ad6af482acf352bd242f60f9dc4df23d83eebe"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_safety_patrol_v2",
+        "label": "安全巡检",
+        "domain": "项目中心",
+        "model": "sc.safety.patrol.task",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_safety_patrol_task",
+        "scenario_key": "project.safety",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：安全巡检",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "d3fab9636a072049a06b1208728b1d96fc3a8ca2fe0ec9a2e8c86e186a4d206d"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_safety_rectification",
+        "label": "安全整改",
+        "domain": "项目中心",
+        "model": "sc.safety.rectification",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_safety_rectification",
+        "scenario_key": "project.safety",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：安全整改",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "774be087b9566c0545b2854a23bc6f9deb53dc2eaf369fe1b24ea175e276b645"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_safety_recheck",
+        "label": "安全复验",
+        "domain": "项目中心",
+        "model": "sc.safety.recheck",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_safety_recheck",
+        "scenario_key": "project.safety",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：安全复验",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "11e3188955d9506ef22a229e3f3803c55a1205eea82f73848305d1e708ff734d"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_settlement_order",
+        "label": "结算单",
+        "domain": "合同中心",
+        "model": "sc.settlement.order",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_settlement_order",
+        "scenario_key": "contract.settlement",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：结算单",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "da19671f9c76f4ff5464f49f89dfc48b2e01c5fff81c51e1b67a06fbda6ca384"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_project_material_plan",
+        "label": "材料计划",
+        "domain": "供应链与资源中心",
+        "model": "project.material.plan",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_project_material_plan",
+        "scenario_key": "supply.procurement",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：材料计划",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "d9ab5d8984b8b67ca2586848aabde37daa67cc2e10eda196d26400c3c087aa2e"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_purchase_request",
+        "label": "采购申请",
+        "domain": "供应链与资源中心",
+        "model": "sc.material.purchase.request",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_material_purchase_request",
+        "scenario_key": "supply.procurement",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：采购申请",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "20442ac558b6471bc3dfbe80f213c9418dcd54ebf03316da33eabdbac14e1b92"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_rfq",
+        "label": "询比价",
+        "domain": "供应链与资源中心",
+        "model": "sc.material.rfq",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_material_rfq",
+        "scenario_key": "supply.procurement",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：询比价",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "bc743fc55fced796b63fd674503d6f238541edcb2ec00fa04dc92e25d7ad1371"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_acceptance",
+        "label": "材料进场验收",
+        "domain": "供应链与资源中心",
+        "model": "sc.material.acceptance",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_material_acceptance",
+        "scenario_key": "supply.procurement",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：材料进场验收",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "272f608ac956d8414bde844a83ddde5252371598190cd45bf8d4f3e293d45e4b"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_transfer",
+        "label": "材料调拨",
+        "domain": "供应链与资源中心",
+        "model": "sc.material.outbound",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_material_transfer",
+        "scenario_key": "supply.inventory",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：材料调拨",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "a129e36a06bb897dc4553da51f224bbfb283e0384d4951b04e487ab8dcdc48a4"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_loss",
+        "label": "材料损耗",
+        "domain": "供应链与资源中心",
+        "model": "sc.material.outbound",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_material_loss",
+        "scenario_key": "supply.inventory",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：材料损耗",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "90e71585c8e95d9cfa204a99449c711ae9fdb6b69d4d1c10d705b802013fac6a"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_settlement",
+        "label": "材料结算",
+        "domain": "供应链与资源中心",
+        "model": "sc.material.settlement",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_material_settlement",
+        "scenario_key": "material.settlement",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：材料结算",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "f4986d4fd010566f093cecd91ff1b815b607c277c5cf10cc45016adfa46a5537"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_labor_plan",
+        "label": "劳务计划",
+        "domain": "供应链与资源中心",
+        "model": "sc.labor.plan",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_labor_plan",
+        "scenario_key": "resource.labor",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：劳务计划",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "f03557fbc70515bff1ed27e5d332dfb678ade77454833681b3800cf38fec125c"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_labor_request",
+        "label": "劳务申请",
+        "domain": "供应链与资源中心",
+        "model": "sc.labor.request",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_labor_request",
+        "scenario_key": "resource.labor",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：劳务申请",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "605351ca40aec0c8fae7d3172f9b24bb890c11b93cddee9c539e731367009d5a"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_labor_settlement",
+        "label": "劳务结算",
+        "domain": "供应链与资源中心",
+        "model": "sc.labor.settlement",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_labor_settlement",
+        "scenario_key": "resource.labor",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：劳务结算",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "d52a2e22d97ef9c7ca8e113ea15a0feb440fd103530adff16d74e8f4e5ac409e"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_equipment_plan",
+        "label": "设备计划",
+        "domain": "供应链与资源中心",
+        "model": "sc.equipment.plan",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_equipment_plan",
+        "scenario_key": "resource.equipment",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：设备计划",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "f3ad6eb69e46a2b298b3f68ce6b42c73951b4dcdebfbca09b75438366aed2fb5"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_equipment_request",
+        "label": "设备申请",
+        "domain": "供应链与资源中心",
+        "model": "sc.equipment.request",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_equipment_request",
+        "scenario_key": "resource.equipment",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：设备申请",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "c4ed5751b8b135e73ffa6fa4ebe5ad1d961721db9f93af5d8cb71526d38423d9"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_equipment_settlement",
+        "label": "设备结算",
+        "domain": "供应链与资源中心",
+        "model": "sc.equipment.settlement",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_equipment_settlement",
+        "scenario_key": "resource.equipment",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：设备结算",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "a400f57514cfd07bde606180da5686a427035103bf760340fa9f7250eeafef53"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_rental_plan",
+        "label": "租赁计划",
+        "domain": "供应链与资源中心",
+        "model": "sc.material.rental.plan",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_material_rental_plan",
+        "scenario_key": "resource.rental",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：租赁计划",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "f4a866f50ddb9c47f37d76d7cd0b847537d5d62a48e016fd9bbe474d488d3a5d"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_rental_order",
+        "label": "租赁单",
+        "domain": "供应链与资源中心",
+        "model": "sc.material.rental.order",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_material_rental_order",
+        "scenario_key": "resource.rental",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：租赁单",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "29da585da3f9aed48464196c3a9cb5a3d11fbe76caab36fe6ea405cffca327f1"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_material_rental_settlement",
+        "label": "租赁结算",
+        "domain": "供应链与资源中心",
+        "model": "sc.material.rental.settlement",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_material_rental_settlement",
+        "scenario_key": "resource.rental",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：租赁结算",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "64ebc9a4d5d8e7cbfcd48ec7e2fccc9f75b5cf08962a2036cc8b1b611eacc6b3"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_subcontract_plan",
+        "label": "分包计划",
+        "domain": "供应链与资源中心",
+        "model": "sc.subcontract.plan",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_subcontract_plan",
+        "scenario_key": "resource.subcontract",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：分包计划",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "170fe5d460571d216c57a91b3012daaad6f58bb08dc45de1deaf0ab93372ad88"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_subcontract_request",
+        "label": "分包申请",
+        "domain": "供应链与资源中心",
+        "model": "sc.subcontract.request",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_subcontract_request",
+        "scenario_key": "resource.subcontract",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：分包申请",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "f06183fb54e75bcd6867f3a0ed234a4a05a8fc4b38d48d1ed0986015502bdafd"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_subcontract_settlement",
+        "label": "分包结算",
+        "domain": "供应链与资源中心",
+        "model": "sc.subcontract.settlement",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_subcontract_settlement",
+        "scenario_key": "resource.subcontract",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：分包结算",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "82ee12947a688895b0fab38d98877b88bd630d2e2f747895a2d3b4b6aae7015f"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_engineering_progress_income",
+        "label": "工程进度款收入登记",
+        "domain": "财务中心",
+        "model": "sc.receipt.income",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_receipt_income_engineering_progress",
+        "scenario_key": "finance.receipt",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口按声明验证查询与办理：工程进度款收入登记",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "f42191a86c6505000ec67a76cc0b7eb2362fbdd0ee0d72667b48157c4856a129"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_payment_ledger",
+        "label": "支付台账",
+        "domain": "财务中心",
+        "model": "payment.ledger",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_payment_ledger",
+        "scenario_key": "finance.cash_ledger",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：支付台账",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "1baf87c578611a54c71c08bea4312b72c4ccd459433bf860aa83bcb99d33d0d6"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_treasury_ledger",
+        "label": "资金台账",
+        "domain": "财务中心",
+        "model": "sc.treasury.ledger",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_treasury_ledger",
+        "scenario_key": "finance.cash_ledger",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：资金台账",
+        "write_responsibility": "按当前后端契约逐项验证允许的创建/编辑/动作；未核实前不承诺可写",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "010fbe0abeb63c07fe16ed1519cf198cad0fcd3232f4f959d19d1cec73f4b50d"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_enterprise_initialization",
+        "label": "企业初始化",
+        "domain": "产品配置",
+        "model": "res.company",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_enterprise_initialization",
+        "scenario_key": "config.enterprise_initialization",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ContractFormPage"
+        ],
+        "query_responsibility": "核对表单默认值、关系选择及当前记录回读；入口不宣称提供独立列表：企业初始化",
+        "write_responsibility": "表单与当前企业回读。",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "6538c5c01dee8841e0842701a52bb9a576900c35436abe55d56a10bf03deef26"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_business_category",
+        "label": "业务分类字典",
+        "domain": "产品配置",
+        "model": "sc.business.category",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_business_category",
+        "scenario_key": "config.business_foundation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready] form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：业务分类字典",
+        "write_responsibility": "维护企业业务分类。",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "6ebcbcc07b57a484496f2c611072414bf93dcd325d26699f80efd7f75175ef8c"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_dictionary",
+        "label": "数据字典",
+        "domain": "产品配置",
+        "model": "sc.dictionary",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_dictionary_manage",
+        "scenario_key": "config.business_foundation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready] form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：数据字典",
+        "write_responsibility": "查阅与维护授权范围内业务字典。",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "17af20d224df06b1fed7151b9faf766009190ad8537bb704c8e2bfa1dcb08d06"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_project_cost_code",
+        "label": "预算类型",
+        "domain": "产品配置",
+        "model": "project.cost.code",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_project_cost_code",
+        "scenario_key": "config.business_foundation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready] form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：预算类型",
+        "write_responsibility": "维护预算类型。",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "54c10d9e3a51965770577ce2052324f00e42256d3c5985f423e6d21d69ce417b"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_project_stage_requirement_items",
+        "label": "阶段要求配置",
+        "domain": "产品配置",
+        "model": "sc.project.stage.requirement.item",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_project_stage_requirement_items",
+        "scenario_key": "config.business_foundation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready] form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：阶段要求配置",
+        "write_responsibility": "维护项目阶段要求。",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "0db2ae5c67d9f18fdacaef2e19503a193a4c2e08e3203dd323c98f1f647159ff"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_business_role",
+        "label": "企业业务角色",
+        "domain": "产品配置",
+        "model": "sc.business.role",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_business_role",
+        "scenario_key": "config.enterprise_access",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready] form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：企业业务角色",
+        "write_responsibility": "定义企业业务角色与能力组合并发布。",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "3ffa1c9671dce71cc4eddc66476c90e4af0e4c9e636ac4364a17c9c72035c274"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_user_role_assignment",
+        "label": "企业角色分配",
+        "domain": "产品配置",
+        "model": "sc.user.role.assignment",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_user_role_assignment",
+        "scenario_key": "config.enterprise_access",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready] form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：企业角色分配",
+        "write_responsibility": "分配企业角色并回读生效授权。",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "e83a7b558736215770acf4890f7b9b5ba5ca38f775e6438a32ab7d08b945129c"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_business_role_change",
+        "label": "角色授权调整",
+        "domain": "产品配置",
+        "model": "sc.business.role.change",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_business_role_change",
+        "scenario_key": "config.enterprise_access",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready] form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：角色授权调整",
+        "write_responsibility": "预览并提交企业角色批量调整。",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "864f6f863877150ba1a3b3ba5d2d6f9cbef38af0e3a128c2f6b7528ae19c9bd1"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_business_role_event",
+        "label": "企业角色授权记录",
+        "domain": "产品配置",
+        "model": "sc.business.role.event",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_business_role_event",
+        "scenario_key": "config.enterprise_access",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：企业角色授权记录",
+        "write_responsibility": "回读授权来源、执行结果与历史变更。",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "ee73eeb09366804d2af9f01abfa1e3c00a6b93f6f29579f9d2f407b727bd18af"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_approval_scope",
+        "label": "审批岗位人员",
+        "domain": "产品配置",
+        "model": "sc.approval.scope",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_approval_scope",
+        "scenario_key": "config.approval",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready] form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：审批岗位人员",
+        "write_responsibility": "维护审批岗位人员。",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "d2c26423ddecfde9ce8ae4e1d6150db8f64cd80d3ac86f382464009d835e32f1"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_product_scenario_business_config",
+        "label": "业务场景",
+        "domain": "产品配置",
+        "model": "sc.product.scenario",
+        "carrier": "action",
+        "action_xmlid": "smart_construction_core.action_sc_product_scenario",
+        "scenario_key": "config.presentation",
+        "rendering_path": "Decoder → Store → Resolver → Runtime → Registry; tree:table [ready] form:form_structure [structural]",
+        "declared_consumer_family": [
+          "ActionView",
+          "ContractFormPage",
+          "ListPage",
+          "listCellPresentation"
+        ],
+        "query_responsibility": "列表查询、筛选、详情回读：业务场景",
+        "write_responsibility": "配置企业业务场景组合并回读呈现。",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "26905af3469385b7837275491a91da452527cf0d4f1b7881308be5b9af2c60db"
+      },
+      {
+        "menu_xmlid": "smart_construction_core.menu_sc_workspace_home",
+        "label": "smart_construction_core.menu_sc_workspace_home",
+        "domain": "released_product_policy",
+        "model": "",
+        "carrier": "scene",
+        "action_xmlid": "",
+        "scene_key": "workspace.home",
+        "route": "/s/workspace.home",
+        "scenario_key": "work.my_queue",
+        "rendering_path": "scene:workspace.home; route:/s/workspace.home",
+        "declared_consumer_family": [
+          "SceneView",
+          "MyWorkspace"
+        ],
+        "query_responsibility": "scene runtime route",
+        "write_responsibility": "scene carrier only",
+        "declared_acceptance_status": "pending",
+        "current_runtime_evidence": "not_run_current_candidate",
+        "source_row_sha256": "44e58c99dff32ae8b02cba36ec1a9776146b6a29d21924ab92bd374d54d7c998"
+      }
+    ]
+  }
+}

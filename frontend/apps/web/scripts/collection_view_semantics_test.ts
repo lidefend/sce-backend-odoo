@@ -291,7 +291,13 @@ assert.deepEqual(schemaSelectionColumns[0], {
   selection: [['submitted', '已提交'], ['won', '中标']],
 });
 assert.equal(one2manyColumnDisplayValue(schemaSelectionColumns[0], 'submitted'), '已提交');
-assert.equal(one2manyColumnDisplayValue({ name: 'amount', label: '金额', ttype: 'monetary', required: false }, 3260000), '3,260,000');
+assert.equal(one2manyColumnDisplayValue({
+  name: 'amount',
+  label: '金额',
+  ttype: 'monetary',
+  required: false,
+  digits: [16, 0],
+}, 3260000), '3,260,000');
 assert.equal(one2manyColumnDisplayValue({ name: 'quantity', label: '数量', ttype: 'float', required: false }, 1280.5), '1,280.50');
 const percentageColumns = one2manyColumnsFromSubview({ tree: {
   columns: [{ name: 'completion_ratio', label: '完成率', type: 'float' }],

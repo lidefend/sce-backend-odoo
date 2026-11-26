@@ -27,10 +27,12 @@ import {
   resolveCurrencyDisplayLabel,
   type DeclaredBusinessField,
 } from '../app/presentation/businessValuePresentation';
-import { FIELD_VALUE_EMPTY_TEXT } from '../utils/fieldSemantics';
+import { FIELD_VALUE_EMPTY_TEXT, hasDeclaredAttachmentIdentity } from '../utils/fieldSemantics';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
 
-type FieldValueDescriptor = FieldDescriptor & Partial<DeclaredBusinessField>;
+type FieldValueDescriptor = FieldDescriptor & Partial<DeclaredBusinessField> & {
+  attachmentRole?: string;
+};
 
 const props = defineProps<{
   value: unknown;
@@ -63,7 +65,9 @@ const display = computed(() => {
   }).text;
 });
 
-const attachmentLinks = computed(() => parseAttachmentReferenceLinks(props.value));
+const attachmentLinks = computed(() => hasDeclaredAttachmentIdentity(props.field)
+  ? parseAttachmentReferenceLinks(props.value)
+  : []);
 
 async function previewAttachmentLink(link: { name: string; url: string }) {
   const params = attachmentLinkDownloadParams(link);

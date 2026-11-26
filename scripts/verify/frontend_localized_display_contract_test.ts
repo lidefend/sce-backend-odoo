@@ -30,8 +30,16 @@ assert.equal(resolveLocalizedDisplayValue('普通文本', { locale: 'zh_CN' }), 
 assert.equal(resolveLocalizedDisplayValue('{broken}', { locale: 'zh_CN', emptyText: '--' }), '--');
 assert.equal(resolveLocalizedDisplayValue({}, { locale: 'zh_CN', emptyText: '--' }), '--');
 assert.equal(formatDisplayValue([7, localized], { type: 'many2one' }, { locale: 'zh_CN' }), '项目甲');
-assert.equal(formatDisplayValue([7, localized], undefined, { locale: 'zh_CN' }), '项目甲');
-assert.equal(formatDisplayValue([1, 2, 3], undefined, { locale: 'zh_CN' }), '1, 2, 3');
+assert.throws(
+  () => formatDisplayValue([7, localized], undefined, { locale: 'zh_CN' }),
+  { name: 'ContractGapError' },
+  'an undeclared relational value cannot be inferred from tuple shape',
+);
+assert.throws(
+  () => formatDisplayValue([1, 2, 3], undefined, { locale: 'zh_CN' }),
+  { name: 'ContractGapError' },
+  'an undeclared collection cannot be formatted from value shape',
+);
 
 // JSON 字段没有客户端编辑控件，只读展示必须给出真实 JSON 文本与空值口径，
 // 不得退化为空文本，也不得把对象字符串化后冒充可编辑输入。
@@ -57,7 +65,10 @@ assert.equal(
   'a leading migration marker without a legacy id must not leak into product display',
 );
 assert.equal(
-  formatDisplayValue('[migration:general_contract] legacy_record_id=e431f445\n公司综合平台\n业务备注'),
+  formatDisplayValue(
+    '[migration:general_contract] legacy_record_id=e431f445\n公司综合平台\n业务备注',
+    { type: 'char' },
+  ),
   '公司综合平台\n业务备注',
 );
 assert.equal(
@@ -175,7 +186,11 @@ assert.equal(
 assert.equal(formatDisplayValue('', { type: 'float' }), FIELD_VALUE_EMPTY_TEXT);
 
 assert.equal(containsAttachmentReference('合同.pdf | /web/content/123'), true);
-assert.equal(formatDisplayValue('合同.pdf | /web/content/123', { type: 'char' }), '合同.pdf');
+assert.equal(
+  formatDisplayValue('合同.pdf | /web/content/123', { type: 'char' }),
+  '合同.pdf | /web/content/123',
+  'ordinary text must not be rewritten from attachment-like appearance',
+);
 
 // 权威模块之外不得再出现空值／布尔文案字面量（含转义、拼接、repeat、模板等等价写法），
 // 也不得在已收口的消费方里自行重写数值／时间格式化或日期、附件检测正则。

@@ -177,3 +177,16 @@ export function containsAttachmentReferenceIn(value: unknown): boolean {
   if (Array.isArray(value)) return value.some((item) => containsAttachmentReference(item));
   return containsAttachmentReference(value);
 }
+
+/**
+ * Attachment actions are a declared business capability. A URL-shaped string
+ * is not enough to turn an ordinary field into an attachment surface.
+ */
+export function hasDeclaredAttachmentIdentity(source: {
+  relation?: unknown;
+  attachmentRole?: unknown;
+} | null | undefined): boolean {
+  const relation = String(source?.relation || '').trim();
+  const role = String(source?.attachmentRole || '').trim();
+  return relation === 'ir.attachment' && Boolean(role);
+}

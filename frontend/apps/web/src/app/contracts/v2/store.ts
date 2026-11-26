@@ -448,6 +448,7 @@ export function resolveContractV2FieldDescriptorMap(
     const fieldType = asText(config.fieldType || descriptor.fieldType);
     const relation = asText(config.relation || descriptor.relation);
     const relationField = asText(config.relationField || descriptor.relationField);
+    const attachmentRole = asText(descriptor.attachmentRole);
     const relationEntry = asDict(config.relationEntry || descriptor.relationEntry);
     const widgetOptions = asDict(config.widgetOptions || descriptor.widgetOptions);
     const subview = asDict(config.subview || descriptor.subview);
@@ -475,6 +476,7 @@ export function resolveContractV2FieldDescriptorMap(
       ...(typeof (config.invisible ?? descriptor.invisible) === 'boolean' ? { invisible: Boolean(config.invisible ?? descriptor.invisible) } : {}),
       ...(relation ? { relation } : {}),
       ...(relationField ? { relationField } : {}),
+      ...(attachmentRole ? { attachmentRole } : {}),
       ...(selectionPairs(config.selection ?? descriptor.selection)
         ? { selection: selectionPairs(config.selection ?? descriptor.selection) }
         : {}),

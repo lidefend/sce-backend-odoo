@@ -12,6 +12,8 @@ export type ColumnSemanticInput = {
   componentKey?: string;
   widget?: string;
   cellRole?: string;
+  relation?: string;
+  attachmentRole?: string;
   digits?: [number, number];
   currencyField?: string;
   currencyLabel?: string;

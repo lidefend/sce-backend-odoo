@@ -23,11 +23,23 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
     def test_kanban_field_name_inference_fails(self):
         failures = guard.validate(lambda path: source(
             path,
-            ("presentCollectionKanbanCell", "semanticValueByField")
+            ("function rowTitle(", "const semanticValueByField = true;\nfunction rowTitle(")
             if path == "pages/KanbanPage.vue"
             else None,
         ))
         self.assertTrue(any("field names" in failure for failure in failures))
+
+    def test_kanban_undeclared_title_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "return presentCollectionKanbanTitle({",
+                "return formatValue(row.name, 'name'); presentCollectionKanbanTitle({",
+            )
+            if path == "pages/KanbanPage.vue"
+            else None,
+        ))
+        self.assertTrue(any("undeclared fallback" in failure for failure in failures))
 
     def test_local_status_tone_table_fails(self):
         failures = guard.validate(lambda path: source(
@@ -123,6 +135,54 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
             else None,
         ))
         self.assertTrue(any("[CFG-001]" in failure for failure in failures))
+
+    def test_generic_display_undeclared_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "missing: 'fieldDescriptor'",
+                "missing: 'legacyValue'",
+            )
+            if path == "utils/display.ts"
+            else None,
+        ))
+        self.assertTrue(any("undeclared value-formatting fallback" in failure for failure in failures))
+
+    def test_field_value_attachment_appearance_inference_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "hasDeclaredAttachmentIdentity(props.field)",
+                "true",
+            )
+            if path == "components/FieldValue.vue"
+            else None,
+        ))
+        self.assertTrue(any("[CFG-010]" in failure for failure in failures))
+
+    def test_list_attachment_appearance_inference_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "return hasDeclaredAttachmentIdentity(columnSemanticInput(field));",
+                "return true;",
+            )
+            if path == "pages/ListPage.vue"
+            else None,
+        ))
+        self.assertTrue(any("[CFG-010]" in failure for failure in failures))
+
+    def test_percentage_precision_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "function requireDeclaredBusinessDigits(",
+                "function legacyDeclaredDigits(",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("require declared precision" in failure for failure in failures))
 
     def test_list_selection_raw_fallback_fails(self):
         failures = guard.validate(lambda path: source(

@@ -71,6 +71,8 @@ type ListColumnOption = {
   widget?: string;
   componentKey?: string;
   cellRole?: string;
+  relation?: string;
+  attachmentRole?: string;
   mutation?: Record<string, unknown>;
   selection?: Array<{ value: string; label: string }>;
   displayField?: string;
@@ -225,7 +227,10 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       label: widget.label,
       string: widget.label,
       widget: widget.widgetType,
-      componentKey: descriptors[widget.fieldCode]?.componentKey || '',
+      componentKey: descriptors[widget.fieldCode]?.componentKey
+        || String((widget as { componentKey?: unknown }).componentKey || '').trim(),
+      relation: descriptors[widget.fieldCode]?.relation || '',
+      attachmentRole: descriptors[widget.fieldCode]?.attachmentRole || '',
       ...(widget.componentConfig || {}),
     }));
   }
@@ -296,6 +301,8 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
           widget: widget || undefined,
           componentKey: componentKey || undefined,
           cellRole: String(schema.cell_role || schema.cellRole || '').trim() || undefined,
+          relation: String(schema.relation || schema.relation_model || field?.relation || '').trim() || undefined,
+          attachmentRole: String(schema.attachment_role || schema.attachmentRole || field?.attachmentRole || '').trim() || undefined,
           mutation: schema.mutation && typeof schema.mutation === 'object'
             ? schema.mutation as Record<string, unknown>
             : undefined,

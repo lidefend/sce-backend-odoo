@@ -163,10 +163,28 @@ export function formatBusinessPercentage(
   const numeric = numericFieldValue(value);
   if (numeric === null) return emptyText;
   const scale = normalizeDeclaredDigits(digits)?.[1];
-  const options = Number.isInteger(scale)
-    ? { minimumFractionDigits: scale, maximumFractionDigits: scale }
-    : { maximumFractionDigits: 2 };
+  if (!Number.isInteger(scale)) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'field.(percentage).digits',
+      requiredDeclarationLayer: 'P0:smart_core:field_descriptor_digits_projection',
+    }, '百分比缺少契约声明精度 digits');
+  }
+  const options = { minimumFractionDigits: scale, maximumFractionDigits: scale };
   return `${new Intl.NumberFormat('zh-CN', options).format(numeric)}%`;
+}
+
+function requireDeclaredBusinessDigits(
+  field: DeclaredBusinessField,
+  semantic: 'money' | 'percentage',
+): [number, number] {
+  const digits = normalizeDeclaredDigits(field.digits);
+  if (digits) return digits;
+  throw contractGapError({
+    kind: 'contract_defect',
+    missing: `field.${field.name || field.componentKey || '(unknown)'}.digits`,
+    requiredDeclarationLayer: 'P0:smart_core:field_descriptor_digits_projection',
+  }, `${semantic} 字段 ${field.name || field.componentKey || '(unknown)'} 缺少契约声明精度 digits`);
 }
 
 /**
@@ -409,13 +427,16 @@ export function presentDeclaredBusinessValue(input: {
   const statusContract = kind === 'status'
     ? resolveDeclaredStatusContract(input.field)
     : null;
+  const declaredDigits = kind === 'money' || kind === 'percentage'
+    ? requireDeclaredBusinessDigits(input.field, kind)
+    : undefined;
   if (isEmptyFieldValue(input.value)) {
     return Object.freeze({ kind: 'empty', text: emptyText, tone: 'neutral', badgeSemantic: 'default' });
   }
   if (kind === 'money') {
     const text = formatMonetaryDisplayValue(
       input.value,
-      input.field.digits,
+      declaredDigits,
       input.currencyLabel || input.field.currencyLabel || '',
       'zh-CN',
       emptyText,
@@ -430,7 +451,7 @@ export function presentDeclaredBusinessValue(input: {
   if (kind === 'percentage') {
     return Object.freeze({
       kind: 'percentage',
-      text: formatBusinessPercentage(input.value, emptyText, input.field.digits),
+      text: formatBusinessPercentage(input.value, emptyText, declaredDigits),
       tone: 'neutral',
       badgeSemantic: 'default',
     });

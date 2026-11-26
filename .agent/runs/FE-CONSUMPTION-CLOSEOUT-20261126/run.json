@@ -1,0 +1,335 @@
+{
+  "schema_version": 2,
+  "id": "FE-CONSUMPTION-CLOSEOUT-20261126",
+  "status": "active",
+  "branch": "fix/fe-consumption-closeout-20261126",
+  "branch_state": "bound_clean_at_activation",
+  "baseline_sha": "a92114f0efb6733253d827e3a9985af21ab96be6",
+  "baseline_state": "qualified_latest_main",
+  "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
+  "record": "docs/ops/iterations/frontend_convergence_next_20261126.md",
+  "current_batch": "FC-00 formal universe plus FC-01 semantic, selection and boundary closure",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
+    "docs/ops/iterations/frontend_convergence_next_20261126.md",
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    "docs/architecture/frontend_contract_basis_ledger.json",
+    "docs/product/frontend_business_entry_acceptance_v1.csv",
+    ".agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/run.json",
+    ".agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/coverage_matrix.json",
+    "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+    "frontend/apps/web/src/app/contracts/v2/store.ts",
+    "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+    "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+    "frontend/apps/web/src/components/FieldValue.vue",
+    "frontend/apps/web/src/pages/KanbanPage.vue",
+    "frontend/apps/web/src/pages/ListPage.vue",
+    "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+    "frontend/apps/web/src/utils/display.ts",
+    "frontend/apps/web/src/utils/fieldSemantics.ts",
+    "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+    "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+    "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+    "frontend/apps/web/scripts/professional_business_value_model_test.ts",
+    "scripts/verify/frontend_localized_display_contract_test.ts",
+    "scripts/verify/frontend_business_semantics_guard.py",
+    "scripts/verify/test_frontend_business_semantics_guard.py",
+    "scripts/verify/business_entry_matrix_universe_guard.py",
+    "scripts/verify/test_business_entry_matrix_universe_guard.py",
+    "scripts/verify/frontend_collection_kanban_record_card_guard.py",
+    "scripts/verify/test_frontend_collection_kanban_record_card_guard.py",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Preparation metadata only; no database, server, browser or external write authorized by this record."
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "At activation, affected declared-source and faithful-consumer nonzero tests; preparation only checks metadata."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Future product changes require current HEAD/Base integration; not dispatched during preparation."
+    },
+    "scheduled_release": {
+      "status": "required",
+      "entrypoint": "make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "Topic closure requires qualified resulting main separately from PR; preparation does not authorize dispatch."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "If a producer gap is changed, prove its declaration before dependent frontend acceptance."
+    }
+  },
+  "checks": {
+    "business_semantics": {
+      "target": "verify.frontend.business_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+        "frontend/apps/web/src/components/FieldValue.vue",
+        "frontend/apps/web/src/pages/KanbanPage.vue",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+        "frontend/apps/web/src/utils/display.ts",
+        "frontend/apps/web/src/utils/fieldSemantics.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+        "scripts/verify/frontend_localized_display_contract_test.ts",
+        "scripts/verify/frontend_business_semantics_guard.py",
+        "scripts/verify/test_frontend_business_semantics_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "professional_business_value": {
+      "target": "verify.frontend.professional_business_value.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/components/professional-fields/professionalBusinessValueModel.ts",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
+        "frontend/apps/web/scripts/professional_business_value_model_test.ts",
+        "scripts/verify/frontend_professional_business_value_guard.py",
+        "scripts/verify/test_frontend_professional_business_value_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "kanban_consumer": {
+      "target": "verify.frontend.collection_kanban_record_card.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/KanbanPage.vue",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+        "scripts/verify/frontend_collection_kanban_record_card_guard.py",
+        "scripts/verify/test_frontend_collection_kanban_record_card_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "collection_view_semantics": {
+      "target": "verify.frontend.collection_view_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+        "scripts/verify/collection_view_semantics_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_shape_projection": {
+      "target": "verify.frontend.contract_shape_projection.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "collection_row_cell": {
+      "target": "verify.frontend.collection_row_cell.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+        "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
+        "scripts/verify/frontend_collection_row_cell_guard.py",
+        "scripts/verify/test_frontend_collection_row_cell_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_fidelity_plan": {
+      "target": "verify.frontend.contract_fidelity.plan.unit",
+      "inputs": [
+        "docs/architecture/p0_contract_producer_01/remediation_design.json",
+        "scripts/verify/contract_fidelity_plan_guard.py",
+        "scripts/verify/test_contract_fidelity_plan_guard.py",
+        "frontend/apps/web/src/app/contracts/v2/client.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "business_entry_universe": {
+      "target": "verify.frontend.business_entry.matrix.universe",
+      "inputs": [
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "config/product_scenario_organization_v1.json",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "scripts/verify/business_entry_matrix_universe_guard.py",
+        "scripts/verify/test_business_entry_matrix_universe_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "intent_channel": {
+      "target": "verify.frontend.intent_channel.guard",
+      "inputs": [
+        "frontend/apps/web/src/services/accountActivation.ts",
+        "frontend/apps/web/src/api/intents.ts",
+        "frontend/apps/web/src/api/client.ts",
+        "docs/architecture/user_identity_activation_and_saas_boundary_v1.md",
+        "scripts/verify/frontend_intent_channel_guard.py",
+        "scripts/verify/test_frontend_intent_channel_guard.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "incremental_selection": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "scripts/verify/business_entry_matrix_universe_guard.py",
+        "scripts/verify/test_business_entry_matrix_universe_guard.py",
+        "config/ci/path_ownership_v1.json",
+        "make/frontend.mk",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "business_entry_evidence_scope": {
+      "target": "verify.frontend.business_entry.evidence_scope.unit",
+      "inputs": [
+        "scripts/ops/evidence_scope.py",
+        "scripts/ops/test_evidence_scope.py",
+        "scripts/verify/business_entry_matrix_incremental.py",
+        "scripts/verify/business_entry_matrix_model.mjs",
+        "scripts/verify/business_entry_matrix_scope.mjs",
+        "scripts/verify/business_entry_matrix_scope_seed.py",
+        "scripts/verify/business_entry_matrix_runtime_route.test.mjs",
+        "scripts/verify/business_entry_matrix_reuse_identity.test.mjs",
+        "scripts/verify/test_business_entry_matrix_incremental.py",
+        "scripts/verify/business_entry_matrix_universe_guard.py",
+        "scripts/verify/test_business_entry_matrix_universe_guard.py",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "config/product_scenario_organization_v1.json",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "p0_attachment_descriptor": {
+      "target": "verify.p0_contract_producer.p0a.unit",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
+        "docs/architecture/p0_contract_producer_01/remediation_design.json",
+        "scripts/verify/contract_fidelity_plan_guard.py",
+        "scripts/verify/test_contract_fidelity_plan_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "preparation": {
+    "status": "activated",
+    "implementation_authorized": true,
+    "active_run_index_changed": true,
+    "current_ci_candidate_unchanged": "a92114f0efb6733253d827e3a9985af21ab96be6",
+    "first_batch": [
+      "FC-00",
+      "FC-01"
+    ],
+    "first_batch_findings": [
+      "FE-S01",
+      "FE-S02",
+      "FE-S03",
+      "FE-S04",
+      "FE-S05",
+      "FE-S10"
+    ],
+    "followup_findings": [
+      "FE-S06",
+      "FE-S07",
+      "FE-S08",
+      "FE-S09",
+      "FE-S11"
+    ],
+    "matrix": ".agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/coverage_matrix.json",
+    "product_tests": "not_run_preparation_only",
+    "qualified_main": "a92114f0efb6733253d827e3a9985af21ab96be6",
+    "qualification_manifest": ".runtime/main-full-release/a92114f0efb6733253d827e3a9985af21ab96be6.json",
+    "source_observations_require_changed_input_review_at_activation": true
+  },
+  "check_candidates": [
+    {
+      "target": "verify.frontend.contract_fidelity.plan.unit",
+      "purpose": "current producer evidence and consumer boundary",
+      "status": "not_run"
+    },
+    {
+      "target": "verify.frontend.contract_v2_occurrence_authority.unit",
+      "purpose": "strict identity and current-only consumption",
+      "status": "not_run"
+    },
+    {
+      "target": "verify.frontend.business_semantics.unit",
+      "purpose": "declared value identity and formatting",
+      "status": "not_run"
+    },
+    {
+      "target": "verify.frontend.professional_business_value.unit",
+      "purpose": "professional controls; inspect browser dependency before selection",
+      "status": "not_run"
+    },
+    {
+      "target": "verify.frontend.contract_basis.unit",
+      "purpose": "registered declaration bindings, not all semantic coverage",
+      "status": "not_run"
+    }
+  ],
+  "activation_steps": [
+    "Owner explicitly starts implementation; current request prepares only.",
+    "Read authoritative main and its exact full qualification. Replace provisional baseline; recheck only changed source digests.",
+    "Finish or park current CI topic through governed workflow. Reuse eligible registered worktree; do not overwrite its binding or silently create a third worktree.",
+    "Preserve and carry all prepared topic files to the topic branch before clearing anything from CI worktree. Bind only the actual topic branch in active-runs.json.",
+    "Freeze affected files and populated checks for FC-00/FC-01 in this run; set active and run make agent.run.resume.",
+    "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
+  ],
+  "blockers": [],
+  "next_exact_step": "Continue FC-01 with the remaining semantic coverage matrix and current-candidate runtime equivalence classes; do not inherit historical 143-entry browser evidence.",
+  "evidence": {
+    "preparation_validation": {
+      "status": "passed",
+      "metadata_checks": [
+        "11 source rows with matching hashes",
+        "9 tasks with acyclic dependencies",
+        "references resolve",
+        "candidate and active CI binding unchanged",
+        "git diff --check"
+      ],
+      "ledger_target": "make verify.agent.ledger.unit",
+      "ledger_tests": 18,
+      "ledger_guard": "passed",
+      "log": ".runtime/frontend-topic-preparation-ledger.log",
+      "product_tests": "not_run"
+    }
+  }
+}
