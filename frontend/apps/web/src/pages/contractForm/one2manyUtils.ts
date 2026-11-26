@@ -181,6 +181,7 @@ export function one2manyColumnsFromSubview(
           readonly: businessColumn?.readonly === undefined ? descriptorSemantics.readonly : Boolean(businessColumn.readonly),
           selection: one2manySelectionOptions(businessColumn?.selection) || descriptorSemantics.selection,
           ...(descriptor?.temporal ? { temporal: descriptor.temporal } : {}),
+          ...(descriptor?.unit ? { unit: descriptor.unit } : {}),
         });
         return;
       }
@@ -243,6 +244,7 @@ export function one2manyColumnsFromSubview(
         relationActiveActions: Object.keys(relationActions).length ? relationActions : undefined,
         selection: one2manySelectionOptions(row.selection || businessColumn.selection || descriptor?.selection),
         ...(descriptor?.temporal ? { temporal: descriptor.temporal } : {}),
+        ...(descriptor?.unit ? { unit: descriptor.unit } : {}),
       });
     });
   }
@@ -974,6 +976,7 @@ export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknow
       componentKey: column.componentKey,
       widget: column.widget,
       digits: column.digits,
+      unit: column.unit,
       currencyField: column.currencyField,
       currencyLabel: column.currencyLabel,
       selection: column.selection,

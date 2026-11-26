@@ -186,6 +186,7 @@ const readonlyText = computed(() => presentDeclaredBusinessValue({
     widget: props.field.widget,
     selection: props.field.descriptor?.selection,
     digits: props.field.digits,
+    unit: props.field.unit,
     currencyField: props.field.currencyField,
     currencyLabel: props.field.currencyLabel,
   },

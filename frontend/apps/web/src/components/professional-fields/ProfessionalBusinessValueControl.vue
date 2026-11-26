@@ -95,7 +95,7 @@ const inputStep = computed(() => kind.value === 'sc.value.money' ? monetaryInput
 const suffix = computed(() => {
   if (kind.value === 'sc.value.money') return props.field.currencyLabel || '';
   if (kind.value === 'sc.value.percentage') return '%';
-  if (kind.value === 'sc.value.duration') return '小时';
+  if (kind.value === 'sc.value.duration') return props.field.unit?.label || '';
   return '';
 });
 const emptyDisplayText = computed(() => resolveReadonlyEmptyText(props.field));
@@ -108,7 +108,7 @@ const moneyDisplay = computed(() => formatMonetaryDisplayValue(
 ));
 const displayText = computed(() => {
   const value = props.field.value;
-  if (kind.value === 'sc.value.percentage') return formatPercentage(value, props.field.digits);
+  if (kind.value === 'sc.value.percentage') return formatPercentage(value, props.field.digits, props.field.unit);
   if (kind.value === 'sc.value.duration' || kind.value === 'sc.display.status') {
     return presentDeclaredBusinessValue({
       field: {
@@ -117,6 +117,8 @@ const displayText = computed(() => {
         componentKey: props.field.componentKey,
         widget: props.field.widget,
         selection: props.field.selectionOptions,
+        digits: props.field.digits,
+        unit: props.field.unit,
         temporal: props.field.temporal,
       },
       value: props.field.inputValue ?? value,

@@ -82,6 +82,7 @@ const metrics = computed<MetricItem[]>(() => {
             componentKey: valueField.componentKey,
             widget: valueField.widgetType,
             digits: valueField.digits,
+            unit: valueField.unit,
             currencyField: valueField.currencyField,
             currencyLabel: pageBlockData
               ? resolvePageBlockCurrencyLabel(pageBlockData, valueField.currencyField)

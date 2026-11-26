@@ -15,6 +15,11 @@ export type ColumnSemanticInput = {
   relation?: string;
   attachmentRole?: string;
   digits?: [number, number];
+  unit?: {
+    kind: 'percent' | 'duration' | 'count' | 'quantity';
+    code: string;
+    label: string;
+  };
   currencyField?: string;
   currencyLabel?: string;
   temporal?: {
@@ -94,6 +99,7 @@ export function formatListTemporalValue(value: unknown, input: ColumnSemanticInp
       widget: input.widget,
       cellRole: input.cellRole,
       digits: input.digits,
+      unit: input.unit,
       temporal: input.temporal,
       selection: input.selection,
     },
@@ -144,6 +150,7 @@ export function presentListCell(input: CellPresentationInput) {
       cellRole: column.cellRole,
       selection: column.selection,
       digits: column.digits,
+      unit: column.unit,
       temporal: column.temporal,
       currencyField: column.currencyField,
       currencyLabel: column.currencyLabel,

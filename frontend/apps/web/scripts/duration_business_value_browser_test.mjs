@@ -32,11 +32,11 @@ const cases = [
   ['null', null, '--'],
   ['undefined', undefined, '--'],
   ['false', false, '--'],
-  ['zero', 0, '0 小时'],
-  ['one', 1, '1 小时'],
-  ['one-half', 1.5, '1 小时 30 分钟'],
-  ['carry', 1.999, '2 小时'],
-  ['negative', -0.5, '-30 分钟'],
+  ['zero', 0, '0.000 小时'],
+  ['one', 1, '1.000 小时'],
+  ['one-half', 1.5, '1.500 小时'],
+  ['carry', 1.999, '1.999 小时'],
+  ['negative', -0.5, '-0.500 小时'],
 ];
 window.durationCases = cases;
 window.listOutputs = [];
@@ -48,6 +48,8 @@ const field = (value, readonly = true, inputValue = value) => ({
   type: 'float',
   widget: 'float_time',
   componentKey: 'sc.value.duration',
+  digits: [16, 3],
+  unit: { kind: 'duration', code: 'hour', label: '小时' },
   value,
   inputValue,
   readonly,
@@ -75,6 +77,8 @@ const Host = {
           type: 'float',
           widget: 'float_time',
           componentKey: 'sc.value.duration',
+          digits: [16, 3],
+          unit: { kind: 'duration', code: 'hour', label: '小时' },
         },
       }).text),
       h('output', {
@@ -88,6 +92,8 @@ const Host = {
           type: 'float',
           widget: 'float_time',
           componentKey: 'sc.value.duration',
+          digits: [16, 3],
+          unit: { kind: 'duration', code: 'hour', label: '小时' },
         }],
       }).text),
       ...(key === 'false' ? [
@@ -121,6 +127,7 @@ const Host = {
       type: 'float',
       componentKey: 'sc.value.percentage',
       digits: [16, 4],
+      unit: { kind: 'percent', code: 'percent', label: '%' },
     };
     const quantityField = {
       name: 'declared_quantity',
@@ -229,6 +236,7 @@ const Host = {
               value: 12.5,
               inputValue: 12.5,
               digits: [16, 4],
+              unit: { kind: 'percent', code: 'percent', label: '%' },
               readonly: true,
               required: false,
             },
@@ -338,7 +346,11 @@ try {
     caseCount = cases.length;
     for (const [key, , expected] of cases) {
       const form = page.locator(`[data-duration-case="${key}"]`);
-      await form.waitFor({ state: 'visible' });
+      try {
+        await form.waitFor({ state: 'visible' });
+      } catch (error) {
+        throw new Error(`${locale}: duration node ${key} did not render: ${errors.join(' | ') || String(error)}`);
+      }
       assert.equal(String(await form.innerText()).trim(), expected, `${locale}: Form duration ${key}`);
       assert.equal(await page.locator(`[data-list-duration="${key}"]`).innerText(), expected, `${locale}: List duration ${key}`);
       assert.equal(await page.locator(`[data-kanban-duration="${key}"]`).innerText(), expected, `${locale}: Kanban duration ${key}`);

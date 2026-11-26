@@ -184,6 +184,11 @@ export type One2ManyColumn = {
   selection?: Array<[string, string]>;
   relation?: string;
   digits?: [number, number];
+  unit?: {
+    kind: 'percent' | 'duration' | 'count' | 'quantity';
+    code: string;
+    label: string;
+  };
   temporal?: {
     kind: 'date' | 'datetime';
     timezoneAuthority: 'user' | 'record' | 'not_applicable';

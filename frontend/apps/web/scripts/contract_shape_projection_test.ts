@@ -188,6 +188,11 @@ const durationWidget = {
   widgetType: 'number',
   componentKey: 'sc.value.duration',
   componentConfig: { fieldType: 'float', nativeWidget: 'float_time' },
+  fieldDescriptor: {
+    fieldType: 'float',
+    digits: [16, 3],
+    unit: { kind: 'duration', code: 'hour', label: '小时' },
+  },
 };
 const durationStore = {
   snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
@@ -200,15 +205,16 @@ const durationStore = {
 const durationOption = runtime.resolveListColumnOptions(durationStore, { columns: ['duration_hours'] })[0];
 assert.ok(durationOption);
 check(durationOption?.componentKey, 'sc.value.duration', 'collection projection preserves duration component identity');
+check(durationOption?.unit?.label, '小时', 'collection projection preserves declared duration unit');
 check(presentListCell({
   raw: 1.5,
   column: { ...durationOption, field: durationOption.name },
-}).text, '1 小时 30 分钟', 'List consumes projected duration identity');
+}).text, '1.500 小时', 'List consumes projected duration identity and unit');
 check(presentCollectionKanbanCell({
   field: 'duration_hours',
   value: 1.5,
   columnOptions: [durationOption],
-}).text, '1 小时 30 分钟', 'Kanban consumes projected duration identity');
+}).text, '1.500 小时', 'Kanban consumes projected duration identity and unit');
 
 // Percentage is an existing declared component identity. It must cross the same
 // Contract V2 collection producer before List or Kanban interprets the value.
@@ -219,6 +225,11 @@ const percentageWidget = {
   widgetType: 'percentage',
   componentKey: 'sc.value.percentage',
   componentConfig: { fieldType: 'float', digits: [16, 4] },
+  fieldDescriptor: {
+    fieldType: 'float',
+    digits: [16, 4],
+    unit: { kind: 'percent', code: 'percent', label: '%' },
+  },
 };
 const percentageStore = {
   snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },

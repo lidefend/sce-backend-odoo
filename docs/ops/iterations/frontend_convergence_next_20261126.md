@@ -424,6 +424,35 @@ clean 运行态权威回读：
 仍未执行 143 个业务入口的当前候选页面、角色或办理旅程，也未完成远端 PR CI、主线资格、
 部署和用户验收。
 
+### 2026-11-27 FC-01 percentage/duration 单位消费收口
+
+继续按 P0 描述符条件规则核对时发现，percentage/duration 虽要求声明
+`digits` 与 `unit.kind/code/label`，V2 解码器也执行一致性校验，但前端业务值只读取
+`componentKey` 和精度；duration 仍按硬编码算法折算成“小时/分钟”，忽略了声明单位。
+
+本切片完成：
+
+- percentage 与 duration 都必须消费合法声明单位；缺失或 kind/code/label 不一致即
+  `ContractGapError`；
+- duration 按声明 `digits + unit.label` 呈现，不再自行把十进制工时折算成硬编码分钟；
+- V2 normalized store 补齐 `digits`、`unit`、`temporal` 描述符透传，避免列投影丢语义；
+- 表单、专业控件、列表、看板、主从明细和页面块指标均保留声明单位；
+- 增加 percentage/duration 缺单位、duration 缺精度、声明精度与标签的区分性用例；
+- `frontend_contract_basis_ledger.json` 新增声明的单位绑定；
+- 选中并执行 `standard_collection_composition.unit`，其语义标签矩阵同步改为声明输出。
+
+`make ci.local.iteration` 在 `a6f9f264be0d9f1afcc848fe4f84a35609a13396`
+加当前 owned dirty scope 上执行 44 个目标、复用 2 个未变目标，本轮执行 1071 项测试，
+全部退出零。回执：
+
+`.runtime/frontend-dev-validation/executions/20261126T231335Z-884622-163141097/receipt.json`
+
+回执 SHA256：
+`6b3a88ac3c3a0cd32d0b154143258c387adfab80aab53e0cb20474962b3a5def`。
+
+产品改动提交后仍需按新精确 HEAD 重建 clean 运行态。远端 PR CI、主线资格、部署和
+用户验收均未完成。
+
 
 ### 2026-11-27 开工条件回读
 

@@ -285,7 +285,9 @@ const schemaSelectionColumns = one2manyColumnsFromSubview({ tree: {
   columns_schema: [{ name: 'state', label: '状态', type: 'selection', selection: [
     { value: 'submitted', label: '已提交' }, { value: 'won', label: '中标' },
   ] }],
-} }, () => null);
+} }, (name) => name === 'completion_ratio'
+  ? { unit: { kind: 'percent', code: 'percent', label: '%' } }
+  : null);
 assert.deepEqual(schemaSelectionColumns[0], {
   name: 'state', label: '状态', ttype: 'selection', required: false, readonly: false,
   selection: [['submitted', '已提交'], ['won', '中标']],
@@ -309,7 +311,9 @@ const percentageColumns = one2manyColumnsFromSubview({ tree: {
     name: 'completion_ratio', field_type: 'float', widget: 'percentage', digits: [16, 4],
     attributes: { widget: 'percentage' }, modifiers: {},
   }],
-} }, () => null);
+} }, (name) => name === 'completion_ratio'
+  ? { unit: { kind: 'percent', code: 'percent', label: '%' } }
+  : null);
 assert.equal(percentageColumns[0]?.componentKey, 'sc.value.percentage');
 assert.deepEqual(percentageColumns[0]?.digits, [16, 4]);
 assert.equal(one2manyColumnDisplayValue(percentageColumns[0]!, 12.5), '12.5000%');
@@ -373,8 +377,16 @@ assert.equal(
   '2025-06-10 09:00',
 );
 assert.equal(
-  one2manyColumnDisplayValue({ name: 'duration', label: '工时', ttype: 'float', widget: 'float_time', required: false }, 1.5),
-  '1 小时 30 分钟',
+  one2manyColumnDisplayValue({
+    name: 'duration',
+    label: '工时',
+    ttype: 'float',
+    widget: 'float_time',
+    required: false,
+    digits: [16, 3],
+    unit: { kind: 'duration', code: 'hour', label: '小时' },
+  }, 1.5),
+  '1.500 小时',
 );
 assert.equal(
   one2manyColumnInputValue({ name: 'duration', label: '工时', ttype: 'float', widget: 'float_time', required: false }, 1.5),

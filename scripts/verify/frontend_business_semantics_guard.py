@@ -71,6 +71,12 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("status declaration validation must precede empty-value return")
     if "function requireDeclaredBusinessDigits(" not in authority:
         failures.append("money and percentage values do not require declared precision")
+    if "function requireDeclaredBusinessUnit(" not in authority:
+        failures.append("percentage and duration values do not require declared units")
+    if "unit?.kind === 'duration'" not in authority or "unit?.kind === 'percent'" not in authority:
+        failures.append("percentage and duration unit kinds are not consumed")
+    if "Math.round(absolute * 3_600_000)" in authority:
+        failures.append("duration still rounds through a hard-coded hour/minute algorithm")
     if "function resolveDeclaredTemporal(" not in authority:
         failures.append("date and datetime values do not require declared temporal authority")
     if "temporal.kind" not in authority or "timezoneAuthority" not in authority:
@@ -85,6 +91,8 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("monetary helpers do not validate declared digits through the shared scale authority")
     if "presentDeclaredBusinessValue" not in kanban_adapter:
         failures.append("Kanban adapter does not consume declared business-value semantics")
+    if "unit: option?.unit" not in kanban_adapter:
+        failures.append("Kanban adapter drops the declared field unit")
 
     display = _read("utils/display.ts", read_text)
     if "presentDeclaredBusinessValue({" not in display:
@@ -147,6 +155,8 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     list_cells = _read("pages/listPage/listCellPresentation.ts", read_text)
     if "presentDeclaredBusinessValue" not in list_cells:
         failures.append("[CFG-002] List cells bypass the shared declared business-value authority")
+    if "unit: column.unit" not in list_cells:
+        failures.append("[CFG-004] List cells drop the declared field unit")
     for forbidden in ("selectionText", "String(displayRaw)", "String(raw)"):
         if forbidden in list_cells:
             failures.append(f"[CFG-002] List cells retain a raw-value fallback: {forbidden}")
@@ -225,6 +235,7 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         "componentKey: props.field.componentKey",
         "widget: props.field.widget",
         "currencyField: props.field.currencyField",
+        "unit: props.field.unit",
     ):
         if marker not in base_control:
             failures.append(
@@ -237,6 +248,7 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         "componentKey: field.componentKey",
         "widget: field.widget",
         "digits: field.digits",
+        "unit: field.unit",
         "currencyField: field.currencyField",
     ):
         if marker not in form_section:

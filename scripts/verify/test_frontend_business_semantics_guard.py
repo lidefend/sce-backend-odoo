@@ -196,6 +196,39 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         ))
         self.assertTrue(any("currency-code metadata" in failure for failure in failures))
 
+    def test_declared_unit_consumption_drop_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "function requireDeclaredBusinessUnit(",
+                "function legacyDeclaredUnit(",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("declared units" in failure for failure in failures))
+
+    def test_list_duration_unit_propagation_drop_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            ("unit: column.unit,", "unit: undefined,")
+            if path == "pages/listPage/listCellPresentation.ts"
+            else None,
+        ))
+        self.assertTrue(any("declared field unit" in failure for failure in failures))
+
+    def test_hard_coded_duration_rounding_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "function formatBusinessDuration(",
+                "function formatBusinessDuration( value: unknown, emptyText = FIELD_VALUE_EMPTY_TEXT, ) { const absolute = Math.abs(Number(value)); Math.round(absolute * 3_600_000);",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("hard-coded hour/minute" in failure for failure in failures))
+
     def test_temporal_authority_consumption_drop_fails(self):
         failures = guard.validate(lambda path: source(
             path,

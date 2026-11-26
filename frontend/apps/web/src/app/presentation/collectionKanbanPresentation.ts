@@ -14,6 +14,11 @@ export type CollectionKanbanFieldOption = {
   cellRole?: string;
   selection?: Array<{ value: string; label: string }>;
   digits?: [number, number];
+  unit?: {
+    kind: 'percent' | 'duration' | 'count' | 'quantity';
+    code: string;
+    label: string;
+  };
   currencyField?: string;
   temporal?: {
     kind: 'date' | 'datetime';
@@ -42,6 +47,7 @@ export function presentCollectionKanbanCell(input: {
       cellRole: option?.cellRole,
       selection: option?.selection || input.fieldSelections?.[input.field],
       digits: option?.digits,
+      unit: option?.unit,
       currencyField,
       temporal: option?.temporal,
     },

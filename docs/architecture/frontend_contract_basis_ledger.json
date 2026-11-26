@@ -338,6 +338,20 @@
       "regressionGuard": "verify.frontend.business_semantics.unit",
       "behaviourTest": "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
       "stopDetail": "date/datetime 必须携带匹配的 temporal.kind 与 timezoneAuthority；datetime 不得因午夜值降级为日期，用户时区由运行时用户上下文消费，记录时区缺失即停机。"
+    },
+    {
+      "surface": "Percentage and duration declared unit",
+      "declared": "fieldDescriptor.unit for percentage and duration",
+      "declaredBy": "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+      "declaredMethod": "_strict_field_descriptor",
+      "declaredSymbol": "descriptor[\"unit\"] = {\"kind\": \"percent\"",
+      "consumedBy": "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+      "consumedSymbol": "requireDeclaredBusinessUnit(",
+      "onMissing": "stop",
+      "stopSymbol": "contractGapError",
+      "regressionGuard": "verify.frontend.business_semantics.unit",
+      "behaviourTest": "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+      "stopDetail": "percentage/duration 必须消费声明 unit.kind/code/label 与 digits；duration 不再按 float_time 自行折算成硬编码小时/分钟，声明缺失或非法即停机。"
     }
   ],
   "registeredMechanismExemptions": [

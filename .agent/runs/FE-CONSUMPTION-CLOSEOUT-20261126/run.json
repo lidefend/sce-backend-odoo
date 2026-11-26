@@ -35,6 +35,7 @@
     "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
     "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
     "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
+    "frontend/apps/web/src/components/professional-fields/professionalBusinessValueModel.ts",
     "frontend/apps/web/src/components/role-home/WorkspaceHome.vue",
     "frontend/apps/web/src/components/template/FormSection.vue",
     "frontend/apps/web/src/components/template/formSection.mapper.ts",
@@ -50,6 +51,8 @@
     "frontend/apps/web/src/utils/display.ts",
     "frontend/apps/web/src/utils/fieldSemantics.ts",
     "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+    "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
+    "frontend/apps/web/scripts/list_surface_component_test.mjs",
     "frontend/apps/web/scripts/action_surface_renderer_registry_test.ts",
     "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
     "frontend/apps/web/scripts/collection_view_semantics_test.ts",
@@ -88,8 +91,8 @@
     "demo_data": false,
     "fixture": false,
     "frontend_build_fingerprint": "046332dc0f6f6ad74e6e29a37b9bf0ce2c726c6a600c5201e158f68eb5c8ee14",
-    "health": "passed",
-    "health_note": "The clean profile serves the exact temporal-consumption product source. Any later run/documentation-only update does not change the product surface.",
+    "health": "stale_current_worktree",
+    "health_note": "The clean profile serves the previous temporal product source; the declared-unit changes require a post-commit exact-HEAD rebuild.",
     "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-temporal-health.log",
     "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-temporal-entry-identity.log",
     "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-temporal-frontend-build.log",
@@ -125,6 +128,7 @@
     "business_semantics": {
       "target": "verify.frontend.business_semantics.unit",
       "inputs": [
+        "frontend/packages/schema/src/index.ts",
         "frontend/apps/web/src/App.vue",
         "frontend/apps/web/src/app/runtimeTimeZone.ts",
         "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
@@ -237,6 +241,7 @@
         "frontend/apps/web/src/components/professional-fields/professionalBusinessValueModel.ts",
         "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
         "frontend/apps/web/scripts/professional_business_value_model_test.ts",
+        "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
         "scripts/verify/frontend_professional_business_value_guard.py",
         "scripts/verify/test_frontend_professional_business_value_guard.py",
         "make/frontend.mk"
@@ -290,6 +295,18 @@
         "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
         "frontend/apps/web/src/app/contracts/v2/store.ts",
         "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "standard_collection_composition": {
+      "target": "verify.frontend.standard_collection_composition.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+        "frontend/apps/web/scripts/list_surface_component_test.mjs",
+        "frontend/apps/web/scripts/standard_collection_composition_test.ts",
         "make/frontend.mk"
       ],
       "kind": "offline"
@@ -584,6 +601,24 @@
       "reused_targets": 30,
       "executed_test_count": 439,
       "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
+    },
+    "fc01_declared_unit_consumption": {
+      "status": "passed",
+      "stage_identity": "a6f9f264be0d9f1afcc848fe4f84a35609a13396 plus the owned percentage/duration unit dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T231335Z-884622-163141097/receipt.json",
+      "receipt_sha256": "6b3a88ac3c3a0cd32d0b154143258c387adfab80aab53e0cb20474962b3a5def",
+      "executed_targets": 44,
+      "reused_targets": 2,
+      "executed_test_count": 1071,
+      "facts_verified": [
+        "percentage and duration require declared digits and matching unit kind/code/label",
+        "duration renders from declared precision and unit instead of a hard-coded hour/minute conversion",
+        "V2 normalized-store field descriptors preserve digits, unit and temporal metadata",
+        "form, list, Kanban, detail collection and page-block metric consumers retain the declared unit",
+        "duration browser behavior, standard collection composition and contract-basis enforcement all pass"
+      ],
+      "scope_limit": "Local targeted validation only; clean exact-head runtime, remote PR CI, mainline qualification and business-entry browser acceptance remain not_run."
     }
   }
 }

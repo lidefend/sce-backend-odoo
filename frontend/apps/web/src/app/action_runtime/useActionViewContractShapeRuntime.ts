@@ -81,6 +81,11 @@ type ListColumnOption = {
   dataType?: string;
   currencyField?: string;
   digits?: [number, number];
+  unit?: {
+    kind: 'percent' | 'duration' | 'count' | 'quantity';
+    code: string;
+    label: string;
+  };
   temporal?: {
     kind: 'date' | 'datetime';
     timezoneAuthority: 'user' | 'record' | 'not_applicable';
@@ -235,6 +240,8 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         || String((widget as { componentKey?: unknown }).componentKey || '').trim(),
       relation: descriptors[widget.fieldCode]?.relation || '',
       attachmentRole: descriptors[widget.fieldCode]?.attachmentRole || '',
+      digits: descriptors[widget.fieldCode]?.digits,
+      unit: descriptors[widget.fieldCode]?.unit,
       temporal: descriptors[widget.fieldCode]?.temporal,
       ...(widget.componentConfig || {}),
     }));
@@ -331,6 +338,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
           dataType: String(schema.data_type || type || '').trim() || undefined,
           currencyField: String(schema.currency_field || '').trim() || undefined,
           digits: normalizeDeclaredDigits(schema.digits || schema.precision),
+          unit: (field?.unit || schema.unit) as ListColumnOption['unit'],
           temporal: (field?.temporal || schema.temporal) as ListColumnOption['temporal'],
           aggregate: aggregate || 'none',
           sortField: String(schema.sort_field || valueField).trim() || undefined,

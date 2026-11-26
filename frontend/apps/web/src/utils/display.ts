@@ -113,6 +113,7 @@ function formatDeclaredDisplayValue(
       cellRole: field.cellRole,
       selection: field.selection,
       digits: field.digits,
+      unit: field.unit,
       temporal: field.temporal,
       currencyField: field.currencyField || field.currency_field,
       currencyLabel: field.currencyLabel,

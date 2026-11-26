@@ -198,6 +198,7 @@ export function canonicalFieldToFormSection(
     sectionContentKind: relationshipCollection ? 'relation-collection' : undefined,
     sectionSourceIdentity: relationshipCollection ? field.widgetId : undefined,
     digits,
+    unit: descriptor.unit as FormSectionFieldSchema['unit'],
     temporal: descriptor.temporal as FormSectionFieldSchema['temporal'],
     currencyField: currencyField || undefined,
     currencyLabel: currencyLabel || undefined,

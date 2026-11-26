@@ -449,6 +449,15 @@ export function resolveContractV2FieldDescriptorMap(
     const relation = asText(config.relation || descriptor.relation);
     const relationField = asText(config.relationField || descriptor.relationField);
     const attachmentRole = asText(descriptor.attachmentRole);
+    const digits = Array.isArray(descriptor.digits) && descriptor.digits.length === 2
+      ? [Number(descriptor.digits[0]), Number(descriptor.digits[1])] as [number, number]
+      : undefined;
+    const unit = descriptor.unit && typeof descriptor.unit === 'object' && !Array.isArray(descriptor.unit)
+      ? descriptor.unit as ContractV2FieldDescriptor['unit']
+      : undefined;
+    const temporal = descriptor.temporal && typeof descriptor.temporal === 'object' && !Array.isArray(descriptor.temporal)
+      ? descriptor.temporal as ContractV2FieldDescriptor['temporal']
+      : undefined;
     const relationEntry = asDict(config.relationEntry || descriptor.relationEntry);
     const widgetOptions = asDict(config.widgetOptions || descriptor.widgetOptions);
     const subview = asDict(config.subview || descriptor.subview);
@@ -477,6 +486,9 @@ export function resolveContractV2FieldDescriptorMap(
       ...(relation ? { relation } : {}),
       ...(relationField ? { relationField } : {}),
       ...(attachmentRole ? { attachmentRole } : {}),
+      ...(digits ? { digits } : {}),
+      ...(unit ? { unit } : {}),
+      ...(temporal ? { temporal } : {}),
       ...(selectionPairs(config.selection ?? descriptor.selection)
         ? { selection: selectionPairs(config.selection ?? descriptor.selection) }
         : {}),

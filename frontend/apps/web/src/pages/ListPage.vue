@@ -391,6 +391,11 @@ type ColumnOption = {
   relation?: string;
   attachmentRole?: string;
   currencyField?: string;
+  unit?: {
+    kind: 'percent' | 'duration' | 'count' | 'quantity';
+    code: string;
+    label: string;
+  };
   temporal?: {
     kind: 'date' | 'datetime';
     timezoneAuthority: 'user' | 'record' | 'not_applicable';
@@ -1942,6 +1947,7 @@ function columnSemanticInput(field: string) {
     selection: option?.selection,
     digits: option?.digits,
     currencyField: option?.currencyField,
+    unit: option?.unit,
     temporal: option?.temporal,
     timeZone: timeZone.value,
   };

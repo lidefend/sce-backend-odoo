@@ -76,16 +76,32 @@ assert.equal(presentCollectionKanbanCell({
 }).text, '12.50', 'Kanban never infers percentage from a field name; plain floats share the authority default');
 
 const declaredPercentage = presentDeclaredBusinessValue({
-  field: { name: 'unrelated_ratio', type: 'float', componentKey: 'sc.value.percentage', digits: [16, 4] },
+  field: {
+    name: 'unrelated_ratio',
+    type: 'float',
+    componentKey: 'sc.value.percentage',
+    digits: [16, 4],
+    unit: { kind: 'percent', code: 'percent', label: '%' },
+  },
   value: 12.5,
 });
 assert.equal(declaredPercentage.kind, 'percentage');
 assert.equal(declaredPercentage.text, '12.5000%');
-assert.equal(formatBusinessPercentage(12.5, FIELD_VALUE_EMPTY_TEXT, [16, 4]), declaredPercentage.text);
+assert.equal(formatBusinessPercentage(
+  12.5,
+  FIELD_VALUE_EMPTY_TEXT,
+  [16, 4],
+  { kind: 'percent', code: 'percent', label: '%' },
+), declaredPercentage.text);
 assert.throws(
   () => formatBusinessPercentage(12.5),
   { name: 'ContractGapError' },
   'percentage precision must come from the field contract',
+);
+assert.throws(
+  () => formatBusinessPercentage(12.5, FIELD_VALUE_EMPTY_TEXT, [16, 4]),
+  { name: 'ContractGapError' },
+  'percentage unit must come from the field contract',
 );
 assert.throws(
   () => presentDeclaredBusinessValue({
@@ -137,6 +153,7 @@ assert.equal(presentCollectionKanbanCell({
     type: 'float',
     componentKey: 'sc.value.percentage',
     digits: [16, 4],
+    unit: { kind: 'percent', code: 'percent', label: '%' },
   }],
 }).text, '12.5000%', 'Kanban consumes percentage identity and declared precision');
 
@@ -145,15 +162,15 @@ const durationCases: Array<[unknown, string]> = [
   [undefined, FIELD_VALUE_EMPTY_TEXT],
   [false, FIELD_VALUE_EMPTY_TEXT],
   ['', FIELD_VALUE_EMPTY_TEXT],
-  [0, '0 小时'],
-  [1, '1 小时'],
-  [1.5, '1 小时 30 分钟'],
-  [1.999, '2 小时'],
-  [0.58, '35 分钟'],
-  [59 / 60, '59 分钟'],
-  [59.6 / 60, '1 小时'],
-  [-0.5, '-30 分钟'],
-  [-1.5, '-1 小时 30 分钟'],
+  [0, '0.000 小时'],
+  [1, '1.000 小时'],
+  [1.5, '1.500 小时'],
+  [1.999, '1.999 小时'],
+  [0.58, '0.580 小时'],
+  [59 / 60, '0.983 小时'],
+  [59.6 / 60, '0.993 小时'],
+  [-0.5, '-0.500 小时'],
+  [-1.5, '-1.500 小时'],
   ['not-a-duration', FIELD_VALUE_EMPTY_TEXT],
   [Number.NaN, FIELD_VALUE_EMPTY_TEXT],
   [Number.POSITIVE_INFINITY, FIELD_VALUE_EMPTY_TEXT],
@@ -163,9 +180,11 @@ const durationField = {
   type: 'float',
   widget: 'float_time',
   componentKey: 'sc.value.duration',
+  digits: [16, 3] as [number, number],
+  unit: { kind: 'duration', code: 'hour', label: '小时' },
 };
 for (const [value, expected] of durationCases) {
-  assert.equal(formatBusinessDuration(value), expected);
+  assert.equal(formatBusinessDuration(value, FIELD_VALUE_EMPTY_TEXT, durationField.digits, durationField.unit), expected);
   assert.equal(presentDeclaredBusinessValue({ field: durationField, value }).kind === 'empty'
     ? FIELD_VALUE_EMPTY_TEXT
     : presentDeclaredBusinessValue({ field: durationField, value }).text, expected);
@@ -177,6 +196,8 @@ for (const [value, expected] of durationCases) {
       type: 'float',
       widget: 'float_time',
       componentKey: 'sc.value.duration',
+      digits: durationField.digits,
+      unit: durationField.unit,
     },
   }).text, expected);
   assert.equal(presentCollectionKanbanCell({
@@ -187,9 +208,31 @@ for (const [value, expected] of durationCases) {
       type: 'float',
       widget: 'float_time',
       componentKey: 'sc.value.duration',
+      digits: durationField.digits,
+      unit: durationField.unit,
     }],
   }).text, expected);
 }
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'duration_without_unit',
+    type: 'float',
+    widget: 'float_time',
+    componentKey: 'sc.value.duration',
+    digits: [16, 3],
+  },
+  value: 1.5,
+}), { name: 'ContractGapError' }, 'duration unit must be declared');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'duration_without_digits',
+    type: 'float',
+    widget: 'float_time',
+    componentKey: 'sc.value.duration',
+    unit: { kind: 'duration', code: 'hour', label: '小时' },
+  },
+  value: 1.5,
+}), { name: 'ContractGapError' }, 'duration precision must be declared');
 
 const statusSelection = [
   { value: 'draft', label: '草稿' },
@@ -511,6 +554,7 @@ assert.equal(formatDisplayValue(12.5, {
   type: 'float',
   componentKey: 'sc.value.percentage',
   digits: [16, 4],
+  unit: { kind: 'percent', code: 'percent', label: '%' },
 }), '12.5000%', 'generic display delegates percentage identity and digits');
 
 const titleColumnOptions = [{

@@ -964,6 +964,7 @@ function readonlyText(field: FormSectionFieldSchema) {
       widget: field.widget,
       selection: field.descriptor?.selection,
       digits: field.digits,
+      unit: field.unit,
       currencyField: field.currencyField,
       currencyLabel: field.currencyLabel,
     },

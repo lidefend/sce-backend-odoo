@@ -51,6 +51,11 @@ export type DeclaredBusinessField = {
   currency_field?: string;
   currencyLabel?: string;
   relation?: string;
+  unit?: {
+    kind: 'percent' | 'duration' | 'count' | 'quantity';
+    code: string;
+    label: string;
+  };
   temporal?: {
     kind: 'date' | 'datetime';
     timezoneAuthority: 'user' | 'record' | 'not_applicable';
@@ -162,6 +167,7 @@ export function formatBusinessPercentage(
   value: unknown,
   emptyText = FIELD_VALUE_EMPTY_TEXT,
   digits?: [number, number],
+  unit?: DeclaredBusinessField['unit'],
 ): string {
   const numeric = numericFieldValue(value);
   if (numeric === null) return emptyText;
@@ -173,13 +179,20 @@ export function formatBusinessPercentage(
       requiredDeclarationLayer: 'P0:smart_core:field_descriptor_digits_projection',
     }, '百分比缺少契约声明精度 digits');
   }
+  if (unit?.kind !== 'percent' || String(unit.code || '').trim() !== 'percent' || !String(unit.label || '').trim()) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'field.(percentage).unit',
+      requiredDeclarationLayer: 'P0:smart_core:field_descriptor_percent_unit_projection',
+    }, '百分比缺少契约声明 unit.kind=percent/code/label');
+  }
   const options = { minimumFractionDigits: scale, maximumFractionDigits: scale };
-  return `${new Intl.NumberFormat('zh-CN', options).format(numeric)}%`;
+  return `${new Intl.NumberFormat('zh-CN', options).format(numeric)}${unit.label}`;
 }
 
 function requireDeclaredBusinessDigits(
   field: DeclaredBusinessField,
-  semantic: 'money' | 'percentage',
+  semantic: 'money' | 'percentage' | 'duration',
 ): [number, number] {
   const digits = normalizeDeclaredDigits(field.digits);
   if (digits) return digits;
@@ -190,39 +203,50 @@ function requireDeclaredBusinessDigits(
   }, `${semantic} 字段 ${field.name || field.componentKey || '(unknown)'} 缺少契约声明精度 digits`);
 }
 
+function requireDeclaredBusinessUnit(
+  field: DeclaredBusinessField,
+  semantic: 'percentage' | 'duration',
+): NonNullable<DeclaredBusinessField['unit']> {
+  const unit = field.unit;
+  const valid = semantic === 'percentage'
+    ? unit?.kind === 'percent' && String(unit.code || '').trim() === 'percent' && Boolean(String(unit.label || '').trim())
+    : unit?.kind === 'duration' && Boolean(String(unit.code || '').trim()) && Boolean(String(unit.label || '').trim());
+  if (!valid) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${field.name || field.componentKey || '(unknown)'}.unit`,
+      requiredDeclarationLayer: 'P0:smart_core:field_descriptor_unit_projection',
+    }, `${semantic} 字段缺少匹配的 unit 声明`);
+  }
+  return unit;
+}
+
 /**
- * Format an Odoo float_time value with the platform's Chinese business copy.
- *
- * Rounding and carry follow Odoo 17's authoritative `formatFloatTime`:
- * - false/null/undefined are empty, never numeric zero;
- * - minutes use the rounded millisecond remainder;
- * - a rounded 60th minute carries into the next hour;
- * - the sign belongs to the whole duration.
- *
- * The contract's `float_time` widget selects this semantic. No frontend-only
- * precision declaration is introduced.
+ * Format a duration from its declared precision and unit. The frontend does not
+ * reinterpret decimal hours as a hard-coded hour/minute sentence.
  */
 export function formatBusinessDuration(
   value: unknown,
   emptyText = FIELD_VALUE_EMPTY_TEXT,
+  digits?: [number, number],
+  unit?: DeclaredBusinessField['unit'],
 ): string {
   if (value === false || value === null || value === undefined || value === '') return emptyText;
+  const scale = requireDeclaredBusinessDigits({ name: 'duration', digits }, 'duration')[1];
+  if (unit?.kind !== 'duration' || !String(unit.code || '').trim() || !String(unit.label || '').trim()) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'field.(duration).unit',
+      requiredDeclarationLayer: 'P0:smart_core:field_descriptor_duration_unit_projection',
+    }, '时长字段缺少契约声明 unit.kind=duration/code/label');
+  }
   const numeric = numericFieldValue(value);
   if (numeric === null) return emptyText;
-  const negative = numeric < 0;
-  const absolute = Math.abs(numeric);
-  let hours = Math.floor(absolute);
-  const milliSecondsWithinHour = Math.round(absolute * 3_600_000) - hours * 3_600_000;
-  let minutes = Math.round(milliSecondsWithinHour / 60_000);
-  if (minutes === 60) {
-    hours += 1;
-    minutes = 0;
-  }
-  const sign = negative ? '-' : '';
-  if (hours === 0 && minutes === 0) return '0 小时';
-  if (hours === 0) return `${sign}${minutes} 分钟`;
-  if (minutes === 0) return `${sign}${hours} 小时`;
-  return `${sign}${hours} 小时 ${minutes} 分钟`;
+  const formatted = new Intl.NumberFormat('zh-CN', {
+    minimumFractionDigits: scale,
+    maximumFractionDigits: scale,
+  }).format(numeric);
+  return `${formatted} ${unit.label}`;
 }
 
 function normalizedSelection(field: DeclaredBusinessField): Array<{ value: string; label: string }> {
@@ -464,8 +488,11 @@ export function presentDeclaredBusinessValue(input: {
   const temporal = kind === 'date' || kind === 'datetime'
     ? resolveDeclaredTemporal(input.field, kind)
     : null;
-  const declaredDigits = kind === 'money' || kind === 'percentage'
+  const declaredDigits = (kind === 'money' || kind === 'percentage' || kind === 'duration')
     ? requireDeclaredBusinessDigits(input.field, kind)
+    : undefined;
+  const declaredUnit = kind === 'percentage' || kind === 'duration'
+    ? requireDeclaredBusinessUnit(input.field, kind)
     : undefined;
   if (isEmptyFieldValue(input.value)) {
     return Object.freeze({ kind: 'empty', text: emptyText, tone: 'neutral', badgeSemantic: 'default' });
@@ -488,13 +515,13 @@ export function presentDeclaredBusinessValue(input: {
   if (kind === 'percentage') {
     return Object.freeze({
       kind: 'percentage',
-      text: formatBusinessPercentage(input.value, emptyText, declaredDigits),
+      text: formatBusinessPercentage(input.value, emptyText, declaredDigits, declaredUnit),
       tone: 'neutral',
       badgeSemantic: 'default',
     });
   }
   if (kind === 'duration') {
-    const text = formatBusinessDuration(input.value, emptyText);
+    const text = formatBusinessDuration(input.value, emptyText, declaredDigits, declaredUnit);
     return Object.freeze({
       kind: text === emptyText ? 'empty' : 'duration',
       text,
