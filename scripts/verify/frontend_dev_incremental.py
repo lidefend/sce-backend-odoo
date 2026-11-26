@@ -1961,6 +1961,12 @@ RULES = (
         "verify.branch.governance.consistency",
     )),
     Rule((
+        "scripts/ops/integration_cycle.py",
+        "scripts/ops/test_integration_cycle.py",
+    ), (
+        "verify.integration.cycle.unit",
+    )),
+    Rule((
         "scripts/ops/quick_input_scope.py",
         "scripts/ops/test_quick_input_scope.py",
     ), (

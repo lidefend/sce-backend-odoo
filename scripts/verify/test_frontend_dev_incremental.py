@@ -3315,6 +3315,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.frontend.primitive_adapter.unit"],
                 )
 
+    def test_merge_readiness_tools_select_their_owned_unit_checks(self) -> None:
+        for path in ("scripts/ops/integration_cycle.py", "scripts/ops/test_integration_cycle.py"):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), ["verify.integration.cycle.unit"])
+
     def test_publish_mode_change_runs_the_publish_preflight_contract(self) -> None:
         self.assertEqual(
             select_targets(["make/codex.mk"]),

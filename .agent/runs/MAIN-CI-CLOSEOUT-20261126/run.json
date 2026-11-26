@@ -55,7 +55,9 @@
     "docs/engineering_convergence/construction_core_extension_responsibility_map.md",
     "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
     "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
-    "docs/audit/test_coverage_registry/test_coverage_registry.json"
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "scripts/ops/integration_cycle.py",
+    "scripts/ops/test_integration_cycle.py"
   ],
   "environment": {
     "kind": "offline",
@@ -118,7 +120,7 @@
   "blockers": [
     "Remote integration and repaired exact-main full audit pending."
   ],
-  "next_exact_step": "Publish corrected PR #1015 candidate; trigger full candidate checks and monitor exact new HEAD; protected merge only after all required checks, then dispatch and verify exact-main full audit.",
+  "next_exact_step": "Publish workflow-run selection fix after targeted validation; latest exact-head required PR checks then protected merge; exact-main full audit remains required.",
   "id": "MAIN-CI-CLOSEOUT-20261126",
   "branch": "fix/main-full-authenticated-replay-20261127",
   "status": "verification_pending",
@@ -430,6 +432,35 @@
       "resumed_targets": 1,
       "receipt": ".runtime/frontend-dev-validation/executions/20261126T164107Z-2481720-32971547/receipt.json",
       "log": ".runtime/main-ci-1015-complete-iteration.log"
+    }
+  },
+  "candidate_ec98_results": {
+    "head": "ec98c82d0fb6c82714e8d0a72eceb943158f0d11",
+    "status": "passed_all_required_and_full_candidate",
+    "runs": {
+      "public": 45861861478,
+      "professional": 45861861467,
+      "frontend": 45861861338,
+      "merge": 45861861336,
+      "release": 45861861432
+    },
+    "browser_journeys": {
+      "J09": "PASS",
+      "J10": "PASS",
+      "J11": "PASS"
+    },
+    "merge_preflight_blocker": "Old superseded professional run 45861765452 unexpanded backend_suite placeholder retained by per-name selection despite latest full workflow success."
+  },
+  "merge_workflow_selection_repair": {
+    "fix": "Select latest run per workflow before same-run job retries; required identities must exist in latest run; malformed/cross-repository identities and current failed/pending jobs still block.",
+    "unit_tests": 28,
+    "unit_log": ".runtime/main-ci-1015-merge-selection-unit.log",
+    "live_payload": ".runtime/main-ci-1015-live-checks.json",
+    "local_iteration": {
+      "status": "passed",
+      "targets": 10,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T171409Z-2709128-911174796/receipt.json",
+      "log": ".runtime/main-ci-1015-merge-selection-iteration.log"
     }
   }
 }
