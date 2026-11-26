@@ -115,7 +115,28 @@
     "docs/frontend_productization/decision-authority-inventory-v1.json",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
-    "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py"
+    "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py",
+    "addons/smart_construction_core/tests/test_acl_matrix_gate.py",
+    "addons/smart_construction_core/tests/test_action_groups_gate.py",
+    "addons/smart_construction_core/tests/test_labor_product_capability.py",
+    "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
+    "addons/smart_construction_core/tests/test_patch_b_read_aggregate_security.py",
+    "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+    "addons/smart_construction_core/tests/test_payroll_data_space_rules.py",
+    "addons/smart_construction_core/tests/test_project_authorization_foundation.py",
+    "addons/smart_construction_core/tests/test_record_rule_behavior_gate.py",
+    "addons/smart_construction_core/tests/test_source_bounded_data_space_rules.py",
+    "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+    "addons/smart_construction_core/tests/test_system_permission_business.py",
+    "addons/smart_construction_core/tests/test_system_permission_separation.py",
+    "addons/smart_construction_core/tests/test_tax_certificate_registration.py",
+    "addons/smart_construction_core/tests/test_tender_document_advisory.py",
+    "addons/smart_construction_core/tests/test_um_p3_payment_ledger_request_permission_orm.py",
+    "addons/smart_construction_core/tests/test_user_module_product_closure.py",
+    "addons/smart_construction_bundle/tests/test_system_product_release.py",
+    "addons/smart_core/tests/test_tenant_extension_storage.py",
+    "addons/smart_core/models/tenant_payload_import_batch.py",
+    "addons/smart_core/utils/tenant_payload_import_service.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -171,7 +192,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish the minimal fixture repair and verify all four required workflows on the new exact HEAD. Keep Draft; company authority review and browser acceptance remain separate pending phases.",
+  "next_exact_step": "Commit reviewed R1-R5 repairs, push draft PR1010 and require fresh exact-head R6 backend integration plus all four workflows. Do not merge/deploy.",
   "id": "AUTH-02-ENTERPRISE-ROLES-20261126",
   "branch": "feature/auth-02-enterprise-roles-20261126",
   "status": "verification_pending",
@@ -669,6 +690,99 @@
     "generated_evidence": {
       "status": "passed",
       "log": ".runtime/auth02-ci-fixture-freeze.log"
+    }
+  },
+  "ci_backend_regression_repair": {
+    "status": "local_targeted_passed_remote_pending",
+    "head": "ec119bad234739b419d491e71244cfbed2fa58f2",
+    "scope": [
+      "addons/smart_construction_core/tests/test_acl_matrix_gate.py",
+      "addons/smart_construction_core/tests/test_action_groups_gate.py",
+      "addons/smart_construction_core/tests/test_labor_product_capability.py",
+      "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
+      "addons/smart_construction_core/tests/test_patch_b_read_aggregate_security.py",
+      "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+      "addons/smart_construction_core/tests/test_payroll_data_space_rules.py",
+      "addons/smart_construction_core/tests/test_project_authorization_foundation.py",
+      "addons/smart_construction_core/tests/test_record_rule_behavior_gate.py",
+      "addons/smart_construction_core/tests/test_source_bounded_data_space_rules.py",
+      "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+      "addons/smart_construction_core/tests/test_system_permission_business.py",
+      "addons/smart_construction_core/tests/test_system_permission_separation.py",
+      "addons/smart_construction_core/tests/test_tax_certificate_registration.py",
+      "addons/smart_construction_core/tests/test_tender_document_advisory.py",
+      "addons/smart_construction_core/tests/test_um_p3_payment_ledger_request_permission_orm.py",
+      "addons/smart_construction_core/tests/test_user_module_product_closure.py",
+      "addons/smart_construction_bundle/tests/test_system_product_release.py",
+      "addons/smart_core/tests/test_tenant_extension_storage.py",
+      "addons/smart_construction_core/views/support/business_role_views.xml"
+    ],
+    "classification": {
+      "P1_product_defect": "Five enterprise role actions lack native groups_id; bind to existing business configuration capability.",
+      "validation_tool_defects": "Legacy count assertions, broad workspace tests still grant narrowed project-read carrier, positive multi-company fixtures lack explicit platform license or correct home-company principal.",
+      "P0_product_defect": "Signed company registration requires a model/operation-scoped provisioning boundary; never license the bootstrap fixture to hide this regression.",
+      "P1_company_rule_defect": "Six source rules omitted current native company_ids intersection; retain data-purpose ceiling and add current-company intersection."
+    },
+    "policy": "Preserve all original positive/negative assertions, add explicit narrow capability denial coverage; do not alter platform authorization enforcement or capability admission.",
+    "logs": [
+      ".runtime/auth02-backend-failure-0.log",
+      ".runtime/auth02-backend-failure-2.log",
+      ".runtime/auth02-backend-failure-3.log"
+    ],
+    "not_claimed": [
+      "company-specific role execution closure",
+      "browser acceptance",
+      "merge",
+      "deployment"
+    ],
+    "deferred_review_items": [
+      "Append-only role enable/disable lifecycle events",
+      "Mixed-version grant batch summary"
+    ],
+    "earlier_attempts": [
+      ".runtime/test-baseline/1795685956045083532/receipt.json",
+      ".runtime/test-baseline/1795686138700104257/receipt.json"
+    ],
+    "verification": {
+      "platform": {
+        "tests": 131,
+        "receipt": ".runtime/test-baseline/1795686417333378124/receipt.json"
+      },
+      "bundle": {
+        "tests": 3,
+        "receipt": ".runtime/test-baseline/1795686451871964437/receipt.json"
+      },
+      "core_original": {
+        "tests": 252,
+        "failures": 1,
+        "errors": 0,
+        "receipt": ".runtime/test-baseline/1795686590123749423/receipt.json"
+      },
+      "core_failure_repair": {
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "receipt": ".runtime/test-baseline/1795686860582134541/receipt.json",
+        "scope": "Only remaining fixed-count assertion and generated prose changed after the 252-test collection. Keep original failed receipt, no aggregate PASS synthesized."
+      },
+      "static_logs": [
+        ".runtime/auth02-backend-repair-static-2.log",
+        ".runtime/auth02-backend-repair-boundary.log",
+        ".runtime/auth02-backend-repair-projection-final.log"
+      ]
+    },
+    "facts": {
+      "scenario_count": 48,
+      "unique_published_menu_count": 143,
+      "binding_duplicates": 0,
+      "missing_menus": 0,
+      "meaning": "Observed canonical projection, not runtime allowlist"
+    },
+    "registration_authority": "No bootstrap license added. Original importer identity and signed context checked before model-scoped create/upsert; return caller environment, ordinary reads remain licensed. 131-test collection includes production-mode forged context, missing identity, bootstrap rejection and six-case native permission matrix.",
+    "original_security_gates": "TestInstallGate and TestActionGroupsGate executed and passed in the 252-test collection.",
+    "generated_evidence": {
+      "status": "passed",
+      "log": ".runtime/auth02-backend-repair-freeze.log"
     }
   }
 }

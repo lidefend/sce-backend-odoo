@@ -1,4 +1,5 @@
 """AUTH-01 owning-layer regressions; all synthetic data rolls back with the case."""
+from odoo.addons.smart_core.tests.platform_company_test_support import license_multi_company
 from odoo.tests.common import tagged
 from odoo.exceptions import UserError, AccessError, ValidationError
 from .business_case import BusinessTransactionCase
@@ -78,6 +79,7 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
         self.assertEqual(company.city, 'Synthetic city')
         other = self.env['res.company'].create({'name': 'Synthetic other enterprise'})
         self.register_business_company(other)
+        license_multi_company(self.env, company)
         self.manager.write({'company_ids': [(4, other.id)]})
         with self.assertRaises(AccessError):
             other.with_user(self.manager).with_context(

@@ -75,3 +75,10 @@ class TestActionGroupsGate(TransactionCase):
 
         self.assertEqual(payload["res_model"], "sc.business.entity")
         self.assertEqual(payload["id"], action.id)
+
+    def test_enterprise_role_actions_require_configuration_capability(self):
+        expected = self.env.ref("smart_construction_core.group_sc_cap_business_config_admin")
+        for name in ("business_role", "business_role_version", "user_role_assignment",
+                     "business_role_event", "business_role_change"):
+            with self.subTest(action=name):
+                self.assertEqual(self.env.ref("smart_construction_core.action_" + name).groups_id, expected)

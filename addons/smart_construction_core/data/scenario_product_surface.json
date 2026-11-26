@@ -15,7 +15,7 @@
     "L1": "product_scenario",
     "L2": "user_intent",
     "L3": "capability_menu_action",
-    "note": "Centers and center membership come from the published product policy. The 46 scenarios are the approved business-result organization over the 132 released pages. Counts are derived from those declarations."
+    "note": "Centers and center membership come from the published product policy. Approved scenarios organize the released pages by business result. Counts are derived from those declarations."
   },
   "authority_note": "Business-loop composition over the released standard menus. The released menu set is resolved from product_menu_source, never fixed here. This is NOT a scene registry and NOT scene content; scene content/version authority remains sc.scene / smart_construction_scene.scene_registry.",
   "intent_labels": {

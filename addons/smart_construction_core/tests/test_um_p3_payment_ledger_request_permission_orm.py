@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from odoo.addons.smart_core.tests.platform_company_test_support import license_multi_company
 from odoo.exceptions import AccessError, UserError
 from odoo.tests.common import tagged
 
@@ -19,6 +20,7 @@ class TestUmP3PaymentLedgerRequestPermissionOrm(
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        license_multi_company(cls.env, cls.company_a)
         base_user = cls.env.ref("base.group_user")
         finance_manager = cls.env.ref(
             "smart_construction_core.group_sc_cap_finance_manager"

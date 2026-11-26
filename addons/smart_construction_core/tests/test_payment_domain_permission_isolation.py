@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import base64
 
+from odoo.addons.smart_core.tests.platform_company_test_support import license_multi_company
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import tagged
 from .business_case import BusinessTransactionCase
@@ -34,6 +35,7 @@ class TestPaymentDomainPermissionIsolation(BusinessTransactionCase):
             }
         )
         cls.register_business_company(cls.company_b)
+        license_multi_company(cls.env, cls.company_a)
         cls.finance_user = cls._role_user(
             "t2_finance_user",
             [

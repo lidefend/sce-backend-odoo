@@ -5,6 +5,7 @@ from contextlib import ExitStack
 from copy import deepcopy
 from unittest.mock import patch
 
+from odoo.addons.smart_core.tests.platform_company_test_support import license_multi_company
 from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, tagged
 from .business_case import BusinessTransactionCase
@@ -53,6 +54,7 @@ class TestProjectAuthorizationFoundation(BusinessTransactionCase):
         )
         cls.register_business_company(cls.company_b)
         cls.register_business_company(cls.company_c)
+        license_multi_company(cls.env, cls.company_a)
         base_user = cls.env.ref("base.group_user")
 
         def create_user(login, group_xmlids, companies=None):

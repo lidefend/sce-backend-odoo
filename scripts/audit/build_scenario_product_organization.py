@@ -1241,7 +1241,7 @@ KNOWN_GAPS = [
         "id": "GAP-01",
         "status": "release_scope_change_required",
         "evidence": "原生菜单树存在 menu_sc_material_catalog，但 product_menu_source 未发布该入口；project.material.plan 在提交前强制要求 material_catalog_id。",
-        "issue": "132 个已发布办理面缺少“材料档案”。",
+        "issue": "已发布办理面缺少“材料档案”。",
         "impact": "材料计划提交要求 material_catalog_id，但当前用户没有已发布的材料档案维护入口。",
         "recommendation": "接受为发布范围变更候选：复用既有 menu_sc_material_catalog 作为供应链与资源中心正式入口；该入口纳入发布前，材料计划保留“依赖未发布主数据”，不能标记为完整可运行。",
         "affected_paths": "supply.procurement → supply.inventory → material.settlement",
@@ -1276,9 +1276,9 @@ KNOWN_GAPS = [
     {
         "id": "GAP-05",
         "status": "release_scope_or_connection_required",
-        "evidence": "项目中心已发布 tender.guarantee；财务保证金收退动作存在于原生 XML，但 132 个已发布办理面中没有对应入口。",
+        "evidence": "项目中心已发布 tender.guarantee；财务保证金收退动作存在于原生 XML，但 已发布办理面中没有对应入口。",
         "issue": "投标保证金的项目登记与财务收退没有在已发布产品面接通。",
-        "impact": "用户可以在项目中心登记保证金，却无法从 132 个已发布办理面进入对应的保证金收退和资金结果。",
+        "impact": "用户可以在项目中心登记保证金，却无法从 已发布办理面进入对应的保证金收退和资金结果。",
         "recommendation": "优先核对现有费用报销页能否通过业务类别安全承接；不能承接时发布既有投标保证金缴纳/退回动作，并保留 tender.guarantee 来源 ID。未裁定前保证金收退路径不得标记为可运行。",
         "affected_paths": "project.tender → finance.cash_ledger / accounting.entry_posting",
     },
@@ -1987,8 +1987,8 @@ def build_runtime_surface(payload):
             "L3": "capability_menu_action",
             "note": (
                 "Centers and center membership come from the published product policy. "
-                "The 46 scenarios are the approved business-result organization over the "
-                "132 released pages. Counts are derived from those declarations."
+                "Approved scenarios organize the released pages by business result. "
+                "Counts are derived from those declarations."
             ),
         },
         "authority_note": (
@@ -2028,7 +2028,7 @@ def md_escape(value):
 
 def render_markdown(payload):
     lines = [
-        "# 132 个办理面业务组织整合",
+        f"# {payload['validation']['released_page_count']} 个办理面业务组织整合",
         "",
         f"- 状态：`{payload['status']}`",
         f"- 批准日期：`{payload['approved_at']}`",
@@ -2212,16 +2212,16 @@ def render_markdown(payload):
         "",
         "- `resolved_reuse_existing_page`：已由现有办理面承接，不需要新增同名页面。",
         "- `connection_fix_required`：页面存在，但只有对象上下文、目标动作和返回链补齐后才能标记为完整可运行。",
-        "- `release_scope_change_required` / `release_scope_or_connection_required`：当前 132 面不能独立闭合，受影响路径保持待实现，不计入组织定稿后的已运行结果。",
+        "- `release_scope_change_required` / `release_scope_or_connection_required`：当前已发布办理面不能独立闭合，受影响路径保持待实现，不计入组织定稿后的已运行结果。",
     ])
     lines.extend([
         "",
         "## 定稿与实施门禁",
         "",
-        "- 132 个已发布办理面必须全部出现在总表中且身份唯一。",
+        "- 正式配置声明的已发布办理面必须全部出现在总表中且身份唯一。",
         "- 每个中心和工作台必须保持既定产品身份；场景只能组织中心内或跨中心的办理关系。",
         "- 工作台快捷办理和待办必须能回到来源业务对象与返回位置。",
-        "- 组织设计已定稿：46 个业务分组作为产品场景种子输入，五项缺口继续保留其处理状态。",
+        f"- 组织设计已定稿：{payload['validation']['scenario_count']} 个业务分组作为产品场景种子输入，五项缺口继续保留其处理状态。",
         "- 候选种子与发布组合生成：必须忠实保留缺口状态和待实现连接，不能把目标设计转换为已可用能力。",
         "- 可运行发布：只有受影响路径的实际缺口关闭并完成对应运行验证后，才计入可运行结果。",
         "",

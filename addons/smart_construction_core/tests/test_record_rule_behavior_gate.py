@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from odoo.addons.smart_core.tests.platform_company_test_support import license_multi_company
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import tagged
 from .business_case import BusinessTransactionCase
@@ -11,6 +12,7 @@ class TestRecordRuleBehaviorGate(BusinessTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        license_multi_company(cls.env, cls.env.company)
         company = cls.env.company
         ctx = dict(
             cls.env.context,

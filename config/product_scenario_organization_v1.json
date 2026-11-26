@@ -4490,7 +4490,7 @@
       "id": "GAP-01",
       "status": "release_scope_change_required",
       "evidence": "原生菜单树存在 menu_sc_material_catalog，但 product_menu_source 未发布该入口；project.material.plan 在提交前强制要求 material_catalog_id。",
-      "issue": "132 个已发布办理面缺少“材料档案”。",
+      "issue": "已发布办理面缺少“材料档案”。",
       "impact": "材料计划提交要求 material_catalog_id，但当前用户没有已发布的材料档案维护入口。",
       "recommendation": "接受为发布范围变更候选：复用既有 menu_sc_material_catalog 作为供应链与资源中心正式入口；该入口纳入发布前，材料计划保留“依赖未发布主数据”，不能标记为完整可运行。",
       "affected_paths": "supply.procurement → supply.inventory → material.settlement"
@@ -4525,9 +4525,9 @@
     {
       "id": "GAP-05",
       "status": "release_scope_or_connection_required",
-      "evidence": "项目中心已发布 tender.guarantee；财务保证金收退动作存在于原生 XML，但 132 个已发布办理面中没有对应入口。",
+      "evidence": "项目中心已发布 tender.guarantee；财务保证金收退动作存在于原生 XML，但 已发布办理面中没有对应入口。",
       "issue": "投标保证金的项目登记与财务收退没有在已发布产品面接通。",
-      "impact": "用户可以在项目中心登记保证金，却无法从 132 个已发布办理面进入对应的保证金收退和资金结果。",
+      "impact": "用户可以在项目中心登记保证金，却无法从 已发布办理面进入对应的保证金收退和资金结果。",
       "recommendation": "优先核对现有费用报销页能否通过业务类别安全承接；不能承接时发布既有投标保证金缴纳/退回动作，并保留 tender.guarantee 来源 ID。未裁定前保证金收退路径不得标记为可运行。",
       "affected_paths": "project.tender → finance.cash_ledger / accounting.entry_posting"
     }

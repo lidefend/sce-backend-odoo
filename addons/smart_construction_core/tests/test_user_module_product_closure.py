@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import base64
 
+from odoo.addons.smart_core.tests.platform_company_test_support import license_multi_company
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import tagged
 
@@ -73,6 +74,7 @@ class TestUserModuleProductClosure(BusinessTransactionCase):
         self.register_business_company(
             other_company, tenant_key="synthetic-user-closure-second-company"
         )
+        license_multi_company(self.env, self.env.company | other_company)
         self.config_admin.write({"company_ids": [(4, other_company.id)]})
         target = self.env["res.users"].with_context(no_reset_password=True).create(
             {

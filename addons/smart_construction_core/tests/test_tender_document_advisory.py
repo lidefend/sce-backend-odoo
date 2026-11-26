@@ -40,7 +40,7 @@ class TestTenderDocumentAdvisory(BusinessTransactionCase):
                         [
                             self.env.ref("base.group_user").id,
                             self.env.ref(
-                                "smart_construction_core.group_sc_cap_project_read"
+                                "smart_construction_core.group_sc_cap_project_workspace_read"
                             ).id,
                         ],
                     )

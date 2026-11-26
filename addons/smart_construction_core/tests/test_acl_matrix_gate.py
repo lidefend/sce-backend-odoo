@@ -12,6 +12,7 @@ OPS = ("read", "create", "write", "unlink")
 
 # P0 roles for ACL gate coverage.
 ACL_ROLES = {
+    "project_workspace_read": ["smart_construction_core.group_sc_cap_project_workspace_read"],
     "project_read": ["smart_construction_core.group_sc_cap_project_read"],
     "project_manager": ["smart_construction_core.group_sc_cap_project_manager"],
     "cost_manager": ["smart_construction_core.group_sc_cap_cost_manager"],
@@ -57,11 +58,14 @@ ACL_P1_MODELS = [
 ACL_EXPECTATIONS = [
     {"role": "project_read", "model": "project.project", "rights": {"read": True, "create": False, "write": False, "unlink": False}},
     {"role": "project_manager", "model": "project.project", "rights": {"read": True, "create": True, "write": True, "unlink": True}},
-    {"role": "project_read", "model": "project.risk", "rights": {"read": True, "create": False, "write": False, "unlink": False}},
+    {"role": "project_workspace_read", "model": "project.risk", "rights": {"read": True, "create": False, "write": False, "unlink": False}},
+    {"role": "project_read", "model": "project.risk", "rights": {"read": False, "create": False, "write": False, "unlink": False}},
     {"role": "project_manager", "model": "project.risk", "rights": {"read": True, "create": False, "write": False, "unlink": False}},
-    {"role": "project_read", "model": "project.boq.line", "rights": {"read": True, "create": False, "write": False, "unlink": False}},
+    {"role": "project_workspace_read", "model": "project.boq.line", "rights": {"read": True, "create": False, "write": False, "unlink": False}},
+    {"role": "project_read", "model": "project.boq.line", "rights": {"read": False, "create": False, "write": False, "unlink": False}},
     {"role": "cost_manager", "model": "project.boq.line", "rights": {"read": True, "create": True, "write": True, "unlink": True}},
-    {"role": "project_read", "model": "sc.project.stage.requirement.item", "rights": {"read": True, "create": False, "write": False, "unlink": False}},
+    {"role": "project_workspace_read", "model": "sc.project.stage.requirement.item", "rights": {"read": True, "create": False, "write": False, "unlink": False}},
+    {"role": "project_read", "model": "sc.project.stage.requirement.item", "rights": {"read": False, "create": False, "write": False, "unlink": False}},
     {"role": "project_manager", "model": "sc.project.stage.requirement.item", "rights": {"read": True, "create": True, "write": True, "unlink": True}},
     {"role": "contract_user", "model": "construction.contract", "rights": {"read": True, "create": True, "write": True, "unlink": False}},
     {"role": "contract_manager", "model": "construction.contract", "rights": {"read": True, "create": True, "write": True, "unlink": True}},

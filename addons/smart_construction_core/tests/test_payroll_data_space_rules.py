@@ -6,6 +6,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from lxml import etree
+from odoo.addons.smart_core.tests.platform_company_test_support import license_multi_company
 from odoo import Command, SUPERUSER_ID
 from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, tagged
@@ -35,6 +36,7 @@ class TestPayrollDataSpaceRules(TransactionCase):
         })
         cls.unknown = cls.env['res.company'].create({'name': 'Synthetic payroll unknown'})
         cls.companies = cls.demo.company_id | cls.test_space.company_id | customer | cls.unknown
+        license_multi_company(cls.env, cls.companies)
         business_group = cls.env.ref('smart_construction_core.group_sc_cap_business_config_admin')
 
         def actor(login, company, extra=()):

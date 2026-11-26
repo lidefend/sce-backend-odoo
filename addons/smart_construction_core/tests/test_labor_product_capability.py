@@ -27,7 +27,7 @@ class TestLaborProductCapability(BusinessTransactionCase):
             "labor_product_operator", "smart_construction_core.group_sc_cap_project_user"
         )
         reader = self._user(
-            "labor_product_reader", "smart_construction_core.group_sc_cap_project_read"
+            "labor_product_reader", "smart_construction_core.group_sc_cap_project_workspace_read"
         )
         unrelated_internal = self._user(
             "labor_unrelated_internal", "smart_construction_core.group_sc_internal_user"
@@ -106,7 +106,7 @@ class TestLaborProductCapability(BusinessTransactionCase):
         self.assertNotIn("create_uid", read.domain_force)
 
         reader = self._user(
-            "labor_product_rule_reader", "smart_construction_core.group_sc_cap_project_read"
+            "labor_product_rule_reader", "smart_construction_core.group_sc_cap_project_workspace_read"
         )
         foreign_project = self.env["project.project"].create({"name": "劳务规则他方项目"})
         record = (

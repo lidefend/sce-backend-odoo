@@ -3,32 +3,32 @@
 <record id="rule_sc_business_role_company" model="ir.rule">
 <field name="name">sc.business.role company authority</field>
 <field name="model_id" ref="model_sc_business_role"/>
-<field name="domain_force">[('company_id', 'in', user._sc_data_company_ids())]</field>
+<field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
 </record>
 <record id="rule_sc_business_role_capability_company" model="ir.rule">
 <field name="name">sc.business.role.capability company authority</field>
 <field name="model_id" ref="model_sc_business_role_capability"/>
-<field name="domain_force">[('company_id', 'in', user._sc_data_company_ids())]</field>
+<field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
 </record>
 <record id="rule_sc_user_role_assignment_company" model="ir.rule">
 <field name="name">sc.user.role.assignment company authority</field>
 <field name="model_id" ref="model_sc_user_role_assignment"/>
-<field name="domain_force">[('company_id', 'in', user._sc_data_company_ids())]</field>
+<field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
 </record>
 <record id="rule_sc_business_role_event_company" model="ir.rule">
 <field name="name">sc.business.role.event company authority</field>
 <field name="model_id" ref="model_sc_business_role_event"/>
-<field name="domain_force">[('company_id', 'in', user._sc_data_company_ids())]</field>
+<field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
 </record>
 <record id="rule_sc_business_role_version_company" model="ir.rule">
 <field name="name">sc.business.role.version company authority</field>
 <field name="model_id" ref="model_sc_business_role_version"/>
-<field name="domain_force">[('company_id', 'in', user._sc_data_company_ids())]</field>
+<field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
 </record>
 <record id="rule_sc_business_role_change_company" model="ir.rule">
 <field name="name">sc.business.role.change company authority</field>
 <field name="model_id" ref="model_sc_business_role_change"/>
-<field name="domain_force">[('company_id', 'in', user._sc_data_company_ids())]</field>
+<field name="domain_force">[('company_id', 'in', company_ids), ('company_id', 'in', user._sc_data_company_ids())]</field>
 </record>
 <record id="rule_sc_business_role_change_assigned_review" model="ir.rule">
 <field name="name">Role authority change assigned reviewer</field><field name="model_id" ref="model_sc_business_role_change"/>

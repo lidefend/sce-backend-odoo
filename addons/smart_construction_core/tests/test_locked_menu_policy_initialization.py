@@ -106,6 +106,11 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
         preview = policy_model.search(
             [("product_key", "=", "construction.preview")], limit=1
         )
+        expected_menu_ids = {
+            policy.product_key: {menu["menu_xmlid"] for group in policy.menu_groups
+                                 for menu in group["menus"]}
+            for policy in (standard, preview)
+        }
         standard_groups = deepcopy(standard.menu_groups)
         for group in standard_groups:
             group["menus"] = [
@@ -183,7 +188,9 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
                 for group in target.menu_groups
                 for menu in group.get("menus") or []
             ]
-            self.assertEqual(len(rows), 133)
+            expected = expected_menu_ids[target.product_key] | {extra_xmlid}
+            self.assertEqual({row["menu_xmlid"] for row in rows}, expected)
+            self.assertEqual(len(rows), len(expected))
             by_xmlid = {menu.get("menu_xmlid"): menu for menu in rows}
             self.assertEqual(
                 {
@@ -212,8 +219,11 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
 
         for product_key in ("construction.standard", "construction.preview"):
             self.assertGreater(first[product_key]["changed_count"], 0)
-            self.assertEqual(first[product_key]["persisted_count"], 133)
-            self.assertEqual(first[product_key]["capability_count"], 133)
+            expected = expected_menu_ids[product_key] | {extra_xmlid}
+            policy = policy_model.search([("product_key", "=", product_key)], limit=1)
+            self.assertEqual({row["menu_xmlid"] for row in policy.capabilities}, expected)
+            self.assertEqual(first[product_key]["persisted_count"], len(expected))
+            self.assertEqual(first[product_key]["capability_count"], len(expected))
 
         second = self._run_preview_promotion_migration()
         self.assertEqual(second["construction.standard"]["diagnostics"]["changed_entry_xmlids"], [])
@@ -221,11 +231,18 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
         self.assertEqual(self._product_policy_state(), first_state)
 
     def test_preview_promotion_migration_accepts_unmaintained_canonical_policy(self):
+        from odoo.addons.smart_construction_core.services.product_menu_source import load_source, project
+        _contract, publication = project(load_source())
+        expected = {row["product_key"]: {cap["menu_xmlid"] for cap in row["capabilities"]}
+                    for row in publication["products"]}
         result = self._run_preview_promotion_migration()
         for product_key in ("construction.standard", "construction.preview"):
-            self.assertEqual(result[product_key]["changed_count"], 132)
-            self.assertEqual(result[product_key]["persisted_count"], 132)
-            self.assertEqual(result[product_key]["capability_count"], 132)
+            self.assertTrue(expected[product_key])
+            policy = self.env["sc.product.policy"].search([("product_key", "=", product_key)], limit=1)
+            self.assertEqual({row["menu_xmlid"] for row in policy.capabilities}, expected[product_key])
+            self.assertEqual(result[product_key]["changed_count"], len(expected[product_key]))
+            self.assertEqual(result[product_key]["persisted_count"], len(expected[product_key]))
+            self.assertEqual(result[product_key]["capability_count"], len(expected[product_key]))
             self.assertFalse(result[product_key]["missing_xmlids"])
             self.assertFalse(result[product_key]["wrong_release_xmlids"])
             self.assertFalse(result[product_key]["wrong_maturity_xmlids"])
