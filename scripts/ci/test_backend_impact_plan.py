@@ -132,6 +132,25 @@ class ImpactSelectionTest(unittest.TestCase):
         self.assertEqual(plan['mode'], 'full')
         self.assertEqual(plan['modules'], sorted(self.graph))
 
+    def test_snapshot_and_browser_validation_select_real_guards_without_orm(self):
+        cases = {
+            'docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v2.json':
+                {'verify.contract.page_v1_zero_residue.guard'},
+            'scripts/verify/enterprise_reconstruction_import_browser.mjs':
+                {'verify.enterprise.reconstruction.unit', 'verify.frontend.playwright_vendor_coupling.guard'},
+            'scripts/verify/new_product_browser.mjs':
+                {'verify.frontend.playwright_vendor_coupling.guard'},
+        }
+        for path, expected in cases.items():
+            with self.subTest(path=path):
+                plan = planner.select([path], self.graph, self.graph)
+                self.assertEqual(set(plan['tool_checks']), expected)
+                self.assertFalse(plan['required'])
+                self.assertEqual(plan['modules'], [])
+                self.assertEqual(plan['reasons'], [])
+        ordinary_docs = planner.select(['docs/ops/readme.md'], self.graph, self.graph)
+        self.assertEqual(ordinary_docs['tool_checks'], [])
+
     def test_unknown_path_is_not_a_skip(self):
         self.assertEqual(planner.select(['new_runtime/loader.py'], self.graph, self.graph)['mode'], 'full')
 

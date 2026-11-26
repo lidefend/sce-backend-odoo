@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "baseline_sha": "9c4ed0b114b8df444e1ee952cb08a6603ba25d2e",
+  "baseline_sha": "0bab52252d1c12b78749b3eb838aaabfbacd61ff",
   "scope": [
     "scripts/ci/main_full_release_dispatch.py",
     "scripts/ci/test_main_full_release_dispatch.py",
@@ -17,7 +17,19 @@
     "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
     "scripts/verify/enterprise_reconstruction_browser.mjs",
     "scripts/verify/enterprise_reconstruction_import_browser.mjs",
-    "config/contract/page_contract_v1_retirement_manifest.json"
+    "config/contract/page_contract_v1_retirement_manifest.json",
+    "config/ci/path_ownership_v1.json",
+    ".github/workflows/frontend_release_gate.yml",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "make/frontend.mk",
+    "scripts/ci/ci_path_ownership.py",
+    "scripts/ci/test_ci_path_ownership.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts"
   ],
   "environment": {
     "kind": "offline",
@@ -80,9 +92,9 @@
   "blockers": [
     "Remote integration and repaired exact-main full audit pending."
   ],
-  "next_exact_step": "Publish mainline suite dependency and verification-script repairs, validate exact PR head, then dispatch all six workflows on merged main and verify release-condition evidence.",
+  "next_exact_step": "Publish impact-classification and canonical relation fixture repairs; finish exact-head integration and latest-main six-workflow full audit.",
   "id": "MAIN-CI-CLOSEOUT-20261126",
-  "branch": "fix/main-ci-suite-closure-20261126",
+  "branch": "fix/main-ci-impact-precision-20261126",
   "status": "verification_pending",
   "goal": ".agent/goals/MAIN-CI-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/main_ci_closeout_20261126.md",
@@ -137,6 +149,26 @@
       "status": "passed",
       "log": ".runtime/main-ci-contract-version.log",
       "scope": "retirement manifest matches existing 2.7.0 assembler and architecture snapshot; no runtime version change"
+    },
+    "pr1012": {
+      "status": "merged",
+      "merge_sha": "0bab52252d1c12b78749b3eb838aaabfbacd61ff",
+      "all_four_required_checks": "passed"
+    },
+    "main_0bab_frontend": {
+      "status": "failed",
+      "run_id": 45804972894,
+      "log": ".runtime/main-ci-0bab-frontend-failed.log",
+      "reason": "Relation lifecycle test fixture still uses retired type instead of canonical fieldType"
+    },
+    "impact_precision_local": {
+      "status": "passed",
+      "iteration": ".runtime/main-ci-impact-iteration.log",
+      "targets_executed": 9,
+      "targeted": ".runtime/main-ci-impact-final-targeted.log",
+      "ownership_and_backend": ".runtime/main-ci-impact-targeted-3.log",
+      "scope_proof": "snapshot/browser/test-script changes select pure owners without ORM; ordinary docs stay fast"
     }
-  }
+  },
+  "owner_verification_principle": "Verify our contract generation, correctness and faithful frontend consumption; exercise Odoo only at changed integration/composition boundaries, not as a separate native-engine verification objective."
 }

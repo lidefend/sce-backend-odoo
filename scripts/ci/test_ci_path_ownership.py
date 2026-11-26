@@ -30,6 +30,18 @@ def module(deps=()):
 
 
 class PathOwnershipRegistryTest(unittest.TestCase):
+    def test_only_opted_in_pure_owners_are_local_targets(self):
+        result = ownership.classify_paths([
+            "scripts/verify/new_product_browser.mjs",
+            "docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v2.json",
+            "scripts/ops/safe_branch_sync_main.py",
+        ])
+        self.assertEqual(set(result.local_tool_checks), {
+            "verify.frontend.playwright_vendor_coupling.guard",
+            "verify.contract.page_v1_zero_residue.guard",
+        })
+        self.assertGreater(len(result.tool_checks), len(result.local_tool_checks))
+
     def category(self, path: str) -> str:
         result = ownership.classify_paths([path])
         self.assertEqual([], list(result.unknown_paths))

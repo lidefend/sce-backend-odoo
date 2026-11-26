@@ -29,6 +29,20 @@ class CIRiskClassifierTests(unittest.TestCase):
     def test_documentation_is_fast(self) -> None:
         self.assertEqual(self.lane("docs/ops/runbook.md"), "FAST")
 
+    def test_executable_snapshot_and_browser_probes_are_not_docs_or_backend_runtime(self) -> None:
+        for path in (
+            "docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v2.json",
+            "scripts/verify/enterprise_reconstruction_browser.mjs",
+            "scripts/verify/new_product_browser.mjs",
+        ):
+            with self.subTest(path=path):
+                result = classify([path], event_name="pull_request")
+                self.assertEqual(result.professional_mode, "governance")
+                self.assertEqual(result.frontend_mode, "skip")
+                self.assertFalse(result.backend_runtime_changed)
+                self.assertFalse(result.backend_tooling_changed)
+                self.assertFalse(result.orm_required)
+
     def test_tooling_maintenance_lane_is_fast(self) -> None:
         result = classify(
             [

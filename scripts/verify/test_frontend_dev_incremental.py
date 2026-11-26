@@ -51,6 +51,31 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_shared_ownership_guards_and_test_script_lint_are_selected(self):
+        cases = {
+            "docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v2.json":
+                "verify.contract.page_v1_zero_residue.guard",
+            "scripts/verify/enterprise_reconstruction_import_browser.mjs":
+                "verify.frontend.playwright_vendor_coupling.guard",
+            "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts":
+                "verify.frontend.lint.scripts",
+        }
+        for path, expected in cases.items():
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                self.assertIn(expected, targets)
+                self.assertFalse(any(target.endswith((".orm", ".module_baseline")) for target in targets))
+        self.assertNotIn("verify.frontend.lint.scripts", select_targets(["frontend/apps/web/src/api/scene.ts"]))
+
+    def test_canonical_store_and_relation_consumers_select_lifecycle_regression(self):
+        for path in (
+            "frontend/apps/web/src/app/contracts/v2/store.ts",
+            "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
+            "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+        ):
+            with self.subTest(path=path):
+                self.assertIn("verify.frontend.professional_relation_lifecycle.unit", select_targets([path]))
+
     def test_model_import_and_company_scope_facts_are_not_unmapped(self):
         for path, guard in (
             ('addons/smart_construction_core/models/support/__init__.py', 'verify.backend.model_declaration.guard'),
@@ -996,7 +1021,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.frontend.presentation.lane.unit"],
+                    (["verify.frontend.playwright_vendor_coupling.guard"] if path.endswith(".mjs") else [])
+                    + ["verify.frontend.presentation.lane.unit"],
                 )
 
     def test_formal_project_views_select_the_product_structure_lock(self) -> None:
@@ -1609,7 +1635,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                         "verify.frontend.typecheck.strict",
                     ]
                     if path.startswith("frontend/apps/web/src/")
-                    else ["verify.frontend.platform_capability_explorer.unit"]
+                    else (["verify.frontend.lint.scripts"] if path.endswith(".ts") else [])
+                    + ["verify.frontend.platform_capability_explorer.unit"]
                 )
                 self.assertEqual(
                     select_targets([path]),
@@ -1664,7 +1691,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         )
         self.assertEqual(
             select_targets(["frontend/apps/web/scripts/scene_shell_contract_test.ts"]),
-            ["verify.frontend.scene_shell_contract.unit"],
+            ["verify.frontend.lint.scripts", "verify.frontend.scene_shell_contract.unit"],
         )
 
     def test_enterprise_configuration_consumer_tool_selects_its_unit_guard(self) -> None:
@@ -2137,10 +2164,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    [
+                    sorted([
                         "verify.frontend.delivery_hardening.guard",
                         "verify.frontend.standard_preview.unit",
-                    ],
+                    ] + (["verify.frontend.playwright_vendor_coupling.guard"] if path.endswith(".mjs") else [])),
                 )
         self.assertEqual(
             select_targets(["scripts/verify/contract_form_runtime_state_protocol_guard.py"]),
@@ -2930,6 +2957,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.backend.close_03.intake_autosave.samples",
             ],
             "scripts/verify/close_03_project_intake_browser.mjs": [
+                "verify.frontend.playwright_vendor_coupling.guard",
                 "verify.intake_autosave.contract.unit",
             ],
             "scripts/verify/local_dev_native_projection_audit.py": [
@@ -3360,7 +3388,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.frontend.list_surface_search_contract.unit"],
+                    ["verify.frontend.list_surface_search_contract.unit"]
+                    + (["verify.frontend.playwright_vendor_coupling.guard"] if path.endswith(".mjs") else []),
                 )
 
     def test_collection_row_and_optional_column_guards_route_to_their_owned_units(self) -> None:
@@ -3515,6 +3544,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(
             select_targets(["contracts/registry/component.yaml", registry, test]),
             [
+                "verify.frontend.lint.scripts",
                 "verify.frontend.lint.src",
                 "verify.frontend.professional_component_registry.unit",
                 "verify.frontend.systemic.convergence.static",

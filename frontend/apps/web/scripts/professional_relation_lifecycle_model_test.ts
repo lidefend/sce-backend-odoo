@@ -178,8 +178,8 @@ const rows = ref([{ id: 4, isNew: false }]);
 const mergedChildren: unknown[] = [];
 const store = ref({
   widgetsByFieldCode: new Map([
-    ['owner_id', { fieldDescriptor: { type: 'many2one', relation: 'x.owner' } }],
-    ['line_ids', { fieldDescriptor: { type: 'one2many', relation: 'x.line' } }],
+    ['owner_id', { fieldDescriptor: { fieldCode: 'owner_id', fieldType: 'many2one', relation: 'x.owner' } }],
+    ['line_ids', { fieldDescriptor: { fieldCode: 'line_ids', fieldType: 'one2many', relation: 'x.line' } }],
   ]),
   snapshot: { dataContract: { dataMeta: { sourceContext: { context: { company_id: 8, allowed_company_ids: [8] } } } } },
 });
@@ -252,6 +252,7 @@ childInitializationSideEffects={};
 
 guarded.clearRelationRuntime();
 const labelOld = fields.hydrateSelectedRelationOptions();
+equal(reads.length, 1, 'canonical relation descriptor initiates a selected-label read');
 guarded.clearRelationRuntime();
 reads.at(-1)!.resolve({ records: [{ id: 2, display_name: 'Stale label' }] });
 await labelOld;

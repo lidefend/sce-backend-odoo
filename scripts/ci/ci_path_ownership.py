@@ -38,6 +38,7 @@ class OwnershipCategory:
     backend_tooling: bool
     frontend_runtime: bool
     tool_checks: tuple[str, ...]
+    local_targeted: bool = False
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,16 @@ class OwnershipSummary:
             target
             for category_id in set(self.assignments.values())
             if category_id in self.categories
+            for target in self.categories[category_id].tool_checks
+        }))
+
+    @property
+    def local_tool_checks(self) -> tuple[str, ...]:
+        """Opt-in pure owners; remote aggregates are not local inner-loop work."""
+        return tuple(sorted({
+            target
+            for category_id in set(self.assignments.values())
+            if category_id in self.categories and self.categories[category_id].local_targeted
             for target in self.categories[category_id].tool_checks
         }))
 
@@ -161,6 +172,7 @@ def load_registry(path: Path = REGISTRY_PATH) -> dict[str, OwnershipCategory]:
             backend_tooling=_bool(row, "backend_tooling"),
             frontend_runtime=_bool(row, "frontend_runtime"),
             tool_checks=tuple(sorted(set(checks))),
+            local_targeted=_bool(row, "local_targeted"),
         )
     return categories
 

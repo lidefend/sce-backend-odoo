@@ -261,6 +261,7 @@ jobs:
           set -euo pipefail
           (
             pnpm -C frontend/apps/web lint:src
+            make verify.frontend.lint.scripts
           ) &
           lint_pid=$!
           (
