@@ -43,6 +43,14 @@ class CIRiskClassifierTests(unittest.TestCase):
                 self.assertFalse(result.backend_tooling_changed)
                 self.assertFalse(result.orm_required)
 
+    def test_planner_unit_keeps_ci_risk_checks_without_database_execution(self) -> None:
+        result = classify(["scripts/ci/test_backend_impact_plan.py"], event_name="pull_request")
+        self.assertEqual(result.lane, "HIGH_RISK")
+        self.assertFalse(result.backend_tooling_changed)
+        self.assertFalse(result.backend_runtime_changed)
+        self.assertFalse(result.orm_required)
+        self.assertEqual(result.frontend_mode, "skip")
+
     def test_tooling_maintenance_lane_is_fast(self) -> None:
         result = classify(
             [

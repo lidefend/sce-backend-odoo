@@ -30,6 +30,22 @@ def module(deps=()):
 
 
 class PathOwnershipRegistryTest(unittest.TestCase):
+    def test_current_contract_guards_select_real_checks_without_orm(self):
+        cases = {
+            "scripts/verify/unified_page_contract_v2_intent_guard.py": "verify.unified_page_contract.v2.intent",
+            "scripts/verify/test_web_unified_page_contract_v2_guard_row_identity.py": "verify.unified_page_contract.v2.web_consumer",
+            "scripts/verify/web_contract_v2_frontend_architecture_guard.py": "verify.unified_page_contract.v2.web_architecture",
+            "scripts/verify/construction_core_extension_policy_maps_split_guard.py": "verify.construction.policy_maps.unit",
+            "scripts/verify/test_validation_delivery_plan.py": "verify.validation.delivery.unit",
+        }
+        for path, target in cases.items():
+            with self.subTest(path=path):
+                result = ownership.classify_paths([path])
+                self.assertEqual(result.local_tool_checks, (target,))
+                self.assertFalse(result.backend_changed)
+                self.assertFalse(result.backend_runtime_changed)
+                self.assertFalse(result.unknown_paths)
+
     def test_only_opted_in_pure_owners_are_local_targets(self):
         result = ownership.classify_paths([
             "scripts/verify/new_product_browser.mjs",

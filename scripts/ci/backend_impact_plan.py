@@ -443,6 +443,9 @@ def select(paths: list[str], before: dict, after: dict, *, full: bool = False) -
         # code. Keep product dependency propagation for actual module changes.
         test_readers.update(file_consumers.get(path, set()))
         if len(parts) >= 3 and parts[0] in ROOTS:
+            category = ownership.category_for(path)
+            if category is not None:
+                tool_checks.update(category.tool_checks)
             if parts[1] in graph:
                 seeds.add(parts[1])
             else:

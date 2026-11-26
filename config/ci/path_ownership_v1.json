@@ -2,6 +2,113 @@
   "schema_version": "ci-path-ownership/v1",
   "categories": [
     {
+      "id": "contract_intent_guard",
+      "patterns": [
+        "scripts/verify/unified_page_contract_v2_intent_guard.py"
+      ],
+      "risk": "standard",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.unified_page_contract.v2.intent"
+      ],
+      "local_targeted": true
+    },
+    {
+      "id": "contract_web_consumer_guard",
+      "patterns": [
+        "scripts/verify/web_unified_page_contract_v2_guard.py",
+        "scripts/verify/test_web_unified_page_contract_v2_guard*.py"
+      ],
+      "risk": "standard",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.unified_page_contract.v2.web_consumer"
+      ],
+      "local_targeted": true
+    },
+    {
+      "id": "contract_web_architecture_guard",
+      "patterns": [
+        "scripts/verify/web_contract_v2_frontend_architecture_guard.py"
+      ],
+      "risk": "standard",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.unified_page_contract.v2.web_architecture"
+      ],
+      "local_targeted": true
+    },
+    {
+      "id": "construction_policy_map_guard",
+      "patterns": [
+        "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
+        "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py"
+      ],
+      "risk": "standard",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.construction.policy_maps.unit"
+      ],
+      "local_targeted": true
+    },
+    {
+      "id": "validation_delivery_tests",
+      "patterns": [
+        "scripts/verify/test_validation_delivery_plan.py"
+      ],
+      "risk": "standard",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.validation.delivery.unit"
+      ],
+      "local_targeted": true
+    },
+    {
+      "id": "construction_contract_finalizer",
+      "patterns": [
+        "addons/smart_construction_core/core_extension.py"
+      ],
+      "risk": "high",
+      "frontend": false,
+      "backend": true,
+      "backend_runtime": true,
+      "control_plane": false,
+      "tool_checks": [
+        "verify.native_view.workflow_action_coverage"
+      ],
+      "local_targeted": true
+    },
+    {
+      "id": "backend_planner_unit_tests",
+      "patterns": [
+        "scripts/ci/test_backend_impact_plan.py"
+      ],
+      "risk": "standard",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.ci.backend_impact_plan.unit"
+      ],
+      "local_targeted": true
+    },
+    {
       "risk": "standard",
       "frontend": false,
       "backend": false,

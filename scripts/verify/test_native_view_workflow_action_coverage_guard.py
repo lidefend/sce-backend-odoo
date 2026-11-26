@@ -767,34 +767,46 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
 
     def test_diary_finalizer_preserves_native_and_configured_field_structure(self):
         path = DEFAULT_SERVICE.parents[2] / 'core_extension.py'
-        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'smart_core_finalize_unified_page_contract_v2')
-        def workflow(env, out, source, **kw):
-            out['actionContract'] = {'reviewerActions': ['validate_tier', 'reject_tier']}
+        names_to_load = {'smart_core_finalize_unified_page_contract_v2', '_sc_apply_plan_workflow_denial'}
+        methods = [n for n in ast.parse(path.read_text()).body
+                   if isinstance(n, ast.FunctionDef) and n.name in names_to_load]
+        self.assertEqual({node.name for node in methods}, names_to_load)
+        workflow = Mock()
         notice_injection = Mock()
         namespace = {'deepcopy': copy.deepcopy, '_sc_text': lambda value: str(value or ''),
             '_sc_inject_workflow_contract': workflow, 'inject_financial_workspace_runtime': lambda *args: None,
             '_sc_inject_submission_readiness_notice': notice_injection,
             'smart_core_form_business_actions': None,
             '_contract_normalizers': SimpleNamespace(normalize_declared_field_presentation=lambda *args, **kw: None)}
-        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
         names = ['name', 'title', 'description', 'attachment_ids', 'reject_reason', 'configured_extension']
         contract = {'pageInfo': {'model': 'sc.construction.diary', 'viewType': 'form'},
-            'layoutContract': {'containerTree': [{'type': 'field', 'name': name, 'fieldInfo': {'name': name}} for name in names]},
+            'layoutContract': {'containerTree': [{'type': 'field', 'name': name, 'fieldInfo': {'name': name}} for name in names],
+                               'componentRegistry': {'legacy': True}},
             'formStructureContract': {'slots': [{'fieldRefs': names}]},
+            # P0 already supplied the workflow contract before this P1 finalizer.
+            'actionContract': {'reviewerActions': ['validate_tier', 'reject_tier']},
             'runtimeContract': {}, 'meta': {}}
         baseline = copy.deepcopy(contract)
         result = namespace['smart_core_finalize_unified_page_contract_v2'](None, contract, {'source_contract': {'model': 'sc.construction.diary', 'view_type': 'form'}})
-        self.assertEqual(result['layoutContract'], baseline['layoutContract'])
+        expected_layout = copy.deepcopy(baseline['layoutContract'])
+        expected_layout.pop('componentRegistry')
+        self.assertEqual(result['layoutContract'], expected_layout)
         self.assertEqual(result['formStructureContract'], baseline['formStructureContract'])
         self.assertEqual(result['runtimeContract'], {})
         self.assertEqual(result['meta'], {})
         self.assertEqual(result['actionContract']['reviewerActions'], ['validate_tier', 'reject_tier'])
         self.assertEqual(contract, baseline)
+        workflow.assert_not_called()
         notice_injection.assert_called_once_with(
             None,
             result,
             {'model': 'sc.construction.diary', 'view_type': 'form'},
         )
+        unchanged = copy.deepcopy(result)
+        self.assertIsNone(namespace['smart_core_finalize_unified_page_contract_v2'](
+            None, result, {'source_contract': {'model': 'sc.construction.diary', 'view_type': 'form'}}))
+        self.assertEqual(result, unchanged)
 
     def test_project_actions_keep_approval_and_lifecycle_separate(self):
         for approved, pending, reviewer, expected in (

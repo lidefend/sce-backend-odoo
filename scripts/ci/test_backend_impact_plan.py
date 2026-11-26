@@ -90,6 +90,13 @@ class ImpactSelectionTest(unittest.TestCase):
         graph = {**self.graph, 'reader': {**module(), 'file_inputs': [path]}}
         self.assertEqual(['reader'], planner.select([path],graph,graph)['modules'])
 
+    def test_contract_producer_keeps_module_scope_and_pure_generation_guard(self):
+        graph = {**self.graph, 'smart_construction_core': module()}
+        plan = planner.select(['addons/smart_construction_core/core_extension.py'], graph, graph)
+        self.assertIn('smart_construction_core', plan['modules'])
+        self.assertTrue(plan['required'])
+        self.assertIn('verify.native_view.workflow_action_coverage', plan['tool_checks'])
+
     def test_shared_runner_forces_full(self):
         plan = planner.select(['scripts/ci/orm_result_guard.sh'], self.graph, self.graph)
         self.assertEqual(plan['modules'], sorted(self.graph))
@@ -134,6 +141,8 @@ class ImpactSelectionTest(unittest.TestCase):
 
     def test_snapshot_and_browser_validation_select_real_guards_without_orm(self):
         cases = {
+            'scripts/ci/test_backend_impact_plan.py':
+                {'verify.ci.backend_impact_plan.unit'},
             'docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v2.json':
                 {'verify.contract.page_v1_zero_residue.guard'},
             'scripts/verify/enterprise_reconstruction_import_browser.mjs':

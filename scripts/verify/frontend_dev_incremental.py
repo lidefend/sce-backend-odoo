@@ -151,6 +151,10 @@ class Rule:
 
 RULES = (
     Rule((
+        "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    ), ("verify.frontend.contract_v2_occurrence_authority.unit",)),
+    Rule((
         "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
         "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
         "frontend/apps/web/src/pages/contractForm/useRelationRuntime.ts",

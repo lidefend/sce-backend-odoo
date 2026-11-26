@@ -29,7 +29,20 @@
     "scripts/ci/ci_path_ownership.py",
     "scripts/ci/test_ci_path_ownership.py",
     "scripts/ci/ci_risk_classifier.py",
-    "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts"
+    "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+    "scripts/ci/backend_iteration_lanes.py",
+    "scripts/ci/test_backend_iteration_lanes.py",
+    "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/verify/unified_page_contract_v2_intent_guard.py",
+    "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
+    "scripts/verify/test_web_unified_page_contract_v2_guard_row_identity.py",
+    "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
+    "scripts/verify/test_validation_delivery_plan.py",
+    "docs/audit/web_contract_v2_frontend_architecture_guard_report.md",
+    "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    "frontend/apps/web/src/app/contracts/v2/types.ts",
+    "scripts/verify/construction_core_extension_policy_maps_split_guard.py"
   ],
   "environment": {
     "kind": "offline",
@@ -39,7 +52,7 @@
     "local_targeted": {
       "status": "required",
       "entrypoint": "make ci.local.iteration",
-      "reason": "Dispatcher unit tests and real read-only CLI identity validation; no local ORM."
+      "reason": "Shared impact classification, current-only contract decoding, source finalizer coverage, affected pure guards and consumer regressions; no local full ORM."
     },
     "remote_integration": {
       "status": "required",
@@ -92,7 +105,7 @@
   "blockers": [
     "Remote integration and repaired exact-main full audit pending."
   ],
-  "next_exact_step": "Publish impact-classification and canonical relation fixture repairs; finish exact-head integration and latest-main six-workflow full audit.",
+  "next_exact_step": "Complete affected current-contract and classification checks; push PR1013 followup; verify exact-head PR and backend lane evidence, then merge and qualify resulting main with six workflows.",
   "id": "MAIN-CI-CLOSEOUT-20261126",
   "branch": "fix/main-ci-impact-precision-20261126",
   "status": "verification_pending",
@@ -168,7 +181,59 @@
       "targeted": ".runtime/main-ci-impact-final-targeted.log",
       "ownership_and_backend": ".runtime/main-ci-impact-targeted-3.log",
       "scope_proof": "snapshot/browser/test-script changes select pure owners without ORM; ordinary docs stay fast"
+    },
+    "main_0bab_professional": {
+      "status": "failed",
+      "log": ".runtime/main-ci-0bab-professional-failed.log",
+      "reason": "AST finalizer test omitted production helper dependency"
+    },
+    "contract_chain_diagnostic": {
+      "status": "failed",
+      "log": ".runtime/main-ci-contract-chain.log",
+      "scope": "pure professional contract and architecture checks",
+      "failures": [
+        "intent version pin",
+        "row-identity mutation anchor",
+        "web architecture old version regex",
+        "policy-map project_member precedence",
+        "delivery read-only command count"
+      ]
+    },
+    "contract_cleanup_targeted": {
+      "status": "passed",
+      "log": ".runtime/main-ci-cleanup-targeted-final-2.log",
+      "tests": {
+        "incremental_executor": 275,
+        "current_contract_consumer": "passed",
+        "strict_typecheck": "passed",
+        "script_lint": "0 errors, 3 existing warnings"
+      },
+      "iteration_log": ".runtime/main-ci-cleanup-iteration.log",
+      "executed_iteration_targets": 23
+    },
+    "contract_guard_fix_recheck": {
+      "status": "passed",
+      "log": ".runtime/main-ci-cleanup-iteration.log",
+      "includes": [
+        "intent",
+        "web_consumer",
+        "web_architecture",
+        "policy_maps",
+        "validation_delivery",
+        "native_view_workflow_action_coverage"
+      ]
     }
   },
-  "owner_verification_principle": "Verify our contract generation, correctness and faithful frontend consumption; exercise Odoo only at changed integration/composition boundaries, not as a separate native-engine verification objective."
+  "owner_verification_principle": "Verify our contract generation, correctness and faithful frontend consumption; exercise Odoo only at changed integration/composition boundaries, not as a separate native-engine verification objective.",
+  "owner_contract_version_rule": "Only the current contract is accepted; do not restore retired version compatibility. Existing decoder 2.7 policy stays unchanged, with executable rejection tests for older and unknown versions.",
+  "cleanup_layer_scope": {
+    "P0": "Generic frontend current-contract decoding: remove unreachable legacy identity alternative; no business semantics or database changes",
+    "P4": "CI ownership, affected tests and current-only guard/fixture alignment",
+    "exclusions": [
+      "persistent environments",
+      "Odoo native engine",
+      "unrelated worktrees",
+      "independent subprotocol versions"
+    ]
+  }
 }

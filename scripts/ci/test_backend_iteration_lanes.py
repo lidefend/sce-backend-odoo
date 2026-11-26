@@ -67,6 +67,14 @@ class PlanTests(unittest.TestCase):
         ):
             self.assertFalse(lanes.required_for_paths([path]), path)
 
+    def test_pure_planner_test_does_not_expand_to_all_database_suites(self):
+        pure = "scripts/ci/test_backend_impact_plan.py"
+        self.assertFalse(lanes.required_for_paths([pure]))
+        for runtime in ("scripts/ci/backend_impact_plan.py", "scripts/ci/backend_iteration_lanes.py",
+                        ".github/workflows/backend_new_suite.yml", "scripts/ci/test_backend_unknown.py"):
+            with self.subTest(runtime=runtime):
+                self.assertTrue(lanes.required_for_paths([pure, runtime]))
+
     def test_direct_run_selection_requires_exact_title_head_and_event(self):
         title = lanes.direct_run_title("demo", HEAD)
         rows = [

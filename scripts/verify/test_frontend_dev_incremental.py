@@ -53,6 +53,8 @@ ROOT = Path(__file__).resolve().parents[2]
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_shared_ownership_guards_and_test_script_lint_are_selected(self):
         cases = {
+            "addons/smart_construction_core/core_extension.py":
+                "verify.native_view.workflow_action_coverage",
             "docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v2.json":
                 "verify.contract.page_v1_zero_residue.guard",
             "scripts/verify/enterprise_reconstruction_import_browser.mjs":
@@ -64,7 +66,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 targets = select_targets([path])
                 self.assertIn(expected, targets)
-                self.assertFalse(any(target.endswith((".orm", ".module_baseline")) for target in targets))
+                if not path.startswith("addons/"):
+                    self.assertFalse(any(target.endswith((".orm", ".module_baseline")) for target in targets))
         self.assertNotIn("verify.frontend.lint.scripts", select_targets(["frontend/apps/web/src/api/scene.ts"]))
 
     def test_canonical_store_and_relation_consumers_select_lifecycle_regression(self):
@@ -1796,7 +1799,9 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "scripts/test/test_dependency_baseline.py",
         ):
             with self.subTest(path=path):
-                self.assertEqual(select_targets([path]), ["verify.ci.workflow.contract"])
+                self.assertEqual(select_targets([path]),
+                    (["verify.ci.backend_impact_plan.unit"] if path == "scripts/ci/test_backend_impact_plan.py" else [])
+                    + ["verify.ci.workflow.contract"])
         for path in (
             "scripts/ci/backend_iteration_lanes.py",
             "scripts/ci/test_backend_iteration_lanes.py",
@@ -2096,6 +2101,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.frontend.canonical_form_presenter.unit",
                 "verify.frontend.contract_record_action_state.unit",
+                "verify.frontend.contract_v2_occurrence_authority.unit",
                 "verify.frontend.lint.src",
                 "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
@@ -2199,6 +2205,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets(["addons/smart_construction_core/core_extension.py"]),
             [
                 "verify.daily.permission_truth.capability.orm",
+                "verify.native_view.workflow_action_coverage",
                 "verify.page.finalize.authority.orm",
                 "verify.page.project_finalize.authority.orm",
             ],
@@ -2454,6 +2461,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets(["addons/smart_construction_core/core_extension.py"]),
             [
                 "verify.daily.permission_truth.capability.orm",
+                "verify.native_view.workflow_action_coverage",
                 "verify.page.finalize.authority.orm",
                 "verify.page.project_finalize.authority.orm",
             ],

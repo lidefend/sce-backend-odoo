@@ -125,9 +125,14 @@ def validate_plan(
 
 
 def required_for_paths(paths: list[str]) -> bool:
+    ownership = impact.ci_path_ownership.classify_paths(paths)
     for path in paths:
-        if path in CLOSURE_PATHS or any(path.startswith(prefix) for prefix in CLOSURE_PREFIXES):
+        if path in CLOSURE_PATHS:
             return True
+        if any(path.startswith(prefix) for prefix in CLOSURE_PREFIXES):
+            category = ownership.category_for(path)
+            if category is None or category.backend_tooling or not category.local_targeted:
+                return True
     return False
 
 

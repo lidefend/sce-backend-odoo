@@ -25,3 +25,13 @@ Observed escapes: executable architecture snapshots were classified as ordinary 
 Shared path ownership now declares pure snapshot/browser owners. Explicit local_targeted opt-in shares these facts with local selection without pulling remote aggregate checks into the local loop. Standard-risk ownership cannot silently become FAST. Standard frontend checks lint scripts separately and run the lightweight relation lifecycle consumer regression.
 
 Positive/negative regressions prove the required checks are selected, ordinary docs remain FAST, and no ORM is selected for these pure inputs. Existing async cancellation/stale-result assertions remain intact. Local iteration passed nine selected targets; current-main full evidence remains pending.
+
+## Current-contract cleanup and selection precision
+
+P0 scope is the generic frontend decoder: remove the unreachable legacy native-identity branch/type and unused root-alias mechanism. Only current 2.7 page contracts are accepted. Negative regressions reject retired/unknown versions, legacy action identities and root aliases. Independent page-orchestration and action-patch protocol versions remain their own current facts; no Odoo engine or database change.
+
+P4 fixes synchronize current producer intent checks, frontend architecture guards, native-row mutation tests, policy-map precedence, and read-only merge preparation tests. The finalizer fixture loads its actual helper, preserves the upstream P0 workflow, verifies input immutability and idempotence. The batch diagnostic collected sibling failures before another remote cycle; its original failed log remains evidence.
+
+Explicit pure-check ownership now selects the owning guard locally and remotely without ORM. A planner test alone no longer mandates three backend suites; actual planner/runner mutations still do. Addon producer changes retain owning-module coverage and additionally select the relevant generation guard. This candidate changes the planner itself and therefore still requires the existing backend iteration closeout.
+
+Local targeted results and subsequent exact-head remote results are indexed in the active run. Main 0bab522 remains unqualified until a repaired latest-main six-workflow audit succeeds. No persistent deployment or AUTH-02 business acceptance is claimed.

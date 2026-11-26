@@ -243,8 +243,8 @@ REQUIRED_V2_BOUNDARY_FILES: dict[str, tuple[str, ...]] = {
     "app/contracts/v2/schema.ts": (
         "decodeContractV2Snapshot",
         "ContractV2DecodeError",
-        "/^2\\.(0|1|2|3|4|5|6)\\.\\d+$/",
-        "must be a negotiated 2.0 through 2.6 version",
+        "/^2\\.7\\.\\d+$/",
+        "must be a negotiated 2.7 version",
         "decodeNativeOccurrenceIdentity",
         "validateNativeOccurrenceAuthority",
         "formStructureContract",

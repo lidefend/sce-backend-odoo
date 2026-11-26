@@ -52,6 +52,7 @@ class NativeWorkspaceFactGuardTest(unittest.TestCase):
             "finance",
             "cost",
             "accounting",
+            "project_member",
         )
         self.assertEqual(expected, module.ROLE_PRECEDENCE)
 
