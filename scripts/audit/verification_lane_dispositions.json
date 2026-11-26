@@ -1988,11 +1988,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.frontend.action_surface_renderer_registry.unit": {
-      "disposition": "candidate",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.frontend.activation_form_engine.unit": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",

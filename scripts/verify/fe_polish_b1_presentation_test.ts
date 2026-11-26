@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {
+  formatProductMyWorkFact,
   productMyWorkIdentityDisplay,
   productMyWorkTaskFacts,
 } from '../../frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts';
@@ -60,4 +61,10 @@ assert.deepEqual(
   'money remains in facts when no amount chip is rendered',
 );
 
-console.log('[OK] FE-POLISH-B1 presentation unit: 5 cases');
+assert.throws(
+  () => formatProductMyWorkFact({ ...amount, money: { ...amount.money!, digits: undefined } }),
+  { name: 'ContractGapError' },
+  'my-work money facts cannot use a frontend precision fallback',
+);
+
+console.log('[OK] FE-POLISH-B1 presentation unit: 6 cases');

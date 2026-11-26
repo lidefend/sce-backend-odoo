@@ -378,7 +378,7 @@
                     :status="field.invalid ? 'error' : 'default'"
                     :described-by="fieldDescribedBy(field)"
                     type="number"
-                    :step="monetaryInputStep(field.digits, field.currencyLabel)"
+                    :step="monetaryInputStep(field.digits)"
                     :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
                     @update:model-value="emitFieldChange(field, $event)"
                   >

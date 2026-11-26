@@ -3,6 +3,8 @@ import {
   formatBusinessDuration,
   formatBusinessPercentage,
   formatMonetaryDisplayValue,
+  formatMonetaryInputValue,
+  monetaryInputStep,
   presentDeclaredBusinessValue,
   statusBadgeSemantic,
 } from '../src/app/presentation/businessValuePresentation';
@@ -106,6 +108,21 @@ assert.throws(
   }),
   { name: 'ContractGapError' },
   'currency code cannot substitute for missing money precision',
+);
+assert.throws(
+  () => formatMonetaryDisplayValue(12.5, undefined, 'CNY'),
+  { name: 'ContractGapError' },
+  'direct monetary display consumers cannot infer precision from the currency code',
+);
+assert.throws(
+  () => formatMonetaryInputValue(12.5, undefined),
+  { name: 'ContractGapError' },
+  'monetary input formatting cannot infer precision from the currency code',
+);
+assert.throws(
+  () => monetaryInputStep(undefined),
+  { name: 'ContractGapError' },
+  'monetary input step cannot infer precision from the currency code',
 );
 assert.equal(presentDeclaredBusinessValue({
   field: { name: 'declared_quantity', type: 'float', componentKey: 'sc.input.number', digits: [16, 6] },

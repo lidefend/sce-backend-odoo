@@ -346,6 +346,10 @@ assert.match(activityCellText(12.5, {
   key: 'amount', name: 'x_amount', label: 'Amount', widget: 'monetary', nativeLocator: 'activity/field[name=x_amount]',
   occurrenceIndex: 1, attributes: {}, decorations: [], fieldType: 'monetary', currencyField: 'company_currency_id', digits: [16, 2],
 }, { company_currency_id: [1, 'USD'] }), /12\.50/);
+assert.throws(() => activityCellText(12.5, {
+  key: 'amount', name: 'x_amount', label: 'Amount', widget: 'monetary', nativeLocator: 'activity/field[name=x_amount]',
+  occurrenceIndex: 1, attributes: {}, decorations: [], fieldType: 'monetary', currencyField: 'company_currency_id',
+}, { company_currency_id: [1, 'USD'] }), { name: 'ContractGapError' });
 
 const hierarchy = resolveActionSurfaceRenderer({
   semantic: 'hierarchy_browser', label: 'Hierarchy', groupField: '', groupedLanes: false, config: { tree: {} },

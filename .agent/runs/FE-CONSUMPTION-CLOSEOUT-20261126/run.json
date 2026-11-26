@@ -15,6 +15,7 @@
     "docs/ops/iterations/frontend_convergence_next_20261126.md",
     "docs/architecture/p0_contract_producer_01/remediation_design.json",
     "docs/architecture/frontend_contract_basis_ledger.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/product/frontend_business_entry_acceptance_v1.csv",
     ".agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/run.json",
     ".agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/coverage_matrix.json",
@@ -22,20 +23,30 @@
     "frontend/apps/web/src/app/contracts/v2/store.ts",
     "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
     "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+    "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
     "frontend/apps/web/src/components/FieldValue.vue",
+    "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
+    "frontend/apps/web/src/components/template/FormSection.vue",
     "frontend/apps/web/src/pages/KanbanPage.vue",
     "frontend/apps/web/src/pages/ListPage.vue",
+    "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
     "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
     "frontend/apps/web/src/utils/display.ts",
     "frontend/apps/web/src/utils/fieldSemantics.ts",
     "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+    "frontend/apps/web/scripts/action_surface_renderer_registry_test.ts",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
     "frontend/apps/web/scripts/collection_view_semantics_test.ts",
     "frontend/apps/web/scripts/contract_shape_projection_test.ts",
     "frontend/apps/web/scripts/professional_business_value_model_test.ts",
     "scripts/verify/frontend_localized_display_contract_test.ts",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/fe_polish_b1_presentation_test.ts",
     "scripts/verify/frontend_business_semantics_guard.py",
     "scripts/verify/test_frontend_business_semantics_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/business_entry_matrix_universe_guard.py",
+    "scripts/audit/verification_lane_dispositions.json",
     "scripts/verify/test_business_entry_matrix_universe_guard.py",
     "scripts/verify/frontend_collection_kanban_record_card_guard.py",
     "scripts/verify/test_frontend_collection_kanban_record_card_guard.py",
@@ -60,7 +71,8 @@
     "demo_data": false,
     "fixture": false,
     "frontend_build_fingerprint": "d7aca7a969c082a96cdcca68501a31ece7c8d8e678a6179089b632a189c6c6f9",
-    "health": "passed",
+    "health": "stale_current_worktree",
+    "health_note": "The clean profile still serves the previous tracked candidate; the FC-01 precision changes require a post-commit exact-HEAD rebuild.",
     "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-health.log",
     "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-entry-identity.log",
     "authority": "Owner-directed isolated clean development profile; existing dev/sample/acceptance/customer data and volumes are excluded."
@@ -95,6 +107,7 @@
       "inputs": [
         "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
         "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
         "frontend/apps/web/src/components/FieldValue.vue",
         "frontend/apps/web/src/pages/KanbanPage.vue",
         "frontend/apps/web/src/pages/ListPage.vue",
@@ -104,9 +117,79 @@
         "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
         "frontend/apps/web/src/app/contracts/v2/store.ts",
         "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+        "scripts/verify/fe_polish_b1_presentation_test.ts",
         "scripts/verify/frontend_localized_display_contract_test.ts",
         "scripts/verify/frontend_business_semantics_guard.py",
         "scripts/verify/test_frontend_business_semantics_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/components/template/formSection.mapper.ts",
+        "frontend/apps/web/src/components/template/formSection.types.ts",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "my_work_presentation": {
+      "target": "verify.frontend.my_work_approval.guard",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+        "scripts/verify/fe_polish_b1_presentation_test.ts",
+        "scripts/verify/frontend_my_work_approval_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "action_surface_renderer": {
+      "target": "verify.frontend.action_surface_renderer_registry.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/contracts/actionViewActivityContract.ts",
+        "frontend/apps/web/scripts/action_surface_renderer_registry_test.ts",
+        "scripts/verify/action_surface_renderer_architecture_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "payment_settlement_introduce": {
+      "target": "verify.frontend.payment_settlement_introduce.amount.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+        "frontend/apps/web/scripts/payment_settlement_introduce_dialog_amount_test.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "hierarchical_worksheet": {
+      "target": "verify.frontend.hierarchical_worksheet.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
+        "frontend/apps/web/scripts/hierarchical_worksheet_interaction_test.ts",
+        "frontend/apps/web/scripts/hierarchical_worksheet_domain_tab_test.ts",
+        "frontend/apps/web/scripts/hierarchical_worksheet_load_stage_test.ts",
+        "addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "frontend/apps/web/src",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "docs/frontend_productization/rendering-detail/rendering-surface-ownership-v1.json",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
         "make/frontend.mk"
       ],
       "kind": "offline"
@@ -115,6 +198,7 @@
       "target": "verify.frontend.professional_business_value.unit",
       "inputs": [
         "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/components/template/FormSection.vue",
         "frontend/apps/web/src/components/professional-fields/professionalBusinessValueModel.ts",
         "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
         "frontend/apps/web/scripts/professional_business_value_model_test.ts",
@@ -350,6 +434,26 @@
       "ledger_guard": "passed",
       "log": ".runtime/frontend-topic-preparation-ledger.log",
       "product_tests": "not_run"
+    },
+    "fc01_declared_precision_closure": {
+      "status": "passed",
+      "stage_identity": "f3f109519d90dc1c661fa9719f47ddc8dff21931 plus the owned FC-01 precision dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T221548Z-508620-392256933/receipt.json",
+      "receipt_sha256": "5f1b2cb17f943681971243064839449ed4e95b57a55266d6e98aa001a3accb73",
+      "logs": ".runtime/frontend-dev-validation/executions/20261126T221548Z-508620-392256933/",
+      "executed_targets": 30,
+      "test_targets": 19,
+      "test_count": 703,
+      "facts_verified": [
+        "all exported monetary display, input and step helpers require declared digits",
+        "currency code remains presentation metadata and cannot replace field precision",
+        "my-work money facts fail closed when their money digits declaration is missing",
+        "professional controls, canonical forms, activity surfaces, list/kanban/card cells and payment settlement consume the shared authority",
+        "the local planner selects every directly affected consumer of the shared business-value authority",
+        "the action-surface test has nonzero TAP execution evidence and its stale zero-reference disposition is removed"
+      ],
+      "scope_limit": "Local targeted evidence only; browser behavior, exact-HEAD clean runtime, remote PR CI and mainline qualification remain not_run."
     }
   }
 }

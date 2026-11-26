@@ -70,6 +70,10 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("status declaration validation must precede empty-value return")
     if "function requireDeclaredBusinessDigits(" not in authority:
         failures.append("money and percentage values do not require declared precision")
+    if ".resolvedOptions().maximumFractionDigits" in authority:
+        failures.append("monetary precision still falls back to currency-code metadata")
+    if "const scale = resolveMonetaryScale(digits);" not in authority:
+        failures.append("monetary helpers do not validate declared digits through the shared scale authority")
     if "presentDeclaredBusinessValue" not in kanban_adapter:
         failures.append("Kanban adapter does not consume declared business-value semantics")
 
@@ -153,6 +157,12 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     )
     if "function statusSemantic(" in professional_status:
         failures.append("professional business values keep a second status tone table")
+
+    my_work = _read("app/presentation/productMyWorkPresentation.ts", read_text)
+    if "normalizeDeclaredDigits([20, Number(value)])" not in my_work:
+        failures.append("my-work money facts do not require declared digits")
+    if "product_my_work.fact.money.digits" not in my_work:
+        failures.append("my-work money facts do not report the missing precision contract")
 
     approval = _read("components/business/MyWorkApprovalWorkspace.vue", read_text)
     if "function statusSemantic(" in approval or "statusBadgeSemantic(" not in approval:

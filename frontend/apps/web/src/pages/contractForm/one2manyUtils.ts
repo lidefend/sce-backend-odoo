@@ -927,7 +927,7 @@ export function one2manyColumnInputType(column: One2ManyColumn): 'text' | 'numbe
 export function one2manyColumnInputValue(column: One2ManyColumn, value: unknown): string | number {
   const ttype = String(column.ttype || '').trim().toLowerCase();
   if (value === null || value === undefined || (value === false && ttype !== 'boolean')) return '';
-  if (ttype === 'monetary') return formatMonetaryInputValue(value, column.digits, column.currencyLabel || '');
+  if (ttype === 'monetary') return formatMonetaryInputValue(value, column.digits);
   if (ttype === 'date') return toDateInputValue(value);
   if (ttype === 'datetime') return toDatetimeInputValue(value);
   if (typeof value === 'number' || typeof value === 'string') return value;

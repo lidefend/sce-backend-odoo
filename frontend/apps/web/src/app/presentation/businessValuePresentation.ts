@@ -91,34 +91,32 @@ export function resolveCurrencyDisplayLabel(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-export function resolveMonetaryScale(digits?: [number, number], currencyLabel = ''): number | undefined {
-  if (digits) return digits[1];
-  const currencyCode = /^[A-Z]{3}$/.test(currencyLabel) ? currencyLabel : '';
-  if (!currencyCode) return undefined;
-  try {
-    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: currencyCode })
-      .resolvedOptions().maximumFractionDigits;
-  } catch {
-    return undefined;
+export function resolveMonetaryScale(digits?: [number, number]): number {
+  const declaredDigits = normalizeDeclaredDigits(digits);
+  if (!declaredDigits) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'field.(monetary).digits',
+      requiredDeclarationLayer: 'P0:smart_core:field_descriptor_digits_projection',
+    }, '金额字段缺少契约声明精度 digits');
   }
+  return declaredDigits[1];
 }
 
-export function monetaryInputStep(digits?: [number, number], currencyLabel = ''): string {
-  const scale = resolveMonetaryScale(digits, currencyLabel);
-  if (!Number.isInteger(scale)) return 'any';
+export function monetaryInputStep(digits?: [number, number]): string {
+  const scale = resolveMonetaryScale(digits);
   return scale === 0 ? '1' : `0.${'0'.repeat(Math.max(0, scale - 1))}1`;
 }
 
 export function formatMonetaryInputValue(
   value: unknown,
   digits?: [number, number],
-  currencyLabel = '',
 ): string | number {
+  const scale = resolveMonetaryScale(digits);
   if (value === null || value === undefined || value === '') return '';
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return String(value);
-  const scale = resolveMonetaryScale(digits, currencyLabel);
-  return Number.isInteger(scale) ? numeric.toFixed(scale) : value as string | number;
+  return numeric.toFixed(scale);
 }
 
 export function formatMonetaryDisplayValue(
@@ -128,13 +126,14 @@ export function formatMonetaryDisplayValue(
   locale = 'zh-CN',
   emptyText = FIELD_VALUE_EMPTY_TEXT,
 ): string {
+  const scale = resolveMonetaryScale(digits);
   if (value === null || value === undefined || value === false || value === '') return emptyText;
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return emptyText;
-  const scale = resolveMonetaryScale(digits, currencyLabel);
-  const options: Intl.NumberFormatOptions = Number.isInteger(scale)
-    ? { minimumFractionDigits: scale, maximumFractionDigits: scale }
-    : {};
+  const options: Intl.NumberFormatOptions = {
+    minimumFractionDigits: scale,
+    maximumFractionDigits: scale,
+  };
   const currencyCode = /^[A-Z]{3}$/.test(currencyLabel) ? currencyLabel : '';
   if (currencyCode) {
     return new Intl.NumberFormat(locale, { ...options, style: 'currency', currency: currencyCode }).format(numeric);

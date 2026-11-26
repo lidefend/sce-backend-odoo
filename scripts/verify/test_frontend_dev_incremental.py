@@ -1480,6 +1480,22 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     "verify.frontend.business_semantics.unit",
                     select_targets([path]),
                 )
+        shared_authority_targets = select_targets([
+            "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        ])
+        for target in (
+            "verify.frontend.professional_business_value.unit",
+            "verify.frontend.canonical_form_presenter.unit",
+            "verify.frontend.my_work_approval.guard",
+            "verify.frontend.payment_settlement_introduce.amount.unit",
+            "verify.frontend.hierarchical_worksheet.unit",
+            "verify.frontend.action_surface_renderer_registry.unit",
+            "verify.frontend.collection_view_semantics.unit",
+            "verify.frontend.collection_kanban_record_card.unit",
+            "verify.frontend.collection_row_cell.unit",
+        ):
+            with self.subTest(target=target):
+                self.assertIn(target, shared_authority_targets)
         self.assertIn(
             "verify.frontend.boq_import_preview.unit",
             select_targets(["frontend/apps/web/src/app/presentation/boqImportPreview.ts"]),

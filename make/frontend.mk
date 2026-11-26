@@ -1025,7 +1025,7 @@ verify.frontend.native_action_contract_consumption.unit: guard.prod.forbid
 
 verify.frontend.action_surface_renderer_registry.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/action_surface_renderer_registry_test.ts --bundle --platform=node --format=esm --outfile=/tmp/action-surface-renderer-registry-test.mjs >/dev/null
-	@node /tmp/action-surface-renderer-registry-test.mjs
+	@node --test --test-reporter=tap /tmp/action-surface-renderer-registry-test.mjs
 	@python3 scripts/verify/action_surface_renderer_architecture_guard.py
 
 verify.frontend.all_list_visual.audit: guard.prod.forbid

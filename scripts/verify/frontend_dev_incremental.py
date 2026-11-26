@@ -1275,6 +1275,15 @@ RULES = (
     ), (
         "verify.frontend.business_semantics.unit",
         "verify.frontend.boq_import_preview.unit",
+        "verify.frontend.professional_business_value.unit",
+        "verify.frontend.canonical_form_presenter.unit",
+        "verify.frontend.my_work_approval.guard",
+        "verify.frontend.payment_settlement_introduce.amount.unit",
+        "verify.frontend.hierarchical_worksheet.unit",
+        "verify.frontend.action_surface_renderer_registry.unit",
+        "verify.frontend.collection_view_semantics.unit",
+        "verify.frontend.collection_kanban_record_card.unit",
+        "verify.frontend.collection_row_cell.unit",
     )),
     Rule((
         "/components/template/FormSection.vue",
@@ -1304,6 +1313,7 @@ RULES = (
         "/components/template/FormSection.vue",
         "/components/template/formSection.mapper.ts",
         "/components/template/formSection.types.ts",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
     ), (
         "verify.frontend.canonical_form_presenter.unit",
         "verify.frontend.contract_v2_occurrence_authority.unit",

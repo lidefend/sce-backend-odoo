@@ -81,14 +81,14 @@ const isChoice = computed(() => ['sc.display.status'].includes(kind.value));
 const numeric = computed(() => ['sc.value.money', 'sc.value.percentage', 'sc.value.duration'].includes(kind.value));
 const inputModelValue = computed(() => {
   if (kind.value === 'sc.value.money') {
-    return formatMonetaryInputValue(props.field.inputValue, props.field.digits, props.field.currencyLabel);
+    return formatMonetaryInputValue(props.field.inputValue, props.field.digits);
   }
   if (props.field.inputValue === false || props.field.inputValue === null || props.field.inputValue === undefined) return '';
   return typeof props.field.inputValue === 'boolean' ? String(props.field.inputValue) : props.field.inputValue ?? '';
 });
 const choiceOptions = computed(() => props.field.relationOptions?.length ? props.field.relationOptions : props.field.selectionOptions || []);
 const normalizedChoiceOptions = computed(() => normalizeBusinessValueChoiceOptions(choiceOptions.value));
-const inputStep = computed(() => kind.value === 'sc.value.money' ? monetaryInputStep(props.field.digits, props.field.currencyLabel) : 'any');
+const inputStep = computed(() => kind.value === 'sc.value.money' ? monetaryInputStep(props.field.digits) : 'any');
 
 const suffix = computed(() => {
   if (kind.value === 'sc.value.money') return props.field.currencyLabel || '';

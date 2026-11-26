@@ -184,6 +184,30 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         ))
         self.assertTrue(any("require declared precision" in failure for failure in failures))
 
+    def test_currency_code_precision_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "return declaredDigits[1];",
+                "return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).resolvedOptions().maximumFractionDigits;",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("currency-code metadata" in failure for failure in failures))
+
+    def test_my_work_money_precision_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "normalizeDeclaredDigits([20, Number(value)])",
+                "normalizeDeclaredDigits([20, 2])",
+            )
+            if path == "app/presentation/productMyWorkPresentation.ts"
+            else None,
+        ))
+        self.assertTrue(any("my-work money facts do not require declared digits" in failure for failure in failures))
+
     def test_list_selection_raw_fallback_fails(self):
         failures = guard.validate(lambda path: source(
             path,

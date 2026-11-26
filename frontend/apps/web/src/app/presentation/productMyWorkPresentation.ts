@@ -1,5 +1,9 @@
 import type { ProductMyWorkFact } from '../../api/myWork';
-import { formatMonetaryDisplayValue } from './businessValuePresentation';
+import {
+  formatMonetaryDisplayValue,
+  normalizeDeclaredDigits,
+} from './businessValuePresentation';
+import { contractGapError } from '../contract/contractGap';
 import { FIELD_VALUE_EMPTY_TEXT, formatTemporalFieldValue } from '../../utils/fieldSemantics';
 
 export type ProductMyWorkFactPresentation = {
@@ -9,8 +13,15 @@ export type ProductMyWorkFactPresentation = {
 };
 
 function normalizedDigits(value: unknown) {
-  const digits = Number(value);
-  return Number.isFinite(digits) ? Math.min(20, Math.max(0, Math.trunc(digits))) : 2;
+  const digits = normalizeDeclaredDigits([20, Number(value)]);
+  if (!digits) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'product_my_work.fact.money.digits',
+      requiredDeclarationLayer: 'P0:smart_core:money_fact_digits_projection',
+    }, '我的工作金额事实缺少契约声明精度 digits');
+  }
+  return digits;
 }
 
 export function formatProductMyWorkFact(fact: ProductMyWorkFact): string {
@@ -20,7 +31,7 @@ export function formatProductMyWorkFact(fact: ProductMyWorkFact): string {
     const digits = normalizedDigits(money.digits);
     return formatMonetaryDisplayValue(
       Number(money.value),
-      [20, digits],
+      digits,
       money.currency || money.currency_symbol || '',
       'zh-CN',
       FIELD_VALUE_EMPTY_TEXT,
