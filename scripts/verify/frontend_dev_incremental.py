@@ -55,6 +55,7 @@ WATCH_ROOTS = (
     "scripts/ops/incremental_execution.py",
 )
 CHECKPOINT_AUTHORITY_PATHS = (
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/ops/incremental_execution.py",
     "make/frontend.mk",
@@ -78,6 +79,8 @@ COVERING_CHECK_TARGETS = {
     "audit.verification.lane_coverage.check": ("verify.verification.lane_coverage",),
 }
 NODE_TOOL_REQUIREMENTS = {
+    "verify.frontend.professional_relation_lifecycle.unit": "esbuild",
+    "verify.frontend.lint.scripts": "eslint",
     "verify.frontend.lint.src": "eslint",
     "verify.frontend.typecheck.strict": "vue-tsc",
     FRONTEND_SOURCE_SCAN_TARGET: "esbuild",
@@ -90,6 +93,7 @@ NODE_TOOL_REQUIREMENTS = {
     "verify.frontend.canonical_form_presenter.unit": "esbuild",
     "verify.frontend.approval_contract.closure.unit": "esbuild",
     "verify.frontend.contract_v2_occurrence_authority.unit": "esbuild",
+    "verify.frontend.contract_fidelity.plan.unit": "esbuild",
     "verify.frontend.contract_reason_dialog.browser": "node",
     "verify.frontend.primitive_adapter.unit": "esbuild",
     "verify.frontend.scene_primitive_adapter.unit": "esbuild",
@@ -148,6 +152,23 @@ class Rule:
 
 
 RULES = (
+    Rule(tuple(json.loads((ROOT / "docs/architecture/p0_contract_producer_01/remediation_design.json")
+                          .read_text(encoding="utf-8"))["source_evidence"]) + (
+        "docs/architecture/p0_contract_producer_01/remediation_design.json",
+        "scripts/verify/test_contract_fidelity_plan_guard.py",
+        "scripts/verify/contract_fidelity_plan_guard.py",
+    ), ("verify.frontend.contract_fidelity.plan.unit",)),
+    Rule((
+        "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    ), ("verify.frontend.contract_v2_occurrence_authority.unit",)),
+    Rule((
+        "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
+        "frontend/apps/web/src/pages/contractForm/useRelationRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/professionalRelationLifecycleModel.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+    ), ("verify.frontend.professional_relation_lifecycle.unit",)),
     Rule((
         "addons/smart_construction_core/__manifest__.py",
         "addons/smart_construction_core/__init__.py",
@@ -3308,7 +3329,7 @@ def is_registry_audit_input(path: str) -> bool:
 
 
 def select_targets(paths: list[str]) -> list[str]:
-    selected: set[str] = set()
+    selected: set[str] = set(ci_path_ownership.classify_paths(paths).local_tool_checks)
     for path in paths:
         normalized = path.replace("\\", "/")
         path_targets: set[str] = set()
@@ -3321,6 +3342,8 @@ def select_targets(paths: list[str]) -> list[str]:
             ("frontend/apps/web/", "frontend/packages/ui/")
         ):
             path_targets.add(FALLBACK_TARGET)
+        if normalized.startswith("frontend/apps/web/scripts/") and normalized.endswith(FRONTEND_SOURCE_SUFFIXES):
+            path_targets.add("verify.frontend.lint.scripts")
         if (
             normalized.startswith(FRONTEND_SOURCE_ROOTS)
             and normalized.endswith(FRONTEND_SOURCE_SUFFIXES)

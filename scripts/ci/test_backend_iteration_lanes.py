@@ -55,6 +55,7 @@ class PlanTests(unittest.TestCase):
     def test_closure_surface_is_exact_and_unknown_paths_do_not_require_all_lanes(self):
         for path in (
             ".github/workflows/backend_test_suite.yml",
+            ".github/workflows/professional_quality_gate.yml",
             "make/ci.mk",
             "scripts/ci/backend_suite_plan.py",
             "scripts/test/test.sh",
@@ -66,6 +67,14 @@ class PlanTests(unittest.TestCase):
             "frontend/apps/web/src/App.vue",
         ):
             self.assertFalse(lanes.required_for_paths([path]), path)
+
+    def test_pure_planner_test_does_not_expand_to_all_database_suites(self):
+        pure = "scripts/ci/test_backend_impact_plan.py"
+        self.assertFalse(lanes.required_for_paths([pure]))
+        for runtime in ("scripts/ci/backend_impact_plan.py", "scripts/ci/backend_iteration_lanes.py",
+                        ".github/workflows/backend_new_suite.yml", "scripts/ci/test_backend_unknown.py"):
+            with self.subTest(runtime=runtime):
+                self.assertTrue(lanes.required_for_paths([pure, runtime]))
 
     def test_direct_run_selection_requires_exact_title_head_and_event(self):
         title = lanes.direct_run_title("demo", HEAD)
@@ -124,7 +133,8 @@ class ArtifactTests(unittest.TestCase):
 
 
 class CloseEfficiencyTests(unittest.TestCase):
-    def test_full_product_from_required_ci_reuses_and_dispatches_only_auxiliary(self):
+    @patch.object(lanes, "automatic_closure", return_value=False)
+    def test_full_product_from_required_ci_reuses_and_dispatches_only_auxiliary(self, _automatic):
         class Client:
             def runs(self, workflow, head):
                 return []
@@ -188,7 +198,8 @@ class CloseEfficiencyTests(unittest.TestCase):
 
 
 class MergeGateTests(unittest.TestCase):
-    def test_harness_change_requires_receipt_and_unrelated_pr_does_not(self):
+    @patch.object(lanes, "automatic_closure", return_value=False)
+    def test_harness_change_requires_receipt_and_unrelated_pr_does_not(self, _automatic):
         class Client:
             def __init__(self, paths):
                 self.paths = paths
@@ -217,6 +228,76 @@ class MergeGateTests(unittest.TestCase):
                     receipt=missing,
                 )["status"],
             )
+
+
+class AutomaticClosureTests(unittest.TestCase):
+    def client(self, **updates):
+        from unittest.mock import Mock
+        row = dict(databaseId=10, headSha=HEAD, event="pull_request", status="completed",
+                   conclusion="success", workflowName="professional_quality_gate")
+        row.update(updates)
+        client = Mock()
+        client.runs.return_value = [row]
+        client.run.return_value = row
+        client.pr_files.return_value = ["make/ci.mk"]
+        return client
+
+    def artifacts(self, client, run_id, suite):
+        return dict(artifact_id=1, artifact_digest="sha256:abc", plan=plan(suite=suite))
+
+    @patch.object(lanes, "automatic_closure", return_value=True)
+    @patch.object(lanes, "preflight", return_value=({"number": 99}, BASE, TREE))
+    @patch.object(lanes, "expected_suite_modules", side_effect=lambda head, suite: [f"{suite}_module"])
+    def test_merge_uses_remote_all_suite_artifacts_without_local_receipt(self, *_):
+        client = self.client()
+        with patch.object(lanes, "read_plan_artifact", side_effect=self.artifacts) as read:
+            result = lanes.verify_manifest(client, pr=99, head=HEAD, receipt=Path("/missing.json"))
+        self.assertEqual(set(lanes.SUITES), set(result["suites"]))
+        self.assertEqual(3, read.call_count)
+        client.dispatch.assert_not_called()
+
+    def test_green_other_head_running_or_failed_cannot_satisfy_merge(self):
+        for updates in (dict(headSha="d"*40), dict(status="in_progress"),
+                        dict(conclusion="failure"), dict(event="workflow_dispatch")):
+            with self.subTest(updates=updates), self.assertRaises(lanes.LaneError):
+                lanes.verify_automatic_closure(self.client(**updates), head=HEAD, base=BASE)
+
+    @patch.object(lanes, "expected_suite_modules", side_effect=lambda head, suite: [f"{suite}_module"])
+    def test_missing_or_incomplete_auxiliary_plan_is_rejected(self, *_):
+        def missing(client, run_id, suite):
+            if suite == "acceptance":
+                raise lanes.LaneError("missing acceptance artifact")
+            return self.artifacts(client, run_id, suite)
+        with patch.object(lanes, "read_plan_artifact", side_effect=missing), self.assertRaises(lanes.LaneError):
+            lanes.verify_automatic_closure(self.client(), head=HEAD, base=BASE)
+        def incomplete(client, run_id, suite):
+            value = self.artifacts(client, run_id, suite)
+            if suite == "demo":
+                value["plan"]["scope_mode"] = "focused"
+            return value
+        with patch.object(lanes, "read_plan_artifact", side_effect=incomplete), self.assertRaises(lanes.LaneError):
+            lanes.verify_automatic_closure(self.client(), head=HEAD, base=BASE)
+
+    @patch.object(lanes, "automatic_closure", return_value=True)
+    @patch.object(lanes, "preflight", return_value=({"number": 99}, BASE, TREE))
+    @patch.object(lanes, "expected_suite_modules", side_effect=lambda head, suite: [f"{suite}_module"])
+    def test_explicit_close_waits_for_automatic_ci_without_dispatch(self, *_):
+        client = self.client()
+        with tempfile.TemporaryDirectory() as tmp, patch.object(lanes, "read_plan_artifact", side_effect=self.artifacts):
+            result = lanes.close_lanes(client, branch="fix/test", head=HEAD,
+                output=Path(tmp)/"receipt.json", timeout_seconds=1, discovery_seconds=1,
+                professional_wait_seconds=1, poll_seconds=0.01)
+        self.assertEqual("passed", result["status"])
+        client.dispatch.assert_not_called()
+
+    def test_plan_uses_same_selection_as_merge(self):
+        for paths, expected in [(["make/ci.mk"], True), (["docs/a.md"], False),
+                                (["scripts/ci/test_backend_impact_plan.py"], False)]:
+            with tempfile.TemporaryDirectory() as tmp, patch.object(lanes, "git", return_value="\n".join(paths)):
+                output = Path(tmp)/"outputs"
+                self.assertEqual(0, lanes.main(["plan", "--base", BASE, "--expected-head", HEAD,
+                                               "--github-output", str(output)]))
+                self.assertEqual(f"required={str(expected).lower()}\n", output.read_text())
 
 
 if __name__ == "__main__":

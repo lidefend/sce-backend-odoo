@@ -21,6 +21,15 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
     def text(self, name: str) -> str:
         return (ROOT / ".github/workflows" / name).read_text(encoding="utf-8")
 
+    def test_standard_checks_precede_expensive_contract_diagnostic(self):
+        workflow = yaml.safe_load(self.text("frontend_release_gate.yml"))
+        steps = workflow["jobs"]["frontend_release_gate"]["steps"]
+        names = [step.get("name") for step in steps]
+        self.assertLess(names.index("Run standard frontend checks in parallel"),
+                        names.index("Run focused payment-request diagnostic"))
+        diagnostic = next(step for step in steps if step.get("id") == "payment_request_diagnostic")
+        self.assertNotIn("always()", diagnostic.get("if", ""))
+
     def test_merge_policy_gate_is_the_single_required_aggregation_job(self) -> None:
         contracts = {
             "public_guard.yml": ("  public_guard:", "    name: public_guard"),
@@ -114,6 +123,9 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("frontend_mode != 'full'", text)
         self.assertIn("pnpm test:release", text)
         self.assertIn("pnpm -C frontend/apps/web lint:src", text)
+        self.assertIn("make verify.frontend.lint.scripts", text)
+        frontend_make = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")
+        self.assertIn("verify.frontend.pr.unit: verify.frontend.professional_relation_lifecycle.unit", frontend_make)
         self.assertIn("pnpm -C frontend/apps/web typecheck:strict", text)
         self.assertIn("pnpm -C frontend/apps/web build", text)
         self.assertIn("pnpm -C frontend/apps/web test", text)
@@ -212,6 +224,57 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         ):
             self.assertIn(gate, names)
             self.assertLess(names.index(pin_name), names.index(gate), f"{gate} must run after the pin")
+
+    def test_backend_closure_auto_runs_parallel_and_rejects_missing_results(self):
+        import os
+        import subprocess
+        jobs = yaml.safe_load(self.text("professional_quality_gate.yml"))["jobs"]
+        auth = jobs["professional_authorization"]
+        selector = next(step for step in auth["steps"] if step.get("id") == "backend_closure")
+        self.assertEqual("github.event_name == 'pull_request'", selector["if"])
+        self.assertIn("backend_iteration_lanes.py plan", selector["run"])
+        self.assertEqual("${{ steps.backend_closure.outputs.required }}", auth["outputs"]["backend_closure_required"])
+        for suite in ("demo", "acceptance"):
+            job = jobs[f"backend_{suite}_suite"]
+            self.assertEqual("professional_authorization", job["needs"])
+            self.assertEqual("needs.professional_authorization.outputs.backend_closure_required == 'true'", job["if"])
+            self.assertEqual("./.github/workflows/backend_test_suite.yml", job["uses"])
+            self.assertEqual("full", job["with"]["scope_mode"])
+            self.assertEqual(suite, job["with"]["suite"])
+            self.assertEqual("${{ github.event.pull_request.head.sha }}", job["with"]["head_sha"])
+        step = next(s for s in jobs["professional_quality_gate"]["steps"]
+                    if s.get("name") == "Enforce complete backend closure")
+        for required, product, demo, acceptance, passed in (
+            ("true", "success", "success", "success", True),
+            ("true", "success", "skipped", "success", False),
+            ("true", "success", "success", "failure", False),
+            ("true", "failure", "success", "success", False),
+            ("false", "skipped", "skipped", "skipped", True),
+            ("false", "success", "success", "skipped", False),
+        ):
+            with self.subTest(required=required, product=product, demo=demo, acceptance=acceptance):
+                result = subprocess.run(["bash", "-c", step["run"]], capture_output=True,
+                    env={**os.environ, "REQUIRED": required, "PRODUCT": product,
+                         "DEMO": demo, "ACCEPTANCE": acceptance})
+                self.assertEqual(passed, result.returncode == 0)
+
+    def test_professional_tool_and_full_baseline_prepare_locked_decoder_dependencies(self) -> None:
+        workflow = yaml.safe_load(self.text("professional_quality_gate.yml"))
+        steps = workflow["jobs"]["professional_quality_checks"]["steps"]
+        names = [step.get("name") for step in steps]
+        pin = names.index("Install pinned Node.js runtime for the syntax sweep")
+        install = names.index("Install locked frontend verification dependencies")
+        prep = steps[install]
+        self.assertEqual(prep.get("if"), "env.TOOL_CHECKS != '' || github.event_name == 'schedule' || needs.professional_authorization.outputs.candidate_requested == 'true'")
+        self.assertLess(pin, install)
+        self.assertIn("corepack prepare pnpm@9.12.3 --activate", prep["run"])
+        self.assertIn("pnpm -C frontend install --frozen-lockfile", prep["run"])
+        self.assertIn("test -x frontend/apps/web/node_modules/.bin/esbuild", prep["run"])
+        for consumer in (
+            "Run owning tool checks for changed control plane",
+            "Run complete registered offline baseline for formal release",
+        ):
+            self.assertLess(install, names.index(consumer))
 
     def test_professional_gate_prepares_bubblewrap_for_real_sandbox_contract(self) -> None:
         """The workflow contract executes the formal executor's real bwrap tests."""
@@ -328,7 +391,9 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         for command in expected_order:
             cursor = full_section.find(command, cursor + 1)
             self.assertGreaterEqual(cursor, 0, command)
-        self.assertNotIn("pnpm -C frontend install", text)
+        # Decoder tool dependencies are required; frontend build/browser work stays in its own lane.
+        self.assertNotIn("pnpm -C frontend/apps/web build", text)
+        self.assertNotIn("playwright install", text)
         self.assertIn("make test.unit test.contract test.e2e.preflight", text)
         self.assertIn("make verify.product.release.version", text)
         governance_section = text.split("- name: Run governance-only quality gate", 1)[1].split(
@@ -590,11 +655,11 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         )
         self.assertEqual(
             backend_suite["with"]["scope_mode"],
-            "${{ (needs.professional_authorization.outputs.candidate_requested == 'true' || needs.professional_authorization.outputs.backend_tooling_changed == 'true') && 'full' || 'focused' }}",
+            "${{ (needs.professional_authorization.outputs.backend_closure_required == 'true' || needs.professional_authorization.outputs.candidate_requested == 'true' || needs.professional_authorization.outputs.backend_tooling_changed == 'true') && 'full' || 'focused' }}",
         )
         self.assertEqual(
             backend_suite["with"]["base_sha"],
-            "${{ (needs.professional_authorization.outputs.candidate_requested != 'true' && needs.professional_authorization.outputs.backend_tooling_changed != 'true') && github.event.pull_request.base.sha || '' }}",
+            "${{ (needs.professional_authorization.outputs.backend_closure_required != 'true' && needs.professional_authorization.outputs.candidate_requested != 'true' && needs.professional_authorization.outputs.backend_tooling_changed != 'true') && github.event.pull_request.base.sha || '' }}",
         )
         self.assertEqual(
             "${{ steps.risk.outputs.backend_tooling_changed }}",
@@ -1017,7 +1082,8 @@ class ParallelQualityExecutionTest(unittest.TestCase):
         self.assertEqual(jobs['backend_impact_suite']['needs'], 'professional_authorization')
         self.assertEqual(set(jobs['professional_quality_gate']['needs']), {
             'professional_authorization', 'contract_checks', 'backend_impact_suite',
-            'professional_quality_checks', 'python310_runtime_compatibility'})
+            'professional_quality_checks', 'python310_runtime_compatibility',
+            'backend_demo_suite', 'backend_acceptance_suite'})
         self.assertEqual(
             jobs['contract_checks']['needs'],
             'professional_authorization',
@@ -1103,7 +1169,7 @@ class ParallelQualityExecutionTest(unittest.TestCase):
             self.jobs()['backend_impact_suite']['if'],
         )
         self.assertEqual(
-            "${{ (needs.professional_authorization.outputs.candidate_requested != 'true' && needs.professional_authorization.outputs.backend_tooling_changed != 'true') && github.event.pull_request.base.sha || '' }}",
+            "${{ (needs.professional_authorization.outputs.backend_closure_required != 'true' && needs.professional_authorization.outputs.candidate_requested != 'true' && needs.professional_authorization.outputs.backend_tooling_changed != 'true') && github.event.pull_request.base.sha || '' }}",
             self.jobs()['backend_impact_suite']['with']['base_sha'],
         )
         full_gate = next(

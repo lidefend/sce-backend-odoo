@@ -1,6 +1,6 @@
 {
   "schema_version": 2,
-  "baseline_sha": "9c4ed0b114b8df444e1ee952cb08a6603ba25d2e",
+  "baseline_sha": "0bab52252d1c12b78749b3eb838aaabfbacd61ff",
   "scope": [
     "scripts/ci/main_full_release_dispatch.py",
     "scripts/ci/test_main_full_release_dispatch.py",
@@ -17,7 +17,35 @@
     "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
     "scripts/verify/enterprise_reconstruction_browser.mjs",
     "scripts/verify/enterprise_reconstruction_import_browser.mjs",
-    "config/contract/page_contract_v1_retirement_manifest.json"
+    "config/contract/page_contract_v1_retirement_manifest.json",
+    "config/ci/path_ownership_v1.json",
+    ".github/workflows/frontend_release_gate.yml",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "make/frontend.mk",
+    "scripts/ci/ci_path_ownership.py",
+    "scripts/ci/test_ci_path_ownership.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+    "scripts/ci/backend_iteration_lanes.py",
+    "scripts/ci/test_backend_iteration_lanes.py",
+    "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/verify/unified_page_contract_v2_intent_guard.py",
+    "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
+    "scripts/verify/test_web_unified_page_contract_v2_guard_row_identity.py",
+    "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
+    "scripts/verify/test_validation_delivery_plan.py",
+    "docs/audit/web_contract_v2_frontend_architecture_guard_report.md",
+    "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    "frontend/apps/web/src/app/contracts/v2/types.ts",
+    "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    ".github/workflows/professional_quality_gate.yml",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py"
   ],
   "environment": {
     "kind": "offline",
@@ -27,7 +55,7 @@
     "local_targeted": {
       "status": "required",
       "entrypoint": "make ci.local.iteration",
-      "reason": "Dispatcher unit tests and real read-only CLI identity validation; no local ORM."
+      "reason": "Shared impact classification, current-only contract decoding, source finalizer coverage, affected pure guards and consumer regressions; no local full ORM."
     },
     "remote_integration": {
       "status": "required",
@@ -80,9 +108,9 @@
   "blockers": [
     "Remote integration and repaired exact-main full audit pending."
   ],
-  "next_exact_step": "Publish mainline suite dependency and verification-script repairs, validate exact PR head, then dispatch all six workflows on merged main and verify release-condition evidence.",
+  "next_exact_step": "Push new candidate, confirm automatic product/demo/acceptance scheduling and current-head checks, merge when eligible; then exact-main full qualification.",
   "id": "MAIN-CI-CLOSEOUT-20261126",
-  "branch": "fix/main-ci-suite-closure-20261126",
+  "branch": "fix/main-ci-impact-precision-20261126",
   "status": "verification_pending",
   "goal": ".agent/goals/MAIN-CI-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/main_ci_closeout_20261126.md",
@@ -137,6 +165,152 @@
       "status": "passed",
       "log": ".runtime/main-ci-contract-version.log",
       "scope": "retirement manifest matches existing 2.7.0 assembler and architecture snapshot; no runtime version change"
+    },
+    "pr1012": {
+      "status": "merged",
+      "merge_sha": "0bab52252d1c12b78749b3eb838aaabfbacd61ff",
+      "all_four_required_checks": "passed"
+    },
+    "main_0bab_frontend": {
+      "status": "failed",
+      "run_id": 45804972894,
+      "log": ".runtime/main-ci-0bab-frontend-failed.log",
+      "reason": "Relation lifecycle test fixture still uses retired type instead of canonical fieldType"
+    },
+    "impact_precision_local": {
+      "status": "passed",
+      "iteration": ".runtime/main-ci-impact-iteration.log",
+      "targets_executed": 9,
+      "targeted": ".runtime/main-ci-impact-final-targeted.log",
+      "ownership_and_backend": ".runtime/main-ci-impact-targeted-3.log",
+      "scope_proof": "snapshot/browser/test-script changes select pure owners without ORM; ordinary docs stay fast"
+    },
+    "main_0bab_professional": {
+      "status": "failed",
+      "log": ".runtime/main-ci-0bab-professional-failed.log",
+      "reason": "AST finalizer test omitted production helper dependency"
+    },
+    "contract_chain_diagnostic": {
+      "status": "failed",
+      "log": ".runtime/main-ci-contract-chain.log",
+      "scope": "pure professional contract and architecture checks",
+      "failures": [
+        "intent version pin",
+        "row-identity mutation anchor",
+        "web architecture old version regex",
+        "policy-map project_member precedence",
+        "delivery read-only command count"
+      ]
+    },
+    "contract_cleanup_targeted": {
+      "status": "passed",
+      "log": ".runtime/main-ci-cleanup-targeted-final-2.log",
+      "tests": {
+        "incremental_executor": 275,
+        "current_contract_consumer": "passed",
+        "strict_typecheck": "passed",
+        "script_lint": "0 errors, 3 existing warnings"
+      },
+      "iteration_log": ".runtime/main-ci-cleanup-iteration.log",
+      "executed_iteration_targets": 23
+    },
+    "contract_guard_fix_recheck": {
+      "status": "passed",
+      "log": ".runtime/main-ci-cleanup-iteration.log",
+      "includes": [
+        "intent",
+        "web_consumer",
+        "web_architecture",
+        "policy_maps",
+        "validation_delivery",
+        "native_view_workflow_action_coverage"
+      ]
+    },
+    "pr_791c_frontend": {
+      "status": "failed",
+      "run": 45809130549,
+      "log": ".runtime/main-ci-791c-frontend-failed.log",
+      "reason": "source evidence digest drift for current decoder; missing local fidelity dependency; diagnostic passed"
+    },
+    "fidelity_dependency_repair": {
+      "status": "passed",
+      "scope": "two reviewed decoder digests, declared source dependency selection, cheap checks before diagnostic",
+      "iteration_log": ".runtime/main-ci-fidelity-iteration.log",
+      "executed_iteration_targets": 25,
+      "selection_log": ".runtime/main-ci-fidelity-fact-selection-2.log",
+      "selection_tests": 276,
+      "standard_unit_log": ".runtime/main-ci-standard-consumer-batch.log",
+      "release_unit_log": ".runtime/main-ci-release-consumer-batch.log"
+    },
+    "pr_791c_backend": {
+      "status": "passed",
+      "run": 45809130593,
+      "receipt": ".runtime/backend-iteration/791c8544017889ee1cf6f3c65d83f143a9c33d8c.json",
+      "not_reusable_as_new_head_ci": true
     }
+  },
+  "owner_verification_principle": "Verify our contract generation, correctness and faithful frontend consumption; exercise Odoo only at changed integration/composition boundaries, not as a separate native-engine verification objective.",
+  "owner_contract_version_rule": "Only the current contract is accepted; do not restore retired version compatibility. Existing decoder 2.7 policy stays unchanged, with executable rejection tests for older and unknown versions.",
+  "cleanup_layer_scope": {
+    "P0": "Generic frontend current-contract decoding: remove unreachable legacy identity alternative; no business semantics or database changes",
+    "P4": "CI ownership, affected tests and current-only guard/fixture alignment",
+    "exclusions": [
+      "persistent environments",
+      "Odoo native engine",
+      "unrelated worktrees",
+      "independent subprotocol versions"
+    ]
+  },
+  "professional_dependency_repair": {
+    "failed_head": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
+    "failed_run": 45812171077,
+    "classification": "environment_defect",
+    "root_cause": "Selected contract decoder tooling executes before locked frontend dependencies are installed.",
+    "scope": [
+      ".github/workflows/professional_quality_gate.yml",
+      "scripts/ci/test_ci_risk_workflow_contract.py"
+    ],
+    "validation": {
+      "workflow_regressions": {
+        "status": "passed",
+        "count": 34,
+        "log": ".runtime/main-ci-dependency-regression.log"
+      },
+      "decoder_and_fidelity": {
+        "status": "passed",
+        "decoder_tests": 1,
+        "guard_tests": 41,
+        "log": ".runtime/main-ci-dependency-decoder.log"
+      },
+      "local_iteration": {
+        "status": "passed",
+        "executed": 25,
+        "log": ".runtime/main-ci-dependency-iteration.log"
+      }
+    },
+    "remote_new_head": "not_run",
+    "frontend_preparation": "Preserved locally under .runtime/frontend-topic-preparation-preserved; restore after clean publication; not part of this CI fix."
+  },
+  "automatic_backend_closure": {
+    "status": "locally_validated_remote_pending",
+    "classification": "validation_tool_defect",
+    "problem": "Required demo/acceptance suites were only discovered by local merge preflight after PR gates passed.",
+    "implementation": "PR authorization selects closure via the same required_for_paths used by merge. Product/demo/acceptance run in parallel and aggregate into professional_quality_gate. Merge verifies three exact-head remote plan artifacts without requiring a local receipt; explicit close waits for automatic CI without redispatch.",
+    "validation": {
+      "backend_lane_tests": 13,
+      "workflow_tests": 35,
+      "incremental_executor_tests": 276,
+      "local_iteration_targets": 25,
+      "local_iteration_status": "passed",
+      "log": ".runtime/main-ci-auto-iteration-complete.log",
+      "stdlib_only_selector": "passed python3 -S"
+    },
+    "previous_head": "386704f05bf3d8e99ea3cbfde3c45c4f4001253b",
+    "previous_auxiliary_runs": [
+      45818224806,
+      45818286493
+    ],
+    "previous_auxiliary_results": "success; superseded by new implementation candidate",
+    "next_exact_step": "Push new candidate, confirm automatic product/demo/acceptance scheduling and current-head checks, merge when eligible; then exact-main full qualification."
   }
 }

@@ -28,6 +28,7 @@ jobs:
       CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
     outputs:
+      backend_closure_required: ${{ steps.backend_closure.outputs.required }}
       backend_impact_required: ${{ steps.risk.outputs.contract_only_scope != '' && 'false' || steps.backend_impact.outputs.required }}
       lane: ${{ steps.risk.outputs.lane }}
       professional_mode: ${{ steps.risk.outputs.professional_mode }}
@@ -107,6 +108,13 @@ jobs:
             --github-output "${GITHUB_OUTPUT}"
           cat "${RUNNER_TEMP}/backend-impact.json" >> "${GITHUB_STEP_SUMMARY}"
 
+      - name: Plan backend closure obligations
+        id: backend_closure
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 scripts/ci/backend_iteration_lanes.py plan --base "${BASE_SHA}" \
+            --expected-head "${CHECKOUT_SHA}" --github-output "${GITHUB_OUTPUT}"
+
   contract_checks:
     name: contract_only_checks
     needs: professional_authorization
@@ -155,16 +163,39 @@ jobs:
   backend_impact_suite:
     needs: professional_authorization
     if: >-
+      needs.professional_authorization.outputs.backend_closure_required == 'true' ||
       needs.professional_authorization.outputs.candidate_requested == 'true' ||
       (github.event_name == 'pull_request' &&
       needs.professional_authorization.outputs.backend_impact_required == 'true')
     uses: ./.github/workflows/backend_test_suite.yml
     with:
-      base_sha: ${{ (needs.professional_authorization.outputs.candidate_requested != 'true' && needs.professional_authorization.outputs.backend_tooling_changed != 'true') && github.event.pull_request.base.sha || '' }}
+      base_sha: ${{ (needs.professional_authorization.outputs.backend_closure_required != 'true' && needs.professional_authorization.outputs.candidate_requested != 'true' && needs.professional_authorization.outputs.backend_tooling_changed != 'true') && github.event.pull_request.base.sha || '' }}
       head_sha: ${{ github.event.pull_request.head.sha || github.sha }}
       head_ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
-      scope_mode: ${{ (needs.professional_authorization.outputs.candidate_requested == 'true' || needs.professional_authorization.outputs.backend_tooling_changed == 'true') && 'full' || 'focused' }}
+      scope_mode: ${{ (needs.professional_authorization.outputs.backend_closure_required == 'true' || needs.professional_authorization.outputs.candidate_requested == 'true' || needs.professional_authorization.outputs.backend_tooling_changed == 'true') && 'full' || 'focused' }}
       suite: product
+
+  backend_demo_suite:
+    needs: professional_authorization
+    if: needs.professional_authorization.outputs.backend_closure_required == 'true'
+    uses: ./.github/workflows/backend_test_suite.yml
+    with:
+      base_sha: ''
+      head_sha: ${{ github.event.pull_request.head.sha }}
+      head_ref: ${{ github.event.pull_request.head.ref }}
+      scope_mode: full
+      suite: demo
+
+  backend_acceptance_suite:
+    needs: professional_authorization
+    if: needs.professional_authorization.outputs.backend_closure_required == 'true'
+    uses: ./.github/workflows/backend_test_suite.yml
+    with:
+      base_sha: ''
+      head_sha: ${{ github.event.pull_request.head.sha }}
+      head_ref: ${{ github.event.pull_request.head.ref }}
+      scope_mode: full
+      suite: acceptance
 
   python310_runtime_compatibility:
     name: python310_runtime_compatibility
@@ -342,6 +373,36 @@ jobs:
             bwrap_smoke
           fi
 
+      # `make test.unit` / `make test.contract` run the tracked Node syntax
+      # sweep, which parses `.js` files through `node --input-type` and
+      # therefore depends on the runtime version. Pin it instead of inheriting
+      # whatever the runner image happens to ship.
+      - name: Install pinned Node.js runtime for the syntax sweep
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22.17.0
+
+      - name: Restore frontend verification dependency store
+        if: env.TOOL_CHECKS != '' || github.event_name == 'schedule' || needs.professional_authorization.outputs.candidate_requested == 'true'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ~/.local/share/pnpm/store
+          key: pnpm-${{ runner.os }}-node22.17.0-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-${{ runner.os }}-node22.17.0-
+
+      # Owning tool targets include the real TypeScript contract decoder.
+      # Prepare its locked dependencies before both selected and full checks.
+      - name: Install locked frontend verification dependencies
+        if: env.TOOL_CHECKS != '' || github.event_name == 'schedule' || needs.professional_authorization.outputs.candidate_requested == 'true'
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@9.12.3 --activate
+          pnpm config set store-dir "${HOME}/.local/share/pnpm/store"
+          pnpm -C frontend install --frozen-lockfile
+          test -x frontend/apps/web/node_modules/.bin/esbuild
+
       - name: Run complete registered offline baseline for formal release
         id: scheduled_baseline
         if: github.event_name == 'schedule' || needs.professional_authorization.outputs.candidate_requested == 'true'
@@ -415,15 +476,6 @@ jobs:
           key: pip-${{ runner.os }}-python-${{ hashFiles('requirements-odoo.txt') }}
           restore-keys: |
             pip-${{ runner.os }}-python-
-
-      # `make test.unit` / `make test.contract` run the tracked Node syntax
-      # sweep, which parses `.js` files through `node --input-type` and
-      # therefore depends on the runtime version. Pin it instead of inheriting
-      # whatever the runner image happens to ship.
-      - name: Install pinned Node.js runtime for the syntax sweep
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: 22.17.0
 
       - name: Run full professional quality gate (serialized artifact writers)
         if: env.PROFESSIONAL_MODE == 'full'
@@ -528,7 +580,7 @@ jobs:
   # only this small verdict waits for all required evidence.
   professional_quality_gate:
     name: professional_quality_gate
-    needs: [professional_authorization, contract_checks, backend_impact_suite, professional_quality_checks, python310_runtime_compatibility]
+    needs: [professional_authorization, contract_checks, backend_impact_suite, backend_demo_suite, backend_acceptance_suite, professional_quality_checks, python310_runtime_compatibility]
     if: >-
       always() && !cancelled() &&
       (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') &&
@@ -544,10 +596,27 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Enforce complete backend closure
+        env:
+          REQUIRED: ${{ needs.professional_authorization.outputs.backend_closure_required }}
+          PRODUCT: ${{ needs.backend_impact_suite.result }}
+          DEMO: ${{ needs.backend_demo_suite.result }}
+          ACCEPTANCE: ${{ needs.backend_acceptance_suite.result }}
+        run: |
+          set -euo pipefail
+          if [ "${REQUIRED}" = true ]; then
+            test "${PRODUCT}" = success
+            test "${DEMO}" = success
+            test "${ACCEPTANCE}" = success
+          else
+            test "${DEMO}" = skipped
+            test "${ACCEPTANCE}" = skipped
+          fi
+
       - name: Enforce affected backend execution
         env:
           AUTHORIZATION_RESULT: ${{ needs.professional_authorization.result }}
-          IMPACT_REQUIRED: ${{ needs.professional_authorization.outputs.backend_impact_required }}
+          IMPACT_REQUIRED: ${{ needs.professional_authorization.outputs.backend_closure_required == 'true' && 'true' || needs.professional_authorization.outputs.backend_impact_required }}
           CANDIDATE_REQUESTED: ${{ needs.professional_authorization.outputs.candidate_requested }}
           EVENT_NAME: ${{ github.event_name }}
           IMPACT_RESULT: ${{ needs.backend_impact_suite.result }}

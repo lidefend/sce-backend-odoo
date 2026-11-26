@@ -323,14 +323,6 @@ export interface ContractV2NativeOccurrenceIdentity {
   projectionRegion?: string;
 }
 
-export interface ContractV2LegacyNativeIdentity extends ContractV2Dictionary {
-  authoritative?: boolean;
-  name?: string;
-  type?: string;
-  native_locator?: string;
-  occurrence_index?: number;
-}
-
 export interface ContractV2ListColumnOccurrence {
   occurrenceKey: string;
   fieldCode: string;
@@ -394,7 +386,7 @@ export interface ContractV2FieldDescriptor extends ContractV2Dictionary {
   label: string;
   fieldType: string;
   widgetType: string;
-  /** Frontend-derived renderer identity for decoded compatibility output. */
+  /** Frontend renderer identity resolved from the current semantic contract. */
   componentKey: string;
   required?: boolean;
   readonly?: boolean;
@@ -693,7 +685,7 @@ export interface ContractV2LayoutContract {
   adaptMode: ContractV2AdaptMode;
   containerTree: ContractV2Container[];
   layoutHints: ContractV2Dictionary;
-  /** Legacy v2.0-v2.6 input compatibility; V2.7 rejects it on the wire. */
+  /** Current native List projection, including column occurrence identity. */
   listProfile?: ContractV2ListProfile;
   activityProfile?: ContractV2ActivityProfile;
   pivotProfile?: ContractV2AnalysisProfile;
@@ -706,7 +698,7 @@ export interface ContractV2ActionRule {
   actionSemanticsInvalid?: boolean;
   actionId: string;
   backendIdentity?: string;
-  nativeIdentity?: ContractV2NativeOccurrenceIdentity | ContractV2LegacyNativeIdentity;
+  nativeIdentity?: ContractV2NativeOccurrenceIdentity;
   triggerType: ContractV2TriggerType;
   sourceWidgetId: string;
   targetIds: string[];

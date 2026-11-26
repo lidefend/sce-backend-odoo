@@ -220,6 +220,41 @@ jobs:
             fi
           fi
 
+      - name: Run standard frontend checks in parallel
+        id: standard
+        if: steps.effective_lane.outputs.frontend_mode == 'standard'
+        run: |
+          set -euo pipefail
+          (
+            pnpm -C frontend/apps/web lint:src
+            make verify.frontend.lint.scripts
+          ) &
+          lint_pid=$!
+          (
+            pnpm -C frontend/apps/web typecheck:strict
+          ) &
+          typecheck_pid=$!
+          (
+            pnpm -C frontend/apps/web test
+          ) &
+          unit_pid=$!
+          lint_status=0
+          typecheck_status=0
+          unit_status=0
+          wait "${lint_pid}" || lint_status=$?
+          wait "${typecheck_pid}" || typecheck_status=$?
+          wait "${unit_pid}" || unit_status=$?
+          test "${lint_status}" -eq 0
+          test "${typecheck_status}" -eq 0
+          test "${unit_status}" -eq 0
+          pnpm -C frontend/apps/web build
+
+      - name: Run systemic convergence static gates
+        if: steps.effective_lane.outputs.frontend_mode == 'standard'
+        run: |
+          set -euo pipefail
+          make verify.frontend.systemic.convergence.static
+
       - name: Run the single authoritative frontend release command
         id: release
         if: steps.effective_lane.outputs.frontend_mode == 'full' && env.PAYMENT_REQUEST_DIAGNOSTIC != '1'
@@ -253,40 +288,6 @@ jobs:
           path: ${{ runner.temp }}/managed-orm/managed-test-evidence.json
           if-no-files-found: error
           retention-days: 7
-
-      - name: Run standard frontend checks in parallel
-        id: standard
-        if: steps.effective_lane.outputs.frontend_mode == 'standard'
-        run: |
-          set -euo pipefail
-          (
-            pnpm -C frontend/apps/web lint:src
-          ) &
-          lint_pid=$!
-          (
-            pnpm -C frontend/apps/web typecheck:strict
-          ) &
-          typecheck_pid=$!
-          (
-            pnpm -C frontend/apps/web test
-          ) &
-          unit_pid=$!
-          lint_status=0
-          typecheck_status=0
-          unit_status=0
-          wait "${lint_pid}" || lint_status=$?
-          wait "${typecheck_pid}" || typecheck_status=$?
-          wait "${unit_pid}" || unit_status=$?
-          test "${lint_status}" -eq 0
-          test "${typecheck_status}" -eq 0
-          test "${unit_status}" -eq 0
-          pnpm -C frontend/apps/web build
-
-      - name: Run systemic convergence static gates
-        if: steps.effective_lane.outputs.frontend_mode == 'standard'
-        run: |
-          set -euo pipefail
-          make verify.frontend.systemic.convergence.static
 
       - name: Fail closed on command or evidence identity
         if: always() && steps.effective_lane.outputs.frontend_mode == 'full' && env.PAYMENT_REQUEST_DIAGNOSTIC != '1'

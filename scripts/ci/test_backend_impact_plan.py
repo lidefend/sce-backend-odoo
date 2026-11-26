@@ -90,6 +90,13 @@ class ImpactSelectionTest(unittest.TestCase):
         graph = {**self.graph, 'reader': {**module(), 'file_inputs': [path]}}
         self.assertEqual(['reader'], planner.select([path],graph,graph)['modules'])
 
+    def test_contract_producer_keeps_module_scope_and_pure_generation_guard(self):
+        graph = {**self.graph, 'smart_construction_core': module()}
+        plan = planner.select(['addons/smart_construction_core/core_extension.py'], graph, graph)
+        self.assertIn('smart_construction_core', plan['modules'])
+        self.assertTrue(plan['required'])
+        self.assertIn('verify.native_view.workflow_action_coverage', plan['tool_checks'])
+
     def test_shared_runner_forces_full(self):
         plan = planner.select(['scripts/ci/orm_result_guard.sh'], self.graph, self.graph)
         self.assertEqual(plan['modules'], sorted(self.graph))
@@ -131,6 +138,27 @@ class ImpactSelectionTest(unittest.TestCase):
         plan = planner.select(['scripts/test/unrelated_runner.sh'], self.graph, self.graph)
         self.assertEqual(plan['mode'], 'full')
         self.assertEqual(plan['modules'], sorted(self.graph))
+
+    def test_snapshot_and_browser_validation_select_real_guards_without_orm(self):
+        cases = {
+            'scripts/ci/test_backend_impact_plan.py':
+                {'verify.ci.backend_impact_plan.unit'},
+            'docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v2.json':
+                {'verify.contract.page_v1_zero_residue.guard'},
+            'scripts/verify/enterprise_reconstruction_import_browser.mjs':
+                {'verify.enterprise.reconstruction.unit', 'verify.frontend.playwright_vendor_coupling.guard'},
+            'scripts/verify/new_product_browser.mjs':
+                {'verify.frontend.playwright_vendor_coupling.guard'},
+        }
+        for path, expected in cases.items():
+            with self.subTest(path=path):
+                plan = planner.select([path], self.graph, self.graph)
+                self.assertEqual(set(plan['tool_checks']), expected)
+                self.assertFalse(plan['required'])
+                self.assertEqual(plan['modules'], [])
+                self.assertEqual(plan['reasons'], [])
+        ordinary_docs = planner.select(['docs/ops/readme.md'], self.graph, self.graph)
+        self.assertEqual(ordinary_docs['tool_checks'], [])
 
     def test_unknown_path_is_not_a_skip(self):
         self.assertEqual(planner.select(['new_runtime/loader.py'], self.graph, self.graph)['mode'], 'full')
@@ -407,7 +435,7 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
         text = (planner.ROOT / '.github/workflows/professional_quality_gate.yml').read_text()
         job = text.split('  professional_quality_gate:\n', 1)[1]
         self.assertIn(
-            'needs: [professional_authorization, contract_checks, backend_impact_suite, professional_quality_checks, python310_runtime_compatibility]',
+            'needs: [professional_authorization, contract_checks, backend_impact_suite, backend_demo_suite, backend_acceptance_suite, professional_quality_checks, python310_runtime_compatibility]',
             job,
         )
         self.assertIn('always() &&', job)

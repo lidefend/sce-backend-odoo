@@ -21,7 +21,7 @@ import { createHash } from 'node:crypto';
 import { isContractGapError } from '../src/app/contract/contractGap';
 import { computed, reactive, ref } from 'vue';
 import { createContractV2Store } from '../src/app/contracts/v2/store';
-import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
+import { decodeContractV2ActionRule, decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import { useRecordFormFieldSchemas } from '../src/pages/contractForm/useRecordFormFieldSchemas';
 import { useRecordFormLayout } from '../src/pages/contractForm/useRecordFormLayout';
 
@@ -257,6 +257,12 @@ strictSnapshot.statusContract.buttonStatus = [];
 strictSnapshot.statusContract.containerStatus = [];
 strictSnapshot.actionContract.actionRuleList = [];
 const strictDecoded = decodeContractV2Snapshot(strictSnapshot);
+for (const retiredOrUnknownVersion of ['1.0.0', '2.0.0', '2.5.0', '2.6.9', '2.8.0']) {
+  const unsupported = structuredClone(strictSnapshot);
+  unsupported.pageInfo.contractVersion = retiredOrUnknownVersion;
+  assert.throws(() => decodeContractV2Snapshot(unsupported), /must be a negotiated 2.7 version/,
+    `unsupported version ${retiredOrUnknownVersion} must not enter compatibility consumption`);
+}
 assert.equal(
   strictDecoded.layoutContract.containerTree[0].widgetList[0].fieldDescriptor?.fieldCode,
   'validation_status',
@@ -288,6 +294,19 @@ assert.throws(
   /nativeIdentity/,
   '2.7 action identities must use the strict occurrence carrier',
 );
+
+
+const retiredActionIdentity = {
+  ...malformedActionIdentity.actionContract.actionRuleList[0],
+  nativeIdentity: { authoritative: true, name: 'open_form', native_locator: '/tree/button[1]' },
+};
+assert.throws(() => decodeContractV2ActionRule(retiredActionIdentity), /nativeIdentity/,
+  'standalone action consumption must reject the retired identity carrier');
+const aliasedRoot = structuredClone(strictSnapshot) as Record<string, unknown>;
+aliasedRoot.page_info = aliasedRoot.pageInfo;
+delete aliasedRoot.pageInfo;
+assert.throws(() => decodeContractV2Snapshot(aliasedRoot), /pageInfo/,
+  'retired root aliases cannot substitute current declarations');
 
 
 // A structural group's fetch-time predicate must follow the same live draft

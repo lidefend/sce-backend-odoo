@@ -526,7 +526,10 @@ def classify(
             backend_tooling_changed=backend_tooling,
         )
         return _apply_contract_scope(result, matched_scope)
-    if frontend or backend:
+    if frontend or backend or any(
+        ownership.category_for(path) and ownership.category_for(path).risk == "standard"
+        for path in changed
+    ):
         result = Classification(
             "STANDARD",
             changed,

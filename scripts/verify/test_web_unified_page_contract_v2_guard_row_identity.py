@@ -40,7 +40,7 @@ class RowActivationIdentityGuardTests(unittest.TestCase):
     def test_placement_inference_from_target_scope_is_rejected(self) -> None:
         source = NAV_RUNTIME.read_text(encoding="utf-8")
         mutated = source.replace(
-            "    const rowAction = rows.find((action) => isRowPlacementAction(action));",
+            "    const rowAction = rows.find((action) => isRowNavigationAction(action));",
             "    const rowAction = rows.find((action) => (\n"
             "      String((action as unknown as Dict).targetScope || '').trim() === 'page'\n"
             "    ));",

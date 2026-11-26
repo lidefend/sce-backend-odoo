@@ -223,7 +223,7 @@ python3() {
         )
         self.assertEqual(
             professional['jobs']['backend_impact_suite']['with']['scope_mode'],
-            "${{ (needs.professional_authorization.outputs.candidate_requested == 'true' || needs.professional_authorization.outputs.backend_tooling_changed == 'true') && 'full' || 'focused' }}",
+            "${{ (needs.professional_authorization.outputs.backend_closure_required == 'true' || needs.professional_authorization.outputs.candidate_requested == 'true' || needs.professional_authorization.outputs.backend_tooling_changed == 'true') && 'full' || 'focused' }}",
         )
         plan = workflow['jobs']['plan']
         self.assertEqual('${{ steps.scope.outputs.scope_mode }}', plan['outputs']['scope_mode'])
