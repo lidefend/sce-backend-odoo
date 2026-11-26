@@ -1997,3 +1997,6 @@ verify.acceptance.disposable.unit:
 	@python3 -m unittest scripts.verify.test_frontend_release_disposable scripts.verify.test_frontend_acceptance_runtime_profile scripts.verify.test_frontend_acceptance_carrier_common scripts.verify.test_g1_acceptance_baseline_guard
 
 verify.frontend.release.unit: verify.acceptance.disposable.unit
+
+# Current decoder changes must exercise the backend-schema projection guard in PR CI.
+verify.frontend.pr.unit: verify.unified_page_contract.v2.stable_projection
