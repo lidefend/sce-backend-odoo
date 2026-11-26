@@ -455,6 +455,31 @@ clean 运行态权威回读：
 重建 clean 前端与 Odoo 容器，并在 clean HEAD 重新执行本地增量入口。143 个业务入口的
 当前候选页面、角色或办理旅程仍未执行，远端 PR CI、主线资格、部署和用户验收均未完成。
 
+产品改动已提交为 `7d48d24a48ffab4084eb77f5d90a53f9583411a4`，并按该 SHA 重建
+clean 前端，构建指纹为
+`84697fd54e2a17475d86edf5cdd6520c6467963b496335ff24a30ee50a1d5f5d`。
+
+clean 运行态回读：
+
+- `/t/clean/api/runtime-version` 同时返回上述源码 SHA、构建指纹、`sc_clean`、
+  namespace `ns_c6fed472e939` 与 alias `clean`；
+- 根路径 `/build-info.json` 返回同一源码 SHA；
+- `local.clean.health` 与 `local.clean.entry_identity.verify` 均通过；
+- project/database/dbfilter/namespace 保持 clean 专属身份，未使用 dev/sample/acceptance
+  或客户数据。
+
+在该 clean HEAD 上执行 `make ci.local.iteration`：46 个必需目标全部成立，其中
+16 个本轮执行、30 个复用，8 个测试目标执行 485 项测试，5 项静态检查通过，
+`unmapped_paths=0`，退出零。回执：
+
+`.runtime/frontend-dev-validation/executions/20261126T233812Z-1080079-514198129/receipt.json`
+
+回执 SHA256：
+`cbe16d769b49789d2c9e7d5f40c1f6bcac4575f23d73f2a1b7bb47861b00292d`。
+
+仍未执行 143 个业务入口的当前候选页面、角色或办理旅程，也未完成远端 PR CI、主线资格、
+部署和用户验收。
+
 ### 2026-11-27 FC-01 collection component identity 消费收口
 
 继续检查 V2 列投影时发现，字段描述符已经携带 `componentKey`，但列表列投影只允许
