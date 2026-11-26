@@ -45,7 +45,6 @@ import type {
   ContractV2LayoutType,
   ContractV2LayoutContract,
   ContractV2Lifecycle,
-  ContractV2LegacyNativeIdentity,
   ContractV2ListColumnOccurrence,
   ContractV2ListProfile,
   ContractV2Meta,
@@ -214,22 +213,6 @@ function optionalRecordArray(
     decoded.push(item);
   });
   return decoded;
-}
-
-function readAliasedObject(
-  source: ContractV2Dictionary,
-  key: string,
-  aliases: string[],
-  path: string,
-  issues: DecodeIssue[],
-): ContractV2Dictionary {
-  const value = source[key] || aliases.map((alias) => source[alias]).find(isRecord);
-  if (!isRecord(value)) {
-    const aliasMessage = aliases.length ? `; aliases checked: ${aliases.join(', ')}` : '';
-    issues.push({ path: `${path}.${key}`, message: `must be an object${aliasMessage}` });
-    return {};
-  }
-  return value;
 }
 
 function decodeClientType(value: string, path: string, issues: DecodeIssue[]): ContractV2ClientType {
@@ -2185,7 +2168,6 @@ function decodeActionRule(
   raw: unknown,
   path: string,
   issues: DecodeIssue[],
-  strictNativeIdentity = true,
 ): ContractV2ActionRule | null {
   if (!isRecord(raw)) {
     issues.push({ path, message: 'action rule must be an object' });
@@ -2205,14 +2187,12 @@ function decodeActionRule(
   const permissionConstraints = optionalRecord(raw, 'permissionConstraints', path, issues);
   const nativeIdentity = raw.nativeIdentity === undefined
     ? undefined
-    : strictNativeIdentity
-      ? decodeNativeOccurrenceIdentity(
-        raw.nativeIdentity,
-        `${path}.nativeIdentity`,
-        issues,
-        new Set<ContractV2NativeOccurrenceKind>(['button']),
-      )
-      : optionalRecord(raw, 'nativeIdentity', path, issues) as ContractV2LegacyNativeIdentity | undefined;
+    : decodeNativeOccurrenceIdentity(
+      raw.nativeIdentity,
+      `${path}.nativeIdentity`,
+      issues,
+      new Set<ContractV2NativeOccurrenceKind>(['button']),
+    );
   const allowed = optionalBooleanField(raw, 'allowed', path, issues);
   const enabled = optionalBooleanField(raw, 'enabled', path, issues);
   const disabled = optionalBooleanField(raw, 'disabled', path, issues);
@@ -2288,7 +2268,6 @@ export function decodeContractV2ActionRule(value: unknown): ContractV2ActionRule
 function decodeActionContract(
   source: ContractV2Dictionary,
   issues: DecodeIssue[],
-  strictNativeIdentity = true,
 ): ContractV2ActionContract {
   rejectUnknownKeys(source, [
     'actionRuleList', 'dependencyGraph', 'deletePolicy', 'surfacePolicies', 'identityPolicy', 'primaryResolution',
@@ -2302,7 +2281,6 @@ function decodeActionContract(
       item,
       `actionContract.actionRuleList[${index}]`,
       issues,
-      strictNativeIdentity,
     ))
     .filter((item): item is ContractV2ActionRule => Boolean(item));
   const dependencyGraphRaw = requiredRecord(source, 'dependencyGraph', 'actionContract', issues);
@@ -3608,17 +3586,16 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
     'formStructureContract', 'searchContract', 'nativeActionContract', 'workflowContract', 'fieldOwnership', 'pageComposition', 'meta',
     'noticeContract',
   ], '$', issues);
-  const pageInfo = decodePageInfo(readAliasedObject(root, 'pageInfo', [], '$', issues), issues);
-  const layoutContract = decodeLayoutContract(readAliasedObject(root, 'layoutContract', [], '$', issues), issues);
-  const statusContract = decodeStatusContract(readAliasedObject(root, 'statusContract', [], '$', issues), issues);
+  const pageInfo = decodePageInfo(requiredRecord(root, 'pageInfo', '$', issues), issues);
+  const layoutContract = decodeLayoutContract(requiredRecord(root, 'layoutContract', '$', issues), issues);
+  const statusContract = decodeStatusContract(requiredRecord(root, 'statusContract', '$', issues), issues);
   const actionContract = decodeActionContract(
-    readAliasedObject(root, 'actionContract', [], '$', issues),
+    requiredRecord(root, 'actionContract', '$', issues),
     issues,
-    true,
   );
-  const dataContract = decodeDataContract(readAliasedObject(root, 'dataContract', [], '$', issues), issues);
-  const runtimeContract = decodeRuntimeContract(readAliasedObject(root, 'runtimeContract', [], '$', issues), issues);
-  const meta = decodeMeta(readAliasedObject(root, 'meta', [], '$', issues), issues);
+  const dataContract = decodeDataContract(requiredRecord(root, 'dataContract', '$', issues), issues);
+  const runtimeContract = decodeRuntimeContract(requiredRecord(root, 'runtimeContract', '$', issues), issues);
+  const meta = decodeMeta(requiredRecord(root, 'meta', '$', issues), issues);
   const formStructureContract = decodeFormStructureContract(
     root.formStructureContract,
     pageInfo,
