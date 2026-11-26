@@ -112,6 +112,12 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     if "String(item[1] ?? item[0] ?? '')" in canonical_form:
         failures.append("canonical form still synthesizes a selection label from its storage key")
 
+    relation_descriptor = _read("pages/contractForm/relationDescriptor.ts", read_text)
+    if "relation_model_consistency" not in relation_descriptor:
+        failures.append("relation target consumers do not reject conflicting relation and relationEntry models")
+    if "relation !== entryModel" not in relation_descriptor:
+        failures.append("relation target consistency does not compare both declared carriers")
+
     display = _read("utils/display.ts", read_text)
     if "presentDeclaredBusinessValue({" not in display:
         failures.append("[CFG-001] generic display does not delegate declared business values to the shared authority")

@@ -71,8 +71,18 @@ export function relationEntry(descriptor?: FieldDescriptor) {
 }
 
 export function relationModel(descriptor?: FieldDescriptor) {
+  const descriptorRecord = descriptor as Record<string, unknown> | undefined;
+  const relation = String(descriptorRecord?.relation || '').trim();
   const entry = relationEntry(descriptor);
-  return String((descriptor as Record<string, unknown> | undefined)?.relation || entry?.model || '').trim();
+  const entryModel = String(entry?.model || '').trim();
+  if (relation && entryModel && relation !== entryModel) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${String(descriptorRecord?.name || '(unknown)').trim() || '(unknown)'}.relation_model_consistency`,
+      requiredDeclarationLayer: 'P0:smart_core:relation_target_projection',
+    }, `关系字段 ${String(descriptorRecord?.name || '(unknown)')} 的 relation 与 relationEntry.model 冲突`);
+  }
+  return relation || entryModel;
 }
 
 export function relationOrder(descriptor?: FieldDescriptor) {

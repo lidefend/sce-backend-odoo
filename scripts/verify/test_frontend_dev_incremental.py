@@ -972,6 +972,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ("addons/smart_core/tests/test_system_init_extension_fact_merger.py", "verify.backend.navigation_delivery.unit"),
             ("frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue", "verify.frontend.professional_relation_field.unit"),
             ("frontend/apps/web/scripts/readonly_block_component_test.mjs", "verify.frontend.professional_relation_field.unit"),
+            ("frontend/apps/web/src/pages/contractForm/relationDescriptor.ts", "verify.frontend.professional_relation_field.unit"),
+            ("frontend/apps/web/scripts/relation_entry_option_limits_test.ts", "verify.frontend.professional_relation_field.unit"),
         ]:
             with self.subTest(path=path):
                 self.assertIn(owner, select_targets([path]))

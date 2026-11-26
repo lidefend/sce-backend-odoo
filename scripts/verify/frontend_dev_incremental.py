@@ -478,6 +478,8 @@ RULES = (
     Rule((
         "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
         "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+        "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
     ), ("verify.frontend.professional_relation_field.unit",)),
     Rule((
         "addons/smart_core/core/platform_minimum_nav_contract.py",

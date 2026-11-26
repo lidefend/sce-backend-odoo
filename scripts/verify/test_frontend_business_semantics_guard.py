@@ -244,6 +244,17 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         self.assertTrue(any("component selection" in failure for failure in failures))
         self.assertTrue(any("selection label from its storage key" in failure for failure in failures))
 
+    def test_relation_target_conflict_detection_drop_fails(self):
+        failures = guard.validate(lambda path: (
+            "export function relationModel(descriptor?: FieldDescriptor) {\n"
+            "  return String((descriptor as Record<string, unknown> | undefined)?.relation || '').trim();\n"
+            "}"
+            if path == "pages/contractForm/relationDescriptor.ts"
+            else source(path)
+        ))
+        self.assertTrue(any("conflicting relation and relationEntry models" in failure for failure in failures))
+        self.assertTrue(any("compare both declared carriers" in failure for failure in failures))
+
     def test_hard_coded_duration_rounding_fails(self):
         failures = guard.validate(lambda path: source(
             path,

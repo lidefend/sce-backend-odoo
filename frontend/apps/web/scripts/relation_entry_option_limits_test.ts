@@ -3,6 +3,7 @@ import {
   relationCreateMode,
   relationEntry,
   relationInlineCreate,
+  relationModel,
   relationOptionsLimit,
   relationOptionsSearchLimit,
   relationOptionsWithSelectedFallback,
@@ -55,6 +56,7 @@ const baselineDescriptor = descriptorWith({
 
 const baselineEntry = relationEntry(baselineDescriptor);
 assert.ok(baselineEntry, 'baseline: a declared relation entry must project to a non-null entry');
+assert.equal(relationModel(baselineDescriptor), 'project.project', 'matching relation target declarations must resolve once');
 for (const key of REQUIRED_PROJECTED_KEYS) {
   assert.ok(
     Object.prototype.hasOwnProperty.call(baselineEntry as Record<string, unknown>, key),
@@ -70,6 +72,29 @@ assert.equal(
   relationOptionsSearchLimit(baselineEntry as Record<string, unknown>),
   DECLARED_SEARCH_LIMIT,
   'baseline: options_search_limit must equal the declared value, not a frontend constant',
+);
+checked += 1;
+
+const conflictingTargetDescriptor = descriptorWith({
+  model: 'res.partner',
+  can_read: true,
+  options_limit: DECLARED_LIMIT,
+  options_search_limit: DECLARED_SEARCH_LIMIT,
+});
+let conflictingTargetError: unknown;
+try {
+  relationModel(conflictingTargetDescriptor);
+} catch (error) {
+  conflictingTargetError = error;
+}
+assert.ok(
+  isContractGapError(conflictingTargetError),
+  'conflicting relation target declarations must stop with ContractGapError',
+);
+assert.equal(
+  (conflictingTargetError as ContractGapError).defect.missing,
+  'field.project_id.relation_model_consistency',
+  'the stop must name the conflicting relation target identity',
 );
 checked += 1;
 

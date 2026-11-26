@@ -366,6 +366,20 @@
       "regressionGuard": "verify.frontend.canonical_form_presenter.unit",
       "behaviourTest": "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
       "stopDetail": "canonical/native 表单控件必须消费已经校验的 componentConfig 或 fieldDescriptor selection；显式配置优先但非法即停机，未声明或没有有效 key/label 时不得渲染空选择器，也不得用存储 key 自造标签。"
+    },
+    {
+      "surface": "Relation target identity consistency",
+      "declared": "fieldDescriptor.relation and relationEntry.model",
+      "declaredBy": "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+      "declaredMethod": "_strict_field_descriptor",
+      "declaredSymbol": "descriptor[\"relation\"] = relation",
+      "consumedBy": "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+      "consumedSymbol": "function relationModel(descriptor?: FieldDescriptor)",
+      "onMissing": "stop",
+      "stopSymbol": "contractGapError",
+      "regressionGuard": "verify.frontend.professional_relation_field.unit",
+      "behaviourTest": "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
+      "stopDetail": "关系字段声明的 relation 与 relationEntry.model 必须一致；前端不得静默选择其中一个作为第二套模型事实，冲突时以 ContractGapError 指向 relation_model_consistency 回声明层修复。"
     }
   ],
   "registeredMechanismExemptions": [

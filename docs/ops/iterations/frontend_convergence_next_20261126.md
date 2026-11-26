@@ -424,6 +424,38 @@ clean 运行态权威回读：
 仍未执行 143 个业务入口的当前候选页面、角色或办理旅程，也未完成远端 PR CI、主线资格、
 部署和用户验收。
 
+### 2026-11-27 FC-01 relation target 一致性与选测归属收口
+
+继续检查关系声明链时确认，`fieldDescriptor.relation` 与 `relationEntry.model` 可能同时
+存在；前端原实现只会静默采用前者，不验证两者是否指向同一模型。该冲突会让字段查询
+模型 A，却按模型 B 的关系权限、创建模式和读取字段执行。
+
+本切片完成：
+
+- `relationModel` 同时读取两个声明载体；一致时返回唯一目标，冲突时抛
+  `ContractGapError` 并指向 `field.<name>.relation_model_consistency`；
+- 增加一致声明与冲突声明的区分性用例；
+- `frontend_contract_basis_ledger.json` 新增 relation target 一致性绑定；
+- 把 `relationDescriptor.ts`、对应测试和 run 检查登记到既有
+  `verify.frontend.professional_relation_field.unit`，修复 `outside_scope`；
+- relation 生产源码变化后，通过既有
+  `refresh.frontend.component_driver_takeover.inventory` 刷新生成物摘要。
+
+首次统一入口因 run 归属/检查登记缺失 fail-closed；补齐后第二次又因 component inventory
+过期失败，分类为 `baseline_evidence_defect` 并由受管刷新入口修复。最终
+`make ci.local.iteration` 执行 40 个目标、复用 7 个未变目标，其中 27 个测试目标执行
+1072 项测试、10 项静态检查，`outside_scope=[]`、`unmapped_paths=0`，全部退出零。
+原始回执：
+
+`.runtime/frontend-dev-validation/executions/20261126T234521Z-1140323-836895090/receipt.json`
+
+回执 SHA256：
+`29a80a47753df24d6e05f07d2df9022e62340799bf33f6c65fa408c921611484`。
+
+该证据只证明当前 dirty 候选的本地精准消费与治理检查。产品提交后仍需按新精确 HEAD
+重建 clean 前端与 Odoo 容器，并在 clean HEAD 重新执行本地增量入口。143 个业务入口的
+当前候选页面、角色或办理旅程仍未执行，远端 PR CI、主线资格、部署和用户验收均未完成。
+
 ### 2026-11-27 FC-01 canonical selection 声明消费收口
 
 继续核对 relation/selection 消费链时确认，V2 `fieldDescriptor.selection` 已经由解码器
