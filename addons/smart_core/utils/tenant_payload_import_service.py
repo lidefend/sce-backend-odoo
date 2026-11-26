@@ -10,7 +10,7 @@ from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any, Iterator
 
-from odoo.exceptions import AccessError, UserError
+from odoo.exceptions import AccessError, UserError, ValidationError
 
 from odoo.addons.smart_core.utils.tenant_payload_v1 import (
     PRODUCT_INTERFACE_VERSION,
@@ -461,25 +461,18 @@ class TenantPayloadImportService:
         Registration = self.env["sc.tenant.company.registration"].with_context(
             sc_tenant_payload_import=True
         )
-        registration = Registration.search([("company_id", "=", record.id)], limit=1)
         expected = {
             "tenant_key": self.tenant_key,
             "company_id": record.id,
             "source_module": batch.customer_module,
             "source_external_key": external_key,
         }
-        if registration:
-            if (
-                registration.tenant_key != expected["tenant_key"]
-                or registration.company_id.id != expected["company_id"]
-                or registration.source_module != expected["source_module"]
-                or registration.source_external_key != expected["source_external_key"]
-            ):
+        try:
+            Registration._register_payload_company(expected)
+        except ValidationError as exc:
+            if str(exc) == "TPV1_COMPANY_REGISTRATION_IDENTITY_CONFLICT":
                 _fail("TPV1_COMPANY_REGISTRATION_IDENTITY_CONFLICT")
-            if not registration.active:
-                registration.write({"active": True})
-        else:
-            Registration.create(expected)
+            raise
 
     def _activate_import_company_scope(self, company) -> None:
         """Authorize the technical importer for the newly registered company.

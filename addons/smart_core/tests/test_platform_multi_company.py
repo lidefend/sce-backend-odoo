@@ -134,3 +134,27 @@ class TestPlatformMultiCompany(TransactionCase):
         Partners = self.env['res.partner'].with_user(self.user).with_context(allowed_company_ids=[self.b.id])
         with self.assertRaisesRegex(AccessError, 'PLATFORM_COMPANY_NOT_AUTHORIZED'):
             Partners.search([])
+
+    def test_current_company_license_and_native_membership_matrix(self):
+        partners = {company.id: self.env['res.partner'].create({
+            'name': 'AUTH02 matrix company record', 'company_id': company.id,
+        }) for company in (self.a, self.b, self.c)}
+        cases = (
+            ('single_home', False, False, self.a, True),
+            ('single_other', False, False, self.b, False),
+            ('multi_home', True, False, self.a, True),
+            ('multi_member', True, False, self.b, True),
+            ('multi_nonmember', True, False, self.c, False),
+            ('expired_other', True, True, self.b, False),
+        )
+        for label, enabled, expired, current, allowed in cases:
+            with self.subTest(case=label):
+                self.plan.multi_company_enabled = enabled
+                self.subscription.end_date = fields.Date.today() - timedelta(days=1) if expired else False
+                record = partners[current.id].with_user(self.user).with_context(allowed_company_ids=current.ids)
+                if allowed:
+                    self.assertEqual(record.read(['name'])[0]['id'], record.id)
+                else:
+                    with self.assertRaises(AccessError):
+                        record.read(['name'])
+        self.assertEqual(set(self.user.company_ids.ids), {self.a.id, self.b.id})

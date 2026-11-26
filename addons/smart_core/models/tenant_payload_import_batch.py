@@ -140,7 +140,7 @@ class ScTenantCompanyRegistration(models.Model):
         # A newly provisioned business company is intentionally not yet in the
         # import operator's company scope.  The importer group plus the
         # explicit payload-import context authorize this one registration
-        # boundary; use sudo only to verify the immutable bootstrap marker.
+        # boundary; verify the immutable bootstrap marker before provisioning.
         companies = self.env["res.company"].sudo().browse(
             [int(values.get("company_id") or 0) for values in vals_list]
         ).exists()
@@ -148,10 +148,35 @@ class ScTenantCompanyRegistration(models.Model):
             company.is_platform_bootstrap_company for company in companies
         ):
             raise UserError("TPV1_PLATFORM_BOOTSTRAP_COMPANY_CANNOT_REGISTER")
-        registrations = super().create(vals_list)
+        # Provisioning is a control-plane create, not permission to use the
+        # company. Validate the caller before this model-scoped elevation;
+        # native company licensing continues to govern all subsequent reads.
+        self.check_access_rights("create")
+        registrations = super(ScTenantCompanyRegistration, self.sudo()).create(vals_list)
         registrations._after_tenant_company_registration()
         self.env.registry.clear_cache()
-        return registrations
+        return registrations.with_env(self.env)
+
+    @api.model
+    def _register_payload_company(self, values):
+        """Idempotent signed registration; never return an elevated recordset."""
+        _assert_signed_import_boundary(self.env)
+        self.check_access_rights("create")
+        identity_fields = {"tenant_key", "company_id", "source_module", "source_external_key"}
+        if set(values) != identity_fields:
+            raise ValidationError("TPV1_COMPANY_REGISTRATION_IDENTITY_REQUIRED")
+        registration = self.sudo().with_context(active_test=False).search([
+            ("company_id", "=", values["company_id"]),
+        ], limit=1)
+        if not registration:
+            return self.create(values)
+        actual = {name: registration[name] for name in identity_fields - {"company_id"}}
+        actual["company_id"] = registration.company_id.id
+        if actual != values:
+            raise ValidationError("TPV1_COMPANY_REGISTRATION_IDENTITY_CONFLICT")
+        if not registration.active:
+            registration.write({"active": True})
+        return registration.with_env(self.env)
 
     @api.constrains("tenant_key", "data_purpose")
     def _check_tenant_purpose(self):

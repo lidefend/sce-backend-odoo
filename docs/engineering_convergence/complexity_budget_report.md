@@ -56,7 +56,7 @@ Generated from repository source files. This report is informational during the 
 | 2083 | Python source | `addons/smart_construction_core/core_extension.py` |
 | 2068 | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
 | 2021 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
-| 2002 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
+| 2004 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1981 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1980 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1976 | Python source | `addons/smart_core/handlers/system_init.py` |
@@ -158,8 +158,8 @@ Generated from repository source files. This report is informational during the 
 | 1165 | Python source | `addons/smart_core/tests/test_business_config_surface.py` |
 | 1160 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1160 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
-| 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1157 | Python source | `scripts/verify/fact_source_coverage_guard.py` |
+| 1150 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1145 | Python source | `scripts/verify/visible_data_usability_matrix_probe.py` |
 | 1142 | TypeScript source | `frontend/apps/web/src/api/platformCapabilityExplorer.ts` |
 | 1135 | Python source | `addons/smart_core/tests/test_release_operator_surface_copy_backend.py` |
@@ -256,7 +256,7 @@ Generated from repository source files. This report is informational during the 
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
 | 807 | Python source | `scripts/verify/test_frontend_acceptance_runtime_profile.py` |
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
-| 802 | Python source | `addons/smart_construction_core/tests/test_patch_b_read_aggregate_security.py` |
+| 804 | Python source | `addons/smart_construction_core/tests/test_patch_b_read_aggregate_security.py` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 552 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 499 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
@@ -322,7 +322,7 @@ Generated from repository source files. This report is informational during the 
 | 2083 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
 | 2068 | split_plan_required | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
 | 2021 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
-| 2002 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
+| 2004 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1981 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1980 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1976 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
