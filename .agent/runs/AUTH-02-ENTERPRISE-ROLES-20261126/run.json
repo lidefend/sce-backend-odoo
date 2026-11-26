@@ -136,7 +136,8 @@
     "addons/smart_construction_bundle/tests/test_system_product_release.py",
     "addons/smart_core/tests/test_tenant_extension_storage.py",
     "addons/smart_core/models/tenant_payload_import_batch.py",
-    "addons/smart_core/utils/tenant_payload_import_service.py"
+    "addons/smart_core/utils/tenant_payload_import_service.py",
+    "scripts/ci/personal_data_false_positives.json"
   ],
   "environment": {
     "kind": "runtime",
@@ -192,7 +193,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit reviewed R1-R5 repairs, push draft PR1010 and require fresh exact-head R6 backend integration plus all four workflows. Do not merge/deploy.",
+  "next_exact_step": "Retain current backend integration runs, publish exact-blob scan registry repair, and recheck all required workflows on the new HEAD. Keep Draft.",
   "id": "AUTH-02-ENTERPRISE-ROLES-20261126",
   "branch": "feature/auth-02-enterprise-roles-20261126",
   "status": "verification_pending",
@@ -784,5 +785,19 @@
       "status": "passed",
       "log": ".runtime/auth02-backend-repair-freeze.log"
     }
+  },
+  "ci_public_fixture_blob_repair": {
+    "status": "incremental_scan_passed",
+    "head": "d04fc8f9b0af130f04b44a0d689af8c35e5d3152",
+    "classification": "baseline_evidence_defect",
+    "reason": "PD003 synthetic fixture exemption is immutable-blob-bound; adding explicit test licensing changed blob, all AST literal constants equal previously approved blob.",
+    "path": "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+    "reviewed_previous_blob": "ed8f1aaa4953693e9d502bce2871a038524791a5",
+    "new_blob": "67b325a0ddd11a6f17a2cf3dbce008859ed9d6ff",
+    "log": ".runtime/auth02-public-failure-d04.log",
+    "boundary": "One rule/path/full blob/classification entry only; no values recorded or broad exemption.",
+    "unit_log": ".runtime/auth02-public-blob-unit.log",
+    "scan_log": ".runtime/auth02-public-blob-incremental.log",
+    "scan_scope": "Same trusted BASE_SHA as failed remote workflow; candidate-range scan only. Registry ordering restored without changing the reviewed exact entry set."
   }
 }

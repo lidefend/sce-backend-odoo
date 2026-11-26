@@ -651,6 +651,13 @@
       "blob_id": "c6162a69dd8a2586cfea93ef92a1e606417669a4",
       "classification": "BANK_ACCOUNT_PATTERN",
       "reason": "verified_synthetic_demo_business_fixture_sequential_placeholder_transactional_loader_revision"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+      "blob_id": "67b325a0ddd11a6f17a2cf3dbce008859ed9d6ff",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_fixture_constants_identical_to_reviewed_ed8f1aaa_after_explicit_platform_license_test_setup"
     }
   ]
 }
