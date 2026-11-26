@@ -3,9 +3,9 @@ goal:
   id: LOCAL-MAIN-WALKTHROUGH-20261126
   status: verification_pending
   title: Deploy main and close user walkthrough defects
-  objective: Deploy merged main, walk all declared entries, and fix observed scene lifecycle and verification defects.
-  formal_product_layer: P0 shared frontend lifecycle and P4 validation tooling
-  layer_target: Scene instance ownership and faithful walkthrough evidence
-  module: [frontend, delivery_tooling]
+  objective: Reconstruct formal enterprise configuration through the business administrator UI in a fresh disposable database, compare against demo declarations, complete representative business journeys, and repair observed product defects.
+  formal_product_layer: P0 relation contract production and consumption; P4 validation tooling
+  layer_target: End-to-end relation contracts and actual enterprise reconstruction evidence
+  module: [smart_core, frontend, delivery_tooling]
   standard_vs_user_specific: standard
   exclusions: [business_permission_changes, unapproved_persistent_data_changes]

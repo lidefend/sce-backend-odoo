@@ -1346,6 +1346,18 @@ RULES = (
         "verify.local.dev.payment_settlement_journey.unit",
     )),
     Rule((
+        "addons/smart_core/handlers/api_data_import.py",
+        "addons/smart_core/tests/test_api_data_import_mapping.py",
+    ), ("verify.smart_core.api_data_import.unit",)),
+    Rule((
+        "scripts/dev/enterprise_reconstruction.py",
+        "scripts/verify/enterprise_reconstruction_browser.mjs",
+        "scripts/verify/enterprise_reconstruction_import_browser.mjs",
+        "scripts/verify/test_enterprise_reconstruction.py",
+    ), (
+        "verify.enterprise.reconstruction.unit",
+    )),
+    Rule((
         "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
         "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
         "scripts/verify/local_dev_enterprise_configuration_consumer.test.mjs",
