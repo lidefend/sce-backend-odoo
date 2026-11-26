@@ -893,6 +893,12 @@ class _TreeFormParserMixin:
                 # have to infer it from a model or action name.
                 "source_widget_id": "page.header" if level == "header" else "",
                 "selection": selection,
+                "execution_scope": (
+                    "recordset" if lvl == "toolbar" and btype == "object"
+                    and isinstance(ctx_val, dict)
+                    and ctx_val.get("execution_scope") == "recordset"
+                    else "record"
+                ),
                 "visible_profiles": visible_profiles,
                 "groups": [],
                 "visible": {"domain": [], "states": states, "attrs": visible_attrs},

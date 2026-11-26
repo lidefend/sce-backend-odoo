@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 233,
+    "odoo_tags": 236,
     "gated": 5,
-    "on_demand": 93,
+    "on_demand": 96,
     "unwired": 135,
-    "odoo_tag_declarations": 470,
+    "odoo_tag_declarations": 473,
     "gated_declarations": 107,
-    "uncovered_declarations": 363,
+    "uncovered_declarations": 366,
     "ci_unit_scripts": 24,
     "ci_unit_scripts_wired": 24,
     "ci_unit_scripts_unwired": 0
@@ -774,6 +774,20 @@
       "disposition": "class-selected"
     },
     {
+      "group": "auth02_native_isolation",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_native_company_project_isolation.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.auth02.native_isolation.orm :: auth02_native_isolation"
+      ],
+      "disposition": "class-selected"
+    },
+    {
       "group": "auth_signup",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -824,6 +838,20 @@
       "owner": "platform-team",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "business_role",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_business_role.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.business_role.orm :: business_role"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "canonical_navigation_projection",
@@ -1522,6 +1550,20 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.local.dev.system_permission.reconciliation.orm :: group_authority_reconciliation local.dev.test"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "group_authority_sources",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_group_authority_sources.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.group_authority.sources.orm :: group_authority_sources"
       ],
       "disposition": "class-selected"
     },

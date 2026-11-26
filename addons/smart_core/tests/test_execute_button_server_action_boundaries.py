@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from contextlib import nullcontext
 import importlib.util
 import sys
 import types
@@ -605,6 +606,36 @@ class TestExecuteButtonServerActionBoundaries(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["code"], 403)
         self.assertEqual(result["error"]["message"], "ACTION_CONTRACT_SINGLE_RECORD_REQUIRED")
+
+    def test_collection_requires_fresh_authority_for_every_record(self):
+        for denial in (None, 'undeclared', 'second_record', 'missing_record'):
+            with self.subTest(denial=denial):
+                module = _load_handler()
+                records = _Recordset()
+                records.ids = [3] if denial == 'missing_record' else [3, 4]
+                env = _Env({'x.model': _ButtonModel(records)})
+                env.cr = types.SimpleNamespace(savepoint=nullcontext)
+                button = dict(_authority_button(method='shared_action'), execution_scope='recordset')
+                handler = module.ExecuteButtonHandler(env=env, payload={
+                    'params': {'model': 'x.model', 'res_id': [3, 4], 'button': button},
+                    'meta': {'action_id': 41, 'menu_id': 51},
+                }, context={})
+                seen = []
+
+                def contract(**kwargs):
+                    seen.append(kwargs['record_id'])
+                    self.assertEqual(kwargs['view_type'], 'tree')
+                    value = _authorized_contract(method='shared_action',
+                        disabled=denial == 'second_record' and kwargs['record_id'] == 4)
+                    if denial != 'undeclared':
+                        value['actionContract']['actionRuleList'][0]['executionScope'] = 'recordset'
+                    return value
+
+                handler._load_current_action_contract = contract
+                result = handler.handle()
+                self.assertEqual(result['ok'], denial is None)
+                self.assertEqual(records.method_calls, 1 if denial is None else 0)
+                self.assertEqual(seen, [3] if denial == 'undeclared' else [3, 4])
 
     def test_legacy_server_action_request_without_contract_authority_is_denied(self):
         module = _load_handler()

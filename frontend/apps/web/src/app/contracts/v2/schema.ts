@@ -2235,6 +2235,7 @@ function decodeActionRule(
   if (reasonMessage && !optionalString(raw, 'reasonCode')) issues.push({ path: `${path}.reasonMessage`, message: 'requires its declared reasonCode' });
   return {
     ...(reasonMessage !== undefined ? { reasonMessage } : {}),
+    ...(optionalString(raw, 'executionScope') ? { executionScope: optionalString(raw, 'executionScope') } : {}),
     actionId,
     ...(actionSemantics ? { actionSemantics } : {}),
     ...(raw.actionSemantics !== undefined && !actionSemantics ? { actionSemanticsInvalid: true } : {}),

@@ -701,6 +701,7 @@ export interface ContractV2LayoutContract {
 }
 
 export interface ContractV2ActionRule {
+  executionScope?: string;
   actionSemantics?: ActionSemantics;
   actionSemanticsInvalid?: boolean;
   actionId: string;

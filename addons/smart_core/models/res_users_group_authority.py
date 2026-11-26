@@ -3,6 +3,7 @@ from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, UserError
 from ..security.group_assignment import (
     GroupAuthorityGap, apply_commands, verified_roots, replace_roles,
+    verified_sources, source_union, replace_source, apply_native_source_commands,
 )
 
 STATE_FIELD = 'sc_group_authority_state'
@@ -22,17 +23,29 @@ class ResUsersGroupAuthority(models.Model):
             self.env.cr.execute('SELECT id FROM res_users WHERE id = ANY(%s) ORDER BY id FOR NO KEY UPDATE', (self.ids,))
             self.invalidate_recordset([STATE_FIELD, 'groups_id'])
 
-    def _sc_store_group_authority(self, roots, reason=''):
+    def _sc_store_group_authority(self, roots, reason='', sources=None):
         for user in self.sudo():
             previous = user.sc_group_authority_state or {}
             observed = sorted(user.groups_id.ids)
             state = {'version': 1, 'status': 'unresolved', 'reason': reason,
                      'revision': int(previous.get('revision', 0)) + 1, 'actor_uid': self.env.uid}
+            if previous.get('version') == 2:
+                # Invalidation removes trust in the projection, not source history.
+                # A review must preserve managed sources instead of adopting them
+                # as independent native grants.
+                state.update(version=2, sources=previous.get('sources'),
+                             roots=previous.get('roots'), observed=previous.get('observed'))
+                if roots is not None and sources is None:
+                    raise UserError('GROUP_AUTHORITY_MANAGED_SOURCE_REQUIRED')
             if roots is not None:
                 groups = self.env['res.groups'].sudo().browse(sorted(roots)).exists()
                 closure = set((groups | groups.trans_implied_ids).ids)
                 if set(groups.ids) == set(roots) and closure == set(observed):
                     state.update(status='tracked', roots=sorted(roots), observed=observed, reason='')
+                    if sources is not None:
+                        if source_union(sources) != set(roots):
+                            raise UserError('GROUP_AUTHORITY_SOURCE_DRIFT')
+                        state.update(version=2, sources={key: sorted(values) for key, values in sources.items()})
                 else:
                     state['reason'] = 'GROUP_AUTHORITY_PROJECTION_DRIFT'
             # This private method alone may write provenance. No client context bypass.
@@ -46,6 +59,23 @@ class ResUsersGroupAuthority(models.Model):
         state = user.sc_group_authority_state or {}
         groups = self.env['res.groups'].sudo().browse(state.get('roots') or []).exists()
         return verified_roots(state, user.groups_id.ids, (groups | groups.trans_implied_ids).ids)
+
+    def _sc_replace_group_authority_source(self, source, group_ids):
+        """Private service boundary: caller owns business authorization and company scope."""
+        self.ensure_one()
+        try:
+            self._sc_explicit_group_roots()
+            sources = verified_sources(self.sudo().sc_group_authority_state)
+            sources = replace_source(sources, source, group_ids)
+        except GroupAuthorityGap as error:
+            raise UserError(_("授权来源无法确认，未改变用户权限：%s") % str(error)) from error
+        roots = source_union(sources)
+        # Keep native groups as the executor, then record the exact source union.
+        # This bypasses only this tracking override, never an exposed context flag.
+        super(ResUsersGroupAuthority, self.sudo()).write({'groups_id': [(6, 0, sorted(roots))]})
+        self._sc_store_group_authority(roots, sources=sources)
+        self._sc_bump_token_epoch()
+        return True
 
     def _sc_role_group_projection(self, assignable, commands, technical=()):
         self.ensure_one()
@@ -124,6 +154,7 @@ class ResUsersGroupAuthority(models.Model):
             return super().write(vals)
         self._sc_lock_group_authority()
         plans = {}
+        source_plans = {}
         for user in self:
             try:
                 try:
@@ -133,10 +164,20 @@ class ResUsersGroupAuthority(models.Model):
                 roots = None if reified else apply_commands(initial, vals['groups_id'])
             except GroupAuthorityGap:
                 roots = None
+            state = user.sudo().sc_group_authority_state or {}
+            if state.get('version') == 2:
+                try:
+                    user._sc_explicit_group_roots()
+                    if reified:
+                        raise GroupAuthorityGap('GROUP_AUTHORITY_MANAGED_SOURCE_REQUIRED')
+                    source_plans[user.id] = apply_native_source_commands(verified_sources(state), vals['groups_id'])
+                    roots = source_union(source_plans[user.id])
+                except GroupAuthorityGap as error:
+                    raise UserError(_("请通过授权来源管理修改企业角色权限：%s") % str(error)) from error
             plans[user.id] = roots
         result = super().write(vals)
         for user in self:
-            user._sc_store_group_authority(plans[user.id], 'GROUP_AUTHORITY_ORIGIN_UNRESOLVED')
+            user._sc_store_group_authority(plans[user.id], 'GROUP_AUTHORITY_ORIGIN_UNRESOLVED', sources=source_plans.get(user.id))
         return result
 
 

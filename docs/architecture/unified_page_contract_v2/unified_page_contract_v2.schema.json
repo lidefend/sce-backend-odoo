@@ -3861,6 +3861,10 @@
             "$ref": "#/$defs/id"
           }
         },
+        "executionScope": {
+          "description": "Native record or collection method invocation scope; grants no authority.",
+          "enum": ["record", "recordset"]
+        },
         "dispatchMode": {
           "enum": [
             "local",
