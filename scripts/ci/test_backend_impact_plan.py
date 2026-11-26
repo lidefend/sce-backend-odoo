@@ -435,7 +435,7 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
         text = (planner.ROOT / '.github/workflows/professional_quality_gate.yml').read_text()
         job = text.split('  professional_quality_gate:\n', 1)[1]
         self.assertIn(
-            'needs: [professional_authorization, contract_checks, backend_impact_suite, professional_quality_checks, python310_runtime_compatibility]',
+            'needs: [professional_authorization, contract_checks, backend_impact_suite, backend_demo_suite, backend_acceptance_suite, professional_quality_checks, python310_runtime_compatibility]',
             job,
         )
         self.assertIn('always() &&', job)

@@ -44,7 +44,8 @@
     "frontend/apps/web/src/app/contracts/v2/types.ts",
     "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
     "docs/architecture/p0_contract_producer_01/remediation_design.json",
-    ".github/workflows/professional_quality_gate.yml"
+    ".github/workflows/professional_quality_gate.yml",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py"
   ],
   "environment": {
     "kind": "offline",
@@ -107,7 +108,7 @@
   "blockers": [
     "Remote integration and repaired exact-main full audit pending."
   ],
-  "next_exact_step": "Publish professional verification dependency preparation fix; verify all checks at new exact HEAD before main integration.",
+  "next_exact_step": "Push new candidate, confirm automatic product/demo/acceptance scheduling and current-head checks, merge when eligible; then exact-main full qualification.",
   "id": "MAIN-CI-CLOSEOUT-20261126",
   "branch": "fix/main-ci-impact-precision-20261126",
   "status": "verification_pending",
@@ -289,5 +290,27 @@
     },
     "remote_new_head": "not_run",
     "frontend_preparation": "Preserved locally under .runtime/frontend-topic-preparation-preserved; restore after clean publication; not part of this CI fix."
+  },
+  "automatic_backend_closure": {
+    "status": "locally_validated_remote_pending",
+    "classification": "validation_tool_defect",
+    "problem": "Required demo/acceptance suites were only discovered by local merge preflight after PR gates passed.",
+    "implementation": "PR authorization selects closure via the same required_for_paths used by merge. Product/demo/acceptance run in parallel and aggregate into professional_quality_gate. Merge verifies three exact-head remote plan artifacts without requiring a local receipt; explicit close waits for automatic CI without redispatch.",
+    "validation": {
+      "backend_lane_tests": 13,
+      "workflow_tests": 35,
+      "incremental_executor_tests": 276,
+      "local_iteration_targets": 25,
+      "local_iteration_status": "passed",
+      "log": ".runtime/main-ci-auto-iteration-complete.log",
+      "stdlib_only_selector": "passed python3 -S"
+    },
+    "previous_head": "386704f05bf3d8e99ea3cbfde3c45c4f4001253b",
+    "previous_auxiliary_runs": [
+      45818224806,
+      45818286493
+    ],
+    "previous_auxiliary_results": "success; superseded by new implementation candidate",
+    "next_exact_step": "Push new candidate, confirm automatic product/demo/acceptance scheduling and current-head checks, merge when eligible; then exact-main full qualification."
   }
 }

@@ -46,3 +46,14 @@ The 791c854 frontend PR gate found a missed source-evidence dependency: the desi
 P4 修复将固定 Node 运行时提前，在选中工具检查或正式全量离线审计时先安装 frozen-lockfile 依赖并验证 esbuild，复用 pnpm 缓存；保持浏览器和前端构建归原车道。回归同时约束普通工具检查和正式全量基线的准备顺序，替换与真实工具依赖冲突的旧“不得安装前端依赖”断言。
 
 本地工作流回归 34 项、实际解码器 1 项、契约事实守卫 41 项通过；ci.local.iteration 的 25 个影响集检查通过。原始日志见当前 run 的 professional_dependency_repair。新 HEAD 远端验证待执行；未合并、未部署。下一轮前端专题仅本地保全，不随本次 CI 修复发布。
+
+
+### 将全部合并必需后端验证纳入自动 PR CI
+
+原流程四项 PR CI 变绿后，合并预检才发现缺少当前候选 demo/acceptance 回执，造成额外等待。所有者要求立即消除此流程缺口。本次 P4 修复让授权阶段复用合并检查的 `required_for_paths` 判断，按真实改动自动并行运行 product、demo、acceptance；三套结果汇总到现有必需 `professional_quality_gate`。无关改动仍不触发三套测试，主线独立辅助套件保持原职责。
+
+合并入口读取同一精确 HEAD 的远端成功工作流及三套完整计划产物，校验来源、摘要、范围，不再以本地缺少汇总 JSON 阻断。显式 close 对新工作流只等待并核验，不重复调度；旧候选的已运行任务仍可按原证据规则读取。前置选择器用 `python3 -S` 验证不依赖第三方包。
+
+本地：13 项车道测试、35 项工作流测试、276 项增量执行器测试通过，最终 `ci.local.iteration` 25 个目标全部通过；日志 `.runtime/main-ci-auto-iteration-complete.log`。测试覆盖自动并行接线、缺失/失败/过期身份拒绝、不相关改动不扩大范围，以及无本地回执可核验远端结果。两处后端工作流断言与一处前端执行器工作流断言同步新自动选择表达式，未放宽已有验证。
+
+旧 HEAD 386704f05 的补充运行 45818224806、45818286493 已成功；本次源码修复产生新候选，不能据此合并旧 HEAD 或宣称新候选通过。前端专题继续 planned，保存在限定路径 stash 0a25d24ed1dcb37367762ab22485117946d1569d，发布后恢复。

@@ -17,6 +17,7 @@ import subprocess
 import sys
 import time
 import zipfile
+
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -32,6 +33,7 @@ SCHEMA = "backend-iteration-lanes/v1"
 DEFAULT_RECEIPT_ROOT = ROOT / ".runtime/backend-iteration"
 RUN_NAME_PREFIX = "backend_test_suite"
 CLOSURE_PATHS = {
+    ".github/workflows/professional_quality_gate.yml",
     ".github/workflows/backend_test_suite.yml",
     ".github/workflows/auxiliary_backend_suite.yml",
     "make/ci.mk",
@@ -491,6 +493,16 @@ def close_lanes(
     started = time.monotonic()
     pr, base, tree = preflight(client, branch=branch, head=head)
     deadline = started + timeout_seconds
+    if automatic_closure(head):
+        run = select_latest_run(client.runs(PROFESSIONAL_WORKFLOW, head), head=head, event="pull_request")
+        if not run:
+            raise LaneError("automatic PR backend closure has not started; do not dispatch duplicate suites")
+        wait_for_run(client, run_id=int(run["databaseId"]), head=head,
+                     workflow=PROFESSIONAL_WORKFLOW, deadline=deadline, poll_seconds=poll_seconds)
+        manifest = verify_automatic_closure(client, head=head, base=base)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
+        return manifest
     expected = {suite: expected_suite_modules(head, suite) for suite in SUITES}
 
     direct_product_before = {
@@ -613,6 +625,37 @@ def close_lanes(
     return manifest
 
 
+def automatic_closure(head: str) -> bool:
+    """Read the candidate's workflow, never the executor's current checkout."""
+    import yaml  # Local evidence verification only; PR selection stays standard-library-only.
+
+    workflow = yaml.safe_load(git("show", f"{head}:.github/workflows/{PROFESSIONAL_WORKFLOW}"))
+    jobs = workflow.get("jobs", {}) if isinstance(workflow, dict) else {}
+    return all(name in jobs for name in ("backend_demo_suite", "backend_acceptance_suite"))
+
+
+def verify_automatic_closure(client: GitHubClient, *, head: str, base: str) -> dict:
+    run = select_latest_run(client.runs(PROFESSIONAL_WORKFLOW, head), head=head, event="pull_request")
+    if not run:
+        raise LaneError("automatic backend closure has no current PR run")
+    live = client.run(int(run["databaseId"]))
+    if (live.get("headSha") != head or live.get("event") != "pull_request"
+            or live.get("workflowName") != "professional_quality_gate"
+            or live.get("status") != "completed" or live.get("conclusion") != "success"):
+        raise LaneError("automatic backend closure is not successful for current HEAD")
+    suites = {}
+    for suite in SUITES:
+        artifact = read_plan_artifact(client, run_id=int(run["databaseId"]), suite=suite)
+        validate_plan(artifact["plan"], head=head, suite=suite,
+                      expected_modules=expected_suite_modules(head, suite),
+                      allowed_bases={"", base} if suite == "product" else {""})
+        suites[suite] = {"run_id": int(run["databaseId"]),
+                         "plan_artifact_id": artifact["artifact_id"],
+                         "plan_artifact_digest": artifact["artifact_digest"]}
+    return {"schema": SCHEMA, "status": "passed", "head": head, "base": base,
+            "source": "automatic_pr_ci", "suites": suites}
+
+
 def verify_manifest(client: GitHubClient, *, pr: int, head: str, receipt: Path) -> dict:
     branch = git("branch", "--show-current")
     pr_view, base, tree = preflight(client, branch=branch, head=head)
@@ -621,6 +664,8 @@ def verify_manifest(client: GitHubClient, *, pr: int, head: str, receipt: Path) 
     paths = client.pr_files(pr)
     if not required_for_paths(paths):
         return {"schema": SCHEMA, "status": "not_required", "head": head, "pr": pr}
+    if automatic_closure(head):
+        return verify_automatic_closure(client, head=head, base=base)
     if not receipt.is_file():
         raise LaneError(f"required backend iteration receipt is missing: {receipt}")
     manifest = json.loads(receipt.read_text())
@@ -696,6 +741,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
 
+    selection = sub.add_parser("plan")
+    selection.add_argument("--base", required=True)
+    selection.add_argument("--expected-head", required=True)
+    selection.add_argument("--github-output", type=Path, required=True)
+
     close = sub.add_parser("close")
     close.add_argument("--branch", required=True)
     close.add_argument("--expected-head", required=True)
@@ -713,7 +763,15 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     client = GitHubClient()
     try:
-        if args.command == "close":
+        if args.command == "plan":
+            base = exact_sha(args.base, "base")
+            head = exact_sha(args.expected_head, "head")
+            paths = git("diff", "--name-only", f"{base}...{head}").splitlines()
+            required = required_for_paths(paths)
+            with args.github_output.open("a") as output:
+                output.write(f"required={str(required).lower()}\n")
+            result = {"head": head, "base": base, "required": required}
+        elif args.command == "close":
             result = close_lanes(
                 client,
                 branch=args.branch,
