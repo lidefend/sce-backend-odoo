@@ -200,9 +200,7 @@
         <record id="group_sc_cap_project_manager" model="res.groups">
             <field name="name">SC 能力 - 项目中心审批</field>
             <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
-            <field name="implied_ids" eval="[(6, 0, [
-                ref('smart_construction_core.group_sc_cap_project_user')
-            ])]"/>
+
         </record>
 
 
@@ -471,25 +469,19 @@
         <record id="group_sc_cap_contract_read" model="res.groups">
             <field name="name">SC 能力 - 合同中心只读</field>
             <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
-            <field name="implied_ids" eval="[
-                (6, 0, [ref('smart_construction_core.group_sc_internal_user')])
-            ]"/>
+
         </record>
 
         <record id="group_sc_cap_contract_user" model="res.groups">
             <field name="name">SC 能力 - 合同中心经办</field>
             <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
-            <field name="implied_ids" eval="[
-                (6, 0, [ref('smart_construction_core.group_sc_cap_contract_read')])
-            ]"/>
+
         </record>
 
         <record id="group_sc_cap_contract_manager" model="res.groups">
             <field name="name">SC 能力 - 合同中心审批</field>
             <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
-            <field name="implied_ids" eval="[
-                (6, 0, [ref('smart_construction_core.group_sc_cap_contract_user')])
-            ]"/>
+
         </record>
 
 
@@ -625,9 +617,7 @@
             <field name="comment">
                 业务全功能身份（非配置管理员、非系统管理员）
             </field>
-            <field name="implied_ids" eval="[(6, 0, [
-                ref('smart_construction_core.group_sc_cap_business_full')
-            ])]"/>
+
         </record>
 
         <!-- =========================
@@ -641,13 +631,7 @@
             <field name="comment">
                 全功能业务能力，并负责业务主数据、规则和配置入口
             </field>
-            <field name="implied_ids" eval="[
-                (6, 0, [
-                    ref('smart_construction_core.group_sc_internal_user'),
-                    ref('smart_construction_core.group_sc_cap_business_full'),
-                    ref('smart_core.group_smart_core_business_config_admin')
-                ])
-            ]"/>
+
         </record>
 
         <!-- =========================
@@ -730,7 +714,10 @@
         </record>
 
         <record id="group_sc_cap_project_manager" model="res.groups">
-            <field name="implied_ids" eval="[(4, ref('smart_construction_core.group_sc_task_entry_access'))]"/>
+            <field name="implied_ids" eval="[(6, 0, [
+                ref('smart_construction_core.group_sc_cap_project_user'),
+                ref('smart_construction_core.group_sc_task_entry_access')
+            ])]"/>
         </record>
 
         <!-- Remove the legacy custom bridge without changing Odoo's standard group graph. -->

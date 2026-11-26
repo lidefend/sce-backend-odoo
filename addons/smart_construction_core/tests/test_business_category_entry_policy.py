@@ -47,7 +47,7 @@ class CategoryEntryPolicyTest(unittest.TestCase):
         self.assertIn('group_sc_cap_contract_user', implied)
 
     def test_operation_role_selects_contract_entry_capability(self):
-        roles = ET.parse(MODULE / 'security/sc_role_entry_groups.xml')
+        roles = ET.parse(MODULE / 'security/sc_role_groups.xml')
         implied = roles.find(
             ".//record[@id='group_sc_role_operation_user']/field[@name='implied_ids']"
         ).get('eval')

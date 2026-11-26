@@ -58,6 +58,20 @@ class ResUsers(models.Model):
     )
 
     @api.model
+    def _sc_initialize_account_defaults(self, defaults):
+        """Seed native defaults only; never rewrite existing accounts or overrides."""
+        if set(defaults) - {"lang", "tz"}:
+            raise ValidationError(_("账号初始化只允许语言和时区默认值。"))
+        Default = self.env["ir.default"].sudo()
+        for name, value in defaults.items():
+            if Default._get("res.users", name) is not None:
+                continue
+            if name == "lang":
+                self.env["res.lang"].sudo()._activate_lang(value)
+            Default.set("res.users", name, value)
+        return True
+
+    @api.model
     def _sc_internal_group(self):
         return self.env.ref("smart_construction_core.group_sc_internal_user", raise_if_not_found=False)
 
@@ -231,6 +245,8 @@ class ResUsers(models.Model):
             "company_ids",
             "password",
             "image_1920",
+            "lang",
+            "tz",
             "sc_personnel_department_id",
             "sc_personnel_job_id",
             "sc_personnel_active",

@@ -19,6 +19,55 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
         cls.job_a = cls.env['hr.job'].create({'name': 'Synthetic position A', 'company_id': cls.env.company.id})
         cls.job_b = cls.env['hr.job'].create({'name': 'Synthetic position B', 'company_id': cls.env.company.id})
 
+    def test_configuration_responsibilities_have_native_permissions(self):
+        # Includes nested configuration rows and native wizard dependencies,
+        # not only the top-level model behind a menu.
+        writable = (
+            'hr.department', 'hr.job', 'res.users', 'sc.approval.policy',
+            'sc.approval.step', 'sc.approval.scope', 'sc.approval.scope.user.wizard',
+            'sc.dictionary', 'project.dictionary', 'project.cost.code',
+            'sc.project.stage.requirement.item', 'sc.project.member.assignment',
+            'sc.product.scenario', 'sc.product.scenario.entry',
+            'sc.product.system.settings', 'ui.business.config.contract',
+            'ui.business.config.change.set', 'ui.business.config.change.set.item',
+            'ui.menu.config.policy', 'ui.form.field.policy', 'ui.form.custom.field.wizard',
+            'ui.tenant.extension.field', 'ui.tenant.extension.value',
+        )
+        for name in writable:
+            model = self.env[name].with_user(self.manager)
+            for operation in ('read', 'create', 'write'):
+                with self.subTest(model=name, operation=operation):
+                    self.assertTrue(model.check_access_rights(operation, raise_exception=False))
+        for name in ('res.company', 'ir.sequence'):
+            model = self.env[name].with_user(self.manager)
+            self.assertTrue(model.check_access_rights('write', raise_exception=False))
+            self.assertFalse(model.check_access_rights('create', raise_exception=False))
+        self.assertFalse(self.manager.has_group('base.group_system'))
+
+    def test_workflow_runtime_relations_readable_without_definition_write(self):
+        other = self.env['res.company'].create({'name': 'Synthetic workflow other company'})
+        self.register_business_company(other)
+        for company in (self.env.company, other):
+            definition = self.env['sc.workflow.def'].create({
+                'name': 'Synthetic config relation', 'code': 'config_relation_' + str(company.id),
+                'model_name': 'project.project', 'company_id': company.id,
+            })
+            node = self.env['sc.workflow.node'].create({
+                'name': 'Synthetic node', 'code': 'start', 'workflow_def_id': definition.id,
+                'approve_group_id': self.internal.id,
+            })
+            for record in (definition, node):
+                managed = record.with_user(self.manager)
+                if company == self.env.company:
+                    self.assertEqual(managed.read(['display_name'])[0]['id'], record.id)
+                else:
+                    with self.assertRaises(AccessError):
+                        managed.read(['display_name'])
+                for operation in ('create', 'write', 'unlink'):
+                    self.assertFalse(managed.check_access_rights(operation, raise_exception=False))
+                with self.assertRaises(AccessError):
+                    managed.write({'name': 'Not permitted'})
+
     def test_enterprise_profile_write_is_current_company_only(self):
         company = self.env.company
         actor = company.with_user(self.manager).with_context(allowed_company_ids=company.ids)
@@ -186,7 +235,8 @@ class TestSystemPermissionSeparation(BusinessTransactionCase):
 
     def test_reverse_membership_write_invalidates_origin(self):
         user = self._subject('partner_manager')
-        capability = self.env.ref('smart_construction_core.group_sc_cap_contact_manager')
+        capability = self.env['res.groups'].create({'name': 'Synthetic new reverse membership'})
+        self.assertNotIn(capability, user.groups_id)
         capability.write({'users': [(4, user.id)]})
         with self.assertRaisesRegex(UserError, 'GROUP_AUTHORITY_ORIGIN_UNRESOLVED'):
             self._managed(user).write({'sc_user_role_group_ids': [(6, 0, [])]})

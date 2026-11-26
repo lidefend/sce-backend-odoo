@@ -37,6 +37,7 @@
         'data/project_dictionary_data.xml',
         'data/expense_contract_category_data.xml',
         'data/sc_capability_group_seed.xml',
+        'data/runtime_user_defaults.xml',
         'data/project_capability_roadmap_data.xml',
 
         # 安全

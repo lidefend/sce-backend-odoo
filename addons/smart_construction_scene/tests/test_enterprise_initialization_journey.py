@@ -40,6 +40,12 @@ class TestEnterpriseInitializationJourney(BusinessTransactionCase):
     def _managed(self, user):
         return user.with_user(self.manager).with_context(sc_runtime_user_management=True)
 
+    def test_scene_configuration_native_permissions(self):
+        model = self.env['sc.scene.company.enablement'].with_user(self.manager)
+        for operation in ('read', 'create', 'write'):
+            self.assertTrue(model.check_access_rights(operation, raise_exception=False))
+        self.assertFalse(self.manager.has_group('base.group_system'))
+
     def test_enterprise_initialization_configuration_journey(self):
         import secrets
         from odoo.addons.smart_construction_scene.handlers.enterprise_readiness import EnterpriseReadinessDiagnosisGetHandler

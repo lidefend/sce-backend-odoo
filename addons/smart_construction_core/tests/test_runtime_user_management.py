@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo.exceptions import AccessError, ValidationError
+from odoo.exceptions import UserError, AccessError, ValidationError
 from odoo.fields import Command
 from odoo.tests.common import tagged
 from .business_case import BusinessTransactionCase
@@ -35,6 +35,123 @@ class TestRuntimeUserManagement(BusinessTransactionCase):
                 "groups_id": [(6, 0, (internal_group | config_group).ids)],
             }
         )
+
+    def test_business_admin_assigns_owner_role_without_platform_authority(self):
+        admin = self._create_business_config_admin("owner_role_admin")
+        subject = self._create_runtime_user("owner_role_subject", "Owner Role Subject")
+        role = self.env.ref("smart_construction_core.group_sc_role_owner")
+        self.assertTrue(role.sc_assignable_user_permission)
+        subject.with_user(admin).write({"sc_user_role_group_ids": [(6, 0, role.ids)]})
+        self.assertIn(role, subject.groups_id)
+        self.assertFalse(subject.has_group("base.group_system"))
+        subject.with_user(admin).write({"sc_user_role_group_ids": [(6, 0, [])]})
+        self.assertNotIn(role, subject.groups_id)
+
+    def test_product_account_defaults_are_initialized_and_remain_configurable(self):
+        Default = self.env["ir.default"].sudo()
+        self.assertEqual(Default._get("res.users", "lang"), "zh_CN")
+        self.assertEqual(Default._get("res.users", "tz"), "Asia/Shanghai")
+        admin = self._create_business_config_admin("account_defaults_admin")
+        Users = self.env["res.users"].with_user(admin).with_context(no_reset_password=True)
+        user = Users.create({"name": "Default Account", "login": "default_account", "password": "synthetic-account-default"})
+        self.assertEqual((user.lang, user.tz), ("zh_CN", "Asia/Shanghai"))
+        user.write({"lang": "en_US", "tz": "UTC"})
+        self.assertEqual((user.lang, user.tz), ("en_US", "UTC"))
+        Default.set("res.users", "lang", "en_US")
+        Default.set("res.users", "tz", "Europe/Paris", company_id=self.env.company.id)
+        self.env["res.users"]._sc_initialize_account_defaults({"lang": "zh_CN", "tz": "Asia/Shanghai"})
+        self.assertEqual(Default._get("res.users", "lang"), "en_US")
+        self.assertEqual(Default._get("res.users", "tz", company_id=self.env.company.id), "Europe/Paris")
+        self.assertEqual((user.lang, user.tz), ("en_US", "UTC"))
+        next_user = Users.create({"name": "Configured Defaults", "login": "configured_defaults", "password": "synthetic-account-default"})
+        self.assertEqual((next_user.lang, next_user.tz), ("en_US", "Europe/Paris"))
+
+    def test_business_config_admin_can_export_update_identity_without_system_authority(self):
+        admin = self._create_business_config_admin("business_import_export_admin")
+        self.assertTrue(admin.has_group("base.group_allow_export"))
+        self.assertFalse(admin.has_group("base.group_system"))
+        job = self.env["hr.job"].create({"name": "Import Update Identity", "company_id": self.env.company.id})
+        exported = job.with_user(admin).export_data(["id", "name"])["datas"]
+        self.assertEqual(exported, [[job.get_external_id()[job.id], job.name]])
+        self.assertTrue(exported[0][0])
+        experience = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Export Denied Experience", "login": "export_denied_experience",
+            "groups_id": [(6, 0, self.env.ref("smart_construction_core.group_sc_role_experience").ids)],
+        })
+        self.assertFalse(experience.has_group("base.group_allow_export"))
+        with self.assertRaises(UserError):
+            job.with_user(experience).export_data(["id", "name"])
+
+    def test_department_manager_uses_native_acl_with_private_fields_protected(self):
+        admin = self._create_business_config_admin("department_public_manager_admin")
+        employee = self.env["hr.employee"].create({"name": "Public Department Manager", "company_id": self.env.company.id})
+        employee.flush_recordset()  # The native public model is a SQL view.
+        department = self.env["hr.department"].create({"name": "Public Manager Department", "company_id": self.env.company.id})
+        member = self.env["hr.employee"].create({"name": "Department Member", "company_id": self.env.company.id,
+                                                  "department_id": department.id})
+        private = self.env["hr.employee"].with_user(admin)
+        self.assertTrue(private.check_access_rights("read", raise_exception=False))
+        self.assertTrue(private.check_access_rights("write", raise_exception=False))
+        department.with_user(admin).write({"sc_manager_public_id": employee.id})
+        self.assertEqual(department.manager_id, employee)
+        self.assertEqual(member.parent_id, employee)
+        public = department.with_user(admin).sc_manager_public_id
+        self.assertEqual(public.id, employee.id)
+        self.assertEqual(public.name, employee.name)
+        self.assertEqual(department.with_user(admin).search([("sc_manager_public_id", "=", employee.id)]), department)
+        self.assertFalse(admin.has_group("hr.group_hr_user"))
+        for field in ("private_email", "identification_id", "bank_account_id"):
+            self.assertNotIn(field, private.fields_get())
+            with self.assertRaises(AccessError):
+                private.browse(employee.id).read([field])
+            with self.assertRaises(AccessError):
+                private.browse(employee.id).write({field: False})
+        department.with_user(admin).write({"sc_manager_public_id": False})
+        self.assertFalse(department.manager_id)
+        self.assertFalse(member.parent_id)
+
+    def test_office_asset_custodian_contract_and_native_assignment(self):
+        from odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler import PageAssembler
+        admin = self._create_business_config_admin("asset_configuration_admin")
+        employee = self.env['hr.employee'].create({'name': 'Synthetic Custodian', 'company_id': self.env.company.id})
+        actor_env = self.env(user=admin, su=False)
+        assembler = PageAssembler(actor_env, actor_env['ir.model'].sudo().env)
+        self.assertTrue(assembler._safe_model_can_read('hr.employee'))
+        self.assertEqual(actor_env['hr.employee'].browse(employee.id).read(['name'])[0]['name'], employee.name)
+        asset = actor_env['sc.office.asset'].create({
+            'name': 'Synthetic Configuration Asset', 'asset_code': 'CONFIG-CUSTODIAN',
+            'custodian_id': employee.id, 'company_id': self.env.company.id,
+        })
+        asset.action_assign()
+        self.assertEqual(asset.status, 'in_use')
+        asset.action_return()
+        self.assertFalse(asset.custodian_id)
+        self.assertEqual(asset.status, 'available')
+
+    def test_department_public_manager_rejects_other_company(self):
+        admin = self._create_business_config_admin("department_other_company_admin")
+        other = self.env["res.company"].create({"name": "Department Manager Other Company"})
+        admin.write({"company_ids": [(4, other.id)]})
+        employee = self.env["hr.employee"].create({"name": "Other Company Manager", "company_id": other.id})
+        department = self.env["hr.department"].create({"name": "Scoped Department", "company_id": self.env.company.id})
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            department.with_user(admin).with_context(allowed_company_ids=[self.env.company.id, other.id]).write({"sc_manager_public_id": employee.id})
+        self.assertFalse(department.manager_id)
+
+    def test_department_manager_cascade_preserves_native_company_scope(self):
+        admin = self._create_business_config_admin("shared_department_manager_admin")
+        other = self.env["res.company"].create({"name": "Shared Department Other Company"})
+        department = self.env["hr.department"].create({"name": "Shared Department", "company_id": False})
+        member = self.env["hr.employee"].create({"name": "Other Company Member", "company_id": other.id,
+                                                  "department_id": department.id})
+        manager = self.env["hr.employee"].create({"name": "Visible Manager", "company_id": self.env.company.id})
+        manager.flush_recordset()
+        department.with_user(admin).write({"sc_manager_public_id": manager.id})
+        self.assertEqual(department.manager_id, manager)
+        self.assertFalse(member.parent_id)
+        with self.assertRaises(AccessError), self.env.cr.savepoint():
+            member.with_user(admin).write({"parent_id": manager.id})
+        self.assertFalse(member.parent_id)
 
     def test_managed_internal_login_counts_as_runtime_company_user(self):
         user = self._create_runtime_user("runtime_user_scope", "正式用户", managed=True)
