@@ -1,0 +1,11 @@
+schema_version: 1
+goal:
+  id: MAIN-CI-CLOSEOUT-20261126
+  status: active
+  title: Close exact-main CI batch
+  objective: Repair full audit dispatcher and obtain exact-main full qualification.
+  formal_product_layer: P4
+  layer_target: CI release orchestration
+  module: [scripts/ci]
+  standard_vs_user_specific: standard
+  exclusions: [product_changes, persistent_deployment, historical_worktree_cleanup]

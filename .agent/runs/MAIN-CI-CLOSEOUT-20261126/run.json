@@ -1,0 +1,78 @@
+{
+  "schema_version": 2,
+  "baseline_sha": "7de60b0781c73c2ad2246454981673e303d9568f",
+  "scope": [
+    "scripts/ci/main_full_release_dispatch.py",
+    "scripts/ci/test_main_full_release_dispatch.py",
+    ".agent/active-runs.json",
+    ".agent/runs/MAIN-CI-CLOSEOUT-20261126/run.json",
+    ".agent/goals/MAIN-CI-CLOSEOUT-20261126.yaml",
+    "docs/ops/iterations/main_ci_closeout_20261126.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Dispatcher unit tests and real read-only CLI identity validation; no local ORM."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Exact fix PR head required integration checks."
+    },
+    "scheduled_release": {
+      "status": "required",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "Owner explicitly requested main CI batch closure; exact-main operator full audit required after integration, no deployment."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Frontend validation carrying shared contract targets must consume the passed backend channel receipt for the same run and source identity."
+    }
+  },
+  "checks": {
+    "dispatcher": {
+      "target": "verify.ci.main_full_release.unit",
+      "inputs": [
+        "scripts/ci/main_full_release_dispatch.py",
+        "scripts/ci/test_main_full_release_dispatch.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish dispatcher fix through protected PR, require its exact-head checks, then run operator full audit against resulting main.",
+  "id": "MAIN-CI-CLOSEOUT-20261126",
+  "branch": "fix/main-ci-closeout-20261126",
+  "status": "verification_pending",
+  "goal": ".agent/goals/MAIN-CI-CLOSEOUT-20261126.yaml",
+  "record": "docs/ops/iterations/main_ci_closeout_20261126.md",
+  "evidence": {
+    "dispatcher_unit": {
+      "status": "passed",
+      "tests": 6,
+      "log": ".runtime/main-ci-dispatcher-unit.log"
+    },
+    "live_repository_identity": {
+      "status": "passed",
+      "repository": "lidefend/sce-backend-odoo"
+    },
+    "local_iteration": {
+      "status": "passed",
+      "log": ".runtime/main-ci-iteration.log"
+    },
+    "initial_dispatch": {
+      "status": "failed",
+      "reason": "Invalid gh repo view --repo; no workflow dispatched",
+      "log": ".runtime/main-full-release-7de60b0.log"
+    }
+  }
+}

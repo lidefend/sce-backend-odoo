@@ -31,6 +31,21 @@ def run_row(run_id: int, workflow: str, *, status: str = "queued",
 
 
 class DispatchTest(unittest.TestCase):
+    def test_repository_identity_uses_positional_cli_argument_and_rejects_mismatch(self) -> None:
+        with patch.object(dispatch, "run_command", return_value=dispatch.REPOSITORY) as command:
+            dispatch.assert_repository(dispatch.REPOSITORY)
+            command.assert_called_once_with([
+                "gh", "repo", "view", dispatch.REPOSITORY,
+                "--json", "nameWithOwner", "--jq", ".nameWithOwner",
+            ])
+        with patch.object(dispatch, "run_command", return_value="other/repository"):
+            with self.assertRaisesRegex(ValueError, "unexpected GitHub repository"):
+                dispatch.assert_repository(dispatch.REPOSITORY)
+        with patch.object(dispatch, "run_command") as command:
+            with self.assertRaisesRegex(ValueError, "repository must be"):
+                dispatch.assert_repository("other/repository")
+            command.assert_not_called()
+
     def test_make_entry_and_scheduled_owner_are_wired(self) -> None:
         makefile = (dispatch.ROOT / "make/ci.mk").read_text(encoding="utf-8")
         for required in (
