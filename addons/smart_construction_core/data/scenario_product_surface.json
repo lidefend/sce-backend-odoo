@@ -15,7 +15,7 @@
     "L1": "product_scenario",
     "L2": "user_intent",
     "L3": "capability_menu_action",
-    "note": "Centers and center membership come from the published product policy. The 46 scenarios are the approved business-result organization over the 132 released pages. Counts are derived from those declarations."
+    "note": "Centers and center membership come from the published product policy. Approved scenarios organize the released pages by business result. Counts are derived from those declarations."
   },
   "authority_note": "Business-loop composition over the released standard menus. The released menu set is resolved from product_menu_source, never fixed here. This is NOT a scene registry and NOT scene content; scene content/version authority remains sc.scene / smart_construction_scene.scene_registry.",
   "intent_labels": {
@@ -68,27 +68,63 @@
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_enterprise_initialization",
-      "kind": "platform_initialization"
+      "kind": "configuration"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_product_data_permission_v1",
-      "kind": "platform_initialization"
+      "kind": "configuration"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_product_scenario_business_config",
-      "kind": "platform_initialization"
+      "kind": "configuration"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_product_system_parameter_v1",
-      "kind": "platform_initialization"
+      "kind": "configuration"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_product_numbering_rule_v1",
-      "kind": "platform_initialization"
+      "kind": "configuration"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_runtime_user_management",
       "kind": "platform_initialization"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_business_category",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_dictionary",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_cost_code",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_stage_requirement_items",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_business_role",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_user_role_assignment",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_business_role_change",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_business_role_event",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_approval_scope",
+      "kind": "configuration"
     }
   ],
   "scenarios": [
@@ -1856,8 +1892,8 @@
       ]
     },
     {
-      "key": "config.enterprise_access",
-      "name": "企业人员权限配置",
+      "key": "config.enterprise_initialization",
+      "name": "企业初始化",
       "owner_center": "construction.center.product_configuration",
       "owner_center_name": "产品配置",
       "type": "COMPOSITE",
@@ -1865,14 +1901,129 @@
       "sequence": 43,
       "intents": {
         "master_data": [
-          "smart_construction_core.menu_sc_product_data_permission_v1"
+          "smart_construction_core.menu_sc_enterprise_initialization"
         ]
       },
       "bindings": [
         {
-          "menu_key": "smart_construction_core.menu_sc_product_data_permission_v1",
+          "menu_key": "smart_construction_core.menu_sc_enterprise_initialization",
           "intent": "master_data",
           "sequence": 1,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        }
+      ]
+    },
+    {
+      "key": "config.business_foundation",
+      "name": "业务基础配置",
+      "owner_center": "construction.center.product_configuration",
+      "owner_center_name": "产品配置",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 44,
+      "intents": {
+        "master_data": [
+          "smart_construction_core.menu_sc_business_category",
+          "smart_construction_core.menu_sc_dictionary",
+          "smart_construction_core.menu_sc_project_cost_code",
+          "smart_construction_core.menu_sc_project_stage_requirement_items"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_business_category",
+          "intent": "master_data",
+          "sequence": 1,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_dictionary",
+          "intent": "master_data",
+          "sequence": 2,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_project_cost_code",
+          "intent": "master_data",
+          "sequence": 3,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_project_stage_requirement_items",
+          "intent": "master_data",
+          "sequence": 4,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        }
+      ]
+    },
+    {
+      "key": "config.enterprise_access",
+      "name": "企业人员权限配置",
+      "owner_center": "construction.center.product_configuration",
+      "owner_center_name": "产品配置",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 45,
+      "intents": {
+        "master_data": [
+          "smart_construction_core.menu_business_role",
+          "smart_construction_core.menu_user_role_assignment",
+          "smart_construction_core.menu_sc_product_data_permission_v1"
+        ],
+        "handle": [
+          "smart_construction_core.menu_business_role_change"
+        ],
+        "view": [
+          "smart_construction_core.menu_business_role_event"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_business_role",
+          "intent": "master_data",
+          "sequence": 1,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        },
+        {
+          "menu_key": "smart_construction_core.menu_user_role_assignment",
+          "intent": "master_data",
+          "sequence": 2,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_data_permission_v1",
+          "intent": "master_data",
+          "sequence": 3,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        },
+        {
+          "menu_key": "smart_construction_core.menu_business_role_change",
+          "intent": "handle",
+          "sequence": 4,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        },
+        {
+          "menu_key": "smart_construction_core.menu_business_role_event",
+          "intent": "view",
+          "sequence": 5,
           "center_key": "construction.center.product_configuration",
           "center_name": "产品配置",
           "center_sequence": 110
@@ -1886,17 +2037,26 @@
       "owner_center_name": "产品配置",
       "type": "COMPOSITE",
       "active": true,
-      "sequence": 44,
+      "sequence": 46,
       "intents": {
         "master_data": [
+          "smart_construction_core.menu_sc_approval_scope",
           "smart_construction_core.menu_sc_approval_policy"
         ]
       },
       "bindings": [
         {
-          "menu_key": "smart_construction_core.menu_sc_approval_policy",
+          "menu_key": "smart_construction_core.menu_sc_approval_scope",
           "intent": "master_data",
           "sequence": 1,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_approval_policy",
+          "intent": "master_data",
+          "sequence": 2,
           "center_key": "construction.center.product_configuration",
           "center_name": "产品配置",
           "center_sequence": 110
@@ -1905,14 +2065,15 @@
     },
     {
       "key": "config.presentation",
-      "name": "表单、字段与菜单配置",
+      "name": "场景与页面配置",
       "owner_center": "construction.center.product_configuration",
       "owner_center_name": "产品配置",
       "type": "COMPOSITE",
       "active": true,
-      "sequence": 45,
+      "sequence": 47,
       "intents": {
         "master_data": [
+          "smart_construction_core.menu_sc_product_scenario_business_config",
           "smart_construction_core.menu_sc_business_config_workbench",
           "smart_construction_core.menu_ui_form_field_policy_business_config",
           "smart_construction_core.menu_ui_menu_config_policy_business_config"
@@ -1920,7 +2081,7 @@
       },
       "bindings": [
         {
-          "menu_key": "smart_construction_core.menu_sc_business_config_workbench",
+          "menu_key": "smart_construction_core.menu_sc_product_scenario_business_config",
           "intent": "master_data",
           "sequence": 1,
           "center_key": "construction.center.product_configuration",
@@ -1928,7 +2089,7 @@
           "center_sequence": 110
         },
         {
-          "menu_key": "smart_construction_core.menu_ui_form_field_policy_business_config",
+          "menu_key": "smart_construction_core.menu_sc_business_config_workbench",
           "intent": "master_data",
           "sequence": 2,
           "center_key": "construction.center.product_configuration",
@@ -1936,9 +2097,17 @@
           "center_sequence": 110
         },
         {
-          "menu_key": "smart_construction_core.menu_ui_menu_config_policy_business_config",
+          "menu_key": "smart_construction_core.menu_ui_form_field_policy_business_config",
           "intent": "master_data",
           "sequence": 3,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        },
+        {
+          "menu_key": "smart_construction_core.menu_ui_menu_config_policy_business_config",
+          "intent": "master_data",
+          "sequence": 4,
           "center_key": "construction.center.product_configuration",
           "center_name": "产品配置",
           "center_sequence": 110
@@ -1952,7 +2121,7 @@
       "owner_center_name": "产品配置",
       "type": "COMPOSITE",
       "active": true,
-      "sequence": 46,
+      "sequence": 48,
       "intents": {
         "master_data": [
           "smart_construction_core.menu_sc_product_system_parameter_v1",
@@ -1980,9 +2149,9 @@
     }
   ],
   "validation": {
-    "scenario_count": 46,
-    "binding_count": 132,
-    "unique_menu_count": 132,
-    "direct_platform_count": 16
+    "scenario_count": 48,
+    "binding_count": 143,
+    "unique_menu_count": 143,
+    "direct_platform_count": 25
   }
 }

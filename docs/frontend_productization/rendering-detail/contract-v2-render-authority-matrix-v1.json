@@ -43,8 +43,8 @@
     "deliveryLimitRecord"
   ],
   "summary": {
-    "schemaFieldCount": 361,
-    "renderedOrInteractionAuthorityCount": 222,
+    "schemaFieldCount": 362,
+    "renderedOrInteractionAuthorityCount": 223,
     "validatedNonVisualAuthorityCount": 139,
     "decodedRuntimeAuthorityGapCount": 0,
     "unclassifiedCount": 0
@@ -155,6 +155,11 @@
       "path": "actionRule.entitlementEvaluated",
       "classification": "validated_non_visual_authority",
       "reason": "server authorization proof",
+      "consumer": "contractFormPresenter.presentAction / action executor"
+    },
+    {
+      "path": "actionRule.executionScope",
+      "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter.presentAction / action executor"
     },
     {

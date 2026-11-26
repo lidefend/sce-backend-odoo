@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import json
 import runpy
 from pathlib import Path
 
@@ -25,6 +26,9 @@ class TestSystemProductRelease(TransactionCase):
             load_runtime_surface,
         )
 
+        source = Path(__file__).resolve().parents[2] / "smart_construction_core/data/scenario_product_surface.json"
+        expected = {row["key"] for row in json.loads(source.read_text())["scenarios"]}
+        self.assertTrue(expected)
         service = EditionReleaseSnapshotService(self.env)
         self.assertTrue(
             self.env["ir.config_parameter"]
@@ -40,10 +44,12 @@ class TestSystemProductRelease(TransactionCase):
                 self.assertTrue(integrity["exact_match"])
                 policy = snapshot.snapshot_json.get("policy") or {}
                 scenarios = (policy.get("business_scene_composition") or {}).get("scenarios")
-                self.assertEqual(46, len(scenarios or []))
+                self.assertEqual(expected, {row["key"] for row in scenarios or []})
+                self.assertEqual(len(expected), len(scenarios or []))
         runtime = load_runtime_surface(self.env)
         self.assertEqual("published_release", runtime.get("runtime_scope"))
-        self.assertEqual(46, len(runtime.get("scenarios") or []))
+        self.assertEqual(expected, {row["key"] for row in runtime.get("scenarios") or []})
+        self.assertEqual(len(expected), len(runtime.get("scenarios") or []))
 
     def test_system_product_release_materialization_is_idempotent(self):
         initial = {

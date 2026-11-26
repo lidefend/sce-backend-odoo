@@ -67,6 +67,10 @@ class ScSubscriptionPlan(models.Model):
     description = fields.Text()
     feature_flags_json = fields.Json()
     limits_json = fields.Json()
+    multi_company_enabled = fields.Boolean(
+        string="允许多公司", default=False,
+        help="平台许可的公司访问上限；启用后仍仅允许用户已获授权的公司。",
+    )
 
     _sql_constraints = [
         ("sc_subscription_plan_code_uniq", "unique(code)", "Plan code must be unique."),
@@ -184,10 +188,13 @@ class ScEntitlement(models.Model):
 
     @api.model
     def _resolve_plan(self, company):
-        today = fields.Date.context_today(self)
+        # Subscription validity is platform policy, not the caller's editable
+        # timezone. Use one UTC business date for login, tokens and native rules.
+        today = fields.Date.context_today(self.with_context(tz='UTC'))
         sub = self.env["sc.subscription"].sudo().search([
             ("company_id", "=", company.id),
             ("state", "in", ("trial", "active")),
+            "|", ("start_date", "=", False), ("start_date", "<=", today),
             "|",
             ("end_date", "=", False),
             ("end_date", ">=", today),

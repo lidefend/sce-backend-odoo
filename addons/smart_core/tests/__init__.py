@@ -48,3 +48,5 @@ from . import test_submission_readiness_notice_suppression
 from . import test_extension_runtime_context
 from . import test_extension_registry_lifecycle
 from . import test_workflow_contract_platform
+from . import test_platform_multi_company
+from . import test_group_authority_sources

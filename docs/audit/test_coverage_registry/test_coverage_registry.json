@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 232,
+    "odoo_tags": 236,
     "gated": 5,
-    "on_demand": 90,
-    "unwired": 137,
-    "odoo_tag_declarations": 469,
+    "on_demand": 96,
+    "unwired": 135,
+    "odoo_tag_declarations": 473,
     "gated_declarations": 107,
-    "uncovered_declarations": 362,
+    "uncovered_declarations": 366,
     "ci_unit_scripts": 24,
     "ci_unit_scripts_wired": 24,
     "ci_unit_scripts_unwired": 0
@@ -760,6 +760,34 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "auth02_multi_company",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_platform_multi_company.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.platform.multi_company.orm :: auth02_multi_company,sc_auth_credential,data_space_boundary,data_space_identity_"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "auth02_native_isolation",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_native_company_project_isolation.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.auth02.native_isolation.orm :: auth02_native_isolation"
+      ],
+      "disposition": "class-selected"
+    },
+    {
       "group": "auth_signup",
       "status": "unwired",
       "kind": "odoo_tag",
@@ -812,6 +840,20 @@
       "disposition": "wire-pending"
     },
     {
+      "group": "business_role",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_business_role.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.business_role.orm :: business_role"
+      ],
+      "disposition": "class-selected"
+    },
+    {
       "group": "canonical_navigation_projection",
       "status": "on-demand",
       "kind": "odoo_tag",
@@ -847,20 +889,22 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "make:verify.capability.identity_boundary.orm :: /TestCapabilityRegistryService (class selection)"
+        "make:verify.business_capability.authorization.orm :: capability_registry,capability_verdict_projection"
       ],
       "disposition": "wire-pending"
     },
     {
       "group": "capability_verdict_projection",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_capability_registry_service.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.business_capability.authorization.orm :: capability_registry,capability_verdict_projection"
+      ],
       "disposition": "known-gap"
     },
     {
@@ -1113,7 +1157,8 @@
       ],
       "owner": "platform-team",
       "evidence": [
-        "make:verify.local.dev.data_space_boundary.orm :: data_space_boundary"
+        "make:verify.local.dev.data_space_boundary.orm :: data_space_boundary",
+        "make:verify.platform.multi_company.orm :: auth02_multi_company,sc_auth_credential,data_space_boundary,data_space_identity_"
       ],
       "disposition": "class-selected"
     },
@@ -1141,7 +1186,8 @@
       ],
       "owner": "platform-team",
       "evidence": [
-        "make:verify.local.dev.data_space_identity_enrollment.orm :: data_space_identity_enrollment"
+        "make:verify.local.dev.data_space_identity_enrollment.orm :: data_space_identity_enrollment",
+        "make:verify.platform.multi_company.orm :: auth02_multi_company,sc_auth_credential,data_space_boundary,data_space_identity_"
       ],
       "disposition": "class-selected"
     },
@@ -1155,7 +1201,8 @@
       ],
       "owner": "platform-team",
       "evidence": [
-        "make:verify.local.dev.data_space_uncached_membership.orm :: data_space_uncached_membership"
+        "make:verify.local.dev.data_space_uncached_membership.orm :: data_space_uncached_membership",
+        "make:verify.platform.multi_company.orm :: auth02_multi_company,sc_auth_credential,data_space_boundary,data_space_identity_"
       ],
       "disposition": "class-selected"
     },
@@ -1503,6 +1550,20 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.local.dev.system_permission.reconciliation.orm :: group_authority_reconciliation local.dev.test"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "group_authority_sources",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_group_authority_sources.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.group_authority.sources.orm :: group_authority_sources"
       ],
       "disposition": "class-selected"
     },
@@ -2060,7 +2121,8 @@
       ],
       "owner": "platform-team",
       "evidence": [
-        "make:verify.local.dev.platform_database_governance.orm :: platform_database_governance"
+        "make:verify.local.dev.platform_database_governance.orm :: platform_database_governance",
+        "make:verify.platform.multi_company.orm :: auth02_multi_company,sc_auth_credential,data_space_boundary,data_space_identity_"
       ],
       "disposition": "class-selected"
     },
@@ -2534,14 +2596,16 @@
     },
     {
       "group": "sc_auth_credential",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_core/tests/test_auth_credential_framework.py"
       ],
       "owner": "platform-team",
-      "evidence": [],
+      "evidence": [
+        "make:verify.platform.multi_company.orm :: auth02_multi_company,sc_auth_credential,data_space_boundary,data_space_identity_"
+      ],
       "disposition": "wire-pending"
     },
     {

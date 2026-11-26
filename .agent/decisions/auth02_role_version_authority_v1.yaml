@@ -1,0 +1,99 @@
+decision:
+  id: AUTH02-ROLE-VERSION-AUTHORITY-V1
+  status: owner_confirmed_implementation_in_progress
+  authority: owner_explicit_instruction_20261126
+  current_run: .agent/runs/AUTH-02-ENTERPRISE-ROLES-20261126/run.json
+  audit: docs/ops/iterations/auth02_role_version_authority_01.json
+  supersedes:
+    - mutable_role_record_with_incrementing_version
+    - publication_implicitly_updates_assigned_users
+    - revoke_every_assignment_before_editing_a_role
+  objects:
+    sc.business.role: stable_company_owned_identity_with_editable_name_and_description
+    sc.business.role.version: complete_capability_combination_immutable_after_publication
+    sc.user.role.assignment: explicit_binding_to_a_published_role_version
+  invariants:
+    - every_publication_produces_an_immutable_version
+    - new_assignments_default_to_latest_published_version
+    - publication_never_changes_existing_assignments
+    - old_and_new_versions_may_coexist_for_assigned_users
+    - migration_requires_explicit_target_scope_and_confirmation
+    - preview_includes_role_capability_delta_and_each_users_final_effective_permission_delta
+    - effective_permissions_union_standard_roles_enterprise_roles_and_controlled_explicit_sources
+    - withdrawal_removes_only_the_revoked_sources_exclusive_permissions
+    - native_groups_acl_record_rules_fields_and_methods_remain_executors
+    - no_dynamic_global_res_groups_per_enterprise_role
+    - company_and_project_scope_are_independent_authority_facts
+    - version_migration_never_implicitly_expands_company_or_project_scope
+    - unknown_historical_sources_require_explicit_reconciliation_never_inference
+    - every_change_requires_audit_projection_readback_and_token_epoch_invalidation
+    - emergency_revocation_is_independent_of_publication_and_routine_migration
+  migration:
+    steps: [preview, validate, lock, execute, readback]
+    user_lock_order: ascending_user_id
+    execution: bounded_batches_with_independent_atomic_transactions
+    confirmation_binds:
+      - source_and_target_version
+      - exact_assignment_and_user_ids
+      - source_snapshot_revision_and_projection
+      - capability_mapping_validation_identity
+      - administrator_and_company_scope
+      - expected_effective_permission_delta
+    concurrent_change: reject_stale_batch_without_overwriting_new_facts_and_require_new_preview
+    batch_record:
+      - batch_id
+      - role_id
+      - source_and_target_versions
+      - exact_target_users
+      - expected_authority_delta
+      - executed_count
+      - failure_count
+      - readback_result
+    retry: preserve_completed_batch_evidence_and_do_not_reapply_successful_changes
+  risk_policy:
+    added_read: preview_and_explicit_migration
+    added_operate: preview_and_explicit_confirmation
+    added_approve: separate_risk_disclosure_and_authorization_confirmation
+    added_finance_or_funds_execution: qualified_capability_plus_enterprise_configured_approval_or_declared_default
+    removed_capability: explicit_migration_and_timely_revocation
+    company_scope_change: separate_authorization_process
+  implementation_status: not_complete
+  user_experience:
+    owner_clarification: users_need_reconstructable_authorization_facts_not_version_management
+    visible_concepts: [role_responsibility, authorization_basis, affected_users, effective_permission_difference, actor_and_time, change_history]
+    internal_version_identity: retained_for_immutable_history_and_source_binding
+    no_user_version_management_requirement: true
+  approval_owner_clarification:
+    authority: owner_explicit_instruction_20261126_unified_approval
+    executor: existing_sc_approval_policy_and_native_tier_validation
+    configuration: enterprise_configured_chain_with_existing_explicit_default_behavior
+    no_fixed_approver_role: true
+    missing_enabled_chain: reject_never_treat_as_default_approval
+    bind_review_to: immutable_batch_preview_and_authority_snapshot
+    routing: exactly_once_before_effective_authorization_change
+    execution: internal_projection_does_not_resubmit_to_approval
+    policy_configuration: not_implicitly_subject_to_its_own_approval_chain
+  cancellation_owner_clarification:
+    pending_change: not_effective
+    cancel_pending: end_pending_review_without_changing_current_authority_bindings_or_token_epoch
+    preserve: cancellation_actor_time_and_prior_review_facts
+    effective_change: cannot_be_cancelled_as_pending_requires_a_new_authorization_setting
+    concurrency: cancellation_and_execution_share_the_batch_lock
+  effective_setting_owner_clarification:
+    removal_of_effective_authority: a_new_setting_not_undo_of_prior_setting
+    convenient_remove_action: creates_a_new_previewed_and_governed_authority_change
+    prior_settings_and_approval_facts: immutable_history
+    approval_completion: apply_confirmed_change_once_without_resubmitting
+  base_authority_owner_clarification:
+    native_authority_remains_valid: true
+    approval: controls_when_a_setting_takes_effect_not_permission_to_bypass_base_authority
+    always_enforce: [capability_admission, administrator_authority, source_provenance, native_acl, company_and_project_rules]
+  entry_visibility_owner_clarification:
+    authority: backend_effective_entry_and_action_permissions
+    read_authorized: retain_entry_even_when_visible_record_set_is_empty
+    no_entry_authority: hide_entry_before_user_clicks
+    read_only_page: do_not_offer_unauthorized_handling_actions
+    record_count_is_permission: false
+    record_rules: constrain_data_without_redefining_entry_permission
+    direct_routes: revalidate_current_authority_including_after_role_changes
+    frontend: consume_the_same_backend_permission_contract

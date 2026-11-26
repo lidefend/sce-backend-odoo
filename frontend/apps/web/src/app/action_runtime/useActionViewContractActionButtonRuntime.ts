@@ -24,6 +24,7 @@ type ContractActionButton = {
   contractActionId?: string;
   backendIdentity?: string;
   sourceWidgetId?: string;
+  executionScope?: string;
   methodName: string;
   model: string;
   target: string;
@@ -109,6 +110,7 @@ export function useActionViewContractActionButtonRuntime(options: UseActionViewC
       contractActionId: String(row.unified_page_contract_v2_action_id || '').trim(),
       backendIdentity: String(row.unified_page_contract_v2_backend_identity || '').trim(),
       sourceWidgetId: String(row.unified_page_contract_v2_source_widget_id || '').trim(),
+      executionScope: String(row.execution_scope || ''),
       methodName,
       model: String(row.target_model || row.model || protocol?.mutation?.model || options.resolvedModelRef.value || options.modelRef.value || '').trim(),
       target: String(payload.target || '').trim(),

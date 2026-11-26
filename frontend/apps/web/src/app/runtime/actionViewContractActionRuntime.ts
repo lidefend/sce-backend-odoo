@@ -115,7 +115,8 @@ export function applyActionViewV2ButtonStatus<T extends ActionViewContractStatus
 
 export function buildContractActionButtonRequest(options: {
   model: string;
-  recordId: number;
+  recordId: number | number[];
+  executionScope?: string;
   methodName?: string | null;
   actionKey: string;
   contractActionId?: string | null;
@@ -125,13 +126,14 @@ export function buildContractActionButtonRequest(options: {
   context?: Record<string, unknown>;
 }): {
   model: string;
-  res_id: number;
+  res_id: number | number[];
   button: {
     name: string;
     type: string;
     action_id: string;
     backend_identity: string;
     source_widget_id: string;
+    execution_scope?: string;
   };
   context?: Record<string, unknown>;
 } {
@@ -152,6 +154,7 @@ export function buildContractActionButtonRequest(options: {
     model: options.model,
     res_id: options.recordId,
     button: {
+      ...(options.executionScope ? { execution_scope: options.executionScope } : {}),
       name,
       type,
       action_id: declared(options.contractActionId, 'action.actionId'),

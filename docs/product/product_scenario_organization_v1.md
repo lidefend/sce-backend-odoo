@@ -1,11 +1,11 @@
-# 132 个办理面业务组织整合
+# 143 个办理面业务组织整合
 
 - 状态：`APPROVED_FOR_IMPLEMENTATION`
 - 批准日期：`2026-11-20`
-- 已发布办理面：`132`
-- 已组织办理面：`132`
-- 业务办理分组（已定稿场景）：`46`
-- 去重覆盖：`132/132`
+- 已发布办理面：`143`
+- 已组织办理面：`143`
+- 业务办理分组（已定稿场景）：`48`
+- 去重覆盖：`143/143`
 - 运行时场景种子：`addons/smart_construction_core/data/scenario_product_surface.json`
 
 ## 组织口径
@@ -61,9 +61,11 @@
 | 行政中心 | 薪酬社保办理<br>`admin.payroll` | 办理社保、工资核算和项目薪资发放。 | business_config_admin, finance, pm | 人员与岗位档案；薪酬规则和期间；项目薪资归属 | sc.hr.payroll.document, sc.hr.salary.payment | 薪资发放进入资金台账、成本归集和会计记账 |
 | 行政中心 | 证照与制度文件<br>`admin.documents` | 维护企业证照和制度文件的有效性与留存。 | business_config_admin | 企业主体；文件原件或扫描件；有效期限和责任人 | sc.document.admin.document | 形成证照和制度文件记录。 |
 | 行政中心 | 行政资产管理<br>`admin.assets` | 登记企业内部办公资产及使用状态。 | business_config_admin | 企业/部门范围；资产基础资料；使用责任人 | sc.office.asset | 形成办公资产和责任人记录。 |
+| 产品配置 | 企业初始化<br>`config.enterprise_initialization` | 企业初始化 | business_config_admin | 当前企业；配置管理员权限 | res.company | 配置已保存并可回读。 |
+| 产品配置 | 业务基础配置<br>`config.business_foundation` | 业务基础配置 | business_config_admin | 当前企业；配置管理员权限 | sc.business.category, sc.dictionary, project.cost.code, sc.project.stage.requirement.item | 配置已保存并可回读。 |
 | 产品配置 | 企业人员权限配置<br>`config.enterprise_access` | 为已建立人员分配业务角色和允许公司范围，并完成目标用户回读。 | business_config_admin | 企业管理员权限；已建立用户、员工、部门和岗位；可分配角色和允许公司 | res.users, res.groups, res.company | 用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断 |
 | 产品配置 | 审批策略配置<br>`config.approval` | 为业务单据配置适用审批层级和角色，使提交后产生真实审批步骤。 | business_config_admin | 目标业务模型或业务类别；审批角色；企业审批规则 | sc.approval.policy | 审批策略被付款、结算、采购、合同和资源场景消费 |
-| 产品配置 | 表单、字段与菜单配置<br>`config.presentation` | 调整业务办理页面的字段、表单和菜单呈现，不改变业务事实和权限。 | business_config_admin | 已发布产品入口；字段/表单/菜单契约；管理员权限 | ui.business.config.contract, ui.form.field.policy, ui.menu.config.policy | 重新进入目标业务页面，以同一业务身份回读呈现结果 |
+| 产品配置 | 场景与页面配置<br>`config.presentation` | 调整业务办理页面的字段、表单和菜单呈现，不改变业务事实和权限。 | business_config_admin | 已发布产品入口；字段/表单/菜单契约；管理员权限 | ui.business.config.contract, ui.form.field.policy, ui.menu.config.policy | 重新进入目标业务页面，以同一业务身份回读呈现结果 |
 | 产品配置 | 系统参数与编码规则<br>`config.system_governance` | 维护企业级系统参数和业务单据编码规则。 | business_config_admin | 当前企业；允许维护的参数/序号；变更影响范围 | sc.product.system.settings, ir.sequence | 配置被后续新建业务单据消费 |
 
 ## 一、完整组织总表
@@ -195,11 +197,22 @@
 | 行政中心 | 证照与制度文件<br>`admin.documents` | `smart_construction_core.menu_sc_certificate_registration`<br>证书管理 | 独立：登记企业证照、有效期和附件；本页产出：产生或更新 sc.document.admin.document 业务记录（证书管理） | 本组独立维护项，无同组前置 | 无已发布后续办理面；完成后在本页或默认列表回读本页结果 | 必须/可选事实：必须已有：当前公司；可选择或新建：可新建或选择证书管理对应的业务记录；续办时携带 sc.document.admin.document ID；结果展示：产生或更新 sc.document.admin.document 业务记录（证书管理）后到行政中心/证书管理回读；执行返回：有来源则回原来源，无来源则回该列表 |
 | 行政中心 | 证照与制度文件<br>`admin.documents` | `smart_construction_core.menu_sc_product_policy_document_v1`<br>制度文件 | 独立：维护企业制度文件及版本；本页产出：产生或更新 sc.document.admin.document 业务记录（制度文件） | 独立维护项：制度文件不依赖证照 | 无已发布后续办理面；完成后在本页或默认列表回读本页结果 | 必须/可选事实：必须已有：当前公司；可选择或新建：可新建或选择制度文件对应的业务记录；续办时携带 sc.document.admin.document ID；结果展示：产生或更新 sc.document.admin.document 业务记录（制度文件）后到行政中心/制度文件回读；执行返回：有来源则回原来源，无来源则回该列表 |
 | 行政中心 | 行政资产管理<br>`admin.assets` | `smart_construction_core.menu_sc_product_office_asset_v1`<br>办公资产 | 独立：登记、领用和归还行政办公资产；本页产出：产生或更新 sc.office.asset 业务记录（办公资产） | 独立维护项：资产登记不依赖制度文件或证照 | 无已发布后续办理面；完成后在本页或默认列表回读本页结果 | 必须/可选事实：必须已有：当前公司；可选择或新建：可新建或选择办公资产对应的业务记录；续办时携带 sc.office.asset ID；结果展示：产生或更新 sc.office.asset 业务记录（办公资产）后到行政中心/办公资产回读；执行返回：有来源则回原来源，无来源则回该列表 |
-| 产品配置 | 企业人员权限配置<br>`config.enterprise_access` | `smart_construction_core.menu_sc_product_data_permission_v1`<br>数据权限 | 办理：选择目标用户，分配允许角色和公司范围并回读；本页产出：更新目标用户的业务角色和允许公司范围 | 启动依据：企业管理员权限；已建立用户、员工、部门和岗位；可分配角色和允许公司 | 用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断 | 必须/可选事实：必须已有：目标用户及其当前角色、公司范围；只能选择已有 res.users，不在权限页新建用户；续办时携带 user_id；结果展示：更新目标用户的业务角色和允许公司范围后到产品配置/数据权限回读；执行返回：有来源则回原来源，无来源则回该列表 |
-| 产品配置 | 审批策略配置<br>`config.approval` | `smart_construction_core.menu_sc_approval_policy`<br>流程审批配置 | 办理：维护业务审批范围、层级和审批责任；本页产出：产生或更新 sc.approval.policy 业务记录（流程审批配置） | 启动依据：目标业务模型或业务类别；审批角色；企业审批规则 | 审批策略被付款、结算、采购、合同和资源场景消费 | 必须/可选事实：必须已有：目标业务模型或业务类别；审批角色；企业审批规则；可选择或新建：可新建或选择流程审批配置对应的业务记录；续办时携带 sc.approval.policy ID；结果展示：产生或更新 sc.approval.policy 业务记录（流程审批配置）后到产品配置/流程审批配置回读；执行返回：有来源则回原来源，无来源则回该列表 |
-| 产品配置 | 表单、字段与菜单配置<br>`config.presentation` | `smart_construction_core.menu_sc_business_config_workbench`<br>表单配置 | 独立：进入业务表单和页面配置工作台；本页产出：产生或更新 ui.business.config.contract 业务记录（表单配置） | 本组独立维护项，无同组前置 | 重新进入目标业务页面，以同一业务身份回读呈现结果 | 必须/可选事实：必须已有：当前企业；可选择或新建：可新建或选择表单配置对应的业务记录；续办时携带 ui.business.config.contract ID；结果展示：产生或更新 ui.business.config.contract 业务记录（表单配置）后到产品配置/表单配置回读；执行返回：有来源则回原来源，无来源则回该列表 |
-| 产品配置 | 表单、字段与菜单配置<br>`config.presentation` | `smart_construction_core.menu_ui_form_field_policy_business_config`<br>字段管理 | 独立：配置表单字段的显示、必填和顺序；本页产出：产生或更新 ui.form.field.policy 业务记录（字段管理） | 本组独立维护项，无同组前置 | 重新进入目标业务页面，以同一业务身份回读呈现结果 | 必须/可选事实：必须已有：当前企业；可选择或新建：可新建或选择字段管理对应的业务记录；续办时携带 ui.form.field.policy ID；结果展示：产生或更新 ui.form.field.policy 业务记录（字段管理）后到产品配置/字段管理回读；执行返回：有来源则回原来源，无来源则回该列表 |
-| 产品配置 | 表单、字段与菜单配置<br>`config.presentation` | `smart_construction_core.menu_ui_menu_config_policy_business_config`<br>菜单配置 | 独立：配置企业可见菜单和入口归属；本页产出：产生或更新 ui.menu.config.policy 业务记录（菜单配置） | 本组独立维护项，无同组前置 | 重新进入目标业务页面，以同一业务身份回读呈现结果 | 必须/可选事实：必须已有：当前企业；可选择或新建：可新建或选择菜单配置对应的业务记录；续办时携带 ui.menu.config.policy ID；结果展示：产生或更新 ui.menu.config.policy 业务记录（菜单配置）后到产品配置/菜单配置回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 企业初始化<br>`config.enterprise_initialization` | `smart_construction_core.menu_sc_enterprise_initialization`<br>企业初始化 | 办理：按企业、组织、岗位和人员顺序完成准备，再引用后续配置事项；本页产出：产生或更新 res.company 业务记录（企业初始化） | 启动依据：当前企业；配置管理员权限 | 无已发布后续办理面；完成后在本页或默认列表回读本页结果 | 必须/可选事实：必须已有：当前企业；配置管理员权限；可选择或新建：可新建或选择企业初始化对应的业务记录；续办时携带 res.company ID；结果展示：产生或更新 res.company 业务记录（企业初始化）后到产品配置/企业初始化回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 业务基础配置<br>`config.business_foundation` | `smart_construction_core.menu_sc_business_category`<br>业务分类字典 | 办理：维护企业业务分类；本页产出：产生或更新 sc.business.category 业务记录（业务分类字典） | 启动依据：当前企业；配置管理员权限 | 同组后续：数据字典 | 必须/可选事实：必须已有：当前企业；配置管理员权限；可选择或新建：可新建或选择业务分类字典对应的业务记录；续办时携带 sc.business.category ID；结果展示：产生或更新 sc.business.category 业务记录（业务分类字典）后到产品配置/业务分类字典回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 业务基础配置<br>`config.business_foundation` | `smart_construction_core.menu_sc_dictionary`<br>数据字典 | 办理：查阅与维护现有授权范围内的业务字典；本页产出：产生或更新 sc.dictionary 业务记录（数据字典） | 同组前序：业务分类字典 | 同组后续：预算类型 | 必须/可选事实：必须已有：当前企业；前置办理：业务分类字典；可选择或新建：可新建或选择数据字典对应的业务记录；续办时携带 sc.dictionary ID；结果展示：产生或更新 sc.dictionary 业务记录（数据字典）后到产品配置/数据字典回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 业务基础配置<br>`config.business_foundation` | `smart_construction_core.menu_sc_project_cost_code`<br>预算类型 | 办理：维护预算类型；本页产出：产生或更新 project.cost.code 业务记录（预算类型） | 同组前序：数据字典 | 同组后续：阶段要求配置 | 必须/可选事实：必须已有：当前企业；前置办理：数据字典；可选择或新建：可新建或选择预算类型对应的业务记录；续办时携带 project.cost.code ID；结果展示：产生或更新 project.cost.code 业务记录（预算类型）后到产品配置/预算类型回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 业务基础配置<br>`config.business_foundation` | `smart_construction_core.menu_sc_project_stage_requirement_items`<br>阶段要求配置 | 办理：维护项目阶段要求；本页产出：产生或更新 sc.project.stage.requirement.item 业务记录（阶段要求配置） | 同组前序：预算类型 | 无已发布后续办理面；完成后在本页或默认列表回读本页结果 | 必须/可选事实：必须已有：当前企业；前置办理：预算类型；可选择或新建：可新建或选择阶段要求配置对应的业务记录；续办时携带 sc.project.stage.requirement.item ID；结果展示：产生或更新 sc.project.stage.requirement.item 业务记录（阶段要求配置）后到产品配置/阶段要求配置回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 企业人员权限配置<br>`config.enterprise_access` | `smart_construction_core.menu_business_role`<br>企业业务角色 | 先办：定义企业业务角色与能力组合，发布后保留原有授权事实；本页产出：产生或更新 sc.business.role 业务记录（企业业务角色） | 启动依据：企业管理员权限；已建立用户、员工、部门和岗位；可分配角色和允许公司 | 同组后续：企业角色分配；用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断 | 必须/可选事实：必须已有：企业管理员权限；已建立用户、员工、部门和岗位；可分配角色和允许公司；可选择或新建：可新建或选择企业业务角色对应的业务记录；续办时携带 sc.business.role ID；结果展示：产生或更新 sc.business.role 业务记录（企业业务角色）后到产品配置/企业业务角色回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 企业人员权限配置<br>`config.enterprise_access` | `smart_construction_core.menu_user_role_assignment`<br>企业角色分配 | 办理：导入或选择人员分配企业角色，按企业审批规则生效；本页产出：产生或更新 sc.user.role.assignment 业务记录（企业角色分配） | 同组前序：企业业务角色 | 同组后续：数据权限；用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断 | 必须/可选事实：必须已有：当前企业；前置办理：企业业务角色；可选择或新建：可新建或选择企业角色分配对应的业务记录；续办时携带 sc.user.role.assignment ID；结果展示：产生或更新 sc.user.role.assignment 业务记录（企业角色分配）后到产品配置/企业角色分配回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 企业人员权限配置<br>`config.enterprise_access` | `smart_construction_core.menu_sc_product_data_permission_v1`<br>数据权限 | 办理：选择目标用户，分配允许角色和公司范围并回读；本页产出：更新目标用户的业务角色和允许公司范围 | 同组前序：企业角色分配 | 同组后续：角色授权调整；用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断 | 必须/可选事实：必须已有：目标用户及其当前角色、公司范围；只能选择已有 res.users，不在权限页新建用户；续办时携带 user_id；结果展示：更新目标用户的业务角色和允许公司范围后到产品配置/数据权限回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 企业人员权限配置<br>`config.enterprise_access` | `smart_construction_core.menu_business_role_change`<br>角色授权调整 | 办理：预览有效权限变化，明确提交选中用户的批量调整并回读结果；本页产出：产生或更新 sc.business.role.change 业务记录（角色授权调整） | 同组前序：数据权限 | 用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断 | 必须/可选事实：必须已有：当前企业；前置办理：数据权限；可选择或新建：可新建或选择角色授权调整对应的业务记录；续办时携带 sc.business.role.change ID；结果展示：产生或更新 sc.business.role.change 业务记录（角色授权调整）后到产品配置/角色授权调整回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 企业人员权限配置<br>`config.enterprise_access` | `smart_construction_core.menu_business_role_event`<br>企业角色授权记录 | 回读：查看授权来源、执行结果与历史变更事实；本页产出：返回企业角色授权记录的当前查询结果 | 同组前序：角色授权调整 | 以当前页面显示查询或回读结果；用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断 | 必须/可选事实：必须已有：当前企业；前置办理：角色授权调整；可选择或新建：仅选择查询范围或业务对象，不新建业务记录；续办时携带 sc.business.role.event ID 和筛选上下文；结果展示：返回企业角色授权记录的当前查询结果后到产品配置/企业角色授权记录回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 审批策略配置<br>`config.approval` | `smart_construction_core.menu_sc_approval_scope`<br>审批岗位人员 | 办理：设置审批岗位人员，供审批策略引用；本页产出：产生或更新 sc.approval.scope 业务记录（审批岗位人员） | 启动依据：目标业务模型或业务类别；审批角色；企业审批规则 | 同组后续：流程审批配置；审批策略被付款、结算、采购、合同和资源场景消费 | 必须/可选事实：必须已有：目标业务模型或业务类别；审批角色；企业审批规则；可选择或新建：可新建或选择审批岗位人员对应的业务记录；续办时携带 sc.approval.scope ID；结果展示：产生或更新 sc.approval.scope 业务记录（审批岗位人员）后到产品配置/审批岗位人员回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 审批策略配置<br>`config.approval` | `smart_construction_core.menu_sc_approval_policy`<br>流程审批配置 | 办理：维护业务审批范围、层级和审批责任；本页产出：产生或更新 sc.approval.policy 业务记录（流程审批配置） | 同组前序：审批岗位人员 | 审批策略被付款、结算、采购、合同和资源场景消费 | 必须/可选事实：必须已有：当前企业；前置办理：审批岗位人员；可选择或新建：可新建或选择流程审批配置对应的业务记录；续办时携带 sc.approval.policy ID；结果展示：产生或更新 sc.approval.policy 业务记录（流程审批配置）后到产品配置/流程审批配置回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 场景与页面配置<br>`config.presentation` | `smart_construction_core.menu_sc_product_scenario_business_config`<br>业务场景 | 办理：配置企业业务场景组合，保持平台锁定的产品结构；本页产出：产生或更新 sc.product.scenario 业务记录（业务场景） | 启动依据：已发布产品入口；字段/表单/菜单契约；管理员权限 | 重新进入目标业务页面，以同一业务身份回读呈现结果 | 必须/可选事实：必须已有：已发布产品入口；字段/表单/菜单契约；管理员权限；可选择或新建：可新建或选择业务场景对应的业务记录；续办时携带 sc.product.scenario ID；结果展示：产生或更新 sc.product.scenario 业务记录（业务场景）后到产品配置/业务场景回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 场景与页面配置<br>`config.presentation` | `smart_construction_core.menu_sc_business_config_workbench`<br>表单配置 | 独立：进入业务表单和页面配置工作台；本页产出：产生或更新 ui.business.config.contract 业务记录（表单配置） | 本组独立维护项，无同组前置 | 重新进入目标业务页面，以同一业务身份回读呈现结果 | 必须/可选事实：必须已有：当前企业；可选择或新建：可新建或选择表单配置对应的业务记录；续办时携带 ui.business.config.contract ID；结果展示：产生或更新 ui.business.config.contract 业务记录（表单配置）后到产品配置/表单配置回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 场景与页面配置<br>`config.presentation` | `smart_construction_core.menu_ui_form_field_policy_business_config`<br>字段管理 | 独立：配置表单字段的显示、必填和顺序；本页产出：产生或更新 ui.form.field.policy 业务记录（字段管理） | 本组独立维护项，无同组前置 | 重新进入目标业务页面，以同一业务身份回读呈现结果 | 必须/可选事实：必须已有：当前企业；可选择或新建：可新建或选择字段管理对应的业务记录；续办时携带 ui.form.field.policy ID；结果展示：产生或更新 ui.form.field.policy 业务记录（字段管理）后到产品配置/字段管理回读；执行返回：有来源则回原来源，无来源则回该列表 |
+| 产品配置 | 场景与页面配置<br>`config.presentation` | `smart_construction_core.menu_ui_menu_config_policy_business_config`<br>菜单配置 | 独立：配置企业可见菜单和入口归属；本页产出：产生或更新 ui.menu.config.policy 业务记录（菜单配置） | 本组独立维护项，无同组前置 | 重新进入目标业务页面，以同一业务身份回读呈现结果 | 必须/可选事实：必须已有：当前企业；可选择或新建：可新建或选择菜单配置对应的业务记录；续办时携带 ui.menu.config.policy ID；结果展示：产生或更新 ui.menu.config.policy 业务记录（菜单配置）后到产品配置/菜单配置回读；执行返回：有来源则回原来源，无来源则回该列表 |
 | 产品配置 | 系统参数与编码规则<br>`config.system_governance` | `smart_construction_core.menu_sc_product_system_parameter_v1`<br>系统参数 | 独立：维护企业可用系统参数并回读生效值；本页产出：产生或更新 sc.product.system.settings 业务记录（系统参数） | 本组独立维护项，无同组前置 | 系统参数保存后供对应的已声明业务能力消费 | 必须/可选事实：必须已有：当前企业；可选择或新建：可新建或选择系统参数对应的业务记录；续办时携带 sc.product.system.settings ID；结果展示：产生或更新 sc.product.system.settings 业务记录（系统参数）后到产品配置/系统参数回读；执行返回：有来源则回原来源，无来源则回该列表 |
 | 产品配置 | 系统参数与编码规则<br>`config.system_governance` | `smart_construction_core.menu_sc_product_numbering_rule_v1`<br>编码规则 | 独立：维护允许调整的业务编号序列；本页产出：产生或更新 ir.sequence 业务记录（编码规则） | 独立配置项：只依赖当前公司编码规则权限，不以系统参数为前置 | 配置被后续新建业务单据消费 | 必须/可选事实：必须已有：当前企业；可选择或新建：可新建或选择编码规则对应的业务记录；续办时携带 ir.sequence ID；结果展示：产生或更新 ir.sequence 业务记录（编码规则）后到产品配置/编码规则回读；执行返回：有来源则回原来源，无来源则回该列表 |
 
@@ -404,11 +417,24 @@
 
 ### 产品配置
 
+- **企业初始化** (`config.enterprise_initialization`)：企业初始化
+  - 企业初始化（`smart_construction_core.menu_sc_enterprise_initialization`，办理；主归属；本页产出：产生或更新 res.company 业务记录（企业初始化））；后续：无已发布后续办理面；完成后在本页或默认列表回读本页结果
+- **业务基础配置** (`config.business_foundation`)：业务基础配置
+  - 业务分类字典（`smart_construction_core.menu_sc_business_category`，办理；主归属；本页产出：产生或更新 sc.business.category 业务记录（业务分类字典））；后续：同组后续：数据字典
+  - 数据字典（`smart_construction_core.menu_sc_dictionary`，办理；主归属；本页产出：产生或更新 sc.dictionary 业务记录（数据字典））；后续：同组后续：预算类型
+  - 预算类型（`smart_construction_core.menu_sc_project_cost_code`，办理；主归属；本页产出：产生或更新 project.cost.code 业务记录（预算类型））；后续：同组后续：阶段要求配置
+  - 阶段要求配置（`smart_construction_core.menu_sc_project_stage_requirement_items`，办理；主归属；本页产出：产生或更新 sc.project.stage.requirement.item 业务记录（阶段要求配置））；后续：无已发布后续办理面；完成后在本页或默认列表回读本页结果
 - **企业人员权限配置** (`config.enterprise_access`)：为已建立人员分配业务角色和允许公司范围，并完成目标用户回读。
-  - 数据权限（`smart_construction_core.menu_sc_product_data_permission_v1`，办理；主归属；本页产出：更新目标用户的业务角色和允许公司范围）；后续：用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断
+  - 企业业务角色（`smart_construction_core.menu_business_role`，先办；主归属；本页产出：产生或更新 sc.business.role 业务记录（企业业务角色））；后续：同组后续：企业角色分配；用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断
+  - 企业角色分配（`smart_construction_core.menu_user_role_assignment`，办理；主归属；本页产出：产生或更新 sc.user.role.assignment 业务记录（企业角色分配））；后续：同组后续：数据权限；用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断
+  - 数据权限（`smart_construction_core.menu_sc_product_data_permission_v1`，办理；主归属；本页产出：更新目标用户的业务角色和允许公司范围）；后续：同组后续：角色授权调整；用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断
+  - 角色授权调整（`smart_construction_core.menu_business_role_change`，办理；主归属；本页产出：产生或更新 sc.business.role.change 业务记录（角色授权调整））；后续：用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断
+  - 企业角色授权记录（`smart_construction_core.menu_business_role_event`，回读；主归属；本页产出：返回企业角色授权记录的当前查询结果）；后续：以当前页面显示查询或回读结果；用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断
 - **审批策略配置** (`config.approval`)：为业务单据配置适用审批层级和角色，使提交后产生真实审批步骤。
+  - 审批岗位人员（`smart_construction_core.menu_sc_approval_scope`，办理；主归属；本页产出：产生或更新 sc.approval.scope 业务记录（审批岗位人员））；后续：同组后续：流程审批配置；审批策略被付款、结算、采购、合同和资源场景消费
   - 流程审批配置（`smart_construction_core.menu_sc_approval_policy`，办理；主归属；本页产出：产生或更新 sc.approval.policy 业务记录（流程审批配置））；后续：审批策略被付款、结算、采购、合同和资源场景消费
-- **表单、字段与菜单配置** (`config.presentation`)：调整业务办理页面的字段、表单和菜单呈现，不改变业务事实和权限。
+- **场景与页面配置** (`config.presentation`)：调整业务办理页面的字段、表单和菜单呈现，不改变业务事实和权限。
+  - 业务场景（`smart_construction_core.menu_sc_product_scenario_business_config`，办理；主归属；本页产出：产生或更新 sc.product.scenario 业务记录（业务场景））；后续：重新进入目标业务页面，以同一业务身份回读呈现结果
   - 表单配置（`smart_construction_core.menu_sc_business_config_workbench`，独立；主归属；本页产出：产生或更新 ui.business.config.contract 业务记录（表单配置））；后续：重新进入目标业务页面，以同一业务身份回读呈现结果
   - 字段管理（`smart_construction_core.menu_ui_form_field_policy_business_config`，独立；主归属；本页产出：产生或更新 ui.form.field.policy 业务记录（字段管理））；后续：重新进入目标业务页面，以同一业务身份回读呈现结果
   - 菜单配置（`smart_construction_core.menu_ui_menu_config_policy_business_config`，独立；主归属；本页产出：产生或更新 ui.menu.config.policy 业务记录（菜单配置））；后续：重新进入目标业务页面，以同一业务身份回读呈现结果
@@ -455,23 +481,23 @@
 
 | 编号／状态 | 事实依据 | 问题 | 影响 | 裁定／处理 | 受影响路径 |
 | --- | --- | --- | --- | --- | --- |
-| GAP-01<br>`release_scope_change_required` | 原生菜单树存在 menu_sc_material_catalog，但 product_menu_source 未发布该入口；project.material.plan 在提交前强制要求 material_catalog_id。 | 132 个已发布办理面缺少“材料档案”。 | 材料计划提交要求 material_catalog_id，但当前用户没有已发布的材料档案维护入口。 | 接受为发布范围变更候选：复用既有 menu_sc_material_catalog 作为供应链与资源中心正式入口；该入口纳入发布前，材料计划保留“依赖未发布主数据”，不能标记为完整可运行。 | supply.procurement → supply.inventory → material.settlement |
+| GAP-01<br>`release_scope_change_required` | 原生菜单树存在 menu_sc_material_catalog，但 product_menu_source 未发布该入口；project.material.plan 在提交前强制要求 material_catalog_id。 | 已发布办理面缺少“材料档案”。 | 材料计划提交要求 material_catalog_id，但当前用户没有已发布的材料档案维护入口。 | 接受为发布范围变更候选：复用既有 menu_sc_material_catalog 作为供应链与资源中心正式入口；该入口纳入发布前，材料计划保留“依赖未发布主数据”，不能标记为完整可运行。 | supply.procurement → supply.inventory → material.settlement |
 | GAP-02<br>`resolved_reuse_existing_page` | 原生 XML 存在 menu_sc_subcontract_register 和 action_sc_subcontract_register，但产品菜单源未发布该入口。 | 专业分包办理面缺少独立的“分包登记”发布菜单。 | 已发布“分包成本登记”实际绑定 action_sc_subcontract_register，与原生“分包登记”使用同一动作和模型。 | 不新增页面。将已发布“分包成本登记”在本组织目录中命名为“分包登记与成本确认”，承接分包登记职责，再进入分包结算。 | resource.subcontract → contract.change → finance.payment_approval |
 | GAP-03<br>`connection_fix_required` | sc.workbench.item 保存 source_model/source_res_id，但模型没有来源打开动作，发布列表也没有目标动作。 | 工作台待办保存了来源对象，却没有声明统一的“打开来源办理”动作。 | 用户能从待办知道存在业务，但当前页面无法按来源模型和记录 ID 稳定进入具体办理面。 | 在待办契约中声明 source_model → target scene/menu/action 映射及返回参数，不新增业务页面；七类工作台路径中仅此直达动作可以基于对象身份接通。 | work.my_queue → 项目、合同、结算、付款、发票和资源办理面 |
 | GAP-04<br>`connection_fix_required` | menu_sc_runtime_user_management 与 menu_sc_product_data_permission_v1 都作用于 res.users，但属于两个独立原生动作面。 | 人员档案与业务权限配置使用同一 res.users 身份，但位于不同原生维护面。 | 管理员可能把账号维护、员工关联、角色授权和公司范围误认为四个独立用户；当前没有声明双向对象上下文。 | 保留原生两个入口，固定同一 user_id；从人员档案带入用户到数据权限，返回时定位原用户并回读角色与公司范围。 | admin.organization → config.enterprise_access |
-| GAP-05<br>`release_scope_or_connection_required` | 项目中心已发布 tender.guarantee；财务保证金收退动作存在于原生 XML，但 132 个已发布办理面中没有对应入口。 | 投标保证金的项目登记与财务收退没有在已发布产品面接通。 | 用户可以在项目中心登记保证金，却无法从 132 个已发布办理面进入对应的保证金收退和资金结果。 | 优先核对现有费用报销页能否通过业务类别安全承接；不能承接时发布既有投标保证金缴纳/退回动作，并保留 tender.guarantee 来源 ID。未裁定前保证金收退路径不得标记为可运行。 | project.tender → finance.cash_ledger / accounting.entry_posting |
+| GAP-05<br>`release_scope_or_connection_required` | 项目中心已发布 tender.guarantee；财务保证金收退动作存在于原生 XML，但 已发布办理面中没有对应入口。 | 投标保证金的项目登记与财务收退没有在已发布产品面接通。 | 用户可以在项目中心登记保证金，却无法从 已发布办理面进入对应的保证金收退和资金结果。 | 优先核对现有费用报销页能否通过业务类别安全承接；不能承接时发布既有投标保证金缴纳/退回动作，并保留 tender.guarantee 来源 ID。未裁定前保证金收退路径不得标记为可运行。 | project.tender → finance.cash_ledger / accounting.entry_posting |
 
 缺口裁定状态：
 
 - `resolved_reuse_existing_page`：已由现有办理面承接，不需要新增同名页面。
 - `connection_fix_required`：页面存在，但只有对象上下文、目标动作和返回链补齐后才能标记为完整可运行。
-- `release_scope_change_required` / `release_scope_or_connection_required`：当前 132 面不能独立闭合，受影响路径保持待实现，不计入组织定稿后的已运行结果。
+- `release_scope_change_required` / `release_scope_or_connection_required`：当前已发布办理面不能独立闭合，受影响路径保持待实现，不计入组织定稿后的已运行结果。
 
 ## 定稿与实施门禁
 
-- 132 个已发布办理面必须全部出现在总表中且身份唯一。
+- 正式配置声明的已发布办理面必须全部出现在总表中且身份唯一。
 - 每个中心和工作台必须保持既定产品身份；场景只能组织中心内或跨中心的办理关系。
 - 工作台快捷办理和待办必须能回到来源业务对象与返回位置。
-- 组织设计已定稿：46 个业务分组作为产品场景种子输入，五项缺口继续保留其处理状态。
+- 组织设计已定稿：48 个业务分组作为产品场景种子输入，五项缺口继续保留其处理状态。
 - 候选种子与发布组合生成：必须忠实保留缺口状态和待实现连接，不能把目标设计转换为已可用能力。
 - 可运行发布：只有受影响路径的实际缺口关闭并完成对应运行验证后，才计入可运行结果。

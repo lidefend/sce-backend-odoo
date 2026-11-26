@@ -615,6 +615,30 @@
       "release_state": "released"
     },
     {
+      "menu_xmlid": "smart_construction_core.menu_business_role",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_user_role_assignment",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_business_role_change",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_business_role_event",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
       "menu_xmlid": "smart_construction_core.menu_sc_certificate_registration",
       "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
@@ -916,6 +940,48 @@
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_settlement_order",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_enterprise_initialization",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_business_category",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_dictionary",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_cost_code",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_stage_requirement_items",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_approval_scope",
+      "delivery": "RELEASED_FOUNDATION",
+      "source_kind": "p1_locked_menu_surface_projection",
+      "release_state": "released"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_scenario_business_config",
       "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
       "release_state": "released"
@@ -1457,6 +1523,299 @@
       "disposition": "retired_experiment",
       "reason": "仅承载能力上线说明，模型只有规划范围/上线条件等只读字段，没有对应业务办理实现；不属于预览产品能力。",
       "evidence": "addons/smart_construction_core/models/support/project_capability_roadmap.py"
+    }
+  ],
+  "scenario_page_extensions": [],
+  "scenario_definitions": [
+    {
+      "key": "config.enterprise_initialization",
+      "name": "企业初始化",
+      "owner_center": "construction.center.product_configuration",
+      "objective": "企业初始化",
+      "roles": [
+        "business_config_admin"
+      ],
+      "prerequisites": [
+        "当前企业",
+        "配置管理员权限"
+      ],
+      "result_objects": [
+        "res.company"
+      ],
+      "result": "配置已保存并可回读。",
+      "pages": [
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_enterprise_initialization",
+          "purpose": "按企业、组织、岗位和人员顺序完成准备，再引用后续配置事项。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration"
+        }
+      ],
+      "dependencies": [],
+      "next_steps": [],
+      "exclusions": [],
+      "context": "当前企业；从产品配置进入，完成后返回本事项",
+      "references": []
+    },
+    {
+      "key": "config.business_foundation",
+      "name": "业务基础配置",
+      "owner_center": "construction.center.product_configuration",
+      "objective": "业务基础配置",
+      "roles": [
+        "business_config_admin"
+      ],
+      "prerequisites": [
+        "当前企业",
+        "配置管理员权限"
+      ],
+      "result_objects": [
+        "sc.business.category",
+        "sc.dictionary",
+        "project.cost.code",
+        "sc.project.stage.requirement.item"
+      ],
+      "result": "配置已保存并可回读。",
+      "pages": [
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_business_category",
+          "purpose": "维护企业业务分类。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration"
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_dictionary",
+          "purpose": "查阅与维护现有授权范围内的业务字典。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration"
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_project_cost_code",
+          "purpose": "维护预算类型。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration"
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_project_stage_requirement_items",
+          "purpose": "维护项目阶段要求。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration"
+        }
+      ],
+      "dependencies": [],
+      "next_steps": [],
+      "exclusions": [],
+      "context": "当前企业；从产品配置进入，完成后返回本事项",
+      "references": []
+    },
+    {
+      "key": "config.enterprise_access",
+      "name": "企业人员权限配置",
+      "owner_center": "construction.center.product_configuration",
+      "objective": "为已建立人员分配业务角色和允许公司范围，并完成目标用户回读。",
+      "roles": [
+        "business_config_admin"
+      ],
+      "prerequisites": [
+        "企业管理员权限",
+        "已建立用户、员工、部门和岗位",
+        "可分配角色和允许公司"
+      ],
+      "result_objects": [
+        "res.users",
+        "res.groups",
+        "res.company"
+      ],
+      "result": "形成目标用户的业务角色与公司范围。",
+      "pages": [
+        {
+          "menu_xmlid": "smart_construction_core.menu_business_role",
+          "purpose": "定义企业业务角色与能力组合，发布后保留原有授权事实。",
+          "mode": "先办",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration"
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_user_role_assignment",
+          "purpose": "导入或选择人员分配企业角色，按企业审批规则生效。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration"
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_product_data_permission_v1",
+          "purpose": "选择目标用户，分配允许角色和公司范围并回读。",
+          "mode": "回读",
+          "direct_kind": "configuration"
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_business_role_change",
+          "purpose": "预览有效权限变化，明确提交选中用户的批量调整并回读结果。",
+          "mode": "办理",
+          "declared_intent": "handle",
+          "direct_kind": "configuration"
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_business_role_event",
+          "purpose": "查看授权来源、执行结果与历史变更事实。",
+          "mode": "回读",
+          "declared_intent": "view",
+          "direct_kind": "configuration"
+        }
+      ],
+      "dependencies": [
+        "admin.organization",
+        "config.approval"
+      ],
+      "next_steps": [
+        "用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断。"
+      ],
+      "exclusions": [],
+      "context": "当前企业；从产品配置或企业初始化进入，完成后返回原用户列表",
+      "references": [
+        "与 admin.organization 的人员维护使用同一 res.users 身份。"
+      ]
+    },
+    {
+      "key": "config.approval",
+      "name": "审批策略配置",
+      "owner_center": "construction.center.product_configuration",
+      "objective": "为业务单据配置适用审批层级和角色，使提交后产生真实审批步骤。",
+      "roles": [
+        "business_config_admin"
+      ],
+      "prerequisites": [
+        "目标业务模型或业务类别",
+        "审批角色",
+        "企业审批规则"
+      ],
+      "result_objects": [
+        "sc.approval.policy"
+      ],
+      "result": "形成生效中的审批策略。",
+      "pages": [
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_approval_scope",
+          "purpose": "设置审批岗位人员，供审批策略引用。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration"
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_approval_policy",
+          "purpose": "维护业务审批范围、层级和审批责任。",
+          "mode": "办理",
+          "direct_kind": "configuration"
+        }
+      ],
+      "dependencies": [],
+      "next_steps": [
+        "审批策略被付款、结算、采购、合同和资源场景消费。"
+      ],
+      "exclusions": [],
+      "context": "当前企业；从产品配置进入，完成后回审批策略列表",
+      "references": []
+    },
+    {
+      "key": "config.presentation",
+      "name": "场景与页面配置",
+      "owner_center": "construction.center.product_configuration",
+      "objective": "调整业务办理页面的字段、表单和菜单呈现，不改变业务事实和权限。",
+      "roles": [
+        "business_config_admin"
+      ],
+      "prerequisites": [
+        "已发布产品入口",
+        "字段/表单/菜单契约",
+        "管理员权限"
+      ],
+      "result_objects": [
+        "ui.business.config.contract",
+        "ui.form.field.policy",
+        "ui.menu.config.policy"
+      ],
+      "result": "形成企业生效的页面呈现配置。",
+      "pages": [
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_product_scenario_business_config",
+          "purpose": "配置企业业务场景组合，保持平台锁定的产品结构。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration"
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_business_config_workbench",
+          "purpose": "进入业务表单和页面配置工作台。",
+          "mode": "先办",
+          "direct_kind": "configuration"
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_ui_form_field_policy_business_config",
+          "purpose": "配置表单字段的显示、必填和顺序。",
+          "mode": "并列",
+          "direct_kind": "configuration"
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_ui_menu_config_policy_business_config",
+          "purpose": "配置企业可见菜单和入口归属。",
+          "mode": "并列",
+          "direct_kind": "configuration"
+        }
+      ],
+      "dependencies": [],
+      "next_steps": [
+        "重新进入目标业务页面，以同一业务身份回读呈现结果。"
+      ],
+      "exclusions": [
+        "不得通过呈现配置修改模型、权限或业务状态规则。"
+      ],
+      "context": "当前企业；从产品配置进入，完成后返回产品配置",
+      "references": []
+    },
+    {
+      "key": "config.system_governance",
+      "name": "系统参数与编码规则",
+      "owner_center": "construction.center.product_configuration",
+      "objective": "维护企业级系统参数和业务单据编码规则。",
+      "roles": [
+        "business_config_admin"
+      ],
+      "prerequisites": [
+        "当前企业",
+        "允许维护的参数/序号",
+        "变更影响范围"
+      ],
+      "result_objects": [
+        "sc.product.system.settings",
+        "ir.sequence"
+      ],
+      "result": "形成生效参数和业务编码规则。",
+      "pages": [
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_product_system_parameter_v1",
+          "purpose": "维护企业可用系统参数并回读生效值。",
+          "mode": "先办",
+          "direct_kind": "configuration"
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_product_numbering_rule_v1",
+          "purpose": "维护允许调整的业务编号序列。",
+          "mode": "并列",
+          "direct_kind": "configuration"
+        }
+      ],
+      "dependencies": [],
+      "next_steps": [
+        "配置被后续新建业务单据消费。"
+      ],
+      "exclusions": [],
+      "context": "当前企业；从产品配置进入，完成后返回产品配置",
+      "references": []
     }
   ]
 }

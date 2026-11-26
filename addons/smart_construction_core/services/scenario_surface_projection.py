@@ -1350,6 +1350,7 @@ def _scenarioized_navigation(env, centers, route_authority) -> list[dict[str, An
         return build_delivery_menu_child(row)
 
     group_nodes = []
+    root_nodes = []
     for center in centers or []:
         if not isinstance(center, dict):
             continue
@@ -1390,14 +1391,18 @@ def _scenarioized_navigation(env, centers, route_authority) -> list[dict[str, An
             group_node["meta"]["canonical_group_key"] = _text(center.get("canonical_group_key"))
         if center.get("native_center_xmlid"):
             group_node["meta"]["native_center_xmlid"] = _text(center.get("native_center_xmlid"))
-        group_nodes.append(group_node)
-    if not group_nodes:
-        return []
-    root = build_delivery_menu_root(group_nodes, "")
-    root["key"] = "root:scenario_navigation"
-    root["label"] = "业务场景"
-    root["title"] = "业务场景"
-    return MenuService(env).project_canonical_navigation([root], route_authority)
+        identity = center_identity(center.get("canonical_group_key") or center.get("key"))
+        if identity and identity.get("navigation_placement") == "root":
+            root_nodes.append(group_node)
+        else:
+            group_nodes.append(group_node)
+    if group_nodes:
+        root = build_delivery_menu_root(group_nodes, "")
+        root["key"] = "root:scenario_navigation"
+        root["label"] = "业务场景"
+        root["title"] = "业务场景"
+        root_nodes.insert(0, root)
+    return MenuService(env).project_canonical_navigation(root_nodes, route_authority)
 
 
 def project_authorized_nav_with_env(

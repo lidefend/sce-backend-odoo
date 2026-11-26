@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Ref } from 'vue';
 import type { PageBlockActionFeedback } from '@sc/schema';
+import { contractGapError } from '../contract/contractGap';
 import { firstActionFeedback } from '../contract/actionFeedback';
 
 type Dict = Record<string, unknown>;
@@ -29,6 +30,7 @@ type ContractActionButtonLike = {
   contractActionId?: string;
   backendIdentity?: string;
   sourceWidgetId?: string;
+  executionScope?: string;
   url?: string;
   target?: string;
   mutation?: MutationPayload;
@@ -57,13 +59,14 @@ type SceneMutationInput = {
 
 type ExecuteButtonInput = {
   model: string;
-  res_id: number;
+  res_id: number | number[];
   button: {
     name: string;
     type: string;
     action_id?: string;
     backend_identity?: string;
     source_widget_id?: string;
+    execution_scope?: string;
   };
   context?: Dict;
 };
@@ -101,7 +104,8 @@ type UseActionViewActionRuntimeOptions = {
   executeButton: (payload: ExecuteButtonInput) => Promise<unknown>;
   buildButtonRequest: (input: {
     model: string;
-    recordId: number;
+    recordId: number | number[];
+    executionScope?: string;
     methodName?: string;
     actionKey: string;
     contractActionId?: string;
@@ -250,11 +254,16 @@ export function useActionViewActionRuntime(options: UseActionViewActionRuntimeOp
       let successCount = 0;
       let failureCount = 0;
       let terminalFeedback: PageBlockActionFeedback | undefined;
-      for (const id of execIds) {
+      if (selection === 'multi' && action.executionScope !== 'recordset') {
+        throw contractGapError({ kind: 'contract_defect', missing: 'action.executionScope', requiredDeclarationLayer: 'P0: native collection action execution' }, 'Collection action execution scope is not declared');
+      }
+      const requests = action.executionScope === 'recordset' ? [execIds] : execIds;
+      for (const id of requests) {
         try {
           const response = await options.executeButton(options.buildButtonRequest({
             model: action.model,
             recordId: id,
+            executionScope: action.executionScope,
             methodName: action.methodName,
             actionKey: action.key,
             contractActionId: action.contractActionId,

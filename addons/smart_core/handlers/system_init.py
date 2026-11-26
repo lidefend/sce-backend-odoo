@@ -7,6 +7,7 @@ import time
 from typing import List
 
 from odoo import api, SUPERUSER_ID
+from odoo.exceptions import AccessError
 from odoo.modules.registry import Registry
 
 from ..core.base_handler import BaseIntentHandler
@@ -1309,13 +1310,19 @@ class SystemInitHandler(BaseIntentHandler):
         scene = params.get("scene") or "web"
 
         user = env.user
+        authorized_companies = set(user._sc_authorized_company_ids())
+        if env.company.id not in authorized_companies:
+            raise AccessError('PLATFORM_COMPANY_NOT_AUTHORIZED')
         identity_resolver = IdentityResolver(env)
         user_groups_xmlids = identity_resolver.user_group_xmlids(user)
         user_dict = SystemInitIdentityPayload.build(
             user,
             user_groups_xmlids,
             company=env.company,
-            allowed_company_ids=env.context.get("allowed_company_ids") or user.company_ids.ids,
+            allowed_company_ids=sorted(
+                set(env.context.get("allowed_company_ids") or authorized_companies)
+                & authorized_companies
+            ),
         )
         # Qualification is the common upstream fact for capabilities, navigation,
         # scenes and the landing route. Produce it once before those consumers.

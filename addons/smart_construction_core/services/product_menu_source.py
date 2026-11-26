@@ -41,6 +41,8 @@ def center_identity_contract():
         label = str(raw.get("name") or "").strip()
         if not primary_key or not stable_key or not label:
             raise ValueError("product primary center requires key, stable_key and name")
+        if raw.get("navigation_placement") not in {"root", "scenario"}:
+            raise ValueError(f"invalid navigation placement for product center: {primary_key}")
         if primary_key in by_primary:
             raise ValueError(f"duplicate product primary center key: {primary_key}")
         row = {

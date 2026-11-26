@@ -1,4 +1,8 @@
 # P4 offline role declaration inventory; never an authorization/runtime gate.
+.PHONY: verify.platform.multi_company.orm
+verify.platform.multi_company.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS=auth02_multi_company,sc_auth_credential,data_space_boundary,data_space_identity_enrollment,data_space_uncached_membership,platform_database_governance
+
 .PHONY: verify.daily.demo.walkthrough.policy daily.demo.walkthrough.ui
 verify.daily.demo.walkthrough.policy: guard.prod.forbid
 	@node --check scripts/verify/daily_demo_walkthrough_ui.mjs
@@ -218,3 +222,22 @@ daily.demo.scenario.configure: guard.prod.forbid verify.daily.demo.business_read
 	@ssh -o BatchMode=yes -o ConnectTimeout=10 sc-root \
 	  'test "$$(git -C /opt/projects/repos/sce-product-odoo rev-parse HEAD)" = "$(DAILY_RUNTIME_EXPECTED_SHA)" && python3 /opt/projects/repos/sce-product-odoo/scripts/ops/daily_runtime_duty_odoo_shell.py --duty demo --database sc_demo --env SC_SCENARIO_CONFIGURATION_PHASE=$(SC_SCENARIO_CONFIGURATION_PHASE) --env SC_SCENARIO_CONFIGURATION_CONFIRM=EXEMPT_FIVE_APPROVED_DEMO_MAINTENANCE_MENUS' \
 	  < scripts/ops/daily_demo_scenario_configuration.py
+
+.PHONY: verify.business_capability.authorization.unit verify.business_capability.authorization.orm
+verify.business_capability.authorization.unit:
+	@python3 -m unittest scripts/verify/test_business_capability_authorization.py
+
+verify.business_capability.authorization.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=capability_registry,capability_verdict_projection
+
+.PHONY: verify.auth02.native_isolation.orm
+verify.auth02.native_isolation.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=auth02_native_isolation
+
+.PHONY: verify.group_authority.sources.orm
+verify.group_authority.sources.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS=group_authority_sources
+
+.PHONY: verify.business_role.orm
+verify.business_role.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=business_role

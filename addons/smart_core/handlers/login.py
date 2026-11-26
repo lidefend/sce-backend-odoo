@@ -90,7 +90,7 @@ def _user_groups_xmlids(user) -> list[str]:
 def _company_ids(user) -> Dict[str, Any]:
     """提取公司信息，尽量不触发额外查询。"""
     try:
-        allowed = user.company_ids.ids or []
+        allowed = user._sc_authorized_company_ids()
         current_company = user.company_id
         current = current_company.id if current_company else None
         current_name = (current_company.name or "").strip() if current_company else ""

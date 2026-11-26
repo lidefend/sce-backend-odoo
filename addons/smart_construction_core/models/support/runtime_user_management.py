@@ -73,7 +73,7 @@ class ResUsers(models.Model):
 
     @api.model
     def _sc_internal_group(self):
-        return self.env.ref("smart_construction_core.group_sc_internal_user", raise_if_not_found=False)
+        return self.env.ref("smart_construction_core.group_sc_cap_internal_identity", raise_if_not_found=False)
 
     @api.model
     def _sc_assignable_groups(self):
@@ -132,7 +132,7 @@ class ResUsers(models.Model):
         domain = [
             ("share", "=", False),
             ("login", "!=", False),
-            ("company_id", "in", self.env.user.company_ids.ids),
+            ("company_id", "in", self.env.user._sc_authorized_company_ids()),
             ("groups_id", "in", [internal_group.id]),
         ]
         if template_user:
@@ -255,7 +255,7 @@ class ResUsers(models.Model):
         safe_vals["share"] = False
         safe_vals["sc_runtime_user_managed"] = True
 
-        allowed_company_ids = set(self.env.user.company_ids.ids)
+        allowed_company_ids = set(self.env.user._sc_authorized_company_ids())
         initial_company_ids = set(existing_user.company_ids.ids) if existing_user else set()
         target_company_ids = self._sc_relational_ids_after_commands(
             vals.get("company_ids"), initial_ids=initial_company_ids

@@ -41,5 +41,30 @@
             <field name="sequence">40</field>
             <field name="active">True</field>
         </record>
+        <record id="menu_sc_business_category" model="ir.ui.menu">
+            <field name="parent_id" ref="smart_construction_core.menu_sc_business_config_center"/>
+            <field name="sequence">2</field>
+            <field name="active">True</field>
+        </record>
+        <record id="menu_sc_dictionary" model="ir.ui.menu">
+            <field name="parent_id" ref="smart_construction_core.menu_sc_business_config_center"/>
+            <field name="sequence">3</field>
+            <field name="active">True</field>
+        </record>
+        <record id="menu_sc_project_cost_code" model="ir.ui.menu">
+            <field name="parent_id" ref="smart_construction_core.menu_sc_business_config_center"/>
+            <field name="sequence">4</field>
+            <field name="active">True</field>
+        </record>
+        <record id="menu_sc_project_stage_requirement_items" model="ir.ui.menu">
+            <field name="parent_id" ref="smart_construction_core.menu_sc_business_config_center"/>
+            <field name="sequence">5</field>
+            <field name="active">True</field>
+        </record>
+        <record id="menu_sc_approval_scope" model="ir.ui.menu">
+            <field name="parent_id" ref="smart_construction_core.menu_sc_business_config_center"/>
+            <field name="sequence">21</field>
+            <field name="active">True</field>
+        </record>
     </data>
 </odoo>

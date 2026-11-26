@@ -166,7 +166,7 @@
             <field name="name">SC Bridge - Project Base</field>
             <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
             <field name="implied_ids" eval="[(6, 0, [
-                ref('smart_construction_core.group_sc_internal_user'),
+                ref('smart_construction_core.group_sc_cap_internal_identity'),
                 ref('project.group_project_stages')
             ])]"/>
         </record>
@@ -188,11 +188,20 @@
             ])]"/>
         </record>
 
+        <!-- Legacy project-workspace reading is an explicit aggregate, not the
+             minimum project-information permission selected by enterprise roles. -->
+        <record id="group_sc_cap_project_workspace_read" model="res.groups">
+            <field name="name">SC 能力 - 项目工作区综合查看</field>
+            <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
+            <field name="implied_ids" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_project_read')])]"/>
+        </record>
+
         <record id="group_sc_cap_project_user" model="res.groups">
             <field name="name">SC 能力 - 项目中心经办</field>
             <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
             <field name="implied_ids" eval="[(6, 0, [
-                ref('smart_construction_core.group_sc_cap_project_read'),
+                ref('smart_construction_core.group_sc_cap_project_workspace_read'),
+                ref('smart_construction_core.group_sc_internal_user'),
                 ref('smart_construction_core.group_sc_bridge_project_user')
             ])]"/>
         </record>

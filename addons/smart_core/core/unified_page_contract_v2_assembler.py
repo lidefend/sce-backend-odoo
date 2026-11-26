@@ -4427,6 +4427,7 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
                 "sourceWidgetId": source_id,
                 "targetIds": [],
                 "dispatchMode": "server",
+                "executionScope": _text(row.get("execution_scope"), "record"),
                 "targetScope": normalize_target_scope(row.get("target_scope") or row.get("level")),
                 "refreshMode": "partial",
                 "sourceChannel": _text(row.get("source_channel"), "contract_action"),
@@ -6455,6 +6456,18 @@ def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]
             for source in (policy, payload, row)
             for verdict_key in ("allowed", "enabled")
         )
+        # Explicit native collection configuration consumes the same effective
+        # write right as execute_button. Unresolved group clauses stay denied.
+        if (row.get("execution_scope") == "recordset" and kind == "object"
+                and not permission_constraints):
+            rights = _dict(_dict(_dict(ui.get("permissions")).get("effective")).get("rights"))
+            if isinstance(rights.get("write"), bool):
+                row = dict(row)
+                allowed = rights["write"] and row.get("allowed") is not False
+                row.update(allowed=allowed, enabled=allowed and row.get("enabled") is not False,
+                           disabled=not allowed or row.get("disabled") is True)
+                entitlement_evaluated = True
+                explicit_permission_verdict = True
         permission_unresolved = bool(permission_constraints) and (
             not entitlement_evaluated or not explicit_permission_verdict
         )
@@ -6518,6 +6531,7 @@ def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]
             "trigger": _text(row.get("trigger") or row.get("display_mode"), "row_click"),
             "level": _text(row.get("level"), "row"),
             "target_scope": _text(row.get("target_scope"), "row"),
+            "execution_scope": _text(row.get("execution_scope"), "record"),
             "visible": deepcopy(row.get("visible")),
             "modifiers": deepcopy(row.get("modifiers")),
             "invisible": deepcopy(row.get("invisible")),

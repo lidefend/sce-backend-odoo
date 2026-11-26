@@ -890,73 +890,64 @@ SCENARIOS = [
         ],
         context="当前公司；从行政中心进入，完成后回资产列表",
     ),
-    scenario(
-        "config.enterprise_access",
-        "企业人员权限配置",
-        "construction.center.product_configuration",
-        "为已建立人员分配业务角色和允许公司范围，并完成目标用户回读。",
-        ["business_config_admin"],
-        ["企业管理员权限", "已建立用户、员工、部门和岗位", "可分配角色和允许公司"],
-        ["res.users", "res.groups", "res.company"],
-        "形成目标用户的业务角色与公司范围。",
-        [
-            page("smart_construction_core.menu_sc_product_data_permission_v1", "选择目标用户，分配允许角色和公司范围并回读。", "回读"),
-        ],
-        dependencies=["admin.organization", "config.approval"],
-        next_steps=["用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断。"],
-        context="当前企业；从产品配置或企业初始化进入，完成后返回原用户列表",
-        references=["与 admin.organization 的人员维护使用同一 res.users 身份。"],
-    ),
-    scenario(
-        "config.approval",
-        "审批策略配置",
-        "construction.center.product_configuration",
-        "为业务单据配置适用审批层级和角色，使提交后产生真实审批步骤。",
-        ["business_config_admin"],
-        ["目标业务模型或业务类别", "审批角色", "企业审批规则"],
-        ["sc.approval.policy"],
-        "形成生效中的审批策略。",
-        [
-            page("smart_construction_core.menu_sc_approval_policy", "维护业务审批范围、层级和审批责任。", "办理"),
-        ],
-        next_steps=["审批策略被付款、结算、采购、合同和资源场景消费。"],
-        context="当前企业；从产品配置进入，完成后回审批策略列表",
-    ),
-    scenario(
-        "config.presentation",
-        "表单、字段与菜单配置",
-        "construction.center.product_configuration",
-        "调整业务办理页面的字段、表单和菜单呈现，不改变业务事实和权限。",
-        ["business_config_admin"],
-        ["已发布产品入口", "字段/表单/菜单契约", "管理员权限"],
-        ["ui.business.config.contract", "ui.form.field.policy", "ui.menu.config.policy"],
-        "形成企业生效的页面呈现配置。",
-        [
-            page("smart_construction_core.menu_sc_business_config_workbench", "进入业务表单和页面配置工作台。", "先办"),
-            page("smart_construction_core.menu_ui_form_field_policy_business_config", "配置表单字段的显示、必填和顺序。", "并列"),
-            page("smart_construction_core.menu_ui_menu_config_policy_business_config", "配置企业可见菜单和入口归属。", "并列"),
-        ],
-        next_steps=["重新进入目标业务页面，以同一业务身份回读呈现结果。"],
-        exclusions=["不得通过呈现配置修改模型、权限或业务状态规则。"],
-        context="当前企业；从产品配置进入，完成后返回产品配置",
-    ),
-    scenario(
-        "config.system_governance",
-        "系统参数与编码规则",
-        "construction.center.product_configuration",
-        "维护企业级系统参数和业务单据编码规则。",
-        ["business_config_admin"],
-        ["当前企业", "允许维护的参数/序号", "变更影响范围"],
-        ["sc.product.system.settings", "ir.sequence"],
-        "形成生效参数和业务编码规则。",
-        [
-            page("smart_construction_core.menu_sc_product_system_parameter_v1", "维护企业可用系统参数并回读生效值。", "先办"),
-            page("smart_construction_core.menu_sc_product_numbering_rule_v1", "维护允许调整的业务编号序列。", "并列"),
-        ],
-        next_steps=["配置被后续新建业务单据消费。"],
-        context="当前企业；从产品配置进入，完成后返回产品配置",
-    ),
+
 ]
+
+
+# New scenario/page facts are declared by the P1 product source. This tool only
+# validates and projects their placement, never invents new business entries.
+def apply_declared_page_extensions(scenarios, declarations):
+    known = {row["key"]: row for row in scenarios}
+    used = {item["menu_xmlid"] for row in scenarios for item in row["pages"]}
+    direct = []
+    for declaration in declarations:
+        key = declaration["scenario_key"]
+        xmlid = declaration["menu_xmlid"]
+        if key not in known or xmlid in used:
+            raise ValueError("unknown scenario or duplicate page extension: " + xmlid)
+        if declaration["intent"] not in {"master_data", "handle", "view", "approve", "report"}:
+            raise ValueError("invalid declared page intent: " + xmlid)
+        if not declaration["purpose"] or not declaration["mode"]:
+            raise ValueError("page extension requires purpose and mode: " + xmlid)
+        known[key]["pages"].append({**page(xmlid, declaration["purpose"], declaration["mode"]),
+                                    "declared_intent": declaration["intent"]})
+        used.add(xmlid)
+        if declaration.get("direct_kind"):
+            direct.append((xmlid, declaration["direct_kind"]))
+    return tuple(direct)
+
+
+def apply_declared_scenarios(scenarios, declarations):
+    known = {row["key"] for row in scenarios}
+    used = {item["menu_xmlid"] for row in scenarios for item in row["pages"]}
+    direct = {}
+    for declaration in declarations:
+        row = scenario(**declaration)
+        if row["key"] in known or not row["pages"]:
+            raise ValueError("duplicate or empty declared scenario: " + row["key"])
+        for item in row["pages"]:
+            xmlid = item["menu_xmlid"]
+            if xmlid in used:
+                raise ValueError("duplicate declared scenario page: " + xmlid)
+            if item.get("declared_intent") not in {None, "master_data", "handle", "view", "approve", "report"}:
+                raise ValueError("invalid declared scenario intent: " + xmlid)
+            used.add(xmlid)
+            if item.get("direct_kind"):
+                direct[xmlid] = item["direct_kind"]
+        scenarios.append(row)
+        known.add(row["key"])
+    return direct
+
+
+_declared_direct = apply_declared_scenarios(
+    SCENARIOS, json.loads(SOURCE_PATH.read_text(encoding="utf-8")).get("scenario_definitions", []),
+)
+DIRECT_PLATFORM_PAGES = tuple({**dict(DIRECT_PLATFORM_PAGES), **_declared_direct}.items())
+
+
+DIRECT_PLATFORM_PAGES += apply_declared_page_extensions(
+    SCENARIOS, json.loads(SOURCE_PATH.read_text(encoding="utf-8")).get("scenario_page_extensions", []),
+)
 
 
 PAGE_REFERENCE_OVERRIDES = {
@@ -1250,7 +1241,7 @@ KNOWN_GAPS = [
         "id": "GAP-01",
         "status": "release_scope_change_required",
         "evidence": "原生菜单树存在 menu_sc_material_catalog，但 product_menu_source 未发布该入口；project.material.plan 在提交前强制要求 material_catalog_id。",
-        "issue": "132 个已发布办理面缺少“材料档案”。",
+        "issue": "已发布办理面缺少“材料档案”。",
         "impact": "材料计划提交要求 material_catalog_id，但当前用户没有已发布的材料档案维护入口。",
         "recommendation": "接受为发布范围变更候选：复用既有 menu_sc_material_catalog 作为供应链与资源中心正式入口；该入口纳入发布前，材料计划保留“依赖未发布主数据”，不能标记为完整可运行。",
         "affected_paths": "supply.procurement → supply.inventory → material.settlement",
@@ -1285,9 +1276,9 @@ KNOWN_GAPS = [
     {
         "id": "GAP-05",
         "status": "release_scope_or_connection_required",
-        "evidence": "项目中心已发布 tender.guarantee；财务保证金收退动作存在于原生 XML，但 132 个已发布办理面中没有对应入口。",
+        "evidence": "项目中心已发布 tender.guarantee；财务保证金收退动作存在于原生 XML，但 已发布办理面中没有对应入口。",
         "issue": "投标保证金的项目登记与财务收退没有在已发布产品面接通。",
-        "impact": "用户可以在项目中心登记保证金，却无法从 132 个已发布办理面进入对应的保证金收退和资金结果。",
+        "impact": "用户可以在项目中心登记保证金，却无法从 已发布办理面进入对应的保证金收退和资金结果。",
         "recommendation": "优先核对现有费用报销页能否通过业务类别安全承接；不能承接时发布既有投标保证金缴纳/退回动作，并保留 tender.guarantee 来源 ID。未裁定前保证金收退路径不得标记为可运行。",
         "affected_paths": "project.tender → finance.cash_ledger / accounting.entry_posting",
     },
@@ -1932,6 +1923,8 @@ def build_payload(product_pages):
 
 
 def runtime_intent(page_row):
+    if page_row.get("declared_intent"):
+        return page_row["declared_intent"]
     menu_xmlid = page_row["menu_xmlid"]
     if menu_xmlid in MASTER_DATA_MENU_XMLIDS:
         return "master_data"
@@ -1994,8 +1987,8 @@ def build_runtime_surface(payload):
             "L3": "capability_menu_action",
             "note": (
                 "Centers and center membership come from the published product policy. "
-                "The 46 scenarios are the approved business-result organization over the "
-                "132 released pages. Counts are derived from those declarations."
+                "Approved scenarios organize the released pages by business result. "
+                "Counts are derived from those declarations."
             ),
         },
         "authority_note": (
@@ -2035,7 +2028,7 @@ def md_escape(value):
 
 def render_markdown(payload):
     lines = [
-        "# 132 个办理面业务组织整合",
+        f"# {payload['validation']['released_page_count']} 个办理面业务组织整合",
         "",
         f"- 状态：`{payload['status']}`",
         f"- 批准日期：`{payload['approved_at']}`",
@@ -2219,16 +2212,16 @@ def render_markdown(payload):
         "",
         "- `resolved_reuse_existing_page`：已由现有办理面承接，不需要新增同名页面。",
         "- `connection_fix_required`：页面存在，但只有对象上下文、目标动作和返回链补齐后才能标记为完整可运行。",
-        "- `release_scope_change_required` / `release_scope_or_connection_required`：当前 132 面不能独立闭合，受影响路径保持待实现，不计入组织定稿后的已运行结果。",
+        "- `release_scope_change_required` / `release_scope_or_connection_required`：当前已发布办理面不能独立闭合，受影响路径保持待实现，不计入组织定稿后的已运行结果。",
     ])
     lines.extend([
         "",
         "## 定稿与实施门禁",
         "",
-        "- 132 个已发布办理面必须全部出现在总表中且身份唯一。",
+        "- 正式配置声明的已发布办理面必须全部出现在总表中且身份唯一。",
         "- 每个中心和工作台必须保持既定产品身份；场景只能组织中心内或跨中心的办理关系。",
         "- 工作台快捷办理和待办必须能回到来源业务对象与返回位置。",
-        "- 组织设计已定稿：46 个业务分组作为产品场景种子输入，五项缺口继续保留其处理状态。",
+        f"- 组织设计已定稿：{payload['validation']['scenario_count']} 个业务分组作为产品场景种子输入，五项缺口继续保留其处理状态。",
         "- 候选种子与发布组合生成：必须忠实保留缺口状态和待实现连接，不能把目标设计转换为已可用能力。",
         "- 可运行发布：只有受影响路径的实际缺口关闭并完成对应运行验证后，才计入可运行结果。",
         "",

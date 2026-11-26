@@ -4,6 +4,7 @@ from __future__ import annotations
 import inspect
 from unittest.mock import patch
 
+from odoo.addons.smart_core.tests.platform_company_test_support import license_multi_company
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_construction_core.handlers.business_evidence_trace import (
@@ -105,6 +106,7 @@ class TestPatchBReadAggregateSecurity(TransactionCase):
                 }
             )
 
+        license_multi_company(cls.env, cls.company_a)
         cls.user_a1 = create_user("patch_b_user_a1", cls.company_a)
         cls.user_a2 = create_user("patch_b_user_a2", cls.company_a)
         cls.user_same_company_denied = create_user(

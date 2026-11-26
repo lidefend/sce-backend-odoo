@@ -209,7 +209,7 @@
       "definition": {
         "schemaId": "smart_core.unified_page_contract_v2",
         "schemaVersion": "2.7.0",
-        "schemaSha256": "4075e4fe443c2d4c4a5e7e581b1c14ff03a1c6edf69669d6b8b0e0d98d05a8c6",
+        "schemaSha256": "cd16ee8bd80fade8ad7ce50e72c86aba996d5459f16ef0ec2bfba70d38c047a1",
         "contractVersion": "2.7.0",
         "normativeStatus": "stable"
       },

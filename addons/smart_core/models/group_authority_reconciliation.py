@@ -1,6 +1,9 @@
 """Explicit administrator confirmation of present group roots, never history inference."""
 from odoo import api, fields, models, _
 from odoo.exceptions import AccessError, UserError
+from ..security.group_assignment import (
+    GroupAuthorityGap, recorded_sources, apply_native_source_commands,
+)
 
 
 class GroupAuthorityReconciliation(models.TransientModel):
@@ -67,7 +70,15 @@ class GroupAuthorityReconciliation(models.TransientModel):
         roots = self.root_group_ids
         if not roots or set((roots | roots.trans_implied_ids).ids) != set(snapshot['groups']):
             raise UserError(_('所选根组的权限闭包必须与当前有效权限完全一致；本操作不增删权限。'))
-        user._sc_store_group_authority(set(roots.ids))
+        sources = None
+        if (snapshot['state'] or {}).get('version') == 2:
+            try:
+                sources = apply_native_source_commands(
+                    recorded_sources(snapshot['state']), [(6, 0, roots.ids)],
+                )
+            except GroupAuthorityGap as error:
+                raise UserError(_("确认不能覆盖已有授权来源，请核对对应角色分配：%s") % str(error)) from error
+        user._sc_store_group_authority(set(roots.ids), sources=sources)
         user._sc_explicit_group_roots()
         self.env['sc.group.authority.confirmation']._record_confirmation(user, roots, snapshot, note)
         super(GroupAuthorityReconciliation, self).write({'confirmed': True})

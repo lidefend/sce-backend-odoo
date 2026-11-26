@@ -580,13 +580,14 @@ export interface RelationActionOrigin {
 
 export interface ExecuteButtonRequest {
   model: string;
-  res_id: number;
+  res_id: number | number[];
   button: {
     name: string;
     type?: string;
     action_id?: string;
     backend_identity?: string;
     source_widget_id?: string;
+    execution_scope?: string;
     server_action_id?: number;
     xml_id?: string;
   };

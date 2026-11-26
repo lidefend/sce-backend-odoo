@@ -44,6 +44,27 @@ class TestCapabilityRegistryService(TransactionCase):
         )
         self.assertFalse(definition["key"].startswith(("construction.menu.", "catalog.menu.")))
 
+    def test_existing_entry_catalog_is_not_implicitly_assignable(self):
+        definitions = capability_registry.capability_definitions()
+        self.assertTrue(definitions)
+        for row in definitions:
+            self.assertEqual(row['role_composition']['composable'], row['key'] == 'project.list.open', row['key'])
+        from ..services.business_capability_authorization import CapabilityCompositionError
+        with self.assertRaises(CapabilityCompositionError):
+            capability_registry.resolve_role_capabilities(['contract.settlement.audit'])
+
+    def test_composition_verdict_survives_runtime_projection(self):
+        from ..core_extension_capability_rows import normalize_capability_row
+        user = self._project_actor()
+        rows = capability_registry.list_capabilities_for_user(user.with_user(user).env, user)
+        self.assertTrue(rows)
+        for row in rows:
+            projected = normalize_capability_row(row)
+            self.assertEqual(projected['role_composition'], row['role_composition'])
+            self.assertNotIn('native_groups', projected['role_composition'])
+            projected['role_composition']['operations'].append('tampered')
+            self.assertNotIn('tampered', row['role_composition']['operations'])
+
     def test_capability_matrix_sections(self):
         user = self._project_actor()
         matrix = capability_registry.build_capability_matrix_for_user(user.with_user(user).env, user)

@@ -49,11 +49,11 @@ class TestFixtureScenarioIdentity(TransactionCase):
         ):
             publish_scenarios(self.env)
             count = fixture._ensure_business_scenarios(self.env, (company,))
-        self.assertEqual(count, 46)
+        self.assertEqual(count, len(current_codes))
         enablements = self.env["sc.scene.company.enablement"].sudo().search([
             ("company_id", "=", company.id),
         ])
-        self.assertEqual(len(enablements), 46)
+        self.assertEqual(len(enablements), len(current_codes))
         self.assertTrue(all(enablements.mapped("enabled")))
         self.assertEqual(
             set(enablements.mapped("scene_key")),

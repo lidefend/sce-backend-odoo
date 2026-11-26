@@ -198,20 +198,38 @@ class TestTenantExtensionStorage(TransactionCase):
         self.assertIn(company, service.env.companies)
         self.assertIn(company, restricted_user.company_ids)
         self.assertEqual(service.env.company, company)
-        registration = service.env[
-            "sc.tenant.company.registration"
-        ].with_context(
+        Registration = service.env["sc.tenant.company.registration"].with_context(
             sc_tenant_payload_import=True,
             sc_tenant_payload_maintenance_capability=self.maintenance_secret,
-        ).create(
-            {
-                "tenant_key": "payload-company-fixture",
-                "company_id": company.id,
-                "source_module": "tenant_fixture_module",
-                "source_external_key": "payload-company",
-            }
         )
-        self.assertEqual(registration.company_id, company)
+        values = {
+            "tenant_key": "payload-company-fixture", "company_id": company.id,
+            "source_module": "tenant_fixture_module", "source_external_key": "payload-company",
+        }
+        self.assertEqual(restricted_user._sc_authorized_company_ids(), bootstrap.ids)
+        with patch.object(type(self.env.registry), "in_test_mode", return_value=False):
+            with self.assertRaisesRegex(AccessError, "TPV1_IMPORT_OPERATOR_REQUIRED"):
+                Registration.with_user(self.user).create(values)
+            with self.assertRaisesRegex(UserError, "TPV1_SIGNED_IMPORT_CONTEXT_REQUIRED"):
+                Registration.with_context(sc_tenant_payload_import=False).create(values)
+            with self.assertRaisesRegex(AccessError, "TPV1_SIGNED_MAINTENANCE_CAPABILITY_REQUIRED"):
+                Registration.with_context(sc_tenant_payload_maintenance_capability="forged").create(values)
+            with self.assertRaisesRegex(UserError, "TPV1_PLATFORM_BOOTSTRAP_COMPANY_CANNOT_REGISTER"):
+                Registration.create(dict(values, company_id=bootstrap.id))
+            registration = Registration._register_payload_company(values)
+            self.assertEqual(Registration._register_payload_company(values), registration)
+            with self.assertRaisesRegex(ValidationError, "TPV1_COMPANY_REGISTRATION_IDENTITY_CONFLICT"):
+                Registration._register_payload_company(dict(values, source_external_key="forged"))
+        self.assertFalse(registration.env.su)
+        self.assertEqual(registration.sudo().company_id, company)
+        self.assertEqual(restricted_user._sc_authorized_company_ids(), bootstrap.ids)
+        # The control-plane registration grants neither business reads nor a
+        # context-wide exemption, even to the signed importer itself.
+        partner = self.env["res.partner"].create({"name": "Registered company private record", "company_id": company.id})
+        with self.assertRaisesRegex(AccessError, "PLATFORM_COMPANY_NOT_AUTHORIZED"):
+            partner.with_env(service.env).read(["name"])
+        with self.assertRaisesRegex(AccessError, "PLATFORM_COMPANY_NOT_AUTHORIZED"):
+            registration.read(["company_id"])
 
         with self.assertRaisesRegex(
             TenantPayloadImportError,

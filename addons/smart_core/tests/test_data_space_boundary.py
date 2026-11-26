@@ -29,6 +29,8 @@ class TestDataSpaceBoundary(TransactionCase):
             'source_module': 'customer_space_unit', 'source_external_key': 'unit-customer',
         })
         cls.unknown = cls.env['res.company'].create({'name': 'Data space unit unknown'})
+        from .platform_company_test_support import license_multi_company
+        license_multi_company(cls.env, cls.demo.company_id | cls.customer_company)
         cls.admin = cls.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'Data space unit platform administrator', 'login': 'data-space-unit-admin',
             'company_id': cls.demo.company_id.id,

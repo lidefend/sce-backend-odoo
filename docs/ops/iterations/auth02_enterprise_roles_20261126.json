@@ -1,0 +1,241 @@
+{
+  "id": "AUTH-02-ENTERPRISE-ROLES-20261126",
+  "baseline": "62b57fc73f9a9ab5e04f0d6cf320571d444b95e5",
+  "status": "verification_pending",
+  "owner_decisions": [
+    "Pause representative business acceptance",
+    "Reuse native Odoo security and existing source tracking",
+    "Platform authorization controls whether multi-company is enabled",
+    "Multi-company licensing is platform-owned",
+    "Group companies may share one tenant; independent enterprises remain separate customer databases",
+    "Reuse scenario-oriented business capability identities for enterprise role composition; native groups remain internal mappings, never user-facing choices.",
+    "Complete the full enterprise-role product; previous experiments do not constrain final architecture.",
+    "Prefer native data management and permission execution; platform owns capability composition research.",
+    "Native user-level capability union; company/project records remain bounded by native memberships and record rules. Do not implement a second company-context permission engine.",
+    "Company-level isolation is mandatory even among group subsidiaries.",
+    "Research native company and project isolation first; use native mechanisms and composition/enhancement, never edit native Odoo implementation."
+  ],
+  "confirmed_inventory": {
+    "standard_roles": 22,
+    "capability_group_declarations": 73,
+    "assignability_declarations": 53
+  },
+  "unresolved": [
+    "Enterprise role company-specific execution needs proof beyond global groups_id",
+    "Capability closure approval must precede enterprise combinability; entry visibility is not a business ACL",
+    "Subscription activation policy for existing multi-company tenants requires a separate disclosed deployment migration; current implementation is not deployed",
+    "Company-specific role grants must not leak through additive native group membership, group-rule OR, sensitive fields or public business methods."
+  ],
+  "validation": {
+    "local": "required",
+    "remote_module_baselines": "deferred_remote",
+    "scheduled_release": "excluded; implementation only",
+    "initial_targeted_orm": {
+      "passed": 8,
+      "receipt": ".runtime/test-baseline/1795668662250404680/receipt.json",
+      "limit": "before native rule cache integration; not final candidate evidence"
+    },
+    "existing_suite_first_attempt": {
+      "status": "failed",
+      "receipt": ".runtime/test-baseline/1795668873931925920/receipt.json",
+      "cause": "Legacy positive multi-company tests lacked platform licensing; assertions retained and explicit synthetic licensing added"
+    },
+    "native_rule_bootstrap_attempt": {
+      "status": "failed",
+      "log": ".runtime/test-baseline/1795668997325332687/prepare.log",
+      "cause": "Recursive metadata fetch in sudo rule cache key; corrected to retain native sudo bypass"
+    },
+    "old_platform_manifest_guard": {
+      "status": "failed",
+      "classification": "preexisting_baseline_guard_debt",
+      "log": ".runtime/auth02-platform-manifest.log",
+      "proof": "All offending sources and guard identical to baseline 62b57fc; stale role-bound ACL assertion plus preexisting usage-counter accesses. Trial guard edit reverted, no production guard weakened."
+    },
+    "native_rule_suite_attempt": {
+      "status": "failed_receipt",
+      "assertions_passed": 119,
+      "receipt": ".runtime/test-baseline/1795669032523909462/receipt.json",
+      "reason": "Source fingerprint changed while task metadata updated; not candidate pass. Re-run after all edits."
+    },
+    "core_suite_after_native_cache_fix": {
+      "status": "passed",
+      "count": 119,
+      "receipt": ".runtime/test-baseline/1795669139681481464/receipt.json",
+      "limit": "Before final UTC validity and system.init scope corrections; final gate still required"
+    },
+    "business_admin_first_attempt": {
+      "status": "failed",
+      "receipt": ".runtime/test-baseline/1795669190145874821/receipt.json",
+      "reason": "Cross-company department validation test was intercepted by missing platform license. Explicit license added so the original ValidationError assertion remains exercised."
+    },
+    "selector_unit": {
+      "status": "passed",
+      "count": 270,
+      "log": ".runtime/auth02-selector-unit-2.log"
+    },
+    "final_gate": {
+      "status": "passed",
+      "executed_targets": 13,
+      "not_run": [],
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T050506Z-1841844-347928994/receipt.json",
+      "log": ".runtime/auth02-final-gate.log"
+    },
+    "final_platform_orm": {
+      "status": "passed",
+      "count": 120,
+      "receipt": ".runtime/test-baseline/1795669523697617510/receipt.json"
+    },
+    "final_business_admin_orm": {
+      "status": "passed",
+      "count": 36,
+      "receipt": ".runtime/test-baseline/1795669739240341149/receipt.json"
+    },
+    "composition": {
+      "status": "passed",
+      "targets": [
+        "verify.business_capability.authorization.unit",
+        "verify.business_capability.authorization.orm",
+        "ci.local.iteration"
+      ],
+      "limits": "No production capability admitted. No enterprise-role grants, approval delegation, company-specific role projection or persistent database writes.",
+      "first_gate": {
+        "status": "failed",
+        "receipt": ".runtime/frontend-dev-validation/executions/20261126T051936Z-1942205-360888313/receipt.json",
+        "classification": "generated_coverage_snapshot_stale",
+        "passed_targets": 17,
+        "failed_target": "verify.test.coverage.registry"
+      },
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T052529Z-1989166-136746295/receipt.json",
+      "executed_targets": 7,
+      "reused_targets": 11,
+      "unit_count": 12,
+      "catalog_orm_count": 13,
+      "identity_orm_count": 32,
+      "permission_truth_orm_count": 84,
+      "platform_orm_count": 120,
+      "user_management_orm_count": 36,
+      "selector_count": 271,
+      "generated_preflight": ".runtime/auth02-composition-generated-check.log"
+    },
+    "native_isolation": {
+      "status": "pending",
+      "target": "verify.auth02.native_isolation.orm",
+      "source_basis": [
+        "https://raw.githubusercontent.com/odoo/odoo/17.0/odoo/addons/base/models/ir_rule.py",
+        "https://raw.githubusercontent.com/odoo/odoo/17.0/addons/project/security/project_security.xml",
+        "https://raw.githubusercontent.com/odoo/documentation/17.0/content/developer/howtos/company.rst",
+        "https://raw.githubusercontent.com/odoo/documentation/17.0/content/developer/reference/backend/security.rst"
+      ],
+      "first_attempt": {
+        "status": "failed",
+        "classification": "implementation_defect",
+        "log": ".runtime/test-baseline/1795672052250260345/prepare.log",
+        "reason": "Odoo CSV loader derives model name from filename; moved role ACL rows into canonical ir.model.access.csv."
+      },
+      "second_attempt": {
+        "status": "failed",
+        "count": 8,
+        "failed_count": 1,
+        "receipt": ".runtime/test-baseline/1795672176052627687/receipt.json",
+        "reason": "Task company/project mismatch was accepted. Enable native _check_company_auto and project_id.check_company in the P1 inheritance; add positive same-company regression."
+      },
+      "third_attempt": {
+        "status": "failed",
+        "count": 9,
+        "error_count": 1,
+        "receipt": ".runtime/test-baseline/1795672406157373852/receipt.json",
+        "reason": "Native _check_company now rejects the mismatch with UserError, while probe incorrectly expected ValidationError. Correct to exact native error type; retain denial and same-company assertions."
+      }
+    }
+  },
+  "stages": [
+    {
+      "id": "AUTH-02.1",
+      "scope": "Platform-owned intra-tenant multi-company licensing, native company upper bound, live revocation and expiry",
+      "status": "local_validation_passed_remote_pending"
+    },
+    {
+      "id": "AUTH-02.2",
+      "scope": "Extend existing business capability catalog with composition qualification, dependencies, exclusions and business-only verdict; no capability qualified yet.",
+      "status": "contract_locally_validated_capability_qualification_pending"
+    },
+    {
+      "id": "AUTH-02.3",
+      "scope": "Company-owned enterprise role definitions, lifecycle, assignments, source-safe native projection and revocation",
+      "status": "pending"
+    },
+    {
+      "id": "AUTH-02.4",
+      "scope": "Contract-driven administration, native batch import, role/company/revocation behavior validation",
+      "status": "pending"
+    }
+  ],
+  "scope_boundaries": {
+    "platform_company_flag": "Intra-tenant company licensing only; not permission to mix independent customers",
+    "native_rules": "Native Odoo ACL/record rules remain executor; company context and rule-cache identity consume live platform scope",
+    "migration": "Default false is deliberate; existing multi-company tenants need reviewed platform entitlement activation before any deployment. No automatic backfill or persistent writes.",
+    "enterprise_role": "REVISED: company and project isolation are mandatory within group tenants. Ownership-only scope rejected. Company-scoped grant implementation pending native ORM evidence; no capability admitted."
+  },
+  "capability_inventory": {
+    "artifact": ".runtime/auth02-capability-inventory.json",
+    "status": "inventory_only",
+    "limits": "Only P0/P1 declared group graph and ACL rows. External groups, record rules and method checks remain unresolved. No capability approved for enterprise composition.",
+    "known_write_model_counts": {
+      "project_read": 26,
+      "contract_read": 25
+    }
+  },
+  "next_exact_step": "Publish foundation draft PR; qualify concrete business operations and source-tracked company-scoped assignments before enabling enterprise roles.",
+  "role_version_authority_progress": {
+    "audit": "docs/ops/iterations/auth02_role_version_authority_01.json",
+    "tests": [
+      {
+        "target": "verify.business_role.orm",
+        "status": "passed",
+        "tests": 30,
+        "receipt": ".runtime/test-baseline/1795674943895021594/receipt.json",
+        "coverage": "Immutable business facts; explicit bindings; default/configured native approval; cancellation without effects; new-setting removal; bounded atomic changes; stale-source rejection; native list contract; actual project read and price-write denial."
+      },
+      {
+        "target": "local.test.test MODULE=smart_construction_core TEST_TAGS=runtime_user_management,auth02_native_isolation",
+        "status": "passed",
+        "tests": 46,
+        "receipt": ".runtime/test-baseline/1795675109107204739/receipt.json"
+      },
+      {
+        "target": "verify.backend.model_declaration.guard + verify.sc_data_scope.rule_coverage + verify.role_capability_group_authority.unit",
+        "status": "passed",
+        "log": ".runtime/auth02-final-static.log"
+      },
+      {
+        "target": "scripts.verify.test_frontend_dev_incremental",
+        "status": "passed",
+        "tests": 272,
+        "log": ".runtime/auth02-selector-final.log"
+      },
+      {
+        "target": "verify.business_capability.authorization.unit + verify.system.permission_role.assignment.unit",
+        "status": "passed",
+        "tests": [
+          12,
+          17
+        ],
+        "log": ".runtime/auth02-authority-pure.log"
+      }
+    ],
+    "status": "verification_pending",
+    "remaining_product_gaps": [
+      "Only project.list.open has locally qualified production composition; the wider catalog is not yet qualified.",
+      "Selected assignments split into independent atomic batches of at most 50 users; native scheduling and actor revocation are tested. Whole-company selection and browser acceptance remain pending.",
+      "Native model.load and native list contract are tested; full browser import, reviewer workbench and published product navigation are not yet accepted.",
+      "No new clean commit, PR integration, persistent upgrade or deployment is claimed."
+    ]
+  },
+  "capability_admission_progress": {
+    "result_index": ".agent/runs/AUTH-02-ENTERPRISE-ROLES-20261126/run.json",
+    "capability": "project.list.open",
+    "status": "locally_verified",
+    "tests": 48,
+    "remaining": "Broader catalog qualification, whole-company selection UX and browser acceptance remain incomplete. Role-management scenario and selected-row multi-batch scheduling are locally verified."
+  }
+}

@@ -46,6 +46,7 @@
                         <group>
                             <field name="feature_flags_json" widget="json"/>
                             <field name="limits_json" widget="json"/>
+                            <field name="multi_company_enabled"/>
                             <field name="description"/>
                         </group>
                     </sheet>

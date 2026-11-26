@@ -16,17 +16,17 @@
   "maximum_business_depth": 3,
   "center_level_maturity_policy": "CAPABILITY_LEVEL_ONLY",
   "primary_centers": [
-    {"key": "workbench", "stable_key": "workspace.home.workbench", "native_menu_xmlid": "smart_construction_core.menu_sc_workspace_center", "sequence": 10, "name": "工作台", "responsibility": "个人任务、审批、提醒、预警与常用入口"},
-    {"key": "project", "stable_key": "construction.center.project", "native_menu_xmlid": "smart_construction_core.menu_sc_project_center", "sequence": 20, "name": "项目中心", "responsibility": "项目开立、投标、施工过程、进度、质量安全与项目资料"},
-    {"key": "contract", "stable_key": "construction.center.contract", "native_menu_xmlid": "smart_construction_core.menu_sc_contract_center", "sequence": 30, "name": "合同中心", "responsibility": "合同登记、变更、履约、计量与结算"},
-    {"key": "cost", "stable_key": "construction.center.cost", "native_menu_xmlid": "smart_construction_core.menu_sc_cost_center", "sequence": 40, "name": "成本中心", "responsibility": "目标成本、预算、成本归集、执行分析与利润"},
-    {"key": "supply_chain", "stable_key": "construction.center.supply_chain", "native_menu_xmlid": "smart_construction_core.menu_sc_supply_chain_center", "sequence": 50, "name": "供应链与资源中心", "responsibility": "供应商、采购、材料收发、劳务、分包、机械与周转材料使用"},
-    {"key": "finance", "stable_key": "construction.center.finance", "native_menu_xmlid": "smart_construction_core.menu_sc_finance_center", "sequence": 60, "name": "财务中心", "responsibility": "收付款、资金计划、费用、保证金、资金与现金流"},
-    {"key": "tax", "stable_key": "construction.center.tax", "native_menu_xmlid": "smart_construction_core.menu_sc_tax_center", "sequence": 70, "name": "税务中心", "responsibility": "发票、预缴、抵扣、税务台账、申报与税务检查"},
-    {"key": "accounting", "stable_key": "construction.center.accounting", "native_menu_xmlid": "smart_construction_core.menu_sc_accounting_center", "sequence": 80, "name": "会计账务中心", "responsibility": "科目、凭证、账簿、期间结账、核算与报表底稿"},
-    {"key": "reporting", "stable_key": "construction.center.reporting", "native_menu_xmlid": "smart_construction_core.menu_sc_data_center", "sequence": 90, "name": "报表中心", "responsibility": "跨项目、合同、成本、资金、税务与经营分析"},
-    {"key": "administration", "stable_key": "construction.center.administration", "native_menu_xmlid": "smart_construction_core.menu_sc_hr_admin_center", "sequence": 100, "name": "行政中心", "responsibility": "组织、人员、薪酬、证照、档案与行政主数据"},
-    {"key": "product_configuration", "stable_key": "construction.center.product_configuration", "native_menu_xmlid": "smart_construction_core.menu_sc_business_config_center", "sequence": 110, "name": "产品配置", "responsibility": "企业场景、审批、菜单、表单、字段、权限与系统参数配置"}
+    {"navigation_placement": "scenario", "key": "workbench", "stable_key": "workspace.home.workbench", "native_menu_xmlid": "smart_construction_core.menu_sc_workspace_center", "sequence": 10, "name": "工作台", "responsibility": "个人任务、审批、提醒、预警与常用入口"},
+    {"navigation_placement": "scenario", "key": "project", "stable_key": "construction.center.project", "native_menu_xmlid": "smart_construction_core.menu_sc_project_center", "sequence": 20, "name": "项目中心", "responsibility": "项目开立、投标、施工过程、进度、质量安全与项目资料"},
+    {"navigation_placement": "scenario", "key": "contract", "stable_key": "construction.center.contract", "native_menu_xmlid": "smart_construction_core.menu_sc_contract_center", "sequence": 30, "name": "合同中心", "responsibility": "合同登记、变更、履约、计量与结算"},
+    {"navigation_placement": "scenario", "key": "cost", "stable_key": "construction.center.cost", "native_menu_xmlid": "smart_construction_core.menu_sc_cost_center", "sequence": 40, "name": "成本中心", "responsibility": "目标成本、预算、成本归集、执行分析与利润"},
+    {"navigation_placement": "scenario", "key": "supply_chain", "stable_key": "construction.center.supply_chain", "native_menu_xmlid": "smart_construction_core.menu_sc_supply_chain_center", "sequence": 50, "name": "供应链与资源中心", "responsibility": "供应商、采购、材料收发、劳务、分包、机械与周转材料使用"},
+    {"navigation_placement": "scenario", "key": "finance", "stable_key": "construction.center.finance", "native_menu_xmlid": "smart_construction_core.menu_sc_finance_center", "sequence": 60, "name": "财务中心", "responsibility": "收付款、资金计划、费用、保证金、资金与现金流"},
+    {"navigation_placement": "scenario", "key": "tax", "stable_key": "construction.center.tax", "native_menu_xmlid": "smart_construction_core.menu_sc_tax_center", "sequence": 70, "name": "税务中心", "responsibility": "发票、预缴、抵扣、税务台账、申报与税务检查"},
+    {"navigation_placement": "scenario", "key": "accounting", "stable_key": "construction.center.accounting", "native_menu_xmlid": "smart_construction_core.menu_sc_accounting_center", "sequence": 80, "name": "会计账务中心", "responsibility": "科目、凭证、账簿、期间结账、核算与报表底稿"},
+    {"navigation_placement": "scenario", "key": "reporting", "stable_key": "construction.center.reporting", "native_menu_xmlid": "smart_construction_core.menu_sc_data_center", "sequence": 90, "name": "报表中心", "responsibility": "跨项目、合同、成本、资金、税务与经营分析"},
+    {"navigation_placement": "scenario", "key": "administration", "stable_key": "construction.center.administration", "native_menu_xmlid": "smart_construction_core.menu_sc_hr_admin_center", "sequence": 100, "name": "行政中心", "responsibility": "组织、人员、薪酬、证照、档案与行政主数据"},
+    {"navigation_placement": "root", "key": "product_configuration", "stable_key": "construction.center.product_configuration", "native_menu_xmlid": "smart_construction_core.menu_sc_business_config_center", "sequence": 110, "name": "产品配置", "responsibility": "企业场景、审批、菜单、表单、字段、权限与系统参数配置"}
   ],
   "current_runtime_primary_centers": [
     "工作台", "项目中心", "合同中心", "成本中心", "供应链与资源中心", "财务中心",

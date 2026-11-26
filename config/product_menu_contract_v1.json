@@ -853,6 +853,26 @@
       "native_menu_xmlid": "smart_construction_core.menu_sc_business_config_center",
       "level_two": [
         {
+          "name": "企业业务角色",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "企业角色分配",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "角色授权调整",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "企业角色授权记录",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
           "name": "表单配置",
           "delivery": "RELEASED_FOUNDATION",
           "release_state": "released"
@@ -884,6 +904,41 @@
         },
         {
           "name": "编码规则",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "企业初始化",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "业务分类字典",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "数据字典",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "预算类型",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "阶段要求配置",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "审批岗位人员",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "业务场景",
           "delivery": "RELEASED_FOUNDATION",
           "release_state": "released"
         }

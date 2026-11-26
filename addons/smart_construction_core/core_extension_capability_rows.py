@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List
+from copy import deepcopy
 
 
 ENTRY_ALIAS_PREFIXES = ("construction.menu.", "catalog.menu.")
@@ -43,6 +44,7 @@ def normalize_capability_row(row: dict[str, Any]) -> dict[str, Any] | None:
     ui_hint = str(row.get("ui_hint") or "").strip()
     identity_kind, business_capability = normalized_identity(key, row)
     return {
+        **({"role_composition": deepcopy(row["role_composition"])} if "role_composition" in row else {}),
         "key": key,
         "identity_kind": identity_kind,
         "business_capability": business_capability,

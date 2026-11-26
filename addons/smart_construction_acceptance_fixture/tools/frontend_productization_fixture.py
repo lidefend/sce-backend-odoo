@@ -79,6 +79,8 @@ FIXTURE_BUSINESS_SCENARIOS = (
     "admin.payroll",
     "admin.documents",
     "admin.assets",
+    "config.enterprise_initialization",
+    "config.business_foundation",
     "config.enterprise_access",
     "config.approval",
     "config.presentation",

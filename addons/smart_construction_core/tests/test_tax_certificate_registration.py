@@ -29,7 +29,7 @@ class TestTaxCertificateRegistration(BusinessTransactionCase):
 
         cls.project_member = create_user(
             "r11f2.project.member",
-            ["smart_construction_core.group_sc_cap_project_read"],
+            ["smart_construction_core.group_sc_cap_project_workspace_read"],
         )
         cls.finance_read = create_user(
             "r11f2.finance.read",

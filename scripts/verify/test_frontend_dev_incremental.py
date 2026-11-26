@@ -51,6 +51,41 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_model_import_and_company_scope_facts_are_not_unmapped(self):
+        for path, guard in (
+            ('addons/smart_construction_core/models/support/__init__.py', 'verify.backend.model_declaration.guard'),
+            ('addons/smart_construction_core/data/tenant/scoped_business_models.v1.json', 'verify.sc_data_scope.rule_coverage'),
+            ('scripts/verify/data_scope_declarations.json', 'verify.sc_data_scope.rule_coverage'),
+        ):
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                self.assertIn(guard, targets)
+                self.assertIn('verify.smart_construction_core.module_baseline', targets)
+
+    def test_authority_sources_and_native_isolation_have_targeted_regressions(self):
+        for path, target in (
+            ('addons/smart_core/models/group_authority_reconciliation.py', 'verify.group_authority.sources.orm'),
+            ('addons/smart_core/models/res_users_group_authority.py', 'verify.group_authority.sources.orm'),
+            ('addons/smart_core/security/group_assignment.py', 'verify.group_authority.sources.orm'),
+            ('addons/smart_core/tests/test_group_authority_sources.py', 'verify.group_authority.sources.orm'),
+            ('addons/smart_construction_core/models/support/task_extend.py', 'verify.auth02.native_isolation.orm'),
+            ('addons/smart_construction_core/tests/test_native_company_project_isolation.py', 'verify.auth02.native_isolation.orm'),
+        ):
+            with self.subTest(path=path):
+                self.assertIn(target, select_targets([path]))
+
+    def test_business_capability_authorization_selects_contract_and_projection_checks(self):
+        for path in (
+            'addons/smart_construction_core/services/business_capability_authorization.py',
+            'addons/smart_construction_core/services/capability_registry.py',
+            'addons/smart_construction_core/core_extension_capability_rows.py',
+        ):
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                self.assertIn('verify.business_capability.authorization.unit', targets)
+                self.assertIn('verify.business_capability.authorization.orm', targets)
+                self.assertIn('verify.smart_construction_core.module_baseline', targets)
+
     def test_channel_targets_partition_without_losing_shared_or_union_members(self):
         targets = {
             "verify.frontend.lint.src",
@@ -1414,7 +1449,9 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ] if path != "addons/smart_core/handlers/system_init.py" else [
                         "verify.backend.navigation_delivery.unit",
                         "verify.platform.duty.contract.unit",
+                        "verify.platform.multi_company.orm",
                         "verify.scenario.center_projection.guard",
+                        "verify.smart_core.close_02.module_baseline",
                         "verify.system_init.menu_boundary.guard",
                     ],
                 )
@@ -2142,8 +2179,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(
             select_targets(["addons/smart_construction_core/services/capability_registry.py"]),
             [
+                "verify.business_capability.authorization.orm",
+                "verify.business_capability.authorization.unit",
                 "verify.capability.identity_boundary.unit",
                 "verify.daily.permission_truth.capability.orm",
+                "verify.smart_construction_core.module_baseline",
             ],
         )
         for path in (
@@ -2291,13 +2331,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(
             select_targets(["addons/smart_construction_core/services/capability_registry.py"]),
             [
+                "verify.business_capability.authorization.orm",
+                "verify.business_capability.authorization.unit",
                 "verify.capability.identity_boundary.unit",
                 "verify.daily.permission_truth.capability.orm",
+                "verify.smart_construction_core.module_baseline",
             ],
         )
         self.assertEqual(
             select_targets(["addons/smart_construction_core/tests/test_capability_registry_service.py"]),
             [
+                "verify.business_capability.authorization.orm",
+                "verify.business_capability.authorization.unit",
                 "verify.capability.identity_boundary.orm",
                 "verify.daily.permission_truth.capability.orm",
                 "verify.smart_construction_core.module_baseline",
@@ -2687,10 +2732,23 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "verify.frontend.delivery_hardening.guard",
         }.issubset(select_targets(["scripts/verify/role_capability_group_authority_guard.py"])))
 
+    def test_platform_company_policy_selects_native_and_credential_regressions(self):
+        for path in (
+            'addons/smart_core/models/ir_rule_company_authorization.py',
+            'addons/smart_core/security/platform_company_access.py',
+            'addons/smart_core/handlers/system_init.py',
+            'addons/smart_core/models/subscription.py',
+            'addons/smart_core/security/auth.py',
+        ):
+            with self.subTest(path=path):
+                self.assertIn('verify.platform.multi_company.orm', select_targets([path]))
+                self.assertIn('verify.smart_core.close_02.module_baseline', select_targets([path]))
+
     def test_native_role_and_personnel_changes_select_their_orm_owners(self) -> None:
         self.assertEqual(
             select_targets(["addons/smart_core/security/group_assignment.py"]),
             [
+                "verify.group_authority.sources.orm",
                 "verify.runtime_user_management.orm",
                 "verify.system.permission_role.assignment.unit",
             ],
@@ -2908,6 +2966,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
             "config/product_scenario_organization_v1.json": [
                 "verify.product.scenario.organization.unit",
+            ],
+            "addons/smart_construction_core/views/menu_product_configuration_wave1.xml": [
+                "verify.navigation.publication_consumers.unit",
+                "verify.product.configuration_center.wave1.guard",
+                "verify.product.menu.contract_v1.guard",
             ],
             "scripts/audit/build_scenario_product_organization.py": [
                 "verify.product.scenario.organization.unit",

@@ -11,7 +11,7 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.env.user.write({'company_ids': [(4, cls.env.company.id)]})
+        cls.env.user.write({'company_ids': [(4, cls.env.company.id)], 'company_id': cls.env.company.id})
         cls.journal = cls.env['account.journal'].create({
             'name': 'Synthetic AUTH01 journal', 'code': 'AUT01',
             'type': 'general', 'company_id': cls.env.company.id,

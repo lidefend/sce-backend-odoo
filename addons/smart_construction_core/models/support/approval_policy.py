@@ -10,6 +10,7 @@ class ScApprovalPolicy(models.Model):
     _order = "sequence, id"
     _runtime_authority = "base_tier_validation"
     BUSINESS_MODEL_SELECTION = [
+        ("sc.business.role.change", "角色授权调整"),
         ("sc.project.document", "工程资料"),
         ("tender.doc.purchase", "投标文件购买申请"),
         ("tender.guarantee", "投标保证金"),
@@ -494,6 +495,7 @@ class ScApprovalPolicy(models.Model):
     def _tier_sync_supported(self):
         self.ensure_one()
         return self.target_model in {
+            "sc.business.role.change",
             "sc.project.document",
             "tender.doc.purchase",
             "tender.guarantee",

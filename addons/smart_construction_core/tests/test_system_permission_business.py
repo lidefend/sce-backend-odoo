@@ -9,7 +9,7 @@ class TestSystemPermissionBusiness(BusinessTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.env.user.write({'company_ids': [(4, cls.env.company.id)]})
+        cls.env.user.write({'company_ids': [(4, cls.env.company.id)], 'company_id': cls.env.company.id})
 
     def _subject(self, suffix):
         role = self.env.ref('smart_construction_core.group_sc_role_' + suffix)

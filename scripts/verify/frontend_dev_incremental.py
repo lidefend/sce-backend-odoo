@@ -2228,6 +2228,13 @@ RULES = (
         "verify.scenario.center_projection.guard",
     )),
     Rule((
+        "addons/smart_construction_core/views/menu_product_configuration_wave1.xml",
+    ), (
+        "verify.product.configuration_center.wave1.guard",
+        "verify.product.menu.contract_v1.guard",
+        "verify.navigation.publication_consumers.unit",
+    )),
+    Rule((
         "scripts/verify/frontend_state_presentation_guard.py",
         "scripts/verify/test_frontend_state_presentation_guard.py",
     ), (
@@ -2627,7 +2634,59 @@ RULES = (
     ), ("verify.role_capability_group_authority.unit", "verify.smart_construction_core.module_baseline")),
     Rule((
         "addons/smart_core/models/res_users_group_authority.py",
+        "addons/smart_core/models/group_authority_reconciliation.py",
+        "addons/smart_core/security/group_assignment.py",
+        "addons/smart_core/tests/test_group_authority_sources.py",
+    ), ("verify.group_authority.sources.orm",)),
+    Rule((
+        "addons/smart_construction_core/models/support/task_extend.py",
+        "addons/smart_construction_core/tests/test_native_company_project_isolation.py",
+    ), ("verify.auth02.native_isolation.orm",)),
+    Rule((
+        "addons/smart_construction_core/models/support/__init__.py",
+    ), ("verify.backend.model_declaration.guard", "verify.smart_construction_core.module_baseline")),
+    Rule((
+        "addons/smart_construction_core/data/tenant/scoped_business_models.v1.json",
+        "scripts/verify/data_scope_declarations.json",
+    ), ("verify.sc_data_scope.rule_coverage", "verify.smart_construction_core.module_baseline")),
+    Rule((
+        "addons/smart_core/models/res_users_group_authority.py",
     ), ("verify.system.permission_role.assignment.unit", "verify.smart_core.close_02.module_baseline",
+        "verify.smart_construction_core.module_baseline")),
+    Rule((
+        "addons/smart_core/models/__init__.py",
+        "addons/smart_core/models/res_users.py",
+        "addons/smart_core/models/subscription.py",
+        "addons/smart_core/models/ir_rule_company_authorization.py",
+        "addons/smart_core/security/platform_company_access.py",
+        "addons/smart_core/security/auth.py",
+        "addons/smart_core/security/credential_service.py",
+        "addons/smart_core/handlers/login.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/views/platform_company_access_views.xml",
+        "addons/smart_core/tests/test_platform_multi_company.py",
+        "addons/smart_core/tests/platform_company_test_support.py",
+        "addons/smart_core/tests/test_auth_credential_framework.py",
+        "addons/smart_core/tests/test_data_space_boundary.py",
+    ), ("verify.platform.multi_company.orm", "verify.smart_core.close_02.module_baseline")),
+    Rule((
+        "addons/smart_construction_core/services/business_capability_authorization.py",
+        "addons/smart_construction_core/services/business_role_capabilities.py",
+        "addons/smart_construction_core/models/support/business_role.py",
+        "addons/smart_construction_core/models/support/business_role_change.py",
+        "addons/smart_construction_core/models/support/approval_policy.py",
+        "addons/smart_construction_core/models/support/tier_definition_ext.py",
+        "addons/smart_construction_core/security/business_role_security.xml",
+        "addons/smart_construction_core/views/support/business_role_views.xml",
+        "addons/smart_construction_core/tests/test_business_role.py",
+    ), ("verify.business_role.orm",)),
+    Rule((
+        "addons/smart_construction_core/services/business_capability_authorization.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/core_extension_capability_rows.py",
+        "addons/smart_construction_core/tests/test_capability_registry_service.py",
+        "scripts/verify/test_business_capability_authorization.py",
+    ), ("verify.business_capability.authorization.unit", "verify.business_capability.authorization.orm",
         "verify.smart_construction_core.module_baseline")),
     Rule((
         "addons/smart_core/handlers/api_data.py",

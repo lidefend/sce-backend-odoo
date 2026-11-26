@@ -14,10 +14,10 @@
   "validation": {
     "ok": true,
     "errors": [],
-    "released_page_count": 132,
-    "organized_page_count": 132,
-    "scenario_count": 46,
-    "unique_page_count": 132,
+    "released_page_count": 143,
+    "organized_page_count": 143,
+    "scenario_count": 48,
+    "unique_page_count": 143,
     "duplicate_page_count": 0,
     "unassigned_page_count": 0,
     "unknown_page_count": 0
@@ -3660,6 +3660,157 @@
       "references": []
     },
     {
+      "key": "config.enterprise_initialization",
+      "name": "企业初始化",
+      "owner_center": "construction.center.product_configuration",
+      "objective": "企业初始化",
+      "roles": [
+        "business_config_admin"
+      ],
+      "prerequisites": [
+        "当前企业",
+        "配置管理员权限"
+      ],
+      "result_objects": [
+        "res.company"
+      ],
+      "result": "配置已保存并可回读。",
+      "pages": [
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_enterprise_initialization",
+          "purpose": "按企业、组织、岗位和人员顺序完成准备，再引用后续配置事项。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration",
+          "source_menu_name": "企业初始化",
+          "menu_name": "企业初始化",
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "native_group_name": "",
+          "alternative_group": "",
+          "page_output": "产生或更新 res.company 业务记录（企业初始化）",
+          "preceding_or_related": "启动依据：当前企业；配置管理员权限",
+          "following": "无已发布后续办理面；完成后在本页或默认列表回读本页结果",
+          "entry_context_and_return": "必须/可选事实：必须已有：当前企业；配置管理员权限；可选择或新建：可新建或选择企业初始化对应的业务记录；续办时携带 res.company ID；结果展示：产生或更新 res.company 业务记录（企业初始化）后到产品配置/企业初始化回读；执行返回：有来源则回原来源，无来源则回该列表",
+          "shared_reference": "",
+          "scenario_sequence": 42,
+          "page_sequence": 0
+        }
+      ],
+      "dependencies": [],
+      "next_steps": [],
+      "exclusions": [],
+      "context": "当前企业；从产品配置进入，完成后返回本事项",
+      "references": []
+    },
+    {
+      "key": "config.business_foundation",
+      "name": "业务基础配置",
+      "owner_center": "construction.center.product_configuration",
+      "objective": "业务基础配置",
+      "roles": [
+        "business_config_admin"
+      ],
+      "prerequisites": [
+        "当前企业",
+        "配置管理员权限"
+      ],
+      "result_objects": [
+        "sc.business.category",
+        "sc.dictionary",
+        "project.cost.code",
+        "sc.project.stage.requirement.item"
+      ],
+      "result": "配置已保存并可回读。",
+      "pages": [
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_business_category",
+          "purpose": "维护企业业务分类。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration",
+          "source_menu_name": "业务分类字典",
+          "menu_name": "业务分类字典",
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "native_group_name": "",
+          "alternative_group": "",
+          "page_output": "产生或更新 sc.business.category 业务记录（业务分类字典）",
+          "preceding_or_related": "启动依据：当前企业；配置管理员权限",
+          "following": "同组后续：数据字典",
+          "entry_context_and_return": "必须/可选事实：必须已有：当前企业；配置管理员权限；可选择或新建：可新建或选择业务分类字典对应的业务记录；续办时携带 sc.business.category ID；结果展示：产生或更新 sc.business.category 业务记录（业务分类字典）后到产品配置/业务分类字典回读；执行返回：有来源则回原来源，无来源则回该列表",
+          "shared_reference": "",
+          "scenario_sequence": 43,
+          "page_sequence": 0
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_dictionary",
+          "purpose": "查阅与维护现有授权范围内的业务字典。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration",
+          "source_menu_name": "数据字典",
+          "menu_name": "数据字典",
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "native_group_name": "",
+          "alternative_group": "",
+          "page_output": "产生或更新 sc.dictionary 业务记录（数据字典）",
+          "preceding_or_related": "同组前序：业务分类字典",
+          "following": "同组后续：预算类型",
+          "entry_context_and_return": "必须/可选事实：必须已有：当前企业；前置办理：业务分类字典；可选择或新建：可新建或选择数据字典对应的业务记录；续办时携带 sc.dictionary ID；结果展示：产生或更新 sc.dictionary 业务记录（数据字典）后到产品配置/数据字典回读；执行返回：有来源则回原来源，无来源则回该列表",
+          "shared_reference": "",
+          "scenario_sequence": 43,
+          "page_sequence": 1
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_project_cost_code",
+          "purpose": "维护预算类型。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration",
+          "source_menu_name": "预算类型",
+          "menu_name": "预算类型",
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "native_group_name": "",
+          "alternative_group": "",
+          "page_output": "产生或更新 project.cost.code 业务记录（预算类型）",
+          "preceding_or_related": "同组前序：数据字典",
+          "following": "同组后续：阶段要求配置",
+          "entry_context_and_return": "必须/可选事实：必须已有：当前企业；前置办理：数据字典；可选择或新建：可新建或选择预算类型对应的业务记录；续办时携带 project.cost.code ID；结果展示：产生或更新 project.cost.code 业务记录（预算类型）后到产品配置/预算类型回读；执行返回：有来源则回原来源，无来源则回该列表",
+          "shared_reference": "",
+          "scenario_sequence": 43,
+          "page_sequence": 2
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_sc_project_stage_requirement_items",
+          "purpose": "维护项目阶段要求。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration",
+          "source_menu_name": "阶段要求配置",
+          "menu_name": "阶段要求配置",
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "native_group_name": "",
+          "alternative_group": "",
+          "page_output": "产生或更新 sc.project.stage.requirement.item 业务记录（阶段要求配置）",
+          "preceding_or_related": "同组前序：预算类型",
+          "following": "无已发布后续办理面；完成后在本页或默认列表回读本页结果",
+          "entry_context_and_return": "必须/可选事实：必须已有：当前企业；前置办理：预算类型；可选择或新建：可新建或选择阶段要求配置对应的业务记录；续办时携带 sc.project.stage.requirement.item ID；结果展示：产生或更新 sc.project.stage.requirement.item 业务记录（阶段要求配置）后到产品配置/阶段要求配置回读；执行返回：有来源则回原来源，无来源则回该列表",
+          "shared_reference": "",
+          "scenario_sequence": 43,
+          "page_sequence": 3
+        }
+      ],
+      "dependencies": [],
+      "next_steps": [],
+      "exclusions": [],
+      "context": "当前企业；从产品配置进入，完成后返回本事项",
+      "references": []
+    },
+    {
       "key": "config.enterprise_access",
       "name": "企业人员权限配置",
       "owner_center": "construction.center.product_configuration",
@@ -3680,9 +3831,50 @@
       "result": "形成目标用户的业务角色与公司范围。",
       "pages": [
         {
+          "menu_xmlid": "smart_construction_core.menu_business_role",
+          "purpose": "定义企业业务角色与能力组合，发布后保留原有授权事实。",
+          "mode": "先办",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration",
+          "source_menu_name": "企业业务角色",
+          "menu_name": "企业业务角色",
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "native_group_name": "",
+          "alternative_group": "",
+          "page_output": "产生或更新 sc.business.role 业务记录（企业业务角色）",
+          "preceding_or_related": "启动依据：企业管理员权限；已建立用户、员工、部门和岗位；可分配角色和允许公司",
+          "following": "同组后续：企业角色分配；用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断",
+          "entry_context_and_return": "必须/可选事实：必须已有：企业管理员权限；已建立用户、员工、部门和岗位；可分配角色和允许公司；可选择或新建：可新建或选择企业业务角色对应的业务记录；续办时携带 sc.business.role ID；结果展示：产生或更新 sc.business.role 业务记录（企业业务角色）后到产品配置/企业业务角色回读；执行返回：有来源则回原来源，无来源则回该列表",
+          "shared_reference": "",
+          "scenario_sequence": 44,
+          "page_sequence": 0
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_user_role_assignment",
+          "purpose": "导入或选择人员分配企业角色，按企业审批规则生效。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration",
+          "source_menu_name": "企业角色分配",
+          "menu_name": "企业角色分配",
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "native_group_name": "",
+          "alternative_group": "",
+          "page_output": "产生或更新 sc.user.role.assignment 业务记录（企业角色分配）",
+          "preceding_or_related": "同组前序：企业业务角色",
+          "following": "同组后续：数据权限；用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断",
+          "entry_context_and_return": "必须/可选事实：必须已有：当前企业；前置办理：企业业务角色；可选择或新建：可新建或选择企业角色分配对应的业务记录；续办时携带 sc.user.role.assignment ID；结果展示：产生或更新 sc.user.role.assignment 业务记录（企业角色分配）后到产品配置/企业角色分配回读；执行返回：有来源则回原来源，无来源则回该列表",
+          "shared_reference": "",
+          "scenario_sequence": 44,
+          "page_sequence": 1
+        },
+        {
           "menu_xmlid": "smart_construction_core.menu_sc_product_data_permission_v1",
           "purpose": "选择目标用户，分配允许角色和公司范围并回读。",
           "mode": "办理",
+          "direct_kind": "configuration",
           "source_menu_name": "数据权限",
           "menu_name": "数据权限",
           "center_key": "construction.center.product_configuration",
@@ -3690,12 +3882,52 @@
           "native_group_name": "",
           "alternative_group": "",
           "page_output": "更新目标用户的业务角色和允许公司范围",
-          "preceding_or_related": "启动依据：企业管理员权限；已建立用户、员工、部门和岗位；可分配角色和允许公司",
-          "following": "用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断",
+          "preceding_or_related": "同组前序：企业角色分配",
+          "following": "同组后续：角色授权调整；用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断",
           "entry_context_and_return": "必须/可选事实：必须已有：目标用户及其当前角色、公司范围；只能选择已有 res.users，不在权限页新建用户；续办时携带 user_id；结果展示：更新目标用户的业务角色和允许公司范围后到产品配置/数据权限回读；执行返回：有来源则回原来源，无来源则回该列表",
           "shared_reference": "",
-          "scenario_sequence": 42,
-          "page_sequence": 0
+          "scenario_sequence": 44,
+          "page_sequence": 2
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_business_role_change",
+          "purpose": "预览有效权限变化，明确提交选中用户的批量调整并回读结果。",
+          "mode": "办理",
+          "declared_intent": "handle",
+          "direct_kind": "configuration",
+          "source_menu_name": "角色授权调整",
+          "menu_name": "角色授权调整",
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "native_group_name": "",
+          "alternative_group": "",
+          "page_output": "产生或更新 sc.business.role.change 业务记录（角色授权调整）",
+          "preceding_or_related": "同组前序：数据权限",
+          "following": "用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断",
+          "entry_context_and_return": "必须/可选事实：必须已有：当前企业；前置办理：数据权限；可选择或新建：可新建或选择角色授权调整对应的业务记录；续办时携带 sc.business.role.change ID；结果展示：产生或更新 sc.business.role.change 业务记录（角色授权调整）后到产品配置/角色授权调整回读；执行返回：有来源则回原来源，无来源则回该列表",
+          "shared_reference": "",
+          "scenario_sequence": 44,
+          "page_sequence": 3
+        },
+        {
+          "menu_xmlid": "smart_construction_core.menu_business_role_event",
+          "purpose": "查看授权来源、执行结果与历史变更事实。",
+          "mode": "回读",
+          "declared_intent": "view",
+          "direct_kind": "configuration",
+          "source_menu_name": "企业角色授权记录",
+          "menu_name": "企业角色授权记录",
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "native_group_name": "",
+          "alternative_group": "",
+          "page_output": "返回企业角色授权记录的当前查询结果",
+          "preceding_or_related": "同组前序：角色授权调整",
+          "following": "以当前页面显示查询或回读结果；用户获得权限后可进入对应业务场景；企业场景启用与用户权限分别判断",
+          "entry_context_and_return": "必须/可选事实：必须已有：当前企业；前置办理：角色授权调整；可选择或新建：仅选择查询范围或业务对象，不新建业务记录；续办时携带 sc.business.role.event ID 和筛选上下文；结果展示：返回企业角色授权记录的当前查询结果后到产品配置/企业角色授权记录回读；执行返回：有来源则回原来源，无来源则回该列表",
+          "shared_reference": "",
+          "scenario_sequence": 44,
+          "page_sequence": 4
         }
       ],
       "dependencies": [
@@ -3730,9 +3962,30 @@
       "result": "形成生效中的审批策略。",
       "pages": [
         {
+          "menu_xmlid": "smart_construction_core.menu_sc_approval_scope",
+          "purpose": "设置审批岗位人员，供审批策略引用。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration",
+          "source_menu_name": "审批岗位人员",
+          "menu_name": "审批岗位人员",
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "native_group_name": "",
+          "alternative_group": "",
+          "page_output": "产生或更新 sc.approval.scope 业务记录（审批岗位人员）",
+          "preceding_or_related": "启动依据：目标业务模型或业务类别；审批角色；企业审批规则",
+          "following": "同组后续：流程审批配置；审批策略被付款、结算、采购、合同和资源场景消费",
+          "entry_context_and_return": "必须/可选事实：必须已有：目标业务模型或业务类别；审批角色；企业审批规则；可选择或新建：可新建或选择审批岗位人员对应的业务记录；续办时携带 sc.approval.scope ID；结果展示：产生或更新 sc.approval.scope 业务记录（审批岗位人员）后到产品配置/审批岗位人员回读；执行返回：有来源则回原来源，无来源则回该列表",
+          "shared_reference": "",
+          "scenario_sequence": 45,
+          "page_sequence": 0
+        },
+        {
           "menu_xmlid": "smart_construction_core.menu_sc_approval_policy",
           "purpose": "维护业务审批范围、层级和审批责任。",
           "mode": "办理",
+          "direct_kind": "configuration",
           "source_menu_name": "流程审批配置",
           "menu_name": "流程审批配置",
           "center_key": "construction.center.product_configuration",
@@ -3740,12 +3993,12 @@
           "native_group_name": "",
           "alternative_group": "",
           "page_output": "产生或更新 sc.approval.policy 业务记录（流程审批配置）",
-          "preceding_or_related": "启动依据：目标业务模型或业务类别；审批角色；企业审批规则",
+          "preceding_or_related": "同组前序：审批岗位人员",
           "following": "审批策略被付款、结算、采购、合同和资源场景消费",
-          "entry_context_and_return": "必须/可选事实：必须已有：目标业务模型或业务类别；审批角色；企业审批规则；可选择或新建：可新建或选择流程审批配置对应的业务记录；续办时携带 sc.approval.policy ID；结果展示：产生或更新 sc.approval.policy 业务记录（流程审批配置）后到产品配置/流程审批配置回读；执行返回：有来源则回原来源，无来源则回该列表",
+          "entry_context_and_return": "必须/可选事实：必须已有：当前企业；前置办理：审批岗位人员；可选择或新建：可新建或选择流程审批配置对应的业务记录；续办时携带 sc.approval.policy ID；结果展示：产生或更新 sc.approval.policy 业务记录（流程审批配置）后到产品配置/流程审批配置回读；执行返回：有来源则回原来源，无来源则回该列表",
           "shared_reference": "",
-          "scenario_sequence": 43,
-          "page_sequence": 0
+          "scenario_sequence": 45,
+          "page_sequence": 1
         }
       ],
       "dependencies": [],
@@ -3758,7 +4011,7 @@
     },
     {
       "key": "config.presentation",
-      "name": "表单、字段与菜单配置",
+      "name": "场景与页面配置",
       "owner_center": "construction.center.product_configuration",
       "objective": "调整业务办理页面的字段、表单和菜单呈现，不改变业务事实和权限。",
       "roles": [
@@ -3777,9 +4030,30 @@
       "result": "形成企业生效的页面呈现配置。",
       "pages": [
         {
+          "menu_xmlid": "smart_construction_core.menu_sc_product_scenario_business_config",
+          "purpose": "配置企业业务场景组合，保持平台锁定的产品结构。",
+          "mode": "办理",
+          "declared_intent": "master_data",
+          "direct_kind": "configuration",
+          "source_menu_name": "业务场景",
+          "menu_name": "业务场景",
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "native_group_name": "",
+          "alternative_group": "",
+          "page_output": "产生或更新 sc.product.scenario 业务记录（业务场景）",
+          "preceding_or_related": "启动依据：已发布产品入口；字段/表单/菜单契约；管理员权限",
+          "following": "重新进入目标业务页面，以同一业务身份回读呈现结果",
+          "entry_context_and_return": "必须/可选事实：必须已有：已发布产品入口；字段/表单/菜单契约；管理员权限；可选择或新建：可新建或选择业务场景对应的业务记录；续办时携带 sc.product.scenario ID；结果展示：产生或更新 sc.product.scenario 业务记录（业务场景）后到产品配置/业务场景回读；执行返回：有来源则回原来源，无来源则回该列表",
+          "shared_reference": "",
+          "scenario_sequence": 46,
+          "page_sequence": 0
+        },
+        {
           "menu_xmlid": "smart_construction_core.menu_sc_business_config_workbench",
           "purpose": "进入业务表单和页面配置工作台。",
           "mode": "独立",
+          "direct_kind": "configuration",
           "source_menu_name": "表单配置",
           "menu_name": "表单配置",
           "center_key": "construction.center.product_configuration",
@@ -3791,13 +4065,14 @@
           "following": "重新进入目标业务页面，以同一业务身份回读呈现结果",
           "entry_context_and_return": "必须/可选事实：必须已有：当前企业；可选择或新建：可新建或选择表单配置对应的业务记录；续办时携带 ui.business.config.contract ID；结果展示：产生或更新 ui.business.config.contract 业务记录（表单配置）后到产品配置/表单配置回读；执行返回：有来源则回原来源，无来源则回该列表",
           "shared_reference": "",
-          "scenario_sequence": 44,
-          "page_sequence": 0
+          "scenario_sequence": 46,
+          "page_sequence": 1
         },
         {
           "menu_xmlid": "smart_construction_core.menu_ui_form_field_policy_business_config",
           "purpose": "配置表单字段的显示、必填和顺序。",
           "mode": "独立",
+          "direct_kind": "configuration",
           "source_menu_name": "字段管理",
           "menu_name": "字段管理",
           "center_key": "construction.center.product_configuration",
@@ -3809,13 +4084,14 @@
           "following": "重新进入目标业务页面，以同一业务身份回读呈现结果",
           "entry_context_and_return": "必须/可选事实：必须已有：当前企业；可选择或新建：可新建或选择字段管理对应的业务记录；续办时携带 ui.form.field.policy ID；结果展示：产生或更新 ui.form.field.policy 业务记录（字段管理）后到产品配置/字段管理回读；执行返回：有来源则回原来源，无来源则回该列表",
           "shared_reference": "",
-          "scenario_sequence": 44,
-          "page_sequence": 1
+          "scenario_sequence": 46,
+          "page_sequence": 2
         },
         {
           "menu_xmlid": "smart_construction_core.menu_ui_menu_config_policy_business_config",
           "purpose": "配置企业可见菜单和入口归属。",
           "mode": "独立",
+          "direct_kind": "configuration",
           "source_menu_name": "菜单配置",
           "menu_name": "菜单配置",
           "center_key": "construction.center.product_configuration",
@@ -3827,8 +4103,8 @@
           "following": "重新进入目标业务页面，以同一业务身份回读呈现结果",
           "entry_context_and_return": "必须/可选事实：必须已有：当前企业；可选择或新建：可新建或选择菜单配置对应的业务记录；续办时携带 ui.menu.config.policy ID；结果展示：产生或更新 ui.menu.config.policy 业务记录（菜单配置）后到产品配置/菜单配置回读；执行返回：有来源则回原来源，无来源则回该列表",
           "shared_reference": "",
-          "scenario_sequence": 44,
-          "page_sequence": 2
+          "scenario_sequence": 46,
+          "page_sequence": 3
         }
       ],
       "dependencies": [],
@@ -3864,6 +4140,7 @@
           "menu_xmlid": "smart_construction_core.menu_sc_product_system_parameter_v1",
           "purpose": "维护企业可用系统参数并回读生效值。",
           "mode": "独立",
+          "direct_kind": "configuration",
           "source_menu_name": "系统参数",
           "menu_name": "系统参数",
           "center_key": "construction.center.product_configuration",
@@ -3875,13 +4152,14 @@
           "following": "系统参数保存后供对应的已声明业务能力消费",
           "entry_context_and_return": "必须/可选事实：必须已有：当前企业；可选择或新建：可新建或选择系统参数对应的业务记录；续办时携带 sc.product.system.settings ID；结果展示：产生或更新 sc.product.system.settings 业务记录（系统参数）后到产品配置/系统参数回读；执行返回：有来源则回原来源，无来源则回该列表",
           "shared_reference": "",
-          "scenario_sequence": 45,
+          "scenario_sequence": 47,
           "page_sequence": 0
         },
         {
           "menu_xmlid": "smart_construction_core.menu_sc_product_numbering_rule_v1",
           "purpose": "维护允许调整的业务编号序列。",
           "mode": "独立",
+          "direct_kind": "configuration",
           "source_menu_name": "编码规则",
           "menu_name": "编码规则",
           "center_key": "construction.center.product_configuration",
@@ -3893,7 +4171,7 @@
           "following": "配置被后续新建业务单据消费",
           "entry_context_and_return": "必须/可选事实：必须已有：当前企业；可选择或新建：可新建或选择编码规则对应的业务记录；续办时携带 ir.sequence ID；结果展示：产生或更新 ir.sequence 业务记录（编码规则）后到产品配置/编码规则回读；执行返回：有来源则回原来源，无来源则回该列表",
           "shared_reference": "",
-          "scenario_sequence": 45,
+          "scenario_sequence": 47,
           "page_sequence": 1
         }
       ],
@@ -4212,7 +4490,7 @@
       "id": "GAP-01",
       "status": "release_scope_change_required",
       "evidence": "原生菜单树存在 menu_sc_material_catalog，但 product_menu_source 未发布该入口；project.material.plan 在提交前强制要求 material_catalog_id。",
-      "issue": "132 个已发布办理面缺少“材料档案”。",
+      "issue": "已发布办理面缺少“材料档案”。",
       "impact": "材料计划提交要求 material_catalog_id，但当前用户没有已发布的材料档案维护入口。",
       "recommendation": "接受为发布范围变更候选：复用既有 menu_sc_material_catalog 作为供应链与资源中心正式入口；该入口纳入发布前，材料计划保留“依赖未发布主数据”，不能标记为完整可运行。",
       "affected_paths": "supply.procurement → supply.inventory → material.settlement"
@@ -4247,9 +4525,9 @@
     {
       "id": "GAP-05",
       "status": "release_scope_or_connection_required",
-      "evidence": "项目中心已发布 tender.guarantee；财务保证金收退动作存在于原生 XML，但 132 个已发布办理面中没有对应入口。",
+      "evidence": "项目中心已发布 tender.guarantee；财务保证金收退动作存在于原生 XML，但 已发布办理面中没有对应入口。",
       "issue": "投标保证金的项目登记与财务收退没有在已发布产品面接通。",
-      "impact": "用户可以在项目中心登记保证金，却无法从 132 个已发布办理面进入对应的保证金收退和资金结果。",
+      "impact": "用户可以在项目中心登记保证金，却无法从 已发布办理面进入对应的保证金收退和资金结果。",
       "recommendation": "优先核对现有费用报销页能否通过业务类别安全承接；不能承接时发布既有投标保证金缴纳/退回动作，并保留 tender.guarantee 来源 ID。未裁定前保证金收退路径不得标记为可运行。",
       "affected_paths": "project.tender → finance.cash_ledger / accounting.entry_posting"
     }

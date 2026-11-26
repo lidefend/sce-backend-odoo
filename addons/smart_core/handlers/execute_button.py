@@ -78,6 +78,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
         record_id: int,
         action_id: int,
         menu_id: int,
+        view_type: str = "form",
     ) -> Dict[str, Any]:
         # Import lazily so execute_button remains independent from the read-only
         # projection module during handler discovery.
@@ -92,7 +93,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
                 "params": {
                     "op": "model",
                     "model": model,
-                    "view_type": "form",
+                    "view_type": view_type,
                     "record_id": record_id,
                     "render_profile": "readonly",
                     "action_id": action_id,
@@ -101,6 +102,8 @@ class ExecuteButtonHandler(BaseIntentHandler):
                     "client_type": "web_pc",
                     "accepted_contract_versions": ["2.7.x"],
                     "client_contract_capabilities": [
+                        "view.form.v1",
+                        "view.tree.v1",
                         "container_tree.v2",
                         "data_source.v2",
                         "action_rule.v2",
@@ -126,6 +129,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
         record_id: int,
         method_name: str,
         button_type: str,
+        collection: bool = False,
     ) -> Dict[str, Any]:
         payload_meta = self.payload.get("meta") if isinstance(self.payload, dict) else {}
         meta = payload_meta if isinstance(payload_meta, dict) else {}
@@ -136,6 +140,8 @@ class ExecuteButtonHandler(BaseIntentHandler):
         source_widget_id = str(button.get("source_widget_id") or button.get("sourceWidgetId") or "").strip()
         if not authority_action_id or not backend_identity or not source_widget_id:
             raise AccessError("ACTION_CONTRACT_AUTHORITY_MISSING")
+        if collection and (not action_id or not menu_id or meta.get("relation_origin") or meta.get("work_item_origin")):
+            raise AccessError("ACTION_COLLECTION_ENTRY_REQUIRED")
         work_access_mode = None
         work_origin = meta.get("work_item_origin")
         if work_origin is not None:
@@ -183,6 +189,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
             record_id=record_id,
             action_id=action_id,
             menu_id=menu_id,
+            **({"view_type": "tree"} if collection else {}),
         )
         action_contract = contract.get("actionContract") if isinstance(contract.get("actionContract"), dict) else {}
         rules = action_contract.get("actionRuleList") if isinstance(action_contract.get("actionRuleList"), list) else []
@@ -195,6 +202,8 @@ class ExecuteButtonHandler(BaseIntentHandler):
         if len(matches) != 1:
             raise AccessError("ACTION_CONTRACT_AUTHORITY_AMBIGUOUS")
         rule = matches[0]
+        if collection and rule.get("executionScope") != "recordset":
+            raise AccessError("ACTION_COLLECTION_NOT_DECLARED")
         if str(rule.get("sourceWidgetId") or "").strip() != source_widget_id:
             raise AccessError("ACTION_CONTRACT_SOURCE_MISMATCH")
         rule_button = rule.get("button") if isinstance(rule.get("button"), dict) else {}
@@ -341,7 +350,10 @@ class ExecuteButtonHandler(BaseIntentHandler):
 
             # Contract V2 action availability is record-specific.  Never use
             # one record's authority to mutate a larger client-supplied set.
-            if len(res_ids) != 1:
+            collection = button.get("execution_scope") == "recordset"
+            if button.get("execution_scope") not in (None, "record", "recordset"):
+                raise AccessError("ACTION_EXECUTION_SCOPE_INVALID")
+            if len(res_ids) != 1 and not collection:
                 raise AccessError("ACTION_CONTRACT_SINGLE_RECORD_REQUIRED")
 
             if button_type not in ("object", "action", "server", "server_action"):
@@ -370,7 +382,18 @@ class ExecuteButtonHandler(BaseIntentHandler):
                 record_id=res_ids[0],
                 method_name=str(method_name),
                 button_type=str(button_type),
+                **({"collection": True} if collection else {}),
             )
+            if collection:
+                if _normalized_button_type(button_type) != "object":
+                    raise AccessError("ACTION_COLLECTION_TYPE_NOT_SUPPORTED")
+                for record_id in res_ids[1:]:
+                    rule = self._authorize_contract_action(
+                        button, model=str(model), record_id=record_id,
+                        method_name=str(method_name), button_type=str(button_type), collection=True,
+                    )
+                    if rule != authorized_rule:
+                        raise AccessError("ACTION_COLLECTION_AUTHORITY_MISMATCH")
             action_params, action_params_error = _read_action_params(params, authorized_rule)
             if action_params_error:
                 return _failure_result(
@@ -394,7 +417,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
             env_model.check_access_rights(access_mode)
 
             recordset = env_model.browse(res_ids)
-            if not recordset.exists():
+            if not recordset.exists() or (collection and set(recordset.exists().ids) != set(res_ids)):
                 return _failure_result(
                     model=model,
                     res_id=res_ids[0],
@@ -490,7 +513,11 @@ class ExecuteButtonHandler(BaseIntentHandler):
                     status_code=400,
                 )
 
-            result = method(**action_params)
+            if collection:
+                with self.env.cr.savepoint():
+                    result = method(**action_params)
+            else:
+                result = method(**action_params)
 
             payload = {
                 "type": "refresh",

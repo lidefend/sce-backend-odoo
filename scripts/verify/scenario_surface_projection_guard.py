@@ -459,6 +459,27 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
             self.assertEqual(center["canonical_navigation"]["menu_id"], 2)
             self.assertEqual([row["canonical_navigation"]["menu_id"] for row in center["children"]], [3])
             self.assertEqual(center["children"][0]["canonical_navigation"]["route"], "/a/30?menu_id=3")
+            config = {
+                "key": "construction.center.product_configuration",
+                "name": "产品配置", "config_menu_id": 4, "sequence": 110,
+                "entries": [{**leaves[0], "menu_id": 5, "action_id": 50,
+                             "menu_xmlid": "core.configuration", "route": "/a/50?menu_id=5"}],
+                "scenarios": [],
+            }
+            config_authority = {
+                "primary_actions": authority["primary_actions"] + [
+                    {"menu_id": 5, "action_id": 50, "route": "/a/50?menu_id=5", "route_kind": "PRIMARY_NAV"}],
+                "menu_containers": authority["menu_containers"] + [{"menu_id": 4, "route": "/m/4"}],
+            }
+            roots = PROJ._scenarioized_navigation(None, centers + [config], config_authority)
+            self.assertEqual([row["label"] for row in roots], ["业务场景", "产品配置"])
+            self.assertEqual(len(roots[0]["children"]), 1)
+            self.assertEqual(roots[1]["canonical_navigation"]["menu_id"], 4)
+            self.assertEqual(roots[1]["children"][0]["canonical_navigation"]["route"], "/a/50?menu_id=5")
+            config_only = PROJ._scenarioized_navigation(None, [config], config_authority)
+            self.assertEqual([row["label"] for row in config_only], ["产品配置"])
+            no_config_access = PROJ._scenarioized_navigation(None, centers + [{**config, "entries": []}], authority)
+            self.assertEqual([row["label"] for row in no_config_access], ["业务场景"])
             with self.assertRaisesRegex(ValueError, "identity is duplicated"):
                 PROJ._scenarioized_navigation(None,
                     [{**workspace, "entries": leaves + leaves, "scenarios": []}], authority)
