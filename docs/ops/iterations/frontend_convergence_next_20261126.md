@@ -453,6 +453,28 @@ clean 运行态权威回读：
 产品改动提交后仍需按新精确 HEAD 重建 clean 运行态。远端 PR CI、主线资格、部署和
 用户验收均未完成。
 
+产品改动已提交为 `8b7292830f63f58c3ecee5689047bfac8924e9ed`，并按该 SHA 重建
+clean 前端，构建指纹
+`d48e6857e7f90acfdef5f3dc542ae57de6d3c6754d657ffa86ea3a015c95d099`。
+
+clean 运行态回读：
+
+- `/t/clean/api/runtime-version` 同时返回上述源码 SHA 与构建指纹；
+- 根路径 `/build-info.json` 返回同一源码 SHA；
+- `local.clean.health`、`local.clean.entry_identity.verify` 均通过；
+- project/database/dbfilter/namespace 保持 clean 专属身份。
+
+在该 clean HEAD 上执行 `make ci.local.iteration`：46 个必需目标全部成立，其中
+16 个本轮执行、30 个复用，执行测试 483 项，退出零。回执：
+
+`.runtime/frontend-dev-validation/executions/20261126T231905Z-923969-285675006/receipt.json`
+
+回执 SHA256：
+`9c19a6f252157767b4540dd313a10d522f15bbf5d6a5e06c58ef244ae09432e6`。
+
+仍未执行 143 个业务入口的当前候选页面、角色或办理旅程，也未完成远端 PR CI、主线资格、
+部署和用户验收。
+
 
 ### 2026-11-27 开工条件回读
 

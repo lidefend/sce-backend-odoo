@@ -83,21 +83,21 @@
     "dbfilter": "^sc_clean$",
     "namespace_alias": "clean",
     "namespace_id": "ns_c6fed472e939",
-    "source_revision": "c73bb6d0f504ceaed507befc2472313d11f06689",
+    "source_revision": "8b7292830f63f58c3ecee5689047bfac8924e9ed",
     "modules": [
       "smart_construction_bundle",
       "sc_norm_engine"
     ],
     "demo_data": false,
     "fixture": false,
-    "frontend_build_fingerprint": "046332dc0f6f6ad74e6e29a37b9bf0ce2c726c6a600c5201e158f68eb5c8ee14",
-    "health": "stale_current_worktree",
-    "health_note": "The clean profile serves the previous temporal product source; the declared-unit changes require a post-commit exact-HEAD rebuild.",
-    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-temporal-health.log",
-    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-temporal-entry-identity.log",
-    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-temporal-frontend-build.log",
-    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-temporal-runtime-version.json",
-    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-temporal-build-info.json",
+    "frontend_build_fingerprint": "d48e6857e7f90acfdef5f3dc542ae57de6d3c6754d657ffa86ea3a015c95d099",
+    "health": "passed",
+    "health_note": "The clean profile serves the exact declared-unit product source. Any later run/documentation-only update does not change the product surface.",
+    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-health.log",
+    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-entry-identity.log",
+    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-frontend-build.log",
+    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-runtime-version.json",
+    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-build-info.json",
     "authority": "Owner-directed isolated clean development profile; existing dev/sample/acceptance/customer data and volumes are excluded."
   },
   "verification_responsibility": {
@@ -619,6 +619,36 @@
         "duration browser behavior, standard collection composition and contract-basis enforcement all pass"
       ],
       "scope_limit": "Local targeted validation only; clean exact-head runtime, remote PR CI, mainline qualification and business-entry browser acceptance remain not_run."
+    },
+    "fc01_declared_unit_clean_runtime": {
+      "status": "passed",
+      "product_source_revision": "8b7292830f63f58c3ecee5689047bfac8924e9ed",
+      "frontend_build_fingerprint": "d48e6857e7f90acfdef5f3dc542ae57de6d3c6754d657ffa86ea3a015c95d099",
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "namespace_id": "ns_c6fed472e939",
+      "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-health.log",
+      "health_log_sha256": "3edb53ae8eaa7889b0a03472c49ccafd09763cf079679d2ff182f7f669dd4550",
+      "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-entry-identity.log",
+      "entry_identity_log_sha256": "08a8d638a4b2744492f8eb760b91130ef319be7d52b7865598a735375722dc78",
+      "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-runtime-version.json",
+      "runtime_version_log_sha256": "f7f61786840fff8f41e604640fd5dcc62c3ba34564e990b28da583c661f105de",
+      "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-build-info.json",
+      "build_info_log_sha256": "d86887e24a4c99905eb079fee7ead0a6482c6544f7a2b2d93c98c96b5cc45c42",
+      "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-unit-frontend-build.log",
+      "frontend_build_log_sha256": "a77c92150b2a60f30c6381597b6c0beaa1837c51c42a561cc2512a58457db61f",
+      "scope_limit": "Environment, build and runtime identity readback only; it is not a business-entry browser journey or product acceptance."
+    },
+    "fc01_declared_unit_clean_exact_head_validation": {
+      "status": "passed",
+      "head": "8b7292830f63f58c3ecee5689047bfac8924e9ed",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261126T231905Z-923969-285675006/receipt.json",
+      "receipt_sha256": "9c19a6f252157767b4540dd313a10d522f15bbf5d6a5e06c58ef244ae09432e6",
+      "executed_targets": 16,
+      "reused_targets": 30,
+      "executed_test_count": 483,
+      "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
     }
   }
 }
