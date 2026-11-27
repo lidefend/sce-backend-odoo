@@ -52,3 +52,26 @@ The direct r4 import commit `0de4566d293796e6589d6e36eccb58e35097ba59` passed
 exact-head local iteration (6 executed, 3 reused, 24 non-zero tests, 5 static
 checks) and production build fingerprint
 `80828eab2f196b83053f1655b19cb18489825a4db2090e6c294f2b9e02ba3219`.
+
+## P4 false-positive correction
+
+PR #1025 head `7fcd2b29c7df28059940c3c6483b5b0f7f7b0816` was reported as
+`native_import_lifecycle: not_run / no local receipt` by `make agent.run.resume`.
+The product check itself had passed, but its result existed only in the broader
+frontend validation receipt and was not recorded under the run's canonical
+`.runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/` receipt path.
+
+The exact declared check was re-executed through the governed sequence:
+
+- `make agent.run.begin AGENT_CHECK=native_import_lifecycle`;
+- `make verify.frontend.collection_action_capability.unit`;
+- `make agent.run.record ... AGENT_TEST_COUNT=60`.
+
+`agent.run.resume` now reports `native_import_lifecycle: reusable` on exact head
+`7fcd2b29c`, with canonical receipt
+`.runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/native_import_lifecycle.json`
+and original log SHA256
+`4da102ec68f6b37581d8046d7f649fc9befff77c0e96e6c9d7361c2267156bba`.
+
+This correction changes only P4 evidence bookkeeping. Browser role/company
+journeys and overall FC-06 closure remain not claimed.

@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "id": "FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127",
-  "status": "verification_pending",
+  "status": "pending_merge_decision",
   "branch": "fix/fe-import-lifecycle-closeout-20261127-r4",
   "baseline_sha": "e4a4df12cf65137c298863f576390ca3684076c6",
   "stack_parent_head": "e4a4df12cf65137c298863f576390ca3684076c6",
@@ -164,8 +164,26 @@
       "build_info_sha256": "14baaa4b3196ca9b3dacf828a04f28714df6236c0a7bffaa503fc36575b2efce",
       "frontend_build_fingerprint": "80828eab2f196b83053f1655b19cb18489825a4db2090e6c294f2b9e02ba3219",
       "source_revision": "0de4566d293796e6589d6e36eccb58e35097ba59"
+    },
+    "p4_check_binding_correction": {
+      "status": "passed",
+      "head": "7fcd2b29c7df28059940c3c6483b5b0f7f7b0816",
+      "classification": "validation_tooling_false_positive",
+      "root_cause": "the run declared the native import check but had no canonical .runtime/agent-runs receipt, so agent.run.resume reported not_run even though the exact-head frontend receipt passed",
+      "command": "make agent.run.begin AGENT_CHECK=native_import_lifecycle && make verify.frontend.collection_action_capability.unit && make agent.run.record AGENT_CHECK=native_import_lifecycle AGENT_CHECK_STATUS=passed AGENT_TEST_COUNT=60 AGENT_TEST_LOG=.runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/native-import-lifecycle-canonical.log",
+      "receipt": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/native_import_lifecycle.json",
+      "log": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/native-import-lifecycle-canonical.log",
+      "log_sha256": "4da102ec68f6b37581d8046d7f649fc9befff77c0e96e6c9d7361c2267156bba",
+      "test_count": 60,
+      "facts_verified": [
+        "collection action capability contract cases pass",
+        "detail collection pagination cases pass",
+        "native import lifecycle owner, wizard wiring and old-flow removal pass",
+        "agent.run.resume now reports the check as reusable at the exact branch head"
+      ],
+      "coverage_limit": "This repairs P4 check reuse bookkeeping only; browser role/company journeys and FC-06 closure remain incomplete."
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit this r4 evidence, publish the direct stack branch and open its PR against the exact source branch."
+  "next_exact_step": "Commit and publish this P4 correction, then merge PR #1025 into PR #1019 through the protected PR flow after exact-head rebind."
 }
