@@ -599,6 +599,20 @@
   "openContractDefects": [],
   "closedContractDefects": [
     {
+      "id": "OD-20261127-FAVORITE-SCHEMA-NAME-FALLBACK",
+      "missing": "Favorite schema decoration and record-form schema flattening retained an is_favorite field-name fallback after persistence selection had moved to the declared boolean_favorite widget identity.",
+      "surface": "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts / frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+      "owner": "P0:frontend generic record-form contract consumption",
+      "requiredDeclarationLayer": "P0:smart_core:field descriptor widgetType projection",
+      "closureCondition": "Favorite presentation is selected only from the declared boolean_favorite widget identity for any field name; a checkbox named is_favorite remains an ordinary field. Negative cases cover fixed-name and equivalent-label guesses.",
+      "resolution": "A shared isDeclaredFavoriteFieldWidget consumer now selects favorite persistence, canonical schema decoration and record-form schema flattening from the same declared widget identity. The is_favorite field-name fallback was removed from all three consumers. Absence of the favorite widget is an ordinary field, not a synthesized favorite.",
+      "closureEvidence": [
+        "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts"
+      ]
+    },
+    {
       "id": "CD-20261106-LIST-CREATE-ENTRY",
       "missing": "列表“新建”缺带 target 的授权创建动作",
       "surface": "ActionView/ListPage 列表新建入口（项目台账 590 及其它列表）",

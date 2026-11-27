@@ -764,7 +764,7 @@ export function buildNativeFieldSchemas(input: NativeFieldSchemasInput): FormSec
   const mappedNodes = input.nodes
     .map((node, index) => ({ raw: node, field: input.mapNode(node, index) }))
     .filter((item): item is { raw: NativeLayoutLikeNode; field: LayoutNode } => Boolean(item.field));
-  const favoriteNode = mappedNodes.find((item) => item.field.widget === 'boolean_favorite' || item.field.name === 'is_favorite');
+  const favoriteNode = mappedNodes.find((item) => isDeclaredFavoriteFieldWidget(item.field.widget));
   const fieldNodes = mappedNodes
     .filter((item) => item !== favoriteNode)
     .map((item) => item.field);
@@ -1242,6 +1242,10 @@ export function collectNativeLayoutFieldNames(
   });
 }
 
+export function isDeclaredFavoriteFieldWidget(value: unknown): boolean {
+  return String(value ?? '').trim().toLowerCase() === 'boolean_favorite';
+}
+
 export function collectNativeFavoriteFieldNames(nodes: NativeLayoutLikeNode[], out: Set<string>) {
   for (const node of nodes) {
     const name = String(node?.name || '').trim();
@@ -1251,10 +1255,10 @@ export function collectNativeFavoriteFieldNames(nodes: NativeLayoutLikeNode[], o
       ? node.attributes as Record<string, unknown>
       : {};
     const fieldInfo = nativeNodeFieldInfo(node);
-    const widget = String(node?.widget || attributes.widget || fieldInfo.widget || '').trim().toLowerCase();
+    const widget = node?.widget || attributes.widget || fieldInfo.widget;
     if (
       name
-      && widget === 'boolean_favorite'
+      && isDeclaredFavoriteFieldWidget(widget)
     ) {
       out.add(name);
     }

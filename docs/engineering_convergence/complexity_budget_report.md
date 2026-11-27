@@ -131,8 +131,8 @@ Generated from repository source files. This report is informational during the 
 | 1317 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1316 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1306 | TypeScript source | `frontend/apps/web/src/app/releaseOperatorActionContract.ts` |
+| 1302 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1299 | Python source | `addons/smart_core/tests/test_backend_semantic_copy_supply.py` |
-| 1298 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1284 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
 | 1275 | Python source | `scripts/audit/native_scene_inventory.py` |
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |

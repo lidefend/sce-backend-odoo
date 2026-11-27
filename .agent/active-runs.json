@@ -96,6 +96,8 @@
     "fix/enterprise-activation-entry-20261104": ".agent/runs/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103/run.json",
     "fix/fe-action-semantics-01-20261109": ".agent/runs/FE-ACTION-SEMANTICS-01/run.json",
     "fix/fe-consumption-closeout-20261126": ".agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/run.json",
+    "fix/fe-consumption-favorite-schema-20261127": ".agent/runs/FE-CONSUMPTION-FAVORITE-SCHEMA-20261127/run.json",
+    "fix/fe-consumption-favorite-schema-stacked-20261127": ".agent/runs/FE-CONSUMPTION-FAVORITE-SCHEMA-20261127/run.json",
     "fix/fe-contract-runtime-02-consumption-stop-closure": ".agent/runs/FE-CONTRACT-RUNTIME-02/run.json",
     "fix/fe-convergence-fe01-entry-startup-20261112": ".agent/runs/FE-CONVERGENCE-FE01-20261112/run.json",
     "fix/fe-convergence-fe02-read-ownership-20261112": ".agent/runs/FE-CONVERGENCE-FE02-20261112/run.json",

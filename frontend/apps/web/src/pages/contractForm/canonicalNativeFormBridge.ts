@@ -14,6 +14,7 @@ import {
   type WorkspaceSectionNavigationItem,
 } from './nativeSectionNavigation';
 import { resolveActionInteractionState } from './actionInteractionState';
+import { isDeclaredFavoriteFieldWidget } from './nativeLayoutUtils';
 
 export type CanonicalNativeLayoutNode = {
   containerId?: string;
@@ -82,7 +83,7 @@ function favoriteActive(value: unknown): boolean {
 export function resolveCanonicalNativeFieldSchemas(
   schemas: readonly FormSectionFieldSchema[],
 ): FormSectionFieldSchema[] {
-  const favorite = schemas.find((field) => field.widget === 'boolean_favorite' || field.name === 'is_favorite');
+  const favorite = schemas.find((field) => isDeclaredFavoriteFieldWidget(field.widget));
   const content = schemas.filter((field) => field !== favorite).map((field) => ({ ...field }));
   if (!favorite || !content.length) return content;
   const targetIndex = content.findIndex((field) => field.name === 'name');

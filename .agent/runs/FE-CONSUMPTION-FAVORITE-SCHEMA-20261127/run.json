@@ -1,0 +1,144 @@
+{
+  "schema_version": 2,
+  "id": "FE-CONSUMPTION-FAVORITE-SCHEMA-20261127",
+  "status": "verification_pending",
+  "branch": "fix/fe-consumption-favorite-schema-stacked-20261127",
+  "baseline_sha": "40afa747ec1deaaf3027898bcba48081ff0ba4b0",
+  "stack_base_head": "40afa747ec1deaaf3027898bcba48081ff0ba4b0",
+  "originally_validated_head": "d1c69ef9edf5476dcc57603ab148f7d187267776",
+  "accepted_mainline_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+  "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
+  "record": "docs/ops/iterations/fe_consumption_favorite_schema_20261127.md",
+  "current_batch": "FC-01 favorite schema-decoration identity",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/runs/FE-CONSUMPTION-FAVORITE-SCHEMA-20261127/run.json",
+    "docs/architecture/frontend_contract_basis_ledger.json",
+    "docs/ops/iterations/fe_consumption_favorite_schema_20261127.md",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+    "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database, service, browser or external write"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Affected canonical form presenter, contract-basis, lint, strict typecheck and build checks with non-zero tests."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI after transfer to PR #1019",
+      "reason": "The stacked slice must be integrated against the current target base before merge qualification."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "This slice does not qualify a mainline release; release qualification is evaluated separately on exact main."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "The fix consumes an already integrated field descriptor and changes no backend declaration; no new backend receipt is required unless the shared contract surface changes."
+    }
+  },
+  "checks": {
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+        "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+        "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "evidence": {
+    "local_iteration": {
+      "status": "passed_dirty_candidate",
+      "candidate_base_head": "125aff3841486b22b1b284c748be5a58841274d5",
+      "runtime_tree_sha256": "9a8dcbeb0192879402707b9e6a60cde2c1ff031ca57d4c95edd83d3fdec3edb4",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T044439Z-3443069-887835806/receipt.json",
+      "receipt_sha256": "97662da738688b3300ff4fbbf9ab247d75c0c74178bb0ae3b1b0ffda4a5523a5",
+      "executed_targets": 13,
+      "test_targets": 7,
+      "executed_test_count": 110,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "canonical schema decoration selects favorite only from declared boolean_favorite widget identity",
+        "an is_favorite checkbox remains an ordinary boolean field",
+        "record-form schema flattening decorates any declared favorite field name and does not remove a same-named ordinary checkbox",
+        "canonical presenter, occurrence identity, contract-basis, lint, strict typecheck and systemic guards pass"
+      ]
+    },
+    "frontend_build": {
+      "status": "passed_dirty_candidate",
+      "candidate_base_head": "125aff3841486b22b1b284c748be5a58841274d5",
+      "command": "make verify.frontend.build ENV=dev ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev",
+      "log": ".runtime/agent-runs/FE-CONSUMPTION-FAVORITE-SCHEMA-20261127/frontend-build.log",
+      "log_sha256": "790657a291fd799864dabdfeb7a49336fdd7c299ef42636a9f10b9e2d0aebb68",
+      "build_info": "frontend/apps/web/dist-dev/build-info.json",
+      "build_info_sha256": "f9452720a66d0521f4a2c6e00f5d2ab213737ae94c6270bfba48de74df0be9f3",
+      "frontend_build_fingerprint": "2450d2b8b5c473f3cec5cab55a2c9043dcbaf50e1d4952e66de4cf3024feef6d",
+      "source_revision": "125aff3841486b22b1b284c748be5a58841274d5",
+      "limit": "The build ran from the dirty candidate content over the exact stack base; it is not exact-clean-head or browser evidence."
+    },
+    "exact_head_validation": {
+      "status": "passed",
+      "head": "d1c69ef9edf5476dcc57603ab148f7d187267776",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T044908Z-3483276-686019154/receipt.json",
+      "receipt_sha256": "72a8c182d9d3f3f58e71f628a29b137d0766149378840747bc3d2ee03be19e97",
+      "executed_targets": 6,
+      "reused_targets": 8,
+      "test_targets": 1,
+      "executed_test_count": 21,
+      "static_checks": 4,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "worktree_clean": true
+    },
+    "exact_head_frontend_build": {
+      "status": "passed",
+      "head": "d1c69ef9edf5476dcc57603ab148f7d187267776",
+      "command": "make verify.frontend.build ENV=dev ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev",
+      "log": ".runtime/agent-runs/FE-CONSUMPTION-FAVORITE-SCHEMA-20261127/frontend-build-exact-head.log",
+      "log_sha256": "735f061ddcef1d4499f82ff4654b5cb15dd7bee0dd42363cd25d9751cefe160e",
+      "build_info_sha256": "c4c7d1541d81542c3115e47bc427c45d00957dbc039405aa3ea9672f4145deeb",
+      "frontend_build_fingerprint": "bbc1ec33f23cd800a9b3d7809f45eec42a2bf79249aef7c9a68142ad3d94562b",
+      "source_revision": "d1c69ef9edf5476dcc57603ab148f7d187267776"
+    },
+    "stack_transfer": {
+      "status": "applied_pending_validation",
+      "source_head": "d1c69ef9edf5476dcc57603ab148f7d187267776",
+      "destination_base_head": "40afa747ec1deaaf3027898bcba48081ff0ba4b0",
+      "method": "governed independent worktree plus git apply of the exact reviewed patch; generated component-driver inventory regenerated from the combined source",
+      "resolved_conflict": "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the stacked transfer, rerun exact-head local iteration and build on its full HEAD, then publish through governed PR tooling."
+}

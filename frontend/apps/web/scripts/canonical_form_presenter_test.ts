@@ -95,7 +95,9 @@ import { collectUnifiedPageContractV2FieldWidgets } from '../src/app/contracts/u
 import { computed, reactive, ref } from 'vue';
 import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormProgress';
 import {
+  buildNativeFieldSchemas,
   collectNativeFavoriteFieldNames,
+  isDeclaredFavoriteFieldWidget,
   nativeNodeWidget,
   nativeNodeWidgetSemantics,
 } from '../src/pages/contractForm/nativeLayoutUtils';
@@ -1150,6 +1152,111 @@ assert.deepEqual(
   [...declaredFavoriteFields],
   ['favorite_flag'],
   'favorite persistence is selected only by declared native widget identity, never by field name, label or componentConfig',
+);
+assert.equal(isDeclaredFavoriteFieldWidget(' BOOLEAN_FAVORITE '), true);
+assert.equal(isDeclaredFavoriteFieldWidget('checkbox'), false);
+const ordinaryFavoriteNamedSchemas = resolveCanonicalNativeFieldSchemas([
+  {
+    key: 'field.is_favorite', name: 'is_favorite', label: 'Dashboard', type: 'boolean', widget: 'checkbox',
+    required: false, readonly: false, inputValue: false,
+  },
+  {
+    key: 'field.name', name: 'name', label: 'Name', type: 'char', required: true, readonly: true,
+    inputValue: 'Ordinary record',
+  },
+]);
+assert.deepEqual(
+  ordinaryFavoriteNamedSchemas.map((field) => field.name),
+  ['is_favorite', 'name'],
+  'a field named is_favorite must remain an ordinary boolean unless its widget declaration selects favorite presentation',
+);
+assert.equal(
+  ordinaryFavoriteNamedSchemas.some((field) => field.favoriteToggle),
+  false,
+  'field name alone must not create favorite decoration',
+);
+const renamedFavoriteSchemas = resolveCanonicalNativeFieldSchemas([
+  {
+    key: 'field.favorite_flag', name: 'favorite_flag', label: 'Pinned', type: 'boolean',
+    widget: 'boolean_favorite', required: false, readonly: false, inputValue: true,
+  },
+  {
+    key: 'field.name', name: 'name', label: 'Name', type: 'char', required: true, readonly: true,
+    inputValue: 'Declared favorite record',
+  },
+]);
+assert.deepEqual(
+  renamedFavoriteSchemas.map((field) => [field.name, field.favoriteToggle?.name, field.favoriteToggle?.active]),
+  [['name', 'favorite_flag', true]],
+  'favorite decoration must follow the declared widget identity for any field name',
+);
+const ordinaryFavoriteNamedLayoutSchemas = buildNativeFieldSchemas({
+  nodes: [
+    { type: 'field', name: 'is_favorite' },
+    { type: 'field', name: 'name' },
+  ],
+  mapNode: (node) => ({
+    key: `layout.${String(node.name)}`,
+    kind: 'field',
+    name: String(node.name),
+    label: String(node.name),
+    readonly: false,
+    required: false,
+    widget: String(node.name) === 'is_favorite' ? 'checkbox' : 'char',
+  }),
+  buildSchemas: (fields) => fields.map((field) => ({
+    key: field.key,
+    name: field.name,
+    label: field.label,
+    type: field.name === 'is_favorite' ? 'boolean' : 'char',
+    widget: field.widget,
+    required: field.required,
+    readonly: field.readonly,
+  })),
+  applyReadonlyValues: (schemas) => schemas,
+  orderActive: false,
+  fieldOrder: [],
+  favoriteActive: () => false,
+  favoriteReadonly: () => false,
+});
+assert.deepEqual(
+  ordinaryFavoriteNamedLayoutSchemas.map((field) => field.name),
+  ['is_favorite', 'name'],
+  'record-form schema flattening must not remove a checkbox merely because it is named is_favorite',
+);
+const declaredFavoriteLayoutSchemas = buildNativeFieldSchemas({
+  nodes: [
+    { type: 'field', name: 'favorite_flag' },
+    { type: 'field', name: 'name' },
+  ],
+  mapNode: (node) => ({
+    key: `layout.${String(node.name)}`,
+    kind: 'field',
+    name: String(node.name),
+    label: String(node.name),
+    readonly: false,
+    required: false,
+    widget: String(node.name) === 'favorite_flag' ? 'boolean_favorite' : 'char',
+  }),
+  buildSchemas: (fields) => fields.map((field) => ({
+    key: field.key,
+    name: field.name,
+    label: field.label,
+    type: field.name === 'favorite_flag' ? 'boolean' : 'char',
+    widget: field.widget,
+    required: field.required,
+    readonly: field.readonly,
+  })),
+  applyReadonlyValues: (schemas) => schemas,
+  orderActive: false,
+  fieldOrder: [],
+  favoriteActive: (name) => name === 'favorite_flag',
+  favoriteReadonly: () => false,
+});
+assert.deepEqual(
+  declaredFavoriteLayoutSchemas.map((field) => [field.name, field.favoriteToggle?.name, field.favoriteToggle?.active]),
+  [['name', 'favorite_flag', true]],
+  'record-form schema flattening must use the declared favorite widget identity rather than a fixed field name',
 );
 
 const nestedOne2manyRows = reactive({ responsibility_ids: [{ isNew: true, dirty: true, removed: false }] });
