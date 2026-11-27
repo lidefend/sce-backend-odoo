@@ -1985,6 +1985,14 @@
       "unmapped_paths": 0,
       "not_run_targets": 0,
       "blocked_targets": 0,
+      "frontend_build": {
+        "status": "passed",
+        "source_revision": "c70955fad3452ed901977efcec38d062c0168623",
+        "log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/legacy-widget-descriptor-only-build.log",
+        "log_sha256": "e9ec4fc7ce1392d7ce0b771081465fa7e28cb736ab719b398160cad8058a2ba7",
+        "build_info_sha256": "4f794f946097e48a28854bd6e150d315ed7495c0d9177ff80851e51882755600",
+        "frontend_build_fingerprint": "fbaa6fdb4bf40b46f42e6241932e24035ce9a58aaf8c7facc899db0cdf526b56"
+      },
       "targeted_receipts": {
         "contract_shape_projection": {
           "test_count": 79,
