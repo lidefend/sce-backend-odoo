@@ -1,0 +1,9 @@
+schema_version: 1
+goal:
+  id: VERIFY-SYSTEM-CLOSEOUT-01-R2A
+  status: active
+  title: Main qualification and receipt safety
+  objective: Close F02 then F01 and F03 with real entrypoint negative and recovery evidence.
+  formal_product_layer: P4
+  layer_target: standard verification infrastructure
+  module: [ci, verification]

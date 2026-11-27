@@ -758,7 +758,7 @@ verify.frontend.contract_v2_occurrence_authority.unit: guard.prod.forbid
 # a candidate fingerprint.
 verify.frontend.dev.incremental.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/frontend_dev_incremental.py scripts/verify/test_frontend_dev_incremental.py
-	@python3 -m unittest scripts.verify.test_frontend_dev_incremental
+	@python3 -m unittest scripts.verify.test_frontend_dev_incremental scripts.verify.test_incremental_environment
 
 verify.frontend.dev.incremental: guard.prod.forbid
 	@python3 scripts/verify/frontend_dev_incremental.py $(foreach path,$(FRONTEND_DEV_CHANGED_PATHS),--path $(path))

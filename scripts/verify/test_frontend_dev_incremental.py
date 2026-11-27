@@ -1927,6 +1927,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         for path in (
             "scripts/ci/main_full_release_dispatch.py",
             "scripts/ci/test_main_full_release_dispatch.py",
+            "scripts/ci/main_full_release_evidence.py",
+            "scripts/ci/test_main_full_release_evidence.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(
@@ -3820,6 +3822,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         for path in (
             "scripts/verify/frontend_dev_incremental.py",
             "scripts/ops/incremental_execution.py",
+            "scripts/verify/test_incremental_environment.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(

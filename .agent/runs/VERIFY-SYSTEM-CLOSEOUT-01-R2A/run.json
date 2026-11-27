@@ -1,0 +1,100 @@
+{
+  "schema_version": 2,
+  "baseline_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+  "scope": [
+    "scripts/ci/main_full_release_dispatch.py",
+    "scripts/ci/main_full_release_evidence.py",
+    "scripts/ci/test_main_full_release_dispatch.py",
+    "scripts/ci/test_main_full_release_evidence.py",
+    "scripts/ops/incremental_execution.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_incremental_environment.py",
+    "make/ci.mk",
+    "config/ci/path_ownership_v1.json",
+    ".agent/active-runs.json",
+    ".agent/goals/VERIFY-SYSTEM-CLOSEOUT-01-R2A.yaml",
+    ".agent/runs/VERIFY-SYSTEM-CLOSEOUT-01-R2A/run.json",
+    "docs/ops/iterations/verify_system_closeout_01_r2a.md",
+    "make/frontend.mk",
+    "scripts/ci/backend_impact_plan.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/audit/verify_system_closeout_01_r2a/verify.test.coverage.registry.txt",
+    "docs/audit/verify_system_closeout_01_r2a/audit.verification.lane_coverage.check.txt",
+    "docs/audit/verify_system_closeout_01_r2a/evidence.json",
+    "docs/audit/verify_system_closeout_01_r2a/verify.baseline.iteration.execution.policy.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.ci.workflow.contract.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.frontend.dev.incremental.unit.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.ci.scheduled_gates.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.agent.ledger.unit.txt",
+    "docs/audit/verify_system_closeout_01_r2a/local_incremental_receipt.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "P4 F02/F01/F03 unit and real CLI negative/recovery tests; no business or database changes."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "New exact R2-A PR HEAD required checks; no old SHA substitution."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "R3 separately after repair review and protected merge; no dispatch or deployment in R2-A."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Frontend validation carrying shared contract targets must consume the passed backend channel receipt for the same run and source identity."
+    }
+  },
+  "checks": {
+    "main_full": {
+      "target": "verify.ci.main_full_release.unit",
+      "inputs": [
+        "scripts/ci/main_full_release_dispatch.py",
+        "scripts/ci/main_full_release_evidence.py",
+        "scripts/ci/test_main_full_release_dispatch.py",
+        "scripts/ci/test_main_full_release_evidence.py"
+      ],
+      "kind": "offline"
+    },
+    "executor": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/ops/incremental_execution.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/verify/test_incremental_environment.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit R2-A, validate the committed identity through local iteration, publish separate Draft PR and inspect exact-head CI. No merge or R3 dispatch.",
+  "id": "VERIFY-SYSTEM-CLOSEOUT-01-R2A",
+  "branch": "fix/verify-system-closeout-01-r2a-20261127",
+  "status": "verification_pending",
+  "goal": ".agent/goals/VERIFY-SYSTEM-CLOSEOUT-01-R2A.yaml",
+  "record": "docs/ops/iterations/verify_system_closeout_01_r2a.md",
+  "authorization": "Owner explicitly authorized R2-A on 2026-11-27; R2-B/C and merge/deploy excluded.",
+  "r1_evidence": {
+    "pr": 1020,
+    "head": "da210fed05739d9565f5ad1be84ab113cd62cde9",
+    "original_head": "83cc97f93bdf17757e744109fbac1e2e3b88db7c"
+  },
+  "local_evidence": "docs/audit/verify_system_closeout_01_r2a/evidence.json"
+}

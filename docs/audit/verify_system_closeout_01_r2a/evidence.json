@@ -1,0 +1,90 @@
+{
+  "schema": "verify-system-r2a-evidence/v1",
+  "baseline": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+  "source_state": "owned dirty working tree; content hashes below bind tested source",
+  "local_status": "PASSED",
+  "remote_status": "NOT_VERIFIED",
+  "mainline_status": "NOT_VERIFIED",
+  "r1_immutable_evidence_commit": "83cc97f93bdf17757e744109fbac1e2e3b88db7c",
+  "inputs": {
+    "scripts/ci/main_full_release_dispatch.py": "0b933640d0fb72830ce0181acaef23cd7b7877cb67dad80ba7811f623dd8ceec",
+    "scripts/ci/main_full_release_evidence.py": "8d8038c8761788e54b7b2d79837cea85a1e40c0e36c46edfe6042f14f854c8dc",
+    "scripts/ci/test_main_full_release_dispatch.py": "f736adf726e48739290af65674e557da9bb88f804d747a32f2e86e2e51de2f30",
+    "scripts/ci/test_main_full_release_evidence.py": "d425502a46d43f0f63053ac374fc64a3ba9afa976cce03828fb0a110032a3055",
+    "scripts/ops/incremental_execution.py": "f0eeb0d11bf1511915d6030ebf512d877bd2c4f9e521d448d591164ac7fc4e5c",
+    "scripts/verify/frontend_dev_incremental.py": "bfef8b14a447d3ed156871605dbb507dead69cc24de77f57c86632e35eb7d9d5",
+    "scripts/verify/test_frontend_dev_incremental.py": "c7005a8987605e3f0cf75169ef91a581c4f0389c5a2e810c6f47d1501bc52afe",
+    "scripts/verify/test_incremental_environment.py": "163fa6a4c563c94161701326fd826c91faffd471d4b0e867332cfd73bd5c1ac6",
+    "scripts/ci/backend_impact_plan.py": "3b51c2dc23083115c3c3426d4738afe1f29e27ec3375f4d673633460b2bfb12d",
+    "make/ci.mk": "f03a70b10a56b6e682c7130f0760776a85667104cbd9d657a815b08f21b022cc",
+    "make/frontend.mk": "29ff62cb50292afb7ab0f2a89654e261ff4c46150300035536f3554783c43636"
+  },
+  "logs": [
+    {
+      "target": "audit.verification.lane_coverage.check",
+      "status": "passed",
+      "execution_kind": "command",
+      "log": "docs/audit/verify_system_closeout_01_r2a/audit.verification.lane_coverage.check.txt",
+      "sha256": "0b60464e8d5a265edded8e1e45f92bcec5ec20fff47e2679a429c481abea1fdf",
+      "duration_seconds": 5.49
+    },
+    {
+      "target": "verify.agent.ledger.unit",
+      "status": "passed",
+      "execution_kind": "test",
+      "log": "docs/audit/verify_system_closeout_01_r2a/verify.agent.ledger.unit.txt",
+      "sha256": "4fcaf7c4d9ea5675349af4fc1f81eff0b7c0bfb0a55482fef1a545532b009252",
+      "duration_seconds": 2.207
+    },
+    {
+      "target": "verify.baseline.iteration.execution.policy",
+      "status": "passed",
+      "execution_kind": "static",
+      "log": "docs/audit/verify_system_closeout_01_r2a/verify.baseline.iteration.execution.policy.txt",
+      "sha256": "c2afa1465450396fbf3f8588a953cdbf6600dc3721a247ec91b8245181e154bd",
+      "duration_seconds": 0.603
+    },
+    {
+      "target": "verify.ci.scheduled_gates",
+      "status": "passed",
+      "execution_kind": "command",
+      "log": "docs/audit/verify_system_closeout_01_r2a/verify.ci.scheduled_gates.txt",
+      "sha256": "3a194537b9d28941c418ed0a11e4ba6adffa2e3626a6d927015d7dfd1aedcdc8",
+      "duration_seconds": 138.733
+    },
+    {
+      "target": "verify.ci.workflow.contract",
+      "status": "passed",
+      "execution_kind": "static",
+      "log": "docs/audit/verify_system_closeout_01_r2a/verify.ci.workflow.contract.txt",
+      "sha256": "ac6ca132c2a386fa4250866694d010a4eaacda6b6b3a09bbaebb6c948c200f85",
+      "duration_seconds": 18.046
+    },
+    {
+      "target": "verify.frontend.dev.incremental.unit",
+      "status": "passed",
+      "execution_kind": "test",
+      "log": "docs/audit/verify_system_closeout_01_r2a/verify.frontend.dev.incremental.unit.txt",
+      "sha256": "6c910e5b7b46ce6ed71d641ad6cb6d538b32b01128dd02b86611dea7f11868e7",
+      "duration_seconds": 10.587
+    },
+    {
+      "target": "verify.test.coverage.registry",
+      "status": "passed",
+      "execution_kind": "static",
+      "log": "docs/audit/verify_system_closeout_01_r2a/verify.test.coverage.registry.txt",
+      "sha256": "8fc0afca7c8a3b267a3304058b94124bb3fb53ec6be5944e2fe09b26b371775b",
+      "duration_seconds": 1.24
+    }
+  ],
+  "receipt": {
+    "path": "docs/audit/verify_system_closeout_01_r2a/local_incremental_receipt.json",
+    "sha256": "c5e9f8f23a1bf560b601cabbfdfb98989c45e7ded8ad5f148eb604adcc0191cd"
+  },
+  "limits": [
+    "CLI uses isolated GitHub transport/artifact fixtures; no main workflows dispatched.",
+    "Make recovery uses isolated synthetic producers; not mixed ORM/browser recovery.",
+    "Per-target testCount is the final attributable runner summary, not the sum of nested suites; raw logs retain all individual counts.",
+    "No product or deployment qualification."
+  ]
+}

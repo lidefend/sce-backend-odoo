@@ -148,6 +148,10 @@ class DispatchTest(unittest.TestCase):
 
 class VerifyTest(unittest.TestCase):
     def setUp(self) -> None:
+        tree_patch = patch.object(dispatch, "expected_tree", return_value=TREE)
+        evidence_patch = patch.object(dispatch, "verify_evidence", return_value={"status": "VERIFIED"})
+        tree_patch.start(); evidence_patch.start()
+        self.addCleanup(tree_patch.stop); self.addCleanup(evidence_patch.stop)
         self.rows = [
             {
                 "workflow": workflow,

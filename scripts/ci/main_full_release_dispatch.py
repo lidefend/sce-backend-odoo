@@ -12,6 +12,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable
 
+try:
+    from scripts.ci.main_full_release_evidence import verify_evidence
+except ModuleNotFoundError:
+    from main_full_release_evidence import verify_evidence
+
 
 ROOT = Path(__file__).resolve().parents[2]
 REPOSITORY = "lidefend/sce-backend-odoo"
@@ -144,7 +149,7 @@ def normalize_run(row: dict, workflow: str, expected_main: str) -> dict:
         or row["status"] not in {"queued", "in_progress", "completed", "waiting", "pending"}
         or row["conclusion"] not in {"", "success", "failure", "cancelled", "timed_out", "skipped", "neutral"}
         or not isinstance(row["url"], str)
-        or not row["url"].startswith("https://github.com/")
+        or row["url"] != f"https://github.com/{REPOSITORY}/actions/runs/{row['databaseId']}"
         or not isinstance(row["workflowName"], str)
         or not row["workflowName"]
     ):
@@ -282,7 +287,7 @@ def load_manifest(path: Path, expected_main: str) -> dict:
         "schema_version", "repository", "expected_main", "expected_tree", "event",
         "head_branch", "release_condition_kind", "dispatched_at", "workflows",
     }
-    optional = {"verified_at", "status"}
+    optional = {"verified_at", "status", "qualification_evidence"}
     if (
         not isinstance(document, dict)
         or not required <= set(document)
@@ -356,13 +361,19 @@ def verify_full(
     assert_repository(repository)
     assert_remote_main(expected_main)
     document = load_manifest(manifest, expected_main)
+    if document["expected_tree"] != expected_tree(expected_main):
+        raise ValueError("manifest tree differs from exact commit tree")
     deadline = monotonic() + wait_seconds
     rows = {row["workflow"]: row for row in document["workflows"]}
+    observed: set[str] = set()
     while True:
         pending = False
         for workflow in WORKFLOWS:
             expected = rows[workflow]
+            if expected["status"] == "completed" and workflow in observed:
+                continue
             actual = normalize_run(run_view(expected["run_id"]), workflow, expected_main)
+            observed.add(workflow)
             if (
                 actual["attempt"] != expected["attempt"]
                 or actual["url"] != expected["url"]
@@ -371,6 +382,14 @@ def verify_full(
             rows[workflow] = actual
             if actual["status"] != "completed":
                 pending = True
+        matrix = [{"workflow": workflow, "run_id": row["run_id"],
+                   "attempt": row["attempt"], "status": row["status"],
+                   "conclusion": row["conclusion"]} for workflow, row in rows.items()]
+        failed = [row for row in matrix if row["status"] == "completed" and row["conclusion"] != "success"]
+        print("[main-full-release] MATRIX " + json.dumps(matrix, sort_keys=True), flush=True)
+        if failed:
+            raise ValueError("full-release audit did not succeed: " + ", ".join(
+                row["workflow"] + "=" + row["conclusion"] for row in failed))
         if not pending:
             break
         if monotonic() >= deadline:
@@ -387,6 +406,8 @@ def verify_full(
             + ", ".join(f"{workflow}={result}" for workflow, result in sorted(failed.items()))
         )
     document["workflows"] = [rows[workflow] for workflow in WORKFLOWS]
+    document["qualification_evidence"] = verify_evidence(document)
+    assert_remote_main(expected_main)
     document["verified_at"] = datetime.now(timezone.utc).isoformat()
     document["status"] = "PASS"
     write_manifest(manifest, document)
@@ -432,7 +453,7 @@ def main() -> int:
                 f"[main-full-release] PASS main={result['expected_main']} "
                 f"kind={result['release_condition_kind']}"
             )
-    except ValueError as exc:
+    except (ValueError, OSError, KeyError, TypeError, subprocess.SubprocessError) as exc:
         print(f"[main-full-release] DENY: {exc}")
         return 2
     return 0

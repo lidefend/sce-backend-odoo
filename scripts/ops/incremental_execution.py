@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 import hashlib
+import importlib.metadata
 import json
 import os
+import platform
+import shutil
+import sys
+from functools import lru_cache
 import subprocess
 from pathlib import Path
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
+ENVIRONMENT_FIELDS = ("environmentIdentitySha256", "environmentReadbackSha256")
 NON_RUNTIME_PREFIXES = (".agent/", "docs/", ".runtime/")
 
 
@@ -108,6 +114,45 @@ def committed_runtime_tree_sha256(root: Path, head: str) -> str:
         raise ValueError(f"cannot compute historical runtime tree digest: {exc}") from exc
 
 
+
+@lru_cache(maxsize=32)
+def _executable_digest(path: str, inode: int, size: int, modified: int, changed: int) -> str:
+    # Stat identity bounds this per-process optimization; content is the proof.
+    return sha256_file(Path(path))
+
+
+def host_environment_identity(root: Path) -> str:
+    """Observed host toolchain identity; not a database/environment readback.
+
+    Runtime targets still need their registered readback and may not use this
+    host observation as permission to reuse ORM/browser state.
+    """
+    tools = {}
+    for name, path in [('python', sys.executable), ('node', shutil.which('node')),
+                       ('make', shutil.which('make'))]:
+        if path:
+            file = Path(path).resolve(); stat = file.stat()
+            tools[name] = {'path': str(file), 'sha256': _executable_digest(
+                str(file), stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns)}
+        else:
+            tools[name] = None
+    installed = {}
+    for relative in ('frontend/apps/web/node_modules/.modules.yaml',
+                     'frontend/node_modules/.modules.yaml',
+                     'frontend/apps/web/node_modules/.bin/eslint',
+                     'frontend/apps/web/node_modules/.bin/vue-tsc',
+                     'frontend/apps/web/node_modules/.bin/esbuild'):
+        path = root / relative
+        installed[relative] = sha256_file(path)
+    packages = sorted((dist.metadata.get('Name', ''), dist.version,
+                       hashlib.sha256((dist.read_text('RECORD') or '').encode()).hexdigest())
+                      for dist in importlib.metadata.distributions())
+    payload = {'schema': 'observed-host-toolchain/v1', 'tools': tools, 'python_packages': packages,
+               'platform': platform.platform(), 'python': platform.python_version(),
+               'installed_manifests': installed}
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+
+
 def current_identity(root: Path, authority_paths: tuple[Path, ...] = ()) -> dict:
     """Bind reusable execution to VCS head, cleanliness and planner authorities."""
     try:
@@ -150,6 +195,7 @@ def current_identity(root: Path, authority_paths: tuple[Path, ...] = ()) -> dict
         "worktreeClean": not bool(status),
         "runtimeTreeSha256": runtime_tree_sha256(root),
         "authoritySha256": dict(sorted(authorities.items())),
+        "environmentIdentitySha256": host_environment_identity(root),
     }
 
 
@@ -158,6 +204,7 @@ def reuse_identity(identity: dict) -> dict:
     return {
         "runtimeTreeSha256": identity.get("runtimeTreeSha256", ""),
         "authoritySha256": identity.get("authoritySha256", {}),
+        **{key: identity.get(key, "") for key in ENVIRONMENT_FIELDS},
     }
 
 
@@ -181,6 +228,7 @@ def verified_receipt(
     paths: list[str],
     targets: list[str],
     identity: dict,
+    *, channel: str | None = None, run_id: str | None = None,
 ) -> Path | None:
     """Return a prior receipt only when identity, bytes and every target log match."""
     if not identity.get("head"):
@@ -202,7 +250,9 @@ def verified_receipt(
             return None
         receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
         if (
-            receipt.get("status") != "passed"
+            (channel is not None and receipt.get("channel") != channel)
+            or (run_id is not None and receipt.get("runId") != run_id)
+            or receipt.get("status") != "passed"
             or not receipt.get("verificationPassed")
             or reuse_identity(receipt.get("identity", {})) != reuse_identity(identity)
             or sorted(receipt.get("changedPaths", [])) != sorted(set(paths))
@@ -213,6 +263,8 @@ def verified_receipt(
         if [row.get("target") for row in results] != sorted(set(targets)):
             return None
         for row in results:
+            if row.get("status") != "passed" or row.get("returncode") != 0:
+                return None
             log = Path(str(row.get("log", "")))
             if not log.is_absolute():
                 log = root / log
