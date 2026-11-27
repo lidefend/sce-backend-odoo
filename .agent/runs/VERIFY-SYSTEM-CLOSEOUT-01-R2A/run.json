@@ -30,6 +30,7 @@
     "docs/audit/verify_system_closeout_01_r2a/execution_facts_followup/verify.test.coverage.registry.txt",
     "docs/audit/verify_system_closeout_01_r2a/local_incremental_receipt.json",
     "docs/audit/verify_system_closeout_01_r2a/local_incremental_receipt_followup.json",
+    "docs/audit/verify_system_closeout_01_r2a/public_boundary_evidence.json",
     "docs/audit/verify_system_closeout_01_r2a/replay_old_qualification.txt",
     "docs/audit/verify_system_closeout_01_r2a/review_corrections.json",
     "docs/audit/verify_system_closeout_01_r2a/review_corrections/audit.verification.lane_coverage.check.txt",
@@ -140,7 +141,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Freeze revised #1024, run exact-head candidate scan in presence of retained refs, execute final local iteration, push and read four exact-head PR CI; retain Draft, no merge/deployment/R3.",
+  "next_exact_step": "Verify complete clean product boundary and candidate scan after minimizing old CI evidence; push final #1024 HEAD and verify new remote CI, no rule changes/merge/deploy.",
   "id": "VERIFY-SYSTEM-CLOSEOUT-01-R2A",
   "branch": "fix/verify-system-closeout-01-r2a-clean-20261127",
   "status": "verification_pending",
@@ -152,7 +153,7 @@
     "head": "da210fed05739d9565f5ad1be84ab113cd62cde9",
     "original_head": "83cc97f93bdf17757e744109fbac1e2e3b88db7c"
   },
-  "local_evidence": "docs/audit/verify_system_closeout_01_r2a/scan_boundary_evidence.json",
+  "local_evidence": "docs/audit/verify_system_closeout_01_r2a/public_boundary_evidence.json",
   "review_corrections": {
     "reviewed_head": "7be328ae0fb987fc3a23c91bf49440ee12b71bbc",
     "scope": [

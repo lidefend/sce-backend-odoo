@@ -1,0 +1,99 @@
+{
+  "schema": "r2a-public-boundary-evidence/v1",
+  "observed_head": "6dbb16317f80ed47526875c419267b4134c419d2",
+  "source_state": "owned evidence-only dirty scope",
+  "command": "python3 scripts/verify/clean_product_release_scan.py --report <isolated-runtime-report>",
+  "report_identity_note": "Nested legacy source_head is not used as current source authority; observed HEAD and input hashes here bind this invocation",
+  "before_report_sha256": "126090f53e19d9e790c08fdab5df9fc5b70734780d61a5dc8a511ec9d8040a2d",
+  "before_failed_checks": {
+    "scripts/verify/tenant_product_payload_boundary_guard.py": {
+      "command": [
+        "/usr/bin/python3",
+        "scripts/verify/tenant_product_payload_boundary_guard.py"
+      ],
+      "status": "FAIL",
+      "returncode": 1,
+      "output": [
+        "[tenant_product_payload_boundary_guard] FAIL",
+        "- rule=customer_identity_or_brand_reference path=docs/audit/verify_system_closeout_01_r2a/review_corrections/old_public_guard.json",
+        "FIXED_CUSTOMER_IDENTIFIERS=1",
+        "CUSTOMER_PAYLOAD_FILES=0",
+        "GENERIC_TENANT_PROTOCOL=PASS"
+      ]
+    }
+  },
+  "after_report_sha256": "28685c327dec80f574d81fe9ed76371016b8813589cea55be342395ddafcd750",
+  "after_status": "PASS",
+  "after_checks": {
+    "tree": {
+      "status": "PASS",
+      "returncode": 0
+    },
+    "secret": {
+      "status": "PASS",
+      "returncode": 0
+    },
+    "personal_data": {
+      "status": "PASS",
+      "returncode": 0
+    },
+    "scripts/verify/tenant_product_legacy_boundary.py": {
+      "status": "PASS",
+      "returncode": 0
+    },
+    "scripts/verify/tenant_legacy_xmlid_boundary.py": {
+      "status": "PASS",
+      "returncode": 0
+    },
+    "scripts/verify/customer_module_extraction_guard.py": {
+      "status": "PASS",
+      "returncode": 0
+    },
+    "scripts/verify/product_to_customer_dependency_guard.py": {
+      "status": "PASS",
+      "returncode": 0
+    },
+    "scripts/verify/tenant_product_payload_boundary_guard.py": {
+      "status": "PASS",
+      "returncode": 0
+    },
+    "scripts/verify/product_customer_runtime_decoupling_guard.py": {
+      "status": "PASS",
+      "returncode": 0
+    },
+    "scripts/verify/tenant_module_set_matrix.py": {
+      "status": "PASS",
+      "returncode": 0
+    },
+    "scripts/verify/tenant_product_fresh_install.py": {
+      "status": "PASS",
+      "returncode": 0
+    },
+    "scripts/verify/formal_product_field_purity_guard.py": {
+      "status": "PASS",
+      "returncode": 0
+    },
+    "scripts/verify/tenant_data_responsibility_boundary.py": {
+      "status": "PASS",
+      "returncode": 0
+    },
+    "scripts/verify/branch_governance_consistency_guard.py": {
+      "status": "PASS",
+      "returncode": 0
+    }
+  },
+  "change": "Keep bounded RH018 diagnostic excerpt; omit unrelated checkout listing from current public evidence; preserve full original log hash, source URL and immutable historical commit",
+  "rule_changes": false,
+  "remote_history_scan": {
+    "run_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45951913269",
+    "candidate_head": "6dbb16317f80ed47526875c419267b4134c419d2",
+    "status": "PASS",
+    "scanned_blobs": 30934
+  },
+  "inputs": {
+    "scripts/verify/clean_product_release_scan.py": "05f5c3d2ffe01cff4ff0233831cee33e1c371a4e6e703ffe3f5bdc8d5da1b4ea",
+    "scripts/verify/tenant_product_payload_boundary_guard.py": "ba15f073efc1c5a1e611fab1992c266d037136fccd19bdd0af1836940717c940",
+    "docs/audit/verify_system_closeout_01_r2a/review_corrections/old_public_guard.json": "501dd9d6869104c3aa5bbbfa7719178475fc2cea3c98d6026384065148248101"
+  },
+  "remote_integration": "NOT_VERIFIED for evidence correction"
+}

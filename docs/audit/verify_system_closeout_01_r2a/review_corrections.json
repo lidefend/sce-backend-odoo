@@ -153,9 +153,10 @@
     },
     {
       "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/old_public_guard.json",
-      "sha256": "49cfab0ece1d0b4969dbb3e312a0ea07b13107d2bfa7a0cb0cb465060722cd4e",
+      "sha256": "501dd9d6869104c3aa5bbbfa7719178475fc2cea3c98d6026384065148248101",
       "raw_sha256": "d31eb8a6da1c9493294b3fc878fab9a7ddfb646f293fed11d9ac3bfbccc962cf",
-      "encoding": "lossless UTF-8 JSON string"
+      "encoding": "Bounded diagnostic excerpt; full raw log retained at source and historical commit",
+      "excerpt_sha256": "6b3847c511df3adb3db789399173484df5848619cc2324e075d406bfeaef8e7f"
     },
     {
       "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/local_iteration.txt",
