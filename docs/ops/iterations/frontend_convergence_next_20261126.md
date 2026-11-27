@@ -611,6 +611,9 @@ published-branch 同步并入候选，merge commit 为
 
 `.runtime/frontend-dev-validation/executions/20261127T083412Z-1580824-776757870/receipt.json`
 
+同一产品源码的生产前端构建通过，构建指纹
+`b286877279f54dc6f337e6a783f941853ca85f1a36f7576e6c9dd683f6966969`。
+
 该切片只是本地单测与组件验证，不代表生产角色/公司页面、143 入口矩阵完成。
 
 ### 2026-11-27 FC-01 原生表单与附件分类语义收口

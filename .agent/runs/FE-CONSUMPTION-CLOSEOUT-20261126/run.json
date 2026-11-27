@@ -2060,6 +2060,14 @@
       "unmapped_paths": 0,
       "not_run_targets": 0,
       "blocked_targets": 0,
+      "frontend_build": {
+        "status": "passed",
+        "source_revision": "2d0da784fc9217a2bb73a8b9fa4a65c72ce48d4c",
+        "log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/native-layout-descriptor-only-build.log",
+        "log_sha256": "0d524e995213744137de2ff4f29579c6c4576263b9be44e5a5888e2e16b0f728",
+        "build_info_sha256": "29d69f8efcbabec5eb0221b4d6e32343de58bb5415d4c1eac52aac36d8f9cdff",
+        "frontend_build_fingerprint": "b286877279f54dc6f337e6a783f941853ca85f1a36f7576e6c9dd683f6966969"
+      },
       "facts_verified": [
         "native field and widget semantics are projected from fieldDescriptor",
         "fieldInfo and componentConfig no longer supply field type, relation, widget options, subview or validation semantics",
