@@ -534,6 +534,20 @@
       "regressionGuard": "verify.frontend.professional_relation_field.unit",
       "behaviourTest": "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
       "stopDetail": "An enabled relation inline-create declaration must name both the field receiving the typed keyword and the matching rule. Missing name_field or match stops with ContractGapError; consumers must not fall back to name or exact_label. A disabled declaration may carry empty create-time fields."
+    },
+    {
+      "surface": "ActionView Kanban title field selection",
+      "declared": "kanban_profile.title_field within the declared Kanban field set",
+      "declaredBy": "addons/smart_core/handlers/load_contract.py",
+      "declaredMethod": "_extract_kanban_semantics",
+      "declaredSymbol": "\"title_field\": title_field,",
+      "consumedBy": "frontend/apps/web/src/app/runtime/actionViewKanbanTitleField.ts",
+      "consumedSymbol": "function resolveDeclaredKanbanTitleField(",
+      "onMissing": "stop",
+      "stopSymbol": "contractGapError",
+      "regressionGuard": "verify.frontend.contract_shape_projection.unit",
+      "behaviourTest": "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+      "stopDetail": "When a Kanban field set is present, ActionView must use the declared title_field and require it to belong to that field set. Missing or mismatched title declarations stop with ContractGapError instead of falling back to display_name, name, the first column or id. A non-Kanban empty field set returns no title field."
     }
   ],
   "registeredMechanismExemptions": [
