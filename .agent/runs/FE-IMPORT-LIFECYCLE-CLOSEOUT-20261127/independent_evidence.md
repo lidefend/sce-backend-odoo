@@ -48,3 +48,22 @@ first import validation. The import changes were replayed onto that full HEAD in
 the same independent worktree. The only replay conflict was the generated
 component-driver inventory, which was regenerated through its governed target.
 The restacked candidate must be validated again before publication.
+
+## r2 clean exact-head result
+
+Commit `3e5c1b9153874bf1f6ff3d6f5dbacf5498a7034b` passed:
+
+- `make ci.local.iteration`: 9 executed targets, 3 test targets, 341 non-zero
+  tests, 5 static checks, no unmapped/not-run/blocked target;
+- production build from the same source revision, fingerprint
+  `49b2a04814cc1a98486ceef75a3b797c7b55691664dac7a3625ab3b04ed1cda5`.
+
+## Independent review at source head bd7a2c79
+
+PR #1019 at `bd7a2c79435e36f9d752570db170cba8e5ee7cc0` is blocked by
+`public_guard`: blob `1582beb6a28d` for
+`docs/audit/verify_system_closeout_01_r2a/actual_execution_facts.json` matches
+`MOBILE_PHONE_PATTERN` because workflow/artifact numeric identifiers look like
+phone numbers. The guard itself records `sensitive_values_recorded=false`.
+`wait_for_fact_checks` and `merge_policy_gate` fail transitively. Classify this as
+a P4 validation-tool false positive, not an import lifecycle product defect.

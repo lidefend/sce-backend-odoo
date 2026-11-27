@@ -134,13 +134,49 @@
       "source_revision": "f8fcce8616c30780e07b87a8815fa4a19fd91356"
     },
     "restack": {
-      "status": "applied_pending_validation",
+      "status": "validated",
       "source_head": "a7f60de29d8d634e01cab7b7e637e314ae62eeca",
       "destination_base_head": "bd7a2c79435e36f9d752570db170cba8e5ee7cc0",
       "method": "exact patch replay in the independent worktree; generated component-driver inventory regenerated",
       "conflict": "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    },
+    "r2_exact_head_validation": {
+      "status": "passed",
+      "head": "3e5c1b9153874bf1f6ff3d6f5dbacf5498a7034b",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T054040Z-4040118-689387871/receipt.json",
+      "receipt_sha256": "88bd3e072040e169a041eecc3a9a71244fb36e3f275b2366dcb475d595d0bdcd",
+      "executed_targets": 9,
+      "test_targets": 3,
+      "executed_test_count": 341,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "worktree_clean": true
+    },
+    "r2_exact_head_frontend_build": {
+      "status": "passed",
+      "head": "3e5c1b9153874bf1f6ff3d6f5dbacf5498a7034b",
+      "command": "make verify.frontend.build ENV=dev ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev",
+      "log": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/frontend-build-r2-exact-head.log",
+      "log_sha256": "3d8f9e6780ad95df0a9d96fff40f4077d09fa28ae62d070d56bcca6da4ca0685",
+      "build_info_sha256": "3728ae40f05a20ce375b024488deca96f8bcb5be25dd9fd88ae169d1114986a6",
+      "frontend_build_fingerprint": "49b2a04814cc1a98486ceef75a3b797c7b55691664dac7a3625ab3b04ed1cda5",
+      "source_revision": "3e5c1b9153874bf1f6ff3d6f5dbacf5498a7034b"
+    },
+    "source_pr_review_at_restack_base": {
+      "status": "blocked",
+      "head": "bd7a2c79435e36f9d752570db170cba8e5ee7cc0",
+      "findings": [
+        "public_guard classifies docs/audit/verify_system_closeout_01_r2a/actual_execution_facts.json blob 1582beb6a28d as MOBILE_PHONE_PATTERN while sensitive_values_recorded=false",
+        "wait_for_fact_checks fails as a consequence of public_guard",
+        "merge_policy_gate fails because the required public_guard fact is not successful"
+      ],
+      "classification": "validation_tool_false_positive",
+      "owner": "P4 public_guard history scan rule/baseline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the restacked candidate, rerun exact-head validation and build, then publish the r2 stack branch."
+  "next_exact_step": "Commit this r2 evidence, publish the updated import stack branch, and report the public_guard false positive separately to the product writer."
 }
