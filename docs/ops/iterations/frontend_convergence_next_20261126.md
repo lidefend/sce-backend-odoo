@@ -538,6 +538,62 @@ clean 运行态回读：
 143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
 `bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
 
+### 2026-11-27 FC-01 canonical 关系目标一致性收口
+
+上一轮补齐描述符透传后继续核对 canonical form presenter，确认关系目标仍存在第二条
+静默选择路径：当 `componentConfig.relation`、`relationModel` 或 `relation_model` 与
+`fieldDescriptor.relation` 不一致时，presenter 按先后顺序直接采用其中一个；若字段尚未
+选值，一致性检查甚至不会执行。运行时关系控件此前已有同类停机，但 canonical 呈现路径
+仍可能按错误模型显示或准备导航。
+
+本切片完成：
+
+- canonical presenter 收集全部非空关系目标声明；唯一或一致时原样消费，不一致即抛
+  `ContractGapError` 并指向 `field.<name>.relation_model_consistency`；
+- 该校验在 `many2one` 字段投影时执行，不依赖当前是否已有选中值；
+- 增加 `componentConfig.relation=res.partner` 与
+  `fieldDescriptor.relation=project.project` 的冲突用例，先证旧实现不抛错；
+- `frontend_contract_basis_ledger.json` 新增 canonical 关系目标绑定，回归守卫为
+  `verify.frontend.canonical_form_presenter.unit`；
+- 增量选测规则纳入 `contractFormPresenter.ts`，并验证 presenter 变化必须同时选择
+  canonical form 与 primitive adapter 合同测试；
+- presenter 源码变化后通过既有生成入口刷新 component-driver takeover inventory。
+
+首次选测规则修改后，反例发现 presenter 路径没有选择 primitive adapter；补齐通用表单路由
+后通过。组件接管清单过期按 `baseline_evidence_defect` 分类，并由受管生成器修复。
+
+产品改动提交为 `b10ba042f54db884d5dbe912bc3a26b43beff571`。dirty 候选上的
+`make ci.local.iteration` 执行 43 个目标、复用 5 个未变目标，28 个测试目标执行
+1142 项测试、10 项静态检查，`unmapped_paths=0`，全部退出零。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T021211Z-2242546-122517043/receipt.json`
+
+回执 SHA256：
+`d6ea3e2625b8f5b77136901ca973a75e6d0b19b57767f435bb60e2bee33886e1`。
+
+按产品提交重建 clean 前端，构建指纹为
+`49a3d162de0bf9c66f9ec32ad8c712e11a831c90cc78643f5e033bcca22ddab0`。
+
+clean 运行态回读：
+
+- `/t/clean/api/runtime-version` 同时返回上述源码 SHA、构建指纹、`sc_clean`、
+  namespace `ns_c6fed472e939` 与 alias `clean`；
+- 根路径 `/build-info.json` 返回同一源码 SHA；
+- `local.clean.health` 与 `local.clean.entry_identity.verify` 均通过；
+- project/database/dbfilter/namespace 保持 clean 专属身份。
+
+在该 clean 精确 HEAD 上执行 `make ci.local.iteration`：48 个必需目标全部成立，其中
+19 个本轮执行、29 个复用，9 个测试目标执行 556 项测试，5 项静态检查通过，
+`unmapped_paths=0`，全部退出零。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T021717Z-2283555-82478939/receipt.json`
+
+回执 SHA256：
+`8cf4b0e20f3e00b4a1ec0ed20cc39e41d7313905e08ba075b280cdeb731885b4`。
+
+143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
+`bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
+
 ### 2026-11-27 FC-01 plain value-shape 前端消费收口
 
 继续检查 plain collection 回退时确认，普通 `char/text/html` 字段遇到对象会按

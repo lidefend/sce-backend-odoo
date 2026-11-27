@@ -422,6 +422,20 @@
       "regressionGuard": "verify.frontend.business_semantics.unit",
       "behaviourTest": "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
       "stopDetail": "普通 char/text/html 只接受标量或明确的 locale key/label 映射；对象中的 display_name/label/name 或数组外形不能自行升级为业务文本，必须停机回声明层提供正确字段类型或标签载体。"
+    },
+    {
+      "surface": "Canonical relation target consistency",
+      "declared": "widget fieldDescriptor.relation and componentConfig relation aliases",
+      "declaredBy": "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+      "declaredMethod": "_strict_field_descriptor",
+      "declaredSymbol": "descriptor[\"relation\"] = relation",
+      "consumedBy": "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+      "consumedSymbol": "function relationModel(widget: ContractV2Widget): string",
+      "onMissing": "stop",
+      "stopSymbol": "contractGapError",
+      "regressionGuard": "verify.frontend.canonical_form_presenter.unit",
+      "behaviourTest": "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+      "stopDetail": "canonical 表单 presenter 必须同时校验 fieldDescriptor.relation 与 componentConfig.relation/relationModel/relation_model；任一非空目标不一致即抛 ContractGapError，空值也不能绕过检查，前端不得按先后顺序静默选择其中一个。"
     }
   ],
   "registeredMechanismExemptions": [

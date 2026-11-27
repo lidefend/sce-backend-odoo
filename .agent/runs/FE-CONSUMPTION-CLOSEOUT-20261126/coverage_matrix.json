@@ -72,6 +72,25 @@
     },
     "coverage_limit": "The 143-entry current-candidate browser matrix, remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
   },
+  "fc_01_canonical_relation_target_consistency": {
+    "status": "clean_exact_head_passed",
+    "head": "b10ba042f54db884d5dbe912bc3a26b43beff571",
+    "facts_verified": [
+      "canonical form presentation rejects conflicting relation target declarations",
+      "the conflict stops even when no relation value is selected",
+      "the incremental planner selects canonical form and primitive adapter checks for presenter changes",
+      "real producer and decoder integration remain green"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T021717Z-2283555-82478939/receipt.json",
+    "local_receipt_sha256": "8cf4b0e20f3e00b4a1ec0ed20cc39e41d7313905e08ba075b280cdeb731885b4",
+    "runtime_identity": {
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "namespace_id": "ns_c6fed472e939",
+      "frontend_build_fingerprint": "49a3d162de0bf9c66f9ec32ad8c712e11a831c90cc78643f5e033bcca22ddab0"
+    },
+    "coverage_limit": "The 143-entry current-candidate browser matrix, remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
+  },
   "not_a_product_acceptance_receipt": true,
   "coverage_boundary": "One formal product-entry universe derived from current declarations plus 11 source-grounded consumer findings. Declared acceptance status is preserved as provenance; current-candidate runtime coverage is not inherited and remains not_run until exercised.",
   "rows": [
