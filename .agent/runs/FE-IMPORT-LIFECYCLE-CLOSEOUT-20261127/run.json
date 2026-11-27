@@ -218,14 +218,39 @@
       "source_revision": "50faa32bb171e7c1e87e2fc5ab39369840a4d4c7"
     },
     "source_sync_e4a4": {
-      "status": "applied_pending_validation",
+      "status": "validated",
       "source_head": "76ada1ba65978f8a3dd52d7575718c41bec603af",
       "destination_base_head": "e4a4df12cf65137c298863f576390ca3684076c6",
       "method": "exact source delta replay on the existing r3 branch; generated inventory regenerated",
       "conflict": "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
       "product_overlap": false
+    },
+    "source_sync_e4a4_exact_head_validation": {
+      "status": "passed",
+      "head": "823d2ebaaa280d268bb00773e9ad0687f9a54195",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T055828Z-36760-295410551/receipt.json",
+      "receipt_sha256": "472ebf0d9c42373e10184628b17731a7071e03fc583b2309eb9e3c3c53169087",
+      "executed_targets": 16,
+      "test_targets": 8,
+      "executed_test_count": 187,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "worktree_clean": true
+    },
+    "source_sync_e4a4_exact_head_frontend_build": {
+      "status": "passed",
+      "head": "823d2ebaaa280d268bb00773e9ad0687f9a54195",
+      "command": "make verify.frontend.build ENV=dev ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev",
+      "log": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/frontend-build-sync-e4a4.log",
+      "log_sha256": "6825cf20be5174c2593ef9090ec7d2b68954ef1aafb4438ea43c497401003553",
+      "build_info_sha256": "58039850320b4c8ef820679b485ea36c6312e15d92e65788eec87126f558baac",
+      "frontend_build_fingerprint": "394d4339882f7afd7bcc60248da662175014fb43c33b1d1808ed2e392c318bef",
+      "source_revision": "823d2ebaaa280d268bb00773e9ad0687f9a54195"
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the e4a4 source sync, rerun import lifecycle and exact-head checks, then update PR #1023."
+  "next_exact_step": "Commit this synchronized evidence and publish the updated PR #1023 stack head."
 }
