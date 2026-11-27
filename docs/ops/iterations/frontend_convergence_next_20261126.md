@@ -1000,6 +1000,40 @@ dirty scope 上成立 86 个必需目标，全部本轮执行；65 个测试目�
 该切片仍需提交推送后的新精确 HEAD 远端验证。真实浏览器 one2many 新增与编辑、跨公司
 关系创建、143 入口矩阵、FC-04 整体收口和用户验收仍未完成。
 
+one2many 生命周期切片 `1b3e8fc932e8643959f06a81903a1b7c7291c8ff` 已取得完整远端结果：
+`public_guard 46037782274`、`merge_policy_gate 46037782444`、
+`professional_quality_gate 46037782375`、`frontend_release_gate 46037782388`
+全部通过；`wait_for_fact_checks`、backend impact suite 的 plan/suite/coverage
+check 分别为 `140637583703`、`140637661500`、`140637880822`、`140641257880`，
+全部成功，不适用 backend suite 为显式 skipped。
+
+继续检查行内 many2one 候选查询时确认，渲染器已有同格乱序保护，但页面失活或公司上下文
+变化后，旧查询仍可能回填已保留的候选、错误或搜索状态。
+
+本切片完成：
+
+- 行内候选查询复用共享 `captureRelationRequest` 与 `contextEpoch`，在描述符准备前后
+  和传输返回后校验所有权；
+- 旧页面 owner 和旧上下文 epoch 均不能发布行内候选；
+- X2Many 渲染器消费共享 runtime generation，在页面/上下文失效时同步清空所有 cell
+  查询序号、候选、错误、关键词和加载状态；
+- 保留既有同格 latest-request 保护，避免同一有效页面内的乱序响应覆盖较新关键词；
+- 增加页面 owner 失效与 context epoch 轮换的区分性候选查询负例；
+- `professional_detail_collection` 现有检查登记新增生产输入与生命周期守卫；
+- component-driver inventory 按生产源码输入重新生成。
+
+`make ci.local.iteration` 在 `1b3e8fc932e8643959f06a81903a1b7c7291c8ff` 加当前 owned
+dirty scope 上成立 86 个必需目标，全部本轮执行；65 个测试目标执行 2168 项测试、
+11 项静态检查，`unmapped=0`、`not_run=0`、`blocked=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T170943Z-1778910-750041358/receipt.json`
+
+回执 SHA256：
+`0c06fcc8460444304e301be48f120ae3851c0dd887a56712471f34bed3cbb2f3`。
+
+该候选仍需提交推送后的新精确 HEAD 远端验证。真实浏览器行内关系选择、跨公司关系创建、
+143 入口矩阵、FC-04 整体收口和用户验收仍未完成。
+
 ### 2026-11-27 FC-02 页面身份声明化与选测补口
 
 本切片属于共享前端呈现消费层，不修改后端契约、权限或数据。页面身份不再把

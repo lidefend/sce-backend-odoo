@@ -273,6 +273,14 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             or "relationActiveRequestRevisions[key] === revision" not in renderer
             or "!relationQueryTimers[key]" not in renderer):
         failures.append("detail collection relation requests are not latest-condition authoritative")
+    if ("captureRelationRequest?.(" not in relation_runtime
+            or "currentContextEpoch() === contextEpoch" not in relation_runtime
+            or "if (!isCurrent()) return [];" not in relation_runtime):
+        failures.append("detail collection column option requests are not page/context authoritative")
+    if ("function invalidateAllOne2manyRelationQueries()" not in renderer
+            or "props.adapter.relationRuntimeGeneration?.()" not in renderer
+            or "{ flush: 'sync' }" not in renderer):
+        failures.append("detail collection does not invalidate cell queries with the shared page generation")
     if "JSON.stringify(row.values)" in renderer:
         failures.append("detail collection relation queries still depend on unrelated row values")
     if "preserveSelectedOne2manyRelationOption" not in renderer or "currentValue" not in relation_query:

@@ -1940,6 +1940,7 @@ const {
   one2manyEffectiveColumn, one2manyVisibleColumns,
   one2manyColumnDisplayValue: one2manyColumnDisplayValueForUser, one2manyColumnInputValue, one2manyColumnInputType, one2manyColumns,
   one2manyCreateLabel, one2manyRemovalLabels, one2manyRowErrors, one2manyCellError, one2manyColumnQueryScope, queryOne2manyColumnOptions, one2manyRowHints,
+  relationRuntimeGeneration: () => relationRuntimeGeneration.value,
   ensureRelationFieldDescriptors,
   one2manyRowLabel, one2manyRowStateLabel, one2manySummary, isOne2manyHydrating,
   openNativeAttachment, deleteNativeAttachment: confirmAndDeleteNativeAttachment, deleteNativeMessage: confirmAndDeleteNativeMessage, openNativeChatterAction, replyNativeChatter, openRelationCreateForm,

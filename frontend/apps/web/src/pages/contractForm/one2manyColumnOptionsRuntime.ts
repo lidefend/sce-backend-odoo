@@ -1,4 +1,5 @@
 import { contractGapError } from '../../app/contract/contractGap';
+import { currentContextEpoch } from '../../app/contextEpoch';
 import { one2manyRelationDependencyKey } from '../../components/template/one2manyRelationQuery';
 import type { RelationOption } from './types';
 
@@ -21,6 +22,7 @@ export type One2manyColumnOptionsDependencies = {
   pickContractNavQuery: typeof import('../../app/navigationContext').pickContractNavQuery;
   listContractFormRecords: typeof import('../../app/runtime/contractFormDataRuntime').listContractFormRecords;
   fetchRelationOptionsFromRuntime: ReturnType<typeof import('./useRelationRuntime').useRelationRuntime>['fetchRelationOptions'];
+  captureRelationRequest?: ReturnType<typeof import('./useRelationRuntime').useRelationRuntime>['captureRelationRequest'];
   one2manyFieldRows: ReturnType<typeof import('./useOne2manyRuntime').useOne2manyRuntime>['fieldRows'];
   ensureRelationFieldDescriptors: (fieldName: string) => Promise<void>;
   one2manyRelationFieldDescriptor: (fieldName: string, columnName: string) => import('@sc/schema').FieldDescriptor | undefined;
@@ -65,7 +67,18 @@ export function createOne2manyColumnOptionsRuntime(
     column: { name: string },
     keyword = '',
   ): Promise<RelationOption[]> {
-    await ensureRelationFieldDescriptors(fieldName);
+    const key = `${fieldName}:${rowKey}:${column.name}`;
+    const pageOwnsRequest = dependencies.captureRelationRequest?.(`one2many-column-options:${key}`) ?? (() => true);
+    const contextEpoch = currentContextEpoch();
+    const isCurrent = () => pageOwnsRequest() && currentContextEpoch() === contextEpoch;
+    if (!isCurrent()) return [];
+    try {
+      await ensureRelationFieldDescriptors(fieldName);
+    } catch (error) {
+      if (!isCurrent()) return [];
+      throw error;
+    }
+    if (!isCurrent()) return [];
     const descriptor = one2manyRelationFieldDescriptor(fieldName, column.name);
     const relation = relationModelFromDescriptor(descriptor);
     const entry = relationEntry(descriptor);
@@ -113,6 +126,7 @@ export function createOne2manyColumnOptionsRuntime(
           context: pickContractNavQuery(route.query as Record<string, unknown>),
           silentErrors: true,
         });
+        if (!isCurrent()) return [];
         return relationOptionsFromRecords(listed?.records, descriptor);
       },
     });

@@ -600,14 +600,26 @@ const relationActiveRequestRevisions: Record<string, number> = {};
 const relationStartedSessions = new Set<string>();
 const relationClosedSessions = new Set<string>();
 
-onBeforeUnmount(() => {
+function invalidateAllOne2manyRelationQueries() {
   Object.keys(relationQueryTimers).forEach(clearRelationQueryTimer);
-  Object.values(relationCloseTimers).forEach(clearTimeout);
+  Object.keys(relationCloseTimers).forEach((key) => {
+    clearTimeout(relationCloseTimers[key]);
+    delete relationCloseTimers[key];
+  });
   Object.keys(relationActiveRequestRevisions).forEach((key) => delete relationActiveRequestRevisions[key]);
+  relationQueryAuthority.clear();
   relationPopupAuthority.clear();
   relationStartedSessions.clear();
   relationClosedSessions.clear();
-  relationQueryAuthority.clear();
+  o2mRelationOptionMap.value = {};
+  o2mRelationLoading.value = {};
+  o2mRelationErrors.value = {};
+  o2mRelationSearchMap.value = {};
+  o2mRelationDiagnostics.value = {};
+}
+
+onBeforeUnmount(() => {
+  invalidateAllOne2manyRelationQueries();
 });
 
 function relationCellKey(fieldName: string, rowKey: string, columnName: string) {
@@ -870,6 +882,12 @@ watch(() => {
     }
   });
 }, { immediate: true });
+
+watch(
+  () => props.adapter.relationRuntimeGeneration?.() ?? 0,
+  () => invalidateAllOne2manyRelationQueries(),
+  { flush: 'sync' },
+);
 
 function one2manyCellError(fieldName: string, rowKey: string, columnName: string) {
   return props.adapter.showOne2manyErrors
