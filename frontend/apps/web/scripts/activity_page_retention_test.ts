@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { isActionPageIdentityOwner } from '../src/app/runtime/actionViewRouteRuntime';
 import { createPageIdentityCoordinator } from '../src/app/pageIdentityCoordinator';
 import {
+  activityPageBelongsToCompany,
   activityPageTitleTargetKeys,
   isSupersededEntryActionActivityPage,
   normalizeRetainedActivityPageIdentity,
@@ -68,8 +69,16 @@ assert.deepEqual(
   [previous.key],
   'only the entry action intermediate is removed when the form replaces it',
 );
+assert.equal(activityPageBelongsToCompany(previous, 1), true, 'matching company activity is visible');
+assert.equal(activityPageBelongsToCompany(previous, 2), false, 'other-company activity is hidden');
+assert.equal(
+  activityPageBelongsToCompany(createPage({ record_context: null }), 1),
+  false,
+  'activity without company ownership is not attributed to the current company',
+);
+assert.equal(activityPageBelongsToCompany(previous, 0), false, 'missing current company exposes no cached activity');
 
-console.log('[activity_page_retention_test] PASS cases=7');
+console.log('[activity_page_retention_test] PASS cases=11');
 
 const legacyEntryAction = normalizeRetainedActivityPageIdentity(createPage({
   key: 'legacy:action',

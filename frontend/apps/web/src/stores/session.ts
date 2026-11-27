@@ -28,6 +28,7 @@ import {
   type ScenarioNavigationModel,
 } from '../app/scenarioSurface';
 import {
+  activityPageBelongsToCompany,
   activityPageCacheRouteKey,
   activityPageTitleTargetKeys,
   normalizeRetainedActivityPageIdentity,
@@ -527,12 +528,7 @@ function restoreActivityPages(raw: unknown, recordContext: RecordContextContract
   const restored = (raw as ActivityPage[])
     .filter((page) => page && typeof page === 'object')
     .filter((page) => asText(page.key) && asText(page.route))
-    .filter((page) => {
-      const pageCompanyId = Number(
-        page.record_context?.company_id || page.record_context?.selected?.company_id || 0,
-      );
-      return pageCompanyId === companyId;
-    })
+    .filter((page) => activityPageBelongsToCompany(page, companyId))
     .map((page) => normalizeRetainedActivityPageIdentity({
       ...page,
       // Unsaved field buffers are intentionally not persisted, so a restored

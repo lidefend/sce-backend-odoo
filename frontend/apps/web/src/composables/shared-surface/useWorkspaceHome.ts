@@ -4,13 +4,14 @@ import type { NavNode } from '@sc/schema';
 import { fetchMyWorkSummary, type ProductMyWorkItem, type ProductMyWorkWorkspace } from '../../api/myWork';
 import { currentContextEpoch, isCurrentContextEpoch } from '../../app/contextEpoch';
 import { usePageContract } from '../../app/pageContract';
+import { activityPageBelongsToCompany } from '../../app/activityPageRetention';
 import { mergeWorkspaceNavigationLinks, resolveWorkspaceNavigationLink } from '../../app/workspaceHomeNavigation';
 import {
   isProductCapabilityCatalogGap,
   projectLoginHomeBlocks,
 } from '../../app/productCapabilityCatalogProjection';
 import type { ProductCapabilityLoginHomeBlock } from '../../api/productCapabilityCatalog';
-import { useSessionStore, type ActivityPage } from '../../stores/session';
+import { useSessionStore } from '../../stores/session';
 
 type SurfaceLink = { key: string; label: string; detail: string; route: string };
 type SurfaceTask = SurfaceLink & { kind: string; recordId: number; state: ProductMyWorkItem['state']; facts: ProductMyWorkItem['facts']; amount?: ProductMyWorkItem['facts'][number] };
@@ -52,12 +53,6 @@ function taskLink(item: ProductMyWorkItem): SurfaceTask | null {
     facts: [],
     amount: (item.facts || []).find((fact) => fact.field_group !== 'audit' && fact.display_role === 'money'),
   };
-}
-
-function recentMatchesCompany(page: ActivityPage, companyId: number): boolean {
-  if (!companyId) return true;
-  const pageCompanyId = Number(page.record_context?.company_id || page.record_context?.selected?.company_id || 0);
-  return !pageCompanyId || pageCompanyId === companyId;
 }
 
 export function useWorkspaceHome() {
@@ -121,7 +116,7 @@ export function useWorkspaceHome() {
   const recentItems = computed<SurfaceLink[]>(() => {
     const companyId = Number(session.recordContext?.company_id || 0);
     return session.activityPages
-      .filter((page) => page.route && page.title && recentMatchesCompany(page, companyId))
+      .filter((page) => page.route && page.title && activityPageBelongsToCompany(page, companyId))
       .sort((left, right) => right.last_active_at - left.last_active_at)
       .slice(0, 4)
       .map((page) => ({ key: page.key, label: page.title, detail: '', route: page.route }));

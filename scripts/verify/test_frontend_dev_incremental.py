@@ -1224,6 +1224,22 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets(["frontend/apps/web/src/app/businessScenarioNavigation.ts"]),
         )
 
+    def test_activity_company_scope_selects_activity_and_session_suites(self) -> None:
+        for path in (
+            "frontend/apps/web/src/app/activityPageRetention.ts",
+            "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
+            "frontend/apps/web/scripts/activity_page_retention_test.ts",
+        ):
+            with self.subTest(path=path):
+                selected = select_targets([path])
+                self.assertIn("verify.frontend.state_dashboard.unit", selected)
+                self.assertIn("verify.frontend.session_persistence.snapshot.unit", selected)
+                self.assertIn("verify.frontend.session_persistence.recovery.unit", selected)
+        self.assertNotIn(
+            "verify.frontend.state_dashboard.unit",
+            select_targets(["frontend/apps/web/src/app/pageIdentity.ts"]),
+        )
+
     def test_route_query_inputs_select_canonical_url_checks(self) -> None:
         for path in (
             "frontend/apps/web/src/app/routeQuery.ts",

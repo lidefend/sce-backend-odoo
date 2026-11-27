@@ -30,6 +30,7 @@
     "frontend/apps/web/src/app/action_runtime/useActionViewPageDisplayStateRuntime.ts",
     "frontend/apps/web/src/app/activityPageCacheIdentity.ts",
     "frontend/apps/web/src/app/activityPageTitle.ts",
+    "frontend/apps/web/src/app/activityPageRetention.ts",
     "frontend/apps/web/src/app/pageIdentity.ts",
     "frontend/apps/web/src/app/pageIdentityAdapters.ts",
     "frontend/apps/web/src/app/pageIdentityRoute.ts",
@@ -62,6 +63,7 @@
     "frontend/apps/web/src/components/template/FormSection.vue",
     "frontend/apps/web/src/components/template/formSection.mapper.ts",
     "frontend/apps/web/src/components/template/formSection.types.ts",
+    "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
     "frontend/apps/web/src/pages/ActivityTemplateNode.vue",
     "frontend/apps/web/src/pages/KanbanPage.vue",
     "frontend/apps/web/src/pages/ContractFormPage.vue",
@@ -89,6 +91,7 @@
     "frontend/apps/web/src/utils/fieldSemantics.ts",
     "frontend/apps/web/src/views/ActionView.vue",
     "frontend/apps/web/src/views/SceneView.vue",
+    "frontend/apps/web/src/stores/session.ts",
     "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
     "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
     "frontend/apps/web/scripts/list_surface_component_test.mjs",
@@ -591,7 +594,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Commit and publish the scene-route single-identity slice to PR 1019, then read back all four required checks on the new exact head; real browser readback remains blocked until managed port 5175 is released by the other worktree.",
+  "next_exact_step": "Commit and publish the activity company-scope slice to PR 1019, then read back all four required checks on the new exact head; real browser readback remains blocked until managed port 5175 is released by the other worktree.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2395,6 +2398,37 @@
       ],
       "scope_limit": "Local source, unit and component checks only. The current candidate has not been pushed; real browser address-bar readback remains blocked by another worktree owning managed acceptance port 5175."
     },
+    "fc02_activity_company_scope": {
+      "status": "passed_local_targeted",
+      "candidate_head": "125c24234a2ff2acf4e611bf77daf2fc6ff0133c",
+      "stage_identity": "125c24234a2ff2acf4e611bf77daf2fc6ff0133c plus the owned activity-company-scope dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T113748Z-3265601-689949134/receipt.json",
+      "receipt_sha256": "7b2428fc91b41add50478b3e3462046d41719646d730fb8d7213804635355cd2",
+      "required_targets": 85,
+      "executed_targets": 72,
+      "reused_targets": 13,
+      "test_targets": 53,
+      "executed_test_count": 1991,
+      "static_checks": 10,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "recent workspace activity and durable session restoration now share one company-scope predicate",
+        "matching-company activity remains visible",
+        "other-company activity and activity without company ownership are excluded",
+        "a missing current company exposes no cached activity",
+        "the shared source and its consumers select activity and session persistence tests",
+        "an unrelated page identity input does not select the activity suites"
+      ],
+      "failure_recovery": [
+        "strict typecheck exposed that the retained activity model did not declare selected.company_id",
+        "the declaration was corrected and strict typecheck passed",
+        "the iteration detected the expected derived component-driver inventory digest change and resumed after regeneration"
+      ],
+      "scope_limit": "Local source and unit validation only. Production role/company browser journeys remain not_run because managed acceptance port 5175 is occupied by another worktree."
+    },
     "fc02_navigation_context_smoke_baseline_alignment": {
       "status": "passed_local_targeted",
       "candidate_head": "2036e8d9ad006078536026a621ea7fc284b214d1",
@@ -2427,12 +2461,12 @@
       "scope_limit": "P4 smoke and selector alignment only. The repaired candidate has not yet been pushed; exact-head remote CI, browser address-bar readback, mainline qualification and user acceptance remain not_run."
     },
     "remote_publication": {
-      "status": "remote_ci_passed_for_previous_head_new_slice_pending_push",
+      "status": "remote_ci_passed_for_125c_company_slice_pending_push",
       "pull_request": 1019,
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "d3ca527645a68853992dce61dc7b127d3554ea9c",
+      "current_head": "125c24234a2ff2acf4e611bf77daf2fc6ff0133c",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",
@@ -2441,9 +2475,11 @@
         "at head 2036e8d9a frontend_release_gate failed on the stale navigation context smoke",
         "the merge_policy_gate failure followed the upstream frontend_release_gate result",
         "head d3ca52764 passed public_guard, merge_policy_gate, professional_quality_gate and frontend_release_gate",
-        "the scene-route slice requires its own exact-head remote checks and does not inherit d3ca52764 results"
+        "the scene-route slice requires its own exact-head remote checks and does not inherit d3ca52764 results",
+        "head 125c24234 passed public_guard, merge_policy_gate, professional_quality_gate and frontend_release_gate",
+        "the activity company-scope slice requires its own exact-head remote checks and does not inherit 125c24234 results"
       ],
-      "coverage_limit": "The prior P4 repair is green on d3ca52764. The new scene-route product slice remains local until committed and pushed, so its integration readiness is not claimed."
+      "coverage_limit": "The scene-route candidate is green on 125c24234. The activity company-scope slice remains local until committed and pushed, so its integration readiness is not claimed."
     }
   }
 }

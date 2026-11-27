@@ -517,6 +517,15 @@ RULES = (
         "verify.frontend.route_query.unit",
     )),
     Rule((
+        "frontend/apps/web/src/app/activityPageRetention.ts",
+        "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
+        "frontend/apps/web/scripts/activity_page_retention_test.ts",
+    ), (
+        "verify.frontend.state_dashboard.unit",
+        "verify.frontend.session_persistence.snapshot.unit",
+        "verify.frontend.session_persistence.recovery.unit",
+    )),
+    Rule((
         "frontend/apps/web/src/app/pageIdentity.ts",
         "frontend/apps/web/src/app/pageIdentityAdapters.ts",
         "frontend/apps/web/src/app/pageIdentityRoute.ts",
