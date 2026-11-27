@@ -1,0 +1,151 @@
+{
+  "schema_version": 2,
+  "id": "P0-RELATION-ACTIVE-ACTIONS-CONTRACT-20261127",
+  "branch": "fix/p0-relation-active-actions-contract-20261127",
+  "baseline_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+  "status": "verification_pending",
+  "goal": ".agent/goals/P0-RELATION-ACTIVE-ACTIONS-CONTRACT-20261127.yaml",
+  "record": "docs/ops/iterations/p0_relation_active_actions_contract_20261127.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P0-RELATION-ACTIVE-ACTIONS-CONTRACT-20261127.yaml",
+    ".agent/runs/P0-RELATION-ACTIVE-ACTIONS-CONTRACT-20261127/run.json",
+    "docs/ops/iterations/p0_relation_active_actions_contract_20261127.md",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+    "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
+    "docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json",
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    "frontend/apps/web/src/app/contracts/v2/types.ts",
+    "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+    "frontend/apps/web/src/app/contracts/v2/store.ts",
+    "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+    "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+    "frontend/apps/web/src/pages/contractForm/types.ts",
+    "frontend/packages/schema/src/index.ts",
+    "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
+    "frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts",
+    "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+    "frontend/apps/web/scripts/relation_active_actions_real_contract_test.ts",
+    "scripts/verify/p0_contract_producer_descriptor_evidence.py",
+    "scripts/verify/test_contract_fidelity_plan_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing governed local.test profile for an isolated synthetic producer receipt plus offline TypeScript baseline/targeted checks; no persistent business database, migration, service deployment or external write before PR publication."
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Changed P0 producer, strict schema/types/decoder, generic frontend consumer and end-to-end producer-to-consumer tests require non-zero affected checks."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The independent P0 PR must validate the exact candidate against the current main base before integration."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "This P0 contract repair is not a release qualification or deployment."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "The integration test must decode and consume the exact synthetic assembler output produced under the local.test receipt."
+    }
+  },
+  "checks": {
+    "producer_frontend_integration": {
+      "target": "verify.contract.relation_active_actions.integration",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
+        "docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json",
+        "docs/architecture/p0_contract_producer_01/remediation_design.json",
+        "frontend/apps/web/src/app/contracts/v2/types.ts",
+        "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/types.ts",
+        "frontend/packages/schema/src/index.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts",
+        "frontend/apps/web/scripts/relation_active_actions_real_contract_test.ts",
+        "scripts/verify/p0_contract_producer_descriptor_evidence.py",
+        "scripts/verify/test_contract_fidelity_plan_guard.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+        "scripts/verify/test_coverage_registry.yaml",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json",
+        "make/frontend.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "evidence": {
+    "backend_producer_and_schema": {
+      "status": "passed",
+      "commands": [
+        "python3 addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        "python3 addons/smart_core/tests/test_native_view_parser_surfaces.py",
+        "make verify.p0_contract_producer.p0a.unit",
+        "make verify.unified_page_contract.v2.schema",
+        "make verify.test.coverage.registry"
+      ],
+      "test_counts": [153, 54, 44],
+      "scope_limit": "Offline assembler/parser/schema checks; no persistent business data or migration."
+    },
+    "real_producer_frontend_integration": {
+      "status": "passed_dirty_candidate",
+      "command": "make ci.local.iteration",
+      "backend_receipt": ".runtime/test-baseline/1795761914833897547/receipt.json",
+      "backend_test_count": 3,
+      "relation_descriptors": 3,
+      "frontend_contract": ".runtime/relation-active-actions/real-contract.json",
+      "frontend_decode_test_count": 1,
+      "facts": [
+        "The real assembler emitted separate many2one and many2many_tags relation descriptors.",
+        "The strict schema accepted boolean and dynamic modifier AST declarations.",
+        "The frontend decoder and consumer preserved descriptor declarations and ignored conflicting componentConfig.",
+        "The compatibility form-field projection retained relationActiveActions."
+      ]
+    },
+    "dirty_candidate_iteration": {
+      "status": "passed",
+      "head": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T065541Z-601303-847997708/receipt.json",
+      "executed_targets": 37,
+      "test_targets": 18,
+      "executed_test_count": 1142,
+      "static_checks": 9,
+      "unmapped_paths": 0
+    },
+    "tooling": {
+      "status": "passed",
+      "fact": "P0 evidence output falls back to the repository runtime directory when a root-owned artifacts projection is unwritable.",
+      "regression_count": 2
+    },
+    "exact_head": {
+      "status": "not_run",
+      "reason": "The candidate has not yet been committed and frozen."
+    }
+  },
+  "next_exact_step": "Commit the complete P0 candidate, run make ci.local.iteration on the exact clean HEAD, then publish the independent PR and await exact-head required CI."
+}

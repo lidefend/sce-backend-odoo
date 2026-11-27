@@ -1,0 +1,30 @@
+schema_version: 1
+goal:
+  id: P0-RELATION-ACTIVE-ACTIONS-CONTRACT-20261127
+  status: active
+  title: Strict relation active-actions contract closure
+  objective: Project occurrence-level relation_active_actions into strict FieldDescriptor, preserve modifier ASTs, and make the generic frontend relation-action consumer descriptor-only and fail-closed.
+  formal_product_layer: P0
+  layer_target: unified page contract field descriptor
+  module: [smart_core, frontend]
+  standard_vs_user_specific: platform mechanism
+  why_here: The backend already produces occurrence business semantics and FieldDescriptor is their sole authoritative wire carrier.
+  why_not_elsewhere: componentConfig, P1/P2 modules, low-code configuration, and frontend inference must not become a second business-semantic authority.
+  blast_radius:
+    - relation create and write declarations on many2one occurrences
+    - relation create declarations on many2many_tags occurrences
+    - strict descriptor schema, types, decoder and relation-action consumer
+  exclusions:
+    - server authorization
+    - business-state transitions
+    - relation create and edit executors
+    - database migration
+    - import lifecycle work
+    - PR 1019 source branch mutation
+  acceptance:
+    - real assembler output carries relationActiveActions only in each occurrence fieldDescriptor
+    - fieldDescriptor schema preserves boolean and normalized modifier AST declarations
+    - frontend strict decoder accepts valid expressions and rejects malformed ASTs
+    - frontend relation-action consumption reads only fieldDescriptor and returns null for undeclared actions
+    - componentConfig is guarded against retaining a second relation_active_actions declaration
+    - exact producer output crosses the strict frontend decoder and consumer

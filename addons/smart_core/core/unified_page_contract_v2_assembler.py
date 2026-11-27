@@ -1265,6 +1265,11 @@ def _strict_field_descriptor(
         descriptor["relation"] = relation
     if relation_field:
         descriptor["relationField"] = relation_field
+    relation_active_actions = legacy.get("relationActiveActions")
+    if relation_active_actions is None:
+        relation_active_actions = legacy.get("relation_active_actions")
+    if isinstance(relation_active_actions, dict) and relation_active_actions:
+        descriptor["relationActiveActions"] = deepcopy(relation_active_actions)
     for key in ("domain", "domainExpression", "context"):
         value = config.get(key)
         if value is None:
@@ -1397,6 +1402,7 @@ def _upgrade_contract_v2_field_descriptors(
     def walk(rows: list[Any]) -> None:
         for row in rows:
             node = _dict(row)
+            node.pop("_relationActiveActions", None)
             widgets = _list(node.get("widgetList"))
             for widget in widgets:
                 if not isinstance(widget, dict):
@@ -2910,7 +2916,7 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         "sort_field", "filter_field", "export_field", "semantic_status",
         "reason_code", "source_authority",
         "native_locator", "occurrence_index", "source_position", "modifiers",
-        "relation_active_actions", "model_field",
+        "model_field",
     ):
         if key in field:
             component_config[key] = deepcopy(field.get(key))
@@ -2933,9 +2939,6 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
     relation_entry = _dict(field.get("relation_entry"))
     if relation_entry:
         component_config["relationEntry"] = deepcopy(relation_entry)
-    relation_active_actions = _dict(field.get("relation_active_actions"))
-    if relation_active_actions:
-        component_config["relationActiveActions"] = deepcopy(relation_active_actions)
     widget_options = _dict(field.get("widget_options") or field.get("options"))
     if widget_options:
         component_config["widgetOptions"] = deepcopy(widget_options)
@@ -3047,6 +3050,8 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
     out["semanticType"] = widget["semanticType"]
     out["componentConfig"] = component_config
     out["widgetId"] = widget["widgetId"]
+    if isinstance(node.get("relation_active_actions"), dict):
+        out["_relationActiveActions"] = deepcopy(node.get("relation_active_actions"))
     native_locator = _text(field_source.get("native_locator"))
     if layout_type == "form" and native_locator:
         out["nativeLocator"] = native_locator
@@ -3069,6 +3074,8 @@ def _field_source_with_node_info(node: dict[str, Any], field: dict[str, Any], *,
     field_source = deepcopy(field) if isinstance(field, dict) else {}
     field_info = _dict(node.get("fieldInfo") or node.get("field_info"))
     field_source.update({k: deepcopy(v) for k, v in field_info.items() if k not in {"label", "string"}})
+    if isinstance(node.get("_relationActiveActions"), dict):
+        field_source["relation_active_actions"] = deepcopy(node.get("_relationActiveActions"))
     field_source["sc_ui_usage"] = field.get("sc_ui_usage", "fact")
     if statically_hidden(node):
         field_source["invisible"] = True
@@ -3467,6 +3474,7 @@ def _normalize_native_layout_nodes(
             node["widgetList"] = normalized_direct_widgets
         elif not isinstance(node.get("widgetList"), list):
             node["widgetList"] = []
+        node.pop("_relationActiveActions", None)
         out.append(node)
     return out
 

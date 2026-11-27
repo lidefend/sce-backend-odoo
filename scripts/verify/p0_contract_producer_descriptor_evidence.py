@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import os
 import re
 import subprocess
 from pathlib import Path
@@ -13,6 +14,28 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 MARKER = "P0_CONTRACT_DESCRIPTOR_EVIDENCE_B64="
+
+
+def writable_output_path(path: str) -> Path:
+    """Keep evidence usable when a repository-root artifacts projection is root-owned."""
+    requested = Path(path)
+    parent = requested.parent
+    try:
+        if requested.exists() and not os.access(requested, os.W_OK):
+            raise PermissionError(f"existing evidence file is not writable: {requested}")
+        parent.mkdir(parents=True, exist_ok=True)
+        probe = parent / f".write-probe-{Path.cwd().name}"
+        probe.write_text("", encoding="utf-8")
+        probe.unlink()
+        return requested
+    except (PermissionError, OSError):
+        fallback = ROOT / ".runtime/p0-contract-producer-evidence" / requested.name
+        fallback.parent.mkdir(parents=True, exist_ok=True)
+        print(
+            "[p0-descriptor-evidence] output projection not writable; "
+            f"using {fallback}"
+        )
+        return fallback
 
 
 def validate_semantic_contract(contract: dict) -> list[str]:
@@ -62,16 +85,27 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--form-output", required=True)
     parser.add_argument("--polymorphic-output")
+    parser.add_argument("--relation-actions-output")
     args = parser.parse_args()
 
+    tags = ["p0_contract_descriptor_conformance_evidence"]
+    if args.polymorphic_output:
+        tags.append("p0_polymorphic_reference_evidence")
+    if args.relation_actions_output:
+        tags.append("p0_relation_active_actions_evidence")
+    if args.polymorphic_output:
+        test_tags_arg = "TEST_TAGS=p0_contract_descriptor_conformance_evidence,p0_polymorphic_reference_evidence"
+    elif args.relation_actions_output:
+        test_tags_arg = "TEST_TAGS=p0_contract_descriptor_conformance_evidence,p0_relation_active_actions_evidence"
+    else:
+        test_tags_arg = "TEST_TAGS=p0_contract_descriptor_conformance_evidence"
     run = subprocess.run(
         [
             "make",
             "--no-print-directory",
             "local.test.test",
             "MODULE=smart_construction_core",
-            ("TEST_TAGS=p0_contract_descriptor_conformance_evidence,p0_polymorphic_reference_evidence"
-             if args.polymorphic_output else "TEST_TAGS=p0_contract_descriptor_conformance_evidence"),
+            test_tags_arg,
         ],
         cwd=ROOT,
         text=True,
@@ -122,8 +156,7 @@ def main() -> int:
     if semantic_errors:
         print("[p0-descriptor-evidence] FAIL " + "; ".join(semantic_errors[:10]))
         return 7
-    output = Path(args.form_output)
-    output.parent.mkdir(parents=True, exist_ok=True)
+    output = writable_output_path(args.form_output)
     output.write_text(
         json.dumps(contract, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
         encoding="utf-8",
@@ -150,14 +183,67 @@ def main() -> int:
         for descriptor in descriptors:
             validator.validate(descriptor)
         polymorphic["producer_evidence"] = {"receipt": str(receipt_path), "descriptors": len(descriptors)}
-        target = Path(args.polymorphic_output)
-        target.parent.mkdir(parents=True, exist_ok=True)
+        target = writable_output_path(args.polymorphic_output)
         target.write_text(json.dumps(polymorphic, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         print(f"[p0-descriptor-evidence] polymorphic_schema=PASS descriptors={len(descriptors)} output={target}")
 
+    if args.relation_actions_output:
+        from jsonschema import Draft202012Validator
+        prefix = "P0_RELATION_ACTIVE_ACTIONS_EVIDENCE_B64="
+        encoded = next((line.split(prefix, 1)[1].strip() for line in
+                        log_path.read_text(encoding="utf-8").splitlines() if prefix in line), "")
+        if not encoded:
+            print("[p0-descriptor-evidence] FAIL relation-active-actions producer output missing")
+            return 9
+        evidence = json.loads(base64.b64decode(encoded).decode("utf-8"))
+        contract = evidence.get("contract")
+        if not isinstance(contract, dict):
+            print("[p0-descriptor-evidence] FAIL relation-active-actions contract missing")
+            return 10
+        validator = Draft202012Validator(json.loads((ROOT / "docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json").read_text()))
+        descriptors = []
+
+        def collect_descriptors(rows):
+            for row in rows:
+                widgets = row.get("widgetList", [])
+                descriptors.extend(
+                    widget["fieldDescriptor"]
+                    for widget in widgets
+                    if isinstance(widget, dict) and isinstance(widget.get("fieldDescriptor"), dict)
+                )
+                for widget in widgets:
+                    if not isinstance(widget, dict):
+                        continue
+                    if "relationActiveActions" in widget.get("componentConfig", {}):
+                        raise ValueError("componentConfig retained a second relationActions declaration")
+                    if "relation_active_actions" in widget.get("componentConfig", {}):
+                        raise ValueError("componentConfig retained raw relation_active_actions")
+                collect_descriptors(row.get("children", []))
+
+        collect_descriptors(contract["layoutContract"]["containerTree"])
+        relation_descriptors = [
+            descriptor for descriptor in descriptors
+            if "relationActiveActions" in descriptor
+        ]
+        if len(relation_descriptors) != 3:
+            raise ValueError("real assembler must emit three occurrence-level relation descriptors")
+        for descriptor in relation_descriptors:
+            validator.validate(descriptor)
+        evidence["producer_evidence"] = {
+            "receipt": str(receipt_path),
+            "descriptors": len(descriptors),
+            "relation_descriptors": len(relation_descriptors),
+        }
+        target = writable_output_path(args.relation_actions_output)
+        target.write_text(json.dumps(evidence, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(
+            "[p0-descriptor-evidence] relation_active_actions_schema=PASS "
+            f"descriptors={len(relation_descriptors)} output={target}"
+        )
+
     print(
         "[p0-descriptor-evidence] PASS "
-        f"project_id={payload.get('project_id')} form={args.form_output}"
+        f"project_id={payload.get('project_id')} form={output}"
     )
     return 0
 

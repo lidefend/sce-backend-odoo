@@ -698,10 +698,8 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
             field_node["componentConfig"]["relationEntry"],
             {"can_read": True, "can_open": False, "can_create": False},
         )
-        self.assertEqual(
-            field_node["componentConfig"]["relationActiveActions"],
-            {"create": False, "write": True},
-        )
+        self.assertNotIn("relationActiveActions", field_node["componentConfig"])
+        self.assertNotIn("relation_active_actions", field_node["componentConfig"])
         widgets = [
             widget
             for node in full["layoutContract"]["containerTree"]
@@ -719,6 +717,116 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         collect(full["layoutContract"]["containerTree"])
         self.assertGreater(len(all_widgets), len(widgets) - 1)
         self.assertEqual(all_widgets[0]["ownerContainerId"], root["children"][0]["containerId"])
+        self.assertEqual(
+            all_widgets[0]["fieldDescriptor"]["relationActiveActions"],
+            {"create": False, "write": True},
+        )
+
+    def test_layout_dsl_projects_relation_active_actions_per_occurrence_descriptor(self):
+        dynamic_create = {
+            "kind": "all",
+            "exprs": [
+                {
+                    "kind": "field_compare",
+                    "semantics": "python",
+                    "field": "state",
+                    "operator": "==",
+                    "value": "draft",
+                },
+                {
+                    "kind": "not",
+                    "expr": {"kind": "field_truthy", "field": "locked"},
+                },
+            ],
+            "raw": "state == 'draft' and not locked",
+        }
+        source = {
+            "model": "x.document",
+            "view_type": "form",
+            "fields": {
+                "partner_id": {
+                    "name": "partner_id",
+                    "type": "many2one",
+                    "relation": "res.partner",
+                    "string": "Partner",
+                },
+                "tag_ids": {
+                    "name": "tag_ids",
+                    "type": "many2many",
+                    "relation": "res.partner.category",
+                    "string": "Tags",
+                },
+            },
+            "views": {"form": {"layout": [{
+                "type": "sheet",
+                "children": [
+                    {
+                        "type": "field",
+                        "name": "partner_id",
+                        "native_locator": "/form[1]/sheet[1]/field[1]",
+                        "occurrence_index": 1,
+                        "source_position": 1,
+                        "relation_active_actions": {"create": False, "write": True},
+                    },
+                    {
+                        "type": "field",
+                        "name": "partner_id",
+                        "native_locator": "/form[1]/sheet[1]/field[2]",
+                        "occurrence_index": 2,
+                        "source_position": 2,
+                        "relation_active_actions": {"create": dynamic_create},
+                    },
+                    {
+                        "type": "field",
+                        "name": "tag_ids",
+                        "native_locator": "/form[1]/sheet[1]/field[3]",
+                        "occurrence_index": 3,
+                        "source_position": 3,
+                        "attributes": {"widget": "many2many_tags"},
+                        "relation_active_actions": {"create": True},
+                    },
+                ],
+            }]}},
+        }
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            request_id="test.layout.dsl.relation.active.actions",
+        )
+
+        widgets = []
+
+        def collect(nodes):
+            for node in nodes:
+                widgets.extend(node.get("widgetList", []))
+                collect(node.get("children", []))
+
+        collect(full["layoutContract"]["containerTree"])
+        by_locator = {
+            widget["nativeLocator"]: widget
+            for widget in widgets
+            if widget.get("nativeLocator")
+        }
+        first = by_locator["/form[1]/sheet[1]/field[1]"]
+        second = by_locator["/form[1]/sheet[1]/field[2]"]
+        tags = by_locator["/form[1]/sheet[1]/field[3]"]
+        self.assertEqual(
+            first["fieldDescriptor"]["relationActiveActions"],
+            {"create": False, "write": True},
+        )
+        self.assertEqual(
+            second["fieldDescriptor"]["relationActiveActions"],
+            {"create": dynamic_create},
+        )
+        self.assertNotIn("write", second["fieldDescriptor"]["relationActiveActions"])
+        self.assertEqual(
+            tags["fieldDescriptor"]["relationActiveActions"],
+            {"create": True},
+        )
+        self.assertNotIn("write", tags["fieldDescriptor"]["relationActiveActions"])
+        for widget in (first, second, tags):
+            self.assertNotIn("relationActiveActions", widget["componentConfig"])
+            self.assertNotIn("relation_active_actions", widget["componentConfig"])
 
     def test_layout_dsl_root_field_owns_its_strict_widget_descriptor(self):
         source = {

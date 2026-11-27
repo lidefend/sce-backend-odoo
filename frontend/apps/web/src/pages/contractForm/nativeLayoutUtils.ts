@@ -1033,15 +1033,15 @@ export function resolveNativeRelationActiveActions(
   node: NativeLayoutLikeNode,
   evaluateAction: (value: unknown) => boolean,
 ): NativeRelationActiveActions {
-  const componentConfig = node.componentConfig
-    && typeof node.componentConfig === 'object'
-    && !Array.isArray(node.componentConfig)
-    ? node.componentConfig as Record<string, unknown>
+  const fieldDescriptor = node.fieldDescriptor
+    && typeof node.fieldDescriptor === 'object'
+    && !Array.isArray(node.fieldDescriptor)
+    ? node.fieldDescriptor as Record<string, unknown>
     : {};
-  const actions = componentConfig.relationActiveActions
-    && typeof componentConfig.relationActiveActions === 'object'
-    && !Array.isArray(componentConfig.relationActiveActions)
-    ? componentConfig.relationActiveActions as Record<string, unknown>
+  const actions = fieldDescriptor.relationActiveActions
+    && typeof fieldDescriptor.relationActiveActions === 'object'
+    && !Array.isArray(fieldDescriptor.relationActiveActions)
+    ? fieldDescriptor.relationActiveActions as Record<string, unknown>
     : {};
   const verdict = (key: string): boolean | null => Object.prototype.hasOwnProperty.call(actions, key)
     ? evaluateAction(actions[key])
