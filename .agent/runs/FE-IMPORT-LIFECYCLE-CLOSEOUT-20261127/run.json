@@ -20,7 +20,13 @@
     "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
     "frontend/apps/web/src/components/business/NativeImportWizard.vue",
     "frontend/apps/web/scripts/native_import_lifecycle_test.ts",
-    "make/frontend.mk"
+    "make/frontend.mk",
+    "make/codex.mk",
+    "scripts/ops/validation_delivery_plan.py",
+    "scripts/verify/test_validation_delivery_plan.py",
+    "scripts/verify/test_branch_governance_consistency_guard.py",
+    "scripts/ops/integration_cycle.py",
+    "scripts/ops/test_integration_cycle.py"
   ],
   "environment": {
     "kind": "offline",
@@ -59,6 +65,25 @@
         "frontend/apps/web/src/components/business/NativeImportWizard.vue",
         "frontend/apps/web/scripts/native_import_lifecycle_test.ts",
         "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "stack_merge_delivery": {
+      "target": "verify.validation.delivery.unit",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/validation_delivery_plan.py",
+        "scripts/verify/test_validation_delivery_plan.py",
+        "scripts/verify/test_branch_governance_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "stack_merge_integration": {
+      "target": "verify.integration.cycle.unit",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/integration_cycle.py",
+        "scripts/ops/test_integration_cycle.py"
       ],
       "kind": "offline"
     }
@@ -196,8 +221,24 @@
       "validation": [
         "PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.test_validation_delivery_plan: 20 tests passed",
         "make verify.integration.cycle.unit: 29 tests passed",
-        "make -n pr.merge.preflight PR=1025 PR_STACK=1 PR_BASE=fix/fe-consumption-closeout-20261126: exact stack preflight expands with expected base and skips backend main closure"
+        "make -n pr.merge.preflight PR=1025 EXPECTED_HEAD=a29e0c4548444a80b13ee283acaf187456c3d78d PR_STACK=1 PR_BASE=fix/fe-consumption-closeout-20261126: exact stack preflight expands with the expected base and skips backend main closure"
       ],
+      "receipts": {
+        "stack_merge_delivery": {
+          "receipt": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/stack_merge_delivery.json",
+          "log": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/stack-merge-delivery-final.log",
+          "log_sha256": "496d2610b81d6c3064e56bf771be127becfc50a061b617cf62ca21ec94c90502",
+          "test_count": 105,
+          "status": "reusable"
+        },
+        "stack_merge_integration": {
+          "receipt": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/stack_merge_integration.json",
+          "log": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/stack-merge-integration-final.log",
+          "log_sha256": "b83234af094b232539c42cce72bb5bf28d21f99c1f8ad8e8d09b87196c99ec1e",
+          "test_count": 29,
+          "status": "reusable"
+        }
+      },
       "coverage_limit": "This changes only P4 merge tooling. It does not establish browser role/company journeys or FC-06 completion."
     }
   },

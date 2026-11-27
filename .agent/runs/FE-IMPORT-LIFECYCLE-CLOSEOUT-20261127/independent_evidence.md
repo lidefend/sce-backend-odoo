@@ -95,8 +95,19 @@ Focused validation:
 
 - validation delivery plan tests: 20 passed;
 - integration cycle tests: 29 passed;
+- the integration receipt is
+  `.runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/stack_merge_integration.json`,
+  bound to the original log SHA256
+  `b83234af094b232539c42cce72bb5bf28d21f99c1f8ad8e8d09b87196c99ec1e`;
 - dry-run preflight for #1025 uses expected base
   `fix/fe-consumption-closeout-20261126` and skips backend main closure.
+
+The final action-tool expansion with
+`make -n pr.merge.preflight PR=1025 PR_STACK=1 PR_BASE=fix/fe-consumption-closeout-20261126`
+passes `--expected-base "fix/fe-consumption-closeout-20261126"` to the planner and
+prints the explicit stack-mode backend closure exclusion. The dry run performs no
+external write. All three declared run checks are reusable with no outside-scope
+path at candidate head `a29e0c4548444a80b13ee283acaf187456c3d78d`.
 
 This is merge-tooling correction only; browser role/company journeys and FC-06
 overall completion remain not claimed.
