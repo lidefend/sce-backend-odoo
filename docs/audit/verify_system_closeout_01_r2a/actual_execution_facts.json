@@ -1,0 +1,109 @@
+{
+  "head": "196673db5422a7e2d852dd51bf420c89d67c0524",
+  "run_id": 45944804108,
+  "attempt": 1,
+  "source": "actual GitHub artifact; not a transport fixture",
+  "qualification": "NOT_VERIFIED; partial producer-format validation only",
+  "results": [
+    {
+      "artifact_id": 15174816100,
+      "archive_sha256": "c940bf11753eacd57a1afddd6d87ad75812dc5947743ee198642a4868eb5def2",
+      "receipt_sha256": "6d44e287a419cf9c269f3afe19d6d39fc388dd7b4302535f69ddc9f052d66443",
+      "module": "smart_construction_bootstrap",
+      "kind": "orm",
+      "selection": "sc_smoke/smart_construction_bootstrap,sc_gate/smart_construction_bootstrap,/smart_construction_bootstrap",
+      "tests": 3,
+      "status": "VERIFIED_EXECUTION_FACTS_ONLY"
+    },
+    {
+      "artifact_id": 15174816100,
+      "archive_sha256": "c940bf11753eacd57a1afddd6d87ad75812dc5947743ee198642a4868eb5def2",
+      "receipt_sha256": "ca05b0952ef598e7f8d3e216cca6b9a1241e7a43d22ea111e6a2908af7a9d9b2",
+      "module": "smart_scene",
+      "kind": "orm",
+      "selection": "sc_smoke/smart_scene,sc_gate/smart_scene,/smart_scene",
+      "tests": 6,
+      "status": "VERIFIED_EXECUTION_FACTS_ONLY"
+    },
+    {
+      "artifact_id": 15174816100,
+      "archive_sha256": "c940bf11753eacd57a1afddd6d87ad75812dc5947743ee198642a4868eb5def2",
+      "receipt_sha256": "c862aa5e4d37b61f67cc93595ed30ff8513fcb856895a516b45694c461ecc636",
+      "module": "smart_license_core",
+      "kind": "orm",
+      "selection": "sc_smoke/smart_license_core,sc_gate/smart_license_core,/smart_license_core",
+      "tests": 6,
+      "status": "VERIFIED_EXECUTION_FACTS_ONLY"
+    },
+    {
+      "artifact_id": 15174052996,
+      "archive_sha256": "c2b6759c25cffe1fce9f5dc9d7ae0a097d39d70e27fec8f33cf96cda4af3157d",
+      "receipt_sha256": "b4c7a0fabecc81c1a147dea284bba6a0c4392828b2860708a6f1aeb76a3a49ce",
+      "module": "smart_owner_core",
+      "kind": "orm",
+      "selection": "sc_smoke/smart_owner_core,sc_gate/smart_owner_core,/smart_owner_core",
+      "tests": 5,
+      "status": "VERIFIED_EXECUTION_FACTS_ONLY"
+    },
+    {
+      "artifact_id": 15174052996,
+      "archive_sha256": "c2b6759c25cffe1fce9f5dc9d7ae0a097d39d70e27fec8f33cf96cda4af3157d",
+      "receipt_sha256": "0f504e258a41536bb0f7a195ac2198ace060af06159f4b780317be3c1a315709",
+      "module": "smart_core",
+      "kind": "orm",
+      "selection": "sc_smoke/smart_core,sc_gate/smart_core,/smart_core,contract_assembly_determinism/smart_core,lowcode_contract_write_authority/smart_core",
+      "tests": 497,
+      "status": "VERIFIED_EXECUTION_FACTS_ONLY"
+    },
+    {
+      "artifact_id": 15174776790,
+      "archive_sha256": "9085cb35d86970664bdaa29d58978d6adc8ba75ed6d6571c963a268f419b9bdd",
+      "receipt_sha256": "c5797ca182693c9803bb2a78dc388aa53fdbc02579d9d48727c6fea976346db1",
+      "module": "smart_construction_scene",
+      "kind": "orm",
+      "selection": "sc_smoke/smart_construction_scene,sc_gate/smart_construction_scene,/smart_construction_scene",
+      "tests": 21,
+      "status": "VERIFIED_EXECUTION_FACTS_ONLY"
+    },
+    {
+      "artifact_id": 15174776790,
+      "archive_sha256": "9085cb35d86970664bdaa29d58978d6adc8ba75ed6d6571c963a268f419b9bdd",
+      "receipt_sha256": "090863f2d9fe5ad810bf3d792378344697d03873ece53a5aaba58a62a1e0d550",
+      "module": "smart_construction_bundle",
+      "kind": "orm",
+      "selection": "sc_smoke/smart_construction_bundle,sc_gate/smart_construction_bundle,/smart_construction_bundle",
+      "tests": 34,
+      "status": "VERIFIED_EXECUTION_FACTS_ONLY"
+    },
+    {
+      "artifact_id": 15174776790,
+      "archive_sha256": "9085cb35d86970664bdaa29d58978d6adc8ba75ed6d6571c963a268f419b9bdd",
+      "receipt_sha256": "948e18d6059fc451ef7091c0c20bee22d63886019e3a3dc0013d2e2ef663e714",
+      "module": "smart_construction_seed",
+      "kind": "orm",
+      "selection": "sc_smoke/smart_construction_seed,sc_gate/smart_construction_seed,/smart_construction_seed",
+      "tests": 2,
+      "status": "VERIFIED_EXECUTION_FACTS_ONLY"
+    },
+    {
+      "artifact_id": 15174776790,
+      "archive_sha256": "9085cb35d86970664bdaa29d58978d6adc8ba75ed6d6571c963a268f419b9bdd",
+      "receipt_sha256": "34403fe9104fc3762f0e2b7f0008a009261bdf9300995c0f52550ef901be8349",
+      "module": "smart_construction_portal",
+      "kind": "orm",
+      "selection": "sc_smoke/smart_construction_portal,sc_gate/smart_construction_portal,/smart_construction_portal",
+      "tests": 4,
+      "status": "VERIFIED_EXECUTION_FACTS_ONLY"
+    },
+    {
+      "artifact_id": 15174776790,
+      "archive_sha256": "9085cb35d86970664bdaa29d58978d6adc8ba75ed6d6571c963a268f419b9bdd",
+      "receipt_sha256": "d980a5b31381371b5d88b9a11196ff58e1f6a3cca32797838c213b47a48153aa",
+      "module": "sc_norm_engine",
+      "kind": "orm",
+      "selection": "sc_smoke/sc_norm_engine,sc_gate/sc_norm_engine,/sc_norm_engine",
+      "tests": 1,
+      "status": "VERIFIED_EXECUTION_FACTS_ONLY"
+    }
+  ]
+}

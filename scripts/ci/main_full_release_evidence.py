@@ -11,6 +11,7 @@ import tempfile
 import zipfile
 import sys
 import subprocess
+import re
 from datetime import datetime
 from pathlib import Path
 
@@ -151,6 +152,51 @@ def required_runner_kinds(head, modules):
             for module in modules}
 
 
+def verify_execution_facts(directory, receipt, head, tree, python_environment):
+    module = receipt['module']
+    if receipt.get('input_binding') != {'policy': 'whole-tracked-tree/v1', 'tree': tree}:
+        raise ValueError('execution input tree binding missing or changed')
+    paths = [root + '/' + module + '/tests' for root in plans.impact.ROOTS]
+    blobs = plans.impact.git('ls-tree', '-r', head, '--', *paths).strip().splitlines()
+    if not blobs or receipt.get('test_source_blobs') != blobs:
+        raise ValueError('execution test source inventory differs from exact source')
+    selection = str(receipt.get('selection', ''))
+    if receipt['kind'] == 'orm':
+        selectors = [part.strip() for part in selection.split(',')]
+        if '/' + module not in selectors or any(part.startswith('-') for part in selectors):
+            raise ValueError('execution does not prove full module selection')
+    elif receipt['kind'] != 'python' or selection != 'test*.py':
+        raise ValueError('execution does not prove full Python discovery')
+    observed_python = json.loads((directory / 'python.json').read_bytes())
+    log = (directory / 'execution.log').read_text()
+    embedded = any(line.startswith(receipts.ENV_MARKER) for line in log.splitlines())
+    # Ordinary host unittest producers capture python.json when recording the
+    # result; they do not emit a marker. Never compare that host with this
+    # operator's environment (parse_result's fallback belongs to the operator).
+    if (not isinstance(observed_python, dict) or not observed_python.get('python')
+            or not isinstance(observed_python.get('packages'), list) or not observed_python['packages']
+            or (embedded and observed_python != python_environment)):
+        raise ValueError('execution Python environment differs from runner observation')
+    runtime = json.loads((directory / 'runtime.json').read_bytes())
+    if 'isolated_python' in receipt:
+        if receipt['kind'] != 'python' or module != receipts.ISOLATED_MODULE:
+            raise ValueError('invalid isolated execution responsibility')
+        receipts.validate_isolated_result(receipt['isolated_python'], receipt['test_count'])
+        markers = [json.loads(line[len(receipts.ISOLATED_MARKER):])
+                   for line in (directory / 'execution.log').read_text().splitlines()
+                   if line.startswith(receipts.ISOLATED_MARKER)]
+        if markers != [receipt['isolated_python']] or runtime.get('services') != {}:
+            raise ValueError('isolated execution observation mismatch')
+        images = [runtime.get('isolated_image_id')]
+    else:
+        if set(runtime.get('services', {})) != {'db', 'redis'}:
+            raise ValueError('execution runtime service identity missing')
+        images = [runtime.get('odoo_image_id')] + [runtime['services'][name].get('image_id')
+                                                  for name in ('db', 'redis')]
+    if any(not re.fullmatch('sha256:[0-9a-f]{64}', str(image)) for image in images):
+        raise ValueError('execution content-bound runtime identity missing')
+
+
 def verify_suite(reader, run, jobs, artifacts, suite, prefix, head, tree):
     reader.require_jobs(jobs, {prefix + ' / plan', prefix + ' / verify_coverage'})
     plan_files = reader.artifact(run, artifacts, f"backend-plan-{run['id']}-{suite}", jobs[prefix + ' / plan'])
@@ -195,10 +241,11 @@ def verify_suite(reader, run, jobs, artifacts, suite, prefix, head, tree):
                         'GITHUB_REPOSITORY': REPOSITORY, 'GITHUB_RUN_ID': run['id'],
                         'GITHUB_RUN_ATTEMPT': run['run_attempt']}.items()):
                     raise ValueError('receipt attempt provenance mismatch')
-                count, _ = receipts.parse_result(receipt['kind'], receipt['module'], receipt.get('database', ''),
+                count, python_environment = receipts.parse_result(receipt['kind'], receipt['module'], receipt.get('database', ''),
                                                  receipt['exit_code'], path.parent / 'execution.log')
                 if count != receipt['test_count']:
                     raise ValueError('receipt count differs from actual runner log')
+                verify_execution_facts(path.parent, receipt, head, tree, python_environment)
                 log_sources.append({'module': receipt['module'], 'kind': receipt['kind'],
                     'execution': receipt.get('execution', ''), 'text': (path.parent / 'execution.log').read_text()})
                 found.append(receipt)

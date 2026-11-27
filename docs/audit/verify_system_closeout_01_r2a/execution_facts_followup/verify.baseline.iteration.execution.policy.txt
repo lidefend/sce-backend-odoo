@@ -1,0 +1,6 @@
+......................
+----------------------------------------------------------------------
+Ran 22 tests in 0.401s
+
+OK
+[baseline_iteration_execution_policy_guard] PASS policy=BASELINE_ITERATION_EXECUTION_POLICY=v1 documents=4 make_authorities=11

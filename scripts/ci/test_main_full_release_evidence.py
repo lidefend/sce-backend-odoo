@@ -95,6 +95,22 @@ class Fixture:
             for name,data in members.items():archive.writestr(name,data)
         self.data[key]=stream.getvalue();artifact['digest']='sha256:'+hashlib.sha256(stream.getvalue()).hexdigest()
 
+    def change_execution_fact(self, fact):
+        artifact=next(a for a in self.artifacts['professional_quality_gate.yml'] if a['name'].startswith('backend-execution'))
+        key=f"actions/artifacts/{artifact['id']}/zip"
+        members=receipts.archive_members(self.data[key])
+        name=next(name for name in members if name.endswith('/orm/receipt.json'))
+        row=json.loads(members[name]);directory=name.rsplit('/',1)[0]
+        if fact=='selection':row['selection']='sc_smoke/'+row['module']
+        elif fact=='source':row['test_source_blobs']=[]
+        else:
+            filename='runtime.json' if fact=='runtime' else 'python.json'
+            members[directory+'/'+filename]=b'{}';row['files'][filename]=hashlib.sha256(b'{}').hexdigest()
+        members[name]=encoded(row);stream=io.BytesIO()
+        with zipfile.ZipFile(stream,'w',zipfile.ZIP_DEFLATED) as archive:
+            for name,data in members.items():archive.writestr(name,data)
+        self.data[key]=stream.getvalue();artifact['digest']='sha256:'+hashlib.sha256(stream.getvalue()).hexdigest()
+
     def suite(self, workflow, suite, prefix):
         run=self.runs[workflow];plan=plans.build_plan('',self.head,suite=suite,include_inputs=True);plan_raw=encoded(plan)
         self.job(workflow,prefix+' / plan');self.job(workflow,prefix+' / verify_coverage')
@@ -106,12 +122,18 @@ class Fixture:
             for module in shard['modules']:
                 classes=[row for row in plan['changed_test_coverage'] if row['module']==module]
                 kind=kinds[module];count=max(1,len(classes))
-                log=b'Ran 1 test in 0.001s\nOK\n'+receipts.ENV_MARKER.encode()+encoded({'python':'3.fixture','packages':[{'name':'fixture'}]})+b'\n'
+                # Native host unittest records its actual environment in python.json,
+                # without an inline marker; it must not be confused with the operator host.
+                log=b'Ran 1 test in 0.001s\nOK\n'
                 if kind=='orm':
                     if not classes:classes=[{'logger':f'odoo.addons.{module}.tests.test_fixture','class':'TestFixture','method':'test_one'}]
                     log=(''.join(f"2026-11-27 00:00:00 INFO fixture_db {row['logger']}: Starting {row['class']}.{row['method']} ...\n" for row in classes)+f"0 failed, 0 error(s) of {count} tests when loading database 'fixture_db'\n").encode()+receipts.ENV_MARKER.encode()+encoded({'python':'3.fixture','packages':[{'name':'fixture'}]})+b'\n'
-                files={'execution.log':log,'runtime.json':b'{}','python.json':b'{}'}
+                runtime={'services':{name:{'image_id':'sha256:'+'1'*64} for name in ('db','redis')},'odoo_image_id':'sha256:'+'2'*64}
+                files={'execution.log':log,'runtime.json':encoded(runtime),'python.json':encoded({'python':'3.fixture','packages':[{'name':'fixture'}]})}
                 row=dict(schema=receipts.SCHEMA,module=module,kind=kind,execution='',source_head=self.head,source_tree=self.tree,
+                    input_binding={'policy':'whole-tracked-tree/v1','tree':self.tree},
+                    test_source_blobs=plans.impact.git('ls-tree','-r',self.head,'--',*[root+'/'+module+'/tests' for root in plans.impact.ROOTS]).strip().splitlines(),
+                    selection='/'+module if kind=='orm' else 'test*.py',
                     integration_base='',exit_code=0,test_count=count,database='fixture_db' if classes else '',scope_plan=receipts.scope_reference(plan_raw,head=self.head,base='',module=module),
                     issued_at=self.now.isoformat(),expires_at=(self.now+timedelta(hours=24)).isoformat(),reuse_ready=False,
                     provenance={'GITHUB_REPOSITORY':dispatch.REPOSITORY,'GITHUB_RUN_ID':str(run['id']),'GITHUB_RUN_ATTEMPT':'1'},
@@ -221,6 +243,14 @@ class OperatorCliTests(unittest.TestCase):
                 print("[qualification-negative] " + case, flush=True)
                 code,text,result,_=self.execute(mutate);self.assertNotEqual(code,0,text);self.assertNotIn('verified_at',result);self.assertIn(reasons[case],text)
         code,text,_,calls=self.execute(advance=True,pending=True);self.assertNotEqual(code,0,text);self.assertEqual(calls.count('ls-remote'),2)
+
+    def test_incomplete_execution_facts_cannot_qualify_full_suite(self):
+        for fact,reason in {'selection':'full module selection', 'source':'test source inventory',
+                            'runtime':'runtime service identity', 'python':'Python environment differs'}.items():
+            with self.subTest(fact=fact):
+                print('[qualification-execution-negative] '+fact,flush=True)
+                code,text,result,_=self.execute(lambda fixture:fixture.change_execution_fact(fact))
+                self.assertNotEqual(code,0,text);self.assertIn(reason,text);self.assertNotIn('verified_at',result)
 
     def test_wait_queries_only_nonterminal_runs_and_rechecks_final_main(self):
         code,text,result,calls=self.execute(pending=True)

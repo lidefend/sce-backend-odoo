@@ -23,3 +23,14 @@ The affected planner selects seven local tool/registry checks and no local ORM o
 New exact-HEAD PR CI remains required. Mainline qualification, product acceptance and deployment qualification remain NOT_VERIFIED by this batch. R2-B/F04/F05, R2-C historical debt and R3 dispatch remain outside authorization.
 
 `make ci.local.iteration` PASSED: seven selected targets executed, zero reused. The executor suite ran 286 tests; the qualification CLI suite ran four tests containing 16 independently asserted denial cases, a full evidence positive, main advancement, pending completion, and terminal-failure precedence. Immutable raw target logs, receipt and tested-input hashes: [evidence manifest](../../audit/verify_system_closeout_01_r2a/evidence.json). Nested runner counts remain in raw logs and are not inflated into a fabricated aggregate. Remote PR CI is still pending publication.
+
+
+## F02 execution-fact follow-up
+
+The first repair candidate `196673db5422a7e2d852dd51bf420c89d67c0524` still accepted an authenticated full plan whose ORM receipt selected only `sc_smoke/<module>`. The real CLI replay of that exact verifier returned PASS; preserved [counterexample](../../audit/verify_system_closeout_01_r2a/execution_facts_before.json) and original output are not superseded by its green CI checks. This is a qualification-tool defect, not an observed product test failure.
+
+The follow-up requires the actual full-module selector without exclusions, the exact test-source blob inventory and whole-tree binding, Python observation matching its recorded environment, and content-bound runtime images/services (or the existing isolated-Python authority). New negative fixtures retain valid outer artifact and inner file hashes, so refusal must come from the missing execution facts rather than a trivial digest mismatch. All checks continue to use the native receipt producer and runner responsibilities.
+
+The registered offline task now names its actual aggregate owner `verify.ci.scheduled_gates`; its real CLI tests are reached through Make dependencies. This permits valid same-input reuse after committing, while preserving unknown/runtime target refusal. Remote PR closure remains the existing repository policy, including full product/demo/acceptance suites for `make/ci.mk` changes; no remote scope policy is changed here.
+
+Follow-up `make ci.local.iteration` PASSED with seven targets executed and no reuse. The CLI suite now has five tests with 20 independently asserted denial cases; the executor remains 286 tests. [Follow-up evidence](../../audit/verify_system_closeout_01_r2a/execution_facts_followup.json) preserves all new logs without overwriting the first run. Ten actual ORM receipts from PR run `45944804108` also pass the execution-fact validator; that bounded producer-format readback is explicitly not a current-main qualification.

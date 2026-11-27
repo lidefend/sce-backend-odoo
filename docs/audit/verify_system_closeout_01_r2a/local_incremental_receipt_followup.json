@@ -1,0 +1,355 @@
+{
+  "backendHandoffReceipt": null,
+  "backendOnlyTargets": [
+    "verify.test.coverage.registry"
+  ],
+  "blockedTargets": [],
+  "candidateEvidence": false,
+  "changedPaths": [
+    ".agent/active-runs.json",
+    ".agent/goals/VERIFY-SYSTEM-CLOSEOUT-01-R2A.yaml",
+    ".agent/runs/VERIFY-SYSTEM-CLOSEOUT-01-R2A/run.json",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/audit/verify_system_closeout_01_r2a/audit.verification.lane_coverage.check.txt",
+    "docs/audit/verify_system_closeout_01_r2a/evidence.json",
+    "docs/audit/verify_system_closeout_01_r2a/execution_facts_before.json",
+    "docs/audit/verify_system_closeout_01_r2a/execution_facts_before.txt",
+    "docs/audit/verify_system_closeout_01_r2a/local_incremental_receipt.json",
+    "docs/audit/verify_system_closeout_01_r2a/replay_old_qualification.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.agent.ledger.unit.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.baseline.iteration.execution.policy.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.ci.scheduled_gates.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.ci.workflow.contract.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.frontend.dev.incremental.unit.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.test.coverage.registry.txt",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/verify_system_closeout_01_r2a.md",
+    "make/ci.mk",
+    "make/frontend.mk",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/main_full_release_dispatch.py",
+    "scripts/ci/main_full_release_evidence.py",
+    "scripts/ci/test_main_full_release_dispatch.py",
+    "scripts/ci/test_main_full_release_evidence.py",
+    "scripts/ops/incremental_execution.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_incremental_environment.py"
+  ],
+  "channel": "all",
+  "channelAffectedTargets": [
+    "audit.verification.lane_coverage.check",
+    "verify.agent.ledger.unit",
+    "verify.baseline.iteration.execution.policy",
+    "verify.ci.scheduled_gates",
+    "verify.ci.workflow.contract",
+    "verify.frontend.dev.incremental.unit",
+    "verify.test.coverage.registry"
+  ],
+  "channelHandoffRequired": false,
+  "channelHandoffStatus": "not_required",
+  "completeAffectedTargets": [
+    "audit.verification.lane_coverage.check",
+    "verify.agent.ledger.unit",
+    "verify.baseline.iteration.execution.policy",
+    "verify.ci.scheduled_gates",
+    "verify.ci.workflow.contract",
+    "verify.frontend.dev.incremental.unit",
+    "verify.test.coverage.registry"
+  ],
+  "deferredRemoteTargets": [],
+  "environmentMissing": [],
+  "excludedTargets": [],
+  "executedTargetCount": 7,
+  "executionLayers": [
+    "frontend",
+    "governance"
+  ],
+  "executionTargetOrder": [
+    "audit.verification.lane_coverage.check",
+    "verify.agent.ledger.unit",
+    "verify.baseline.iteration.execution.policy",
+    "verify.ci.scheduled_gates",
+    "verify.ci.workflow.contract",
+    "verify.frontend.dev.incremental.unit",
+    "verify.test.coverage.registry"
+  ],
+  "frontendOnlyTargets": [
+    "verify.frontend.dev.incremental.unit"
+  ],
+  "heavyValidationIncluded": false,
+  "identity": {
+    "authoritySha256": {
+      "make/frontend.mk": "29ff62cb50292afb7ab0f2a89654e261ff4c46150300035536f3554783c43636",
+      "scripts/ops/incremental_execution.py": "f0eeb0d11bf1511915d6030ebf512d877bd2c4f9e521d448d591164ac7fc4e5c",
+      "scripts/verify/frontend_dev_incremental.py": "bfef8b14a447d3ed156871605dbb507dead69cc24de77f57c86632e35eb7d9d5"
+    },
+    "environmentIdentitySha256": "4f381d55d593929edc431fe2acf6766e195bce37d9a37d67118cac9673e31f56",
+    "head": "196673db5422a7e2d852dd51bf420c89d67c0524",
+    "runtimeTreeSha256": "22a571f52f5cfbd0d4e87d077b4ffdf193fbfce5c0419989cc95ec5659ebe854",
+    "tree": "9f527999f38c9b26ad109ec6eec9629a53d620c5",
+    "worktreeClean": false
+  },
+  "iterationBaselineKind": "verified_incremental_receipt",
+  "iterationBaselineSha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+  "mode": "development_incremental_execution",
+  "notRunTargets": [],
+  "reason": "all required targets exited zero",
+  "registrationMissingTargets": [
+    "audit.verification.lane_coverage.check",
+    "verify.test.coverage.registry"
+  ],
+  "registrationMode": "planner_managed",
+  "remoteIntegrationScope": {
+    "authority": "exact_head_remote_planners",
+    "backendRuntimePaths": [],
+    "backendSeedModules": [],
+    "backendSuiteRequired": false,
+    "controlPlaneChanged": true,
+    "frontendFullRequired": true,
+    "frontendPaths": [
+      "make/frontend.mk",
+      "scripts/verify/frontend_dev_incremental.py",
+      "scripts/verify/test_frontend_dev_incremental.py"
+    ],
+    "frontendReleaseGateRequired": true,
+    "invalidPaths": [],
+    "ownershipCategories": [
+      "agent_governance",
+      "agent_run_registration",
+      "backend_ci_harness",
+      "backend_quality_tooling",
+      "ci_tooling",
+      "docs_bookkeeping",
+      "frontend_delivery_make",
+      "frontend_quality_tooling",
+      "release_security_control_plane"
+    ],
+    "pathOwnershipRegistry": "config/ci/path_ownership_v1.json",
+    "pathOwnershipToolChecks": [
+      "verify.agent.ledger.unit",
+      "verify.backend_iteration_lanes.unit",
+      "verify.baseline.iteration.execution.policy",
+      "verify.ci.scheduled_gates",
+      "verify.ci.workflow.contract",
+      "verify.frontend.dev.incremental.unit",
+      "verify.github_actions.security"
+    ],
+    "selection": {
+      "backend": "owning_and_transitive_consumer_module_baseline_at_exact_head",
+      "controlPlane": "registered_owner_tool_checks_at_exact_head",
+      "frontend": "risk_selected_release_lane_at_exact_head"
+    },
+    "unknownPaths": []
+  },
+  "requiredLayers": [
+    "frontend",
+    "governance"
+  ],
+  "requiredTargets": [
+    "audit.verification.lane_coverage.check",
+    "verify.agent.ledger.unit",
+    "verify.baseline.iteration.execution.policy",
+    "verify.ci.scheduled_gates",
+    "verify.ci.workflow.contract",
+    "verify.frontend.dev.incremental.unit",
+    "verify.test.coverage.registry"
+  ],
+  "reusableEvidenceMissingTargets": [],
+  "reused": false,
+  "reusedTargetCount": 0,
+  "reusedTargets": [],
+  "runId": "VERIFY-SYSTEM-CLOSEOUT-01-R2A",
+  "schemaVersion": 1,
+  "sharedContractTargets": [],
+  "sharedTargets": [
+    "audit.verification.lane_coverage.check",
+    "verify.agent.ledger.unit",
+    "verify.baseline.iteration.execution.policy",
+    "verify.ci.scheduled_gates",
+    "verify.ci.workflow.contract"
+  ],
+  "staticCheckCount": 3,
+  "status": "passed",
+  "targetOrder": [
+    "audit.verification.lane_coverage.check",
+    "verify.agent.ledger.unit",
+    "verify.baseline.iteration.execution.policy",
+    "verify.ci.scheduled_gates",
+    "verify.ci.workflow.contract",
+    "verify.frontend.dev.incremental.unit",
+    "verify.test.coverage.registry"
+  ],
+  "targetResults": [
+    {
+      "allTestsSkippedEvidence": false,
+      "command": [
+        "make",
+        "--no-print-directory",
+        "audit.verification.lane_coverage.check"
+      ],
+      "durationSeconds": 8.553,
+      "executionKind": "command",
+      "explicitZeroTestEvidence": false,
+      "log": ".runtime/frontend-dev-validation/executions/20261127T052600Z-3895445-381917872/audit.verification.lane_coverage.check.log",
+      "logSha256": "0b60464e8d5a265edded8e1e45f92bcec5ec20fff47e2679a429c481abea1fdf",
+      "returncode": 0,
+      "status": "passed",
+      "target": "audit.verification.lane_coverage.check",
+      "testCollectedCount": 0,
+      "testCount": 0,
+      "testCountObservations": 0,
+      "testExecutionEvidence": "none",
+      "testSkippedCount": 0,
+      "testSummarySource": "none",
+      "testSummaryStatus": "unknown"
+    },
+    {
+      "allTestsSkippedEvidence": false,
+      "command": [
+        "make",
+        "--no-print-directory",
+        "verify.agent.ledger.unit"
+      ],
+      "durationSeconds": 3.025,
+      "executionKind": "test",
+      "explicitZeroTestEvidence": false,
+      "log": ".runtime/frontend-dev-validation/executions/20261127T052600Z-3895445-381917872/verify.agent.ledger.unit.log",
+      "logSha256": "7be6f099f53ebaeee8f3e8157fbf97024f9d5f4f1b5368bf03d2cfb2188fae48",
+      "returncode": 0,
+      "status": "passed",
+      "target": "verify.agent.ledger.unit",
+      "testCollectedCount": 18,
+      "testCount": 18,
+      "testCountObservations": 1,
+      "testExecutionEvidence": "unittest-summary",
+      "testSkippedCount": 0,
+      "testSummarySource": "unittest-summary",
+      "testSummaryStatus": "ok"
+    },
+    {
+      "allTestsSkippedEvidence": false,
+      "command": [
+        "make",
+        "--no-print-directory",
+        "verify.baseline.iteration.execution.policy"
+      ],
+      "durationSeconds": 0.905,
+      "executionKind": "static",
+      "explicitZeroTestEvidence": false,
+      "log": ".runtime/frontend-dev-validation/executions/20261127T052600Z-3895445-381917872/verify.baseline.iteration.execution.policy.log",
+      "logSha256": "820f821662405f6d64f5fdf6573cc59aeb157b1b6025ee00b0c363012a3b1a31",
+      "returncode": 0,
+      "status": "passed",
+      "target": "verify.baseline.iteration.execution.policy",
+      "testCollectedCount": 22,
+      "testCount": 22,
+      "testCountObservations": 1,
+      "testExecutionEvidence": "unittest-summary",
+      "testSkippedCount": 0,
+      "testSummarySource": "unittest-summary",
+      "testSummaryStatus": "ok"
+    },
+    {
+      "allTestsSkippedEvidence": false,
+      "command": [
+        "make",
+        "--no-print-directory",
+        "verify.ci.scheduled_gates"
+      ],
+      "durationSeconds": 215.612,
+      "executionKind": "command",
+      "explicitZeroTestEvidence": false,
+      "log": ".runtime/frontend-dev-validation/executions/20261127T052600Z-3895445-381917872/verify.ci.scheduled_gates.log",
+      "logSha256": "49c33ea2e3fbc95df117f70dd1d7d670ffc1e9b2d1bd9457aac880bb24d65331",
+      "returncode": 0,
+      "status": "passed",
+      "target": "verify.ci.scheduled_gates",
+      "testCollectedCount": 9,
+      "testCount": 9,
+      "testCountObservations": 1,
+      "testExecutionEvidence": "unittest-summary",
+      "testSkippedCount": 0,
+      "testSummarySource": "unittest-summary",
+      "testSummaryStatus": "ok"
+    },
+    {
+      "allTestsSkippedEvidence": false,
+      "command": [
+        "make",
+        "--no-print-directory",
+        "verify.ci.workflow.contract"
+      ],
+      "durationSeconds": 19.845,
+      "executionKind": "static",
+      "explicitZeroTestEvidence": false,
+      "log": ".runtime/frontend-dev-validation/executions/20261127T052600Z-3895445-381917872/verify.ci.workflow.contract.log",
+      "logSha256": "3ec1b4c26f96b81c497920dc2f2a69756aca4d250f0ff9986073a956e844d61f",
+      "returncode": 0,
+      "status": "passed",
+      "target": "verify.ci.workflow.contract",
+      "testCollectedCount": 34,
+      "testCount": 34,
+      "testCountObservations": 1,
+      "testExecutionEvidence": "unittest-summary",
+      "testSkippedCount": 0,
+      "testSummarySource": "unittest-summary",
+      "testSummaryStatus": "ok"
+    },
+    {
+      "allTestsSkippedEvidence": false,
+      "command": [
+        "make",
+        "--no-print-directory",
+        "verify.frontend.dev.incremental.unit"
+      ],
+      "durationSeconds": 13.205,
+      "executionKind": "test",
+      "explicitZeroTestEvidence": false,
+      "log": ".runtime/frontend-dev-validation/executions/20261127T052600Z-3895445-381917872/verify.frontend.dev.incremental.unit.log",
+      "logSha256": "a7edf9b1cb2f6b99ec2c77d768aef383fbad6aa59d6c5e0f23075720103adf60",
+      "returncode": 0,
+      "status": "passed",
+      "target": "verify.frontend.dev.incremental.unit",
+      "testCollectedCount": 286,
+      "testCount": 286,
+      "testCountObservations": 1,
+      "testExecutionEvidence": "unittest-summary",
+      "testSkippedCount": 0,
+      "testSummarySource": "unittest-summary",
+      "testSummaryStatus": "ok"
+    },
+    {
+      "allTestsSkippedEvidence": false,
+      "command": [
+        "make",
+        "--no-print-directory",
+        "verify.test.coverage.registry"
+      ],
+      "durationSeconds": 5.008,
+      "executionKind": "static",
+      "explicitZeroTestEvidence": false,
+      "log": ".runtime/frontend-dev-validation/executions/20261127T052600Z-3895445-381917872/verify.test.coverage.registry.log",
+      "logSha256": "092a509da62ecad20a86dfa6101a1dca3c789e0c209f3c9b7714bd1490abc662",
+      "returncode": 0,
+      "status": "passed",
+      "target": "verify.test.coverage.registry",
+      "testCollectedCount": 21,
+      "testCount": 21,
+      "testCountObservations": 1,
+      "testExecutionEvidence": "unittest-summary",
+      "testSkippedCount": 0,
+      "testSummarySource": "unittest-summary",
+      "testSummaryStatus": "ok"
+    }
+  ],
+  "testCount": 390,
+  "testTargetCount": 2,
+  "testsRun": true,
+  "unmappedPathCount": 0,
+  "unmappedPaths": [],
+  "verificationPassed": true
+}
