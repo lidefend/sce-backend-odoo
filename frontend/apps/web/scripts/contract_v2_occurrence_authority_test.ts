@@ -22,7 +22,10 @@ import { isContractGapError } from '../src/app/contract/contractGap';
 import { computed, reactive, ref } from 'vue';
 import { createContractV2Store } from '../src/app/contracts/v2/store';
 import { decodeContractV2ActionRule, decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
-import { useRecordFormFieldSchemas } from '../src/pages/contractForm/useRecordFormFieldSchemas';
+import {
+  resolveRecordFormFieldWidget,
+  useRecordFormFieldSchemas,
+} from '../src/pages/contractForm/useRecordFormFieldSchemas';
 import { useRecordFormLayout } from '../src/pages/contractForm/useRecordFormLayout';
 
 const VISIBLE_BUTTON_IDENTITY = 'native_button:object:action_sc_submit:/form[1]/sheet[1]/div[1]/div[2]/div[1]/div[2]/button[5]:1';
@@ -267,6 +270,23 @@ assert.equal(
   strictDecoded.layoutContract.containerTree[0].widgetList[0].fieldDescriptor?.fieldCode,
   'validation_status',
   'strict 2.7 form occurrences must validate canonical fieldCode/fieldType descriptors',
+);
+assert.equal(
+  resolveRecordFormFieldWidget({
+    fieldType: 'selection',
+    widgetType: 'select',
+    widget: 'checkbox',
+  } as never),
+  'select',
+  'record-form schema widget identity comes from canonical widgetType, not a layout or component fallback',
+);
+assert.equal(
+  resolveRecordFormFieldWidget({
+    fieldType: 'char',
+    widget: 'text',
+  } as never),
+  'text',
+  'a normalized form descriptor may expose its canonical widget alias when widgetType is absent',
 );
 
 const missingNativeIdentity = structuredClone(strictSnapshot);
