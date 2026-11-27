@@ -640,8 +640,8 @@
       "literal": "fallback",
       "path": "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
       "lines": [
-        208,
-        224
+        217,
+        233
       ],
       "occurrences": 2,
       "classification": "contract-derived",
@@ -654,7 +654,7 @@
       "literal": "unsupported",
       "path": "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
       "lines": [
-        204
+        213
       ],
       "occurrences": 1,
       "classification": "contract-derived",

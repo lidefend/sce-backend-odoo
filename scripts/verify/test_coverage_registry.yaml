@@ -1,41 +1,5 @@
 version: 1
 entries:
-- group: business_role
-  kind: odoo_tag
-  status: on-demand
-  owner: construction-product
-  dispose: class-selected
-  gate: "make:verify.business_role.orm :: business_role"
-  reason: Native administration, batch load and company/state authorization boundaries.
-- group: group_authority_sources
-  kind: odoo_tag
-  status: on-demand
-  owner: platform-kernel
-  dispose: class-selected
-  gate: "make:verify.group_authority.sources.orm :: group_authority_sources"
-  reason: Native source overlap, revocation and explicit reconciliation integration.
-- group: auth02_native_isolation
-  kind: odoo_tag
-  status: on-demand
-  owner: construction-product
-  dispose: class-selected
-  gate: "make:verify.auth02.native_isolation.orm :: auth02_native_isolation"
-  reason: Native company and project isolation witnesses, including global/group rule composition.
-- group: auth02_multi_company
-  kind: odoo_tag
-  status: on-demand
-  owner: platform-kernel
-  dispose: class-selected
-  gate: 'make:verify.platform.multi_company.orm :: auth02_multi_company'
-  reason: Incremental selection covers platform licensing, native rule caches, token revocation and company scope. Exact execution remains separately evidenced.
-- group: role_capability_authority
-  kind: odoo_tag
-  status: unwired
-  owner: construction-product
-  dispose: class-selected
-  gate: 'make:verify.changed_tests.orm :: /smart_construction_core:TestRoleCapabilityAuthority'
-  reason: Dynamic changed-test selection includes this class and remote owning-module coverage remains required. Static tag discovery cannot attest dynamic selection; no ORM execution is claimed.
-  review_by: '2026-12-31'
 - group: acceptance_business_scene_lifecycle
   kind: odoo_tag
   status: on-demand
@@ -181,6 +145,21 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: auth02_multi_company
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-kernel
+  dispose: class-selected
+  gate: 'make:verify.platform.multi_company.orm :: auth02_multi_company'
+  reason: Incremental selection covers platform licensing, native rule caches, token revocation and company
+    scope. Exact execution remains separately evidenced.
+- group: auth02_native_isolation
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.auth02.native_isolation.orm :: auth02_native_isolation'
+  reason: Native company and project isolation witnesses, including global/group rule composition.
 - group: auth_signup
   kind: odoo_tag
   status: unwired
@@ -222,6 +201,13 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: business_role
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.business_role.orm :: business_role'
+  reason: Native administration, batch load and company/state authorization boundaries.
 - group: canonical_navigation_projection
   kind: odoo_tag
   status: on-demand
@@ -714,6 +700,13 @@ entries:
     local.dev.test'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: group_authority_sources
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-kernel
+  dispose: class-selected
+  gate: 'make:verify.group_authority.sources.orm :: group_authority_sources'
+  reason: Native source overlap, revocation and explicit reconciliation integration.
 - group: home_objects_contract
   kind: odoo_tag
   status: on-demand
@@ -884,6 +877,14 @@ entries:
     selection of that file is the single class-method target make verify.workflow_contract.backend (TestUserFeedbackBusinessViews.test_deduction_registration_action_creates_deduction_bill_lines),
     which does not reach this group.
   review_by: '2026-12-31'
+- group: p0_contract_descriptor_conformance_evidence
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.p0_contract_producer.p0a.descriptor_conformance :: p0_contract_descriptor_conformance_evidence'
+  reason: 'Added by PR #1002 and executed through the form contract evidence target. The target runs the
+    exact smart_construction_core class with non-zero ORM receipt enforcement before its decoder test.'
 - group: p0_contract_producer_p0a
   kind: odoo_tag
   status: unwired
@@ -900,21 +901,6 @@ entries:
   gate: 'scripts/verify/p0_contract_producer_money_evidence.py :: p0_contract_producer_p0a_money_evidence'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
-- group: p0_polymorphic_reference_evidence
-  kind: odoo_tag
-  status: on-demand
-  owner: platform-contract
-  dispose: class-selected
-  gate: 'make:verify.contract.polymorphic_reference.integration :: p0_polymorphic_reference_evidence'
-  reason: Real notification contract and native Reference evidence; affected local selection plus owning-module remote ORM coverage. No independent recurring tag gate.
-- group: p0_contract_descriptor_conformance_evidence
-  kind: odoo_tag
-  status: on-demand
-  owner: construction-product
-  dispose: class-selected
-  gate: 'make:verify.p0_contract_producer.p0a.descriptor_conformance :: p0_contract_descriptor_conformance_evidence'
-  reason: 'Added by PR #1002 and executed through the form contract evidence target. The target runs
-    the exact smart_construction_core class with non-zero ORM receipt enforcement before its decoder test.'
 - group: p0_contract_producer_p0c
   kind: odoo_tag
   status: on-demand
@@ -923,6 +909,24 @@ entries:
   gate: 'make:verify.p0_c_fix01.action_id.orm :: p0_contract_producer_p0c'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: p0_polymorphic_reference_evidence
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-contract
+  dispose: class-selected
+  gate: 'make:verify.contract.polymorphic_reference.integration :: p0_polymorphic_reference_evidence'
+  reason: Real notification contract and native Reference evidence; affected local selection plus owning-module
+    remote ORM coverage. No independent recurring tag gate.
+  review_by: '2026-12-31'
+- group: p0_relation_active_actions_evidence
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-contract
+  dispose: class-selected
+  gate: 'make:verify.contract.relation_active_actions.integration :: p0_relation_active_actions_evidence'
+  reason: Real assembler output is decoded and consumed by the generic frontend contract closure;
+    the target enforces a non-zero isolated local.test receipt before TypeScript validation.
+  review_by: '2026-12-31'
 - group: p0_state
   kind: odoo_tag
   status: unwired
@@ -1324,6 +1328,15 @@ entries:
   dispose: wire-pending
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: role_capability_authority
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.changed_tests.orm :: /smart_construction_core:TestRoleCapabilityAuthority'
+  reason: Dynamic changed-test selection includes this class and remote owning-module coverage remains
+    required. Static tag discovery cannot attest dynamic selection; no ORM execution is claimed.
   review_by: '2026-12-31'
 - group: role_regression_minimal
   kind: odoo_tag
@@ -1880,8 +1893,8 @@ entries:
   owner: platform-team
   dispose: class-selected
   gate: 'make:verify.workflow_contract.platform.orm :: /smart_core:TestWorkflowContractPlatform'
-  reason: 'Added by #996 and executed by the dedicated smart_core test-class entry; the ordinary
-    module suite remains additive, while test-file and selector changes now require the registry audit.'
+  reason: 'Added by #996 and executed by the dedicated smart_core test-class entry; the ordinary module
+    suite remains additive, while test-file and selector changes now require the registry audit.'
 - group: workspace_processing_feedback
   kind: odoo_tag
   status: on-demand

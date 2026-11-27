@@ -7,7 +7,11 @@ import type {
   ContractV2FieldDescriptor,
   ContractV2FieldDescriptorDecodeResult,
   ContractV2FieldDescriptorMap,
+  ContractV2ModifierExpression,
+  ContractV2ModifierOperand,
+  ContractV2ModifierValue,
   ContractV2RegistryWidgetResolution,
+  ContractV2RelationActiveActions,
 } from './types';
 
 type UnknownRecord = Record<string, unknown>;
@@ -49,6 +53,7 @@ const OPTIONAL_KEYS = [
   'domainExpression',
   'context',
   'relationEntry',
+  'relationActiveActions',
   'widgetOptions',
   'subview',
   'filename',
@@ -87,6 +92,10 @@ const FORM_STRUCTURE_ROLES = new Set([
   'summary', 'task', 'context', 'risk', 'relation', 'activity', 'audit',
 ]);
 const UNIT_KINDS = new Set(['percent', 'duration', 'count', 'quantity']);
+const MODIFIER_OPERATORS = new Set([
+  '=', '==', '!=', '<>', '>', '>=', '<', '<=', 'in', 'not in', 'like', 'ilike',
+]);
+const MODIFIER_UNSUPPORTED_REASONS = new Set(['unsupported_domain', 'unsupported_expression']);
 const FIXED_SEMANTIC_BY_FIELD_TYPE: Readonly<Record<string, string>> = Object.freeze({
   date: 'date',
   datetime: 'datetime',
@@ -335,6 +344,228 @@ function decodeFormStructureRole(
   };
 }
 
+function decodeModifierOperand(
+  value: unknown,
+  path: string,
+  issues: FieldDescriptorDecodeIssue[],
+): ContractV2ModifierOperand | undefined {
+  if (!isRecord(value)) {
+    push(issues, path, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'modifier operand must be an object');
+    return undefined;
+  }
+  const kind = text(value.kind);
+  if (kind === 'context_get') {
+    rejectNestedUnknownKeys(value, ['kind', 'key', 'default'], path, issues);
+    const key = text(value.key);
+    if (!key) {
+      push(issues, `${path}.key`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'context operand requires a non-empty key');
+      return undefined;
+    }
+    return {
+      kind,
+      key,
+      ...(Object.prototype.hasOwnProperty.call(value, 'default') ? { default: value.default } : {}),
+    };
+  }
+  if (kind === 'field_value') {
+    rejectNestedUnknownKeys(value, ['kind', 'field'], path, issues);
+    const field = text(value.field);
+    if (!field) {
+      push(issues, `${path}.field`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'field operand requires a non-empty field');
+      return undefined;
+    }
+    return { kind, field };
+  }
+  if (kind === 'literal') {
+    rejectNestedUnknownKeys(value, ['kind', 'value'], path, issues);
+    if (!Object.prototype.hasOwnProperty.call(value, 'value')) {
+      push(issues, `${path}.value`, 'FIELD_DESCRIPTOR_REQUIRED', 'literal operand requires value');
+      return undefined;
+    }
+    return { kind, value: value.value };
+  }
+  push(issues, `${path}.kind`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'modifier operand kind is not recognized');
+  return undefined;
+}
+
+function decodeModifierValue(
+  value: unknown,
+  path: string,
+  issues: FieldDescriptorDecodeIssue[],
+): ContractV2ModifierValue | undefined {
+  if (typeof value === 'boolean') return value;
+  if (!isRecord(value)) {
+    push(issues, path, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'relation action must be boolean or a modifier expression');
+    return undefined;
+  }
+  const kind = text(value.kind);
+  const raw = value.raw === undefined ? undefined : text(value.raw);
+  if (value.raw !== undefined && !raw) {
+    push(issues, `${path}.raw`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'modifier raw source must be a non-empty string');
+  }
+  if (kind === 'static') {
+    rejectNestedUnknownKeys(value, ['kind', 'value', 'raw'], path, issues);
+    if (typeof value.value !== 'boolean') {
+      push(issues, `${path}.value`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'static modifier value must be boolean');
+      return undefined;
+    }
+    return { kind, value: value.value, ...(raw ? { raw } : {}) };
+  }
+  if (kind === 'field_truthy') {
+    rejectNestedUnknownKeys(value, ['kind', 'field', 'semantics', 'raw'], path, issues);
+    const field = text(value.field);
+    if (!field) {
+      push(issues, `${path}.field`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'field_truthy requires a non-empty field');
+      return undefined;
+    }
+    if (value.semantics !== undefined && value.semantics !== 'python') {
+      push(issues, `${path}.semantics`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'field_truthy semantics must be python');
+      return undefined;
+    }
+    return {
+      kind,
+      field,
+      ...(value.semantics === 'python' ? { semantics: 'python' as const } : {}),
+      ...(raw ? { raw } : {}),
+    };
+  }
+  if (kind === 'field_compare') {
+    rejectNestedUnknownKeys(
+      value,
+      ['kind', 'field', 'operator', 'semantics', 'value', 'value_field', 'raw'],
+      path,
+      issues,
+    );
+    const field = text(value.field);
+    const operator = text(value.operator);
+    const valueField = text(value.value_field);
+    const hasValue = Object.prototype.hasOwnProperty.call(value, 'value');
+    if (!field) {
+      push(issues, `${path}.field`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'field_compare requires a non-empty field');
+    }
+    if (!MODIFIER_OPERATORS.has(operator)) {
+      push(issues, `${path}.operator`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'field_compare operator is not supported');
+    }
+    if (value.semantics !== undefined && value.semantics !== 'python') {
+      push(issues, `${path}.semantics`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'field_compare semantics must be python');
+    }
+    if (hasValue === Boolean(valueField)) {
+      push(
+        issues,
+        path,
+        'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED',
+        'field_compare requires exactly one of value or value_field',
+      );
+    }
+    if (!field || !MODIFIER_OPERATORS.has(operator) || hasValue === Boolean(valueField)) return undefined;
+    return {
+      kind,
+      field,
+      operator: operator as Extract<ContractV2ModifierExpression, { kind: 'field_compare' }>['operator'],
+      ...(value.semantics === 'python' ? { semantics: 'python' as const } : {}),
+      ...(hasValue ? { value: value.value } : {}),
+      ...(valueField ? { value_field: valueField } : {}),
+      ...(raw ? { raw } : {}),
+    };
+  }
+  if (kind === 'not') {
+    rejectNestedUnknownKeys(value, ['kind', 'expr', 'raw'], path, issues);
+    const expr = decodeModifierValue(value.expr, `${path}.expr`, issues);
+    if (!expr) {
+      push(issues, `${path}.expr`, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'not requires a modifier expression');
+      return undefined;
+    }
+    return { kind, expr, ...(raw ? { raw } : {}) };
+  }
+  if (kind === 'all' || kind === 'any') {
+    rejectNestedUnknownKeys(value, ['kind', 'exprs', 'raw'], path, issues);
+    if (!Array.isArray(value.exprs) || !value.exprs.length) {
+      push(issues, `${path}.exprs`, 'FIELD_DESCRIPTOR_TYPE_INVALID', `${kind} requires at least one expression`);
+      return undefined;
+    }
+    const exprs = value.exprs.map((expr, index) => (
+      decodeModifierValue(expr, `${path}.exprs[${index}]`, issues)
+    ));
+    if (exprs.some((expr) => !expr)) return undefined;
+    return {
+      kind,
+      exprs: exprs as ContractV2ModifierValue[],
+      ...(raw ? { raw } : {}),
+    };
+  }
+  if (kind === 'value_truthy') {
+    rejectNestedUnknownKeys(value, ['kind', 'semantics', 'value_expr', 'raw'], path, issues);
+    if (value.semantics !== 'python') {
+      push(issues, `${path}.semantics`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'value_truthy semantics must be python');
+      return undefined;
+    }
+    const operand = decodeModifierOperand(value.value_expr, `${path}.value_expr`, issues);
+    if (!operand || operand.kind !== 'context_get') {
+      push(issues, `${path}.value_expr`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'value_truthy requires a context_get operand');
+      return undefined;
+    }
+    return { kind, semantics: 'python', value_expr: operand, ...(raw ? { raw } : {}) };
+  }
+  if (kind === 'value_compare') {
+    rejectNestedUnknownKeys(
+      value,
+      ['kind', 'semantics', 'operator', 'left', 'right', 'raw'],
+      path,
+      issues,
+    );
+    const operator = text(value.operator);
+    if (value.semantics !== 'python' || !MODIFIER_OPERATORS.has(operator)) {
+      push(issues, path, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'value_compare requires python semantics and a supported operator');
+      return undefined;
+    }
+    const left = decodeModifierOperand(value.left, `${path}.left`, issues);
+    const right = decodeModifierOperand(value.right, `${path}.right`, issues);
+    if (!left || !right) return undefined;
+    return {
+      kind,
+      semantics: 'python',
+      operator: operator as Extract<ContractV2ModifierExpression, { kind: 'value_compare' }>['operator'],
+      left,
+      right,
+      ...(raw ? { raw } : {}),
+    };
+  }
+  if (kind === 'unsupported') {
+    rejectNestedUnknownKeys(value, ['kind', 'raw', 'reason'], path, issues);
+    const reason = text(value.reason);
+    if (!raw || !MODIFIER_UNSUPPORTED_REASONS.has(reason)) {
+      push(issues, path, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'unsupported modifier requires raw source and a known reason');
+      return undefined;
+    }
+    return { kind, raw, reason: reason as 'unsupported_domain' | 'unsupported_expression' };
+  }
+  push(issues, `${path}.kind`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'modifier expression kind is not recognized');
+  return undefined;
+}
+
+function decodeRelationActiveActions(
+  value: unknown,
+  path: string,
+  issues: FieldDescriptorDecodeIssue[],
+): ContractV2RelationActiveActions | undefined {
+  if (!isRecord(value)) {
+    push(issues, path, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'relationActiveActions must be an object');
+    return undefined;
+  }
+  rejectNestedUnknownKeys(value, ['create', 'write'], path, issues);
+  const out: ContractV2RelationActiveActions = {};
+  (['create', 'write'] as const).forEach((key) => {
+    if (!Object.prototype.hasOwnProperty.call(value, key)) return;
+    const decoded = decodeModifierValue(value[key], `${path}.${key}`, issues);
+    if (decoded !== undefined) out[key] = decoded;
+  });
+  if (!Object.keys(out).length) {
+    push(issues, path, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'relationActiveActions must declare create or write');
+    return undefined;
+  }
+  return out;
+}
+
 export function decodeContractV2FieldDescriptor(
   raw: unknown,
   path = 'fieldDescriptor',
@@ -447,6 +678,9 @@ export function decodeContractV2FieldDescriptor(
   const formStructureRole = raw.formStructureRole === undefined
     ? undefined
     : decodeFormStructureRole(raw.formStructureRole, `${path}.formStructureRole`, issues);
+  const relationActiveActions = raw.relationActiveActions === undefined
+    ? undefined
+    : decodeRelationActiveActions(raw.relationActiveActions, `${path}.relationActiveActions`, issues);
 
   if (fieldType === 'monetary' || semanticType === 'money') {
     if (
@@ -484,6 +718,22 @@ export function decodeContractV2FieldDescriptor(
   if (FIXED_RELATION_FIELD_TYPES.has(fieldType) && !relation) {
     push(issues, path, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'fixed relation field types require relation');
   }
+  if (raw.relationActiveActions !== undefined && !['many2one', 'many2many'].includes(fieldType)) {
+    push(
+      issues,
+      `${path}.relationActiveActions`,
+      'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH',
+      'relationActiveActions is only valid for many2one or many2many fields',
+    );
+  }
+  if (raw.relationActiveActions !== undefined && fieldType === 'many2many' && widgetType !== 'many2many_tags') {
+    push(
+      issues,
+      `${path}.relationActiveActions`,
+      'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH',
+      'many2many relation actions require the declared many2many_tags widget',
+    );
+  }
   if (fieldType === 'many2one_reference' && !referenceModelField) {
     push(issues, path, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'many2one_reference requires referenceModelField');
   }
@@ -519,6 +769,7 @@ export function decodeContractV2FieldDescriptor(
     ...(raw.domainExpression !== undefined ? { domainExpression: raw.domainExpression } : {}),
     ...(raw.context !== undefined ? { context: raw.context } : {}),
     ...(isRecord(raw.relationEntry) ? { relationEntry: raw.relationEntry } : {}),
+    ...(relationActiveActions ? { relationActiveActions } : {}),
     ...(isRecord(raw.widgetOptions) ? { widgetOptions: raw.widgetOptions } : {}),
     ...(isRecord(raw.subview) ? { subview: raw.subview } : {}),
     ...(filename ? { filename } : {}),

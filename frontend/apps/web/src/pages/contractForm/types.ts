@@ -180,7 +180,6 @@ export type One2ManyColumn = {
   occurrenceIndex?: number;
   modifiers?: Record<string, unknown>;
   ancestorModifiers?: Array<Record<string, unknown>>;
-  relationActiveActions?: Record<string, unknown>;
   selection?: Array<[string, string]>;
   relation?: string;
   digits?: [number, number];

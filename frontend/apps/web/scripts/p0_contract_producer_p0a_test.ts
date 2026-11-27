@@ -357,6 +357,137 @@ assert.equal(
   'a monetary field may declare its native currency binding before a current currency fact exists',
 );
 
+const many2oneRelation = {
+  schemaVersion: '1.0.0',
+  fieldCode: 'partner_id',
+  label: 'Partner',
+  fieldType: 'many2one',
+  widgetType: 'many2one',
+  semanticType: 'relation',
+  relation: 'res.partner',
+};
+const declaredRelationActions = decodeContractV2FieldDescriptor({
+  ...many2oneRelation,
+  relationActiveActions: {
+    create: false,
+    write: {
+      kind: 'all',
+      exprs: [
+        {
+          kind: 'field_compare',
+          semantics: 'python',
+          field: 'state',
+          operator: '==',
+          value: 'draft',
+        },
+        {
+          kind: 'not',
+          expr: { kind: 'field_truthy', field: 'locked' },
+        },
+      ],
+      raw: "state == 'draft' and not locked",
+    },
+  },
+}).descriptor;
+assert.deepEqual(declaredRelationActions.relationActiveActions, {
+  create: false,
+  write: {
+    kind: 'all',
+    exprs: [
+      {
+        kind: 'field_compare',
+        semantics: 'python',
+        field: 'state',
+        operator: '==',
+        value: 'draft',
+      },
+      {
+        kind: 'not',
+        expr: { kind: 'field_truthy', field: 'locked' },
+      },
+    ],
+    raw: "state == 'draft' and not locked",
+  },
+}, 'strict decoding preserves static values and the complete grouped modifier AST');
+assert.deepEqual(
+  decodeContractV2FieldDescriptor({
+    ...many2oneRelation,
+    relationActiveActions: { create: true },
+  }).descriptor.relationActiveActions,
+  { create: true },
+  'decoding does not invent a write declaration',
+);
+assert.deepEqual(
+  decodeContractV2FieldDescriptor({
+    ...many2oneRelation,
+    relationActiveActions: { write: false },
+  }).descriptor.relationActiveActions,
+  { write: false },
+  'decoding does not invent a create declaration',
+);
+assert.deepEqual(
+  decodeContractV2FieldDescriptor({
+    schemaVersion: '1.0.0',
+    fieldCode: 'tag_ids',
+    label: 'Tags',
+    fieldType: 'many2many',
+    widgetType: 'many2many_tags',
+    semanticType: 'tag_collection',
+    relation: 'res.partner.category',
+    relationActiveActions: { create: true },
+  }).descriptor.relationActiveActions,
+  { create: true },
+  'many2many_tags preserves its create declaration without manufacturing write',
+);
+assert.deepEqual(
+  decodeContractV2FieldDescriptor({
+    ...many2oneRelation,
+    relationActiveActions: {
+      create: {
+        kind: 'unsupported',
+        raw: 'context.get("can_create")',
+        reason: 'unsupported_expression',
+      },
+    },
+  }).descriptor.relationActiveActions,
+  {
+    create: {
+      kind: 'unsupported',
+      raw: 'context.get("can_create")',
+      reason: 'unsupported_expression',
+    },
+  },
+  'a structurally valid unsupported expression remains declared for fail-closed evaluation',
+);
+for (const invalid of [
+  { create: 'yes' },
+  { create: { kind: 'static', value: 'true' } },
+  { create: { kind: 'all', exprs: [] } },
+  { create: { kind: 'field_compare', field: 'state', operator: '==', value: 'draft', value_field: 'other' } },
+  { create: { kind: 'field_compare', field: 'state', operator: 'mystery', value: 'draft' } },
+  { create: { kind: 'unsupported', raw: '', reason: 'unsupported_expression' } },
+  { create: { kind: 'unsupported', raw: 'x', reason: 'unknown' } },
+  { create: { kind: 'mystery' } },
+  { unexpected: true },
+]) {
+  assert.throws(
+    () => decodeContractV2FieldDescriptor({
+      ...many2oneRelation,
+      relationActiveActions: invalid,
+    }),
+    /FIELD_DESCRIPTOR/,
+    `invalid relation action AST must be rejected: ${JSON.stringify(invalid)}`,
+  );
+}
+assert.throws(
+  () => decodeContractV2FieldDescriptor({
+    ...readyMoney,
+    relationActiveActions: { create: true },
+  }),
+  /FIELD_DESCRIPTOR_SEMANTIC_MISMATCH/,
+  'relation actions are not valid on a non-relational field',
+);
+
 const pageContractSource = {
   contract_version: '2.1.0',
   schema_version: '2.1.0',

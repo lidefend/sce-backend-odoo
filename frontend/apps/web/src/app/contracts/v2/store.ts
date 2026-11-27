@@ -449,6 +449,7 @@ export function resolveContractV2FieldDescriptorMap(
     const relation = asText(config.relation || descriptor.relation);
     const relationField = asText(config.relationField || descriptor.relationField);
     const relationEntry = asDict(config.relationEntry || descriptor.relationEntry);
+    const relationActiveActions = asDict(descriptor.relationActiveActions);
     const widgetOptions = asDict(config.widgetOptions || descriptor.widgetOptions);
     const subview = asDict(config.subview || descriptor.subview);
     const formStructureRoleCandidate = asDict(widget.formStructureRole || config.formStructureRole || descriptor.formStructureRole);
@@ -484,6 +485,9 @@ export function resolveContractV2FieldDescriptorMap(
       ...(Object.prototype.hasOwnProperty.call(config, 'context') ? { context: config.context }
         : Object.prototype.hasOwnProperty.call(descriptor, 'context') ? { context: descriptor.context } : {}),
       ...(Object.keys(relationEntry).length ? { relationEntry } : {}),
+      ...(Object.keys(relationActiveActions).length
+        ? { relationActiveActions: relationActiveActions as ContractV2FieldDescriptor['relationActiveActions'] }
+        : {}),
       ...(Object.keys(widgetOptions).length ? { widgetOptions } : {}),
       ...(Object.keys(subview).length ? { subview } : {}),
       ...(asText(config.filename) ? { filename: asText(config.filename) } : {}),
@@ -523,6 +527,7 @@ export function toContractV2FormFieldDescriptor(row: ContractV2FieldDescriptor):
     ...(row.relationField ? { relation_field: row.relationField } : {}),
     ...(row.selection ? { selection: row.selection } : {}),
     ...(row.relationEntry ? { relationEntry: row.relationEntry } : {}),
+    ...(row.relationActiveActions ? { relationActiveActions: row.relationActiveActions } : {}),
     ...(row.widgetOptions ? { widgetOptions: row.widgetOptions } : {}),
     ...(row.subview ? { subview: row.subview } : {}),
     ...(row.filename ? { filename: row.filename } : {}),
