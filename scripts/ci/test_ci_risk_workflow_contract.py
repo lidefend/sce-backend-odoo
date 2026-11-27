@@ -302,19 +302,40 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("Scan governed product history", text)
         self.assertIn('case "${GITHUB_EVENT_NAME}" in', text)
         self.assertIn("schedule|workflow_dispatch)", text)
-        self.assertIn("pull_request)", text)
-        self.assertIn("push)", text)
-        pr_scan = text.split("            pull_request)", 1)[1].split(";;", 1)[0]
-        self.assertIn('repository_clean_history_guard.py --candidate-head "${CHECKOUT_SHA}"', pr_scan)
-        self.assertNotIn("--trusted-base", pr_scan)
+        self.assertIn("pull_request|push)", text)
+        candidate_scan = text.split("            pull_request|push)", 1)[1].split(";;", 1)[0]
+        self.assertIn('repository_clean_history_guard.py --candidate-head "${CHECKOUT_SHA}"', candidate_scan)
+        self.assertNotIn("--trusted-base", text)
         public_job = text.split("  public_guard:", 1)[1]
         self.assertIn("ref: ${{ env.CHECKOUT_SHA }}", public_job)
         self.assertIn("fetch-depth: 0", public_job)
-        self.assertIn('git cat-file -e "${BASE_SHA}^{commit}"', text)
-        self.assertIn('git merge-base --is-ancestor "${BASE_SHA}" HEAD', text)
-        self.assertIn("trusted_base_unavailable", text)
-        self.assertIn('repository_clean_history_guard.py --trusted-base "${BASE_SHA}"', text)
         self.assertIn("make verify.repository.clean_history", text)
+
+    def test_public_history_actual_shell_routes_events_and_propagates_failure(self) -> None:
+        """Execute the shipped shell, intercept only the scanner command boundary."""
+        workflow = yaml.safe_load(self.text("public_guard.yml"))
+        steps = workflow["jobs"]["public_guard"]["steps"]
+        script = next(step["run"] for step in steps if step.get("name") == "Scan governed product history")
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for command in ("python3", "make"):
+                stub = root / command
+                stub.write_text('#!/bin/bash\nprintf "%s\\n" "$(basename "$0") $*" >> "$CALL_LOG"\nexit "$SCAN_EXIT"\n')
+                stub.chmod(0o755)
+            for event in ("pull_request", "push", "schedule", "workflow_dispatch", "unknown_event"):
+                for scanner_exit in (0, 9):
+                    with self.subTest(event=event, scanner_exit=scanner_exit):
+                        log = root / "calls"
+                        log.write_text("")
+                        head = "a" * 40
+                        env = dict(os.environ, PATH=str(root) + os.pathsep + os.environ["PATH"],
+                                   CALL_LOG=str(log), SCAN_EXIT=str(scanner_exit),
+                                   GITHUB_EVENT_NAME=event, CHECKOUT_SHA=head, BASE_SHA="b" * 40)
+                        result = subprocess.run(["bash", "-c", script], env=env, text=True, capture_output=True)
+                        self.assertEqual(result.returncode, scanner_exit, result.stderr)
+                        expected = (f"python3 scripts/verify/repository_clean_history_guard.py --candidate-head {head}"
+                                    if event in ("pull_request", "push") else "make verify.repository.clean_history")
+                        self.assertEqual(log.read_text().splitlines(), [expected])
 
     def test_professional_lane_commands_are_explicit(self) -> None:
         text = self.text("professional_quality_gate.yml")
