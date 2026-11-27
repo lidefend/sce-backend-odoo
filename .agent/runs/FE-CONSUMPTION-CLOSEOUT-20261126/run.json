@@ -530,7 +530,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head ca2e773d, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head 3bdb21bb, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1813,6 +1813,29 @@
       ],
       "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
     },
+    "fc01_primary_filter_budget": {
+      "status": "passed_local_targeted",
+      "base_head": "5ba110911d631a0d29f9510b9946f02fa562d925",
+      "head": "3bdb21bb17079fe48e0649c247441297092087be",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T052524Z-3882287-708020276/receipt.json",
+      "receipt_sha256": "a16930f8a14a9d2cbc1d5f6fe299045a83e2c312135c180d76c1fd7b52a8e39f",
+      "executed_targets": 33,
+      "reused_targets": 15,
+      "test_targets": 22,
+      "executed_test_count": 802,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "the primary filter budget consumes surface_policies.filters_primary_max",
+        "missing, negative, fractional or string declarations stop with ContractGapError",
+        "explicit zero remains valid instead of being replaced by a frontend fallback",
+        "the contract-basis ledger reports 41 bindings with 0 open defects"
+      ],
+      "failure_recovery": [
+        "the first focused run exposed that the shared numeric primitive defaults to a minimum of one; the declaration was amended to declare min=0 so the contract's valid zero remains consumable"
+      ],
+      "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
+    },
     "post_slice_iteration_attempt": {
       "status": "failed",
       "classification": "validation_tool_defect",
@@ -1831,7 +1854,7 @@
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "ca2e773dfebe0d9e60d366ed3a1bc8f240bf9cca",
+      "current_head": "3bdb21bb17079fe48e0649c247441297092087be",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",

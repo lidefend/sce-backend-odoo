@@ -276,6 +276,18 @@
     "local_receipt_sha256": "1a9e0e8640fa1c2672770230d4cc8af207862ee2d7d71ede82ea9b16ad28fab5",
     "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
   },
+  "fc01_primary_filter_budget": {
+    "status": "local_targeted_passed",
+    "head": "3bdb21bb17079fe48e0649c247441297092087be",
+    "facts_verified": [
+      "the primary filter budget consumes surface_policies.filters_primary_max",
+      "explicit zero remains a valid declared budget",
+      "missing, negative, fractional and string declarations stop with ContractGapError"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T052524Z-3882287-708020276/receipt.json",
+    "local_receipt_sha256": "a16930f8a14a9d2cbc1d5f6fe299045a83e2c312135c180d76c1fd7b52a8e39f",
+    "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
+  },
   "post_slice_iteration_attempt": {
     "status": "failed_validation_tool",
     "head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
@@ -289,7 +301,7 @@
     "pull_request": 1019,
     "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
     "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
-    "current_head": "ca2e773dfebe0d9e60d366ed3a1bc8f240bf9cca",
+    "current_head": "3bdb21bb17079fe48e0649c247441297092087be",
     "coverage_limit": "Publication only. Remote CI and integration qualification are deferred by owner direction."
   },
   "not_a_product_acceptance_receipt": true,
@@ -303,7 +315,7 @@
       "sources": [
         {
           "path": "docs/architecture/frontend_contract_basis_ledger.json",
-          "sha256": "66d0eca8eda3d8f472da6284c8547aceb66f428ecbd2a601119dad59e78aa677"
+          "sha256": "81921f3703ffaa51ffc8a433b2d2fd064b69da4fbe6baa476b383ceae542f6c3"
         }
       ],
       "planned_discriminating_cases": [
@@ -312,7 +324,7 @@
       ],
       "behavior_status": "new_semantic_bindings_verified_full_coverage_extension_pending",
       "evidence": [
-        "verify.frontend.contract_basis.unit test_count=15 bindings=40",
+        "verify.frontend.contract_basis.unit test_count=15 bindings=41",
         "verify.p0_contract_producer.p0a.unit test_count=72"
       ],
       "blocking_for_topic_completion": true
