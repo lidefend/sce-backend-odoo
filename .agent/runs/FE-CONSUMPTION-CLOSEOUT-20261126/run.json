@@ -4,7 +4,7 @@
   "status": "active",
   "branch": "fix/fe-consumption-closeout-20261126",
   "branch_state": "bound_clean_at_activation",
-  "baseline_sha": "a92114f0efb6733253d827e3a9985af21ab96be6",
+  "baseline_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
   "baseline_state": "qualified_latest_main",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/frontend_convergence_next_20261126.md",
@@ -508,7 +508,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix. Keep the many2one_reference producer gap paused for owner review and do not modify backend declaration code in this topic.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix on mainline bfc954c0b, consuming the inherited polymorphic-reference declaration fix without modifying backend code in this topic.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
