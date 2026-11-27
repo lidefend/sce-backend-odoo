@@ -538,6 +538,64 @@ clean 运行态回读：
 143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
 `bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
 
+### 2026-11-27 关系目标向唯一契约收敛
+
+复核上一轮实现后纠正了方向：前端不应在
+`componentConfig.relation/relationModel/relation_model` 与
+`fieldDescriptor.relation` 之间比较或选一个，而是只消费正式
+`fieldDescriptor.relation`；这些兼容投影不再参与关系产品语义。
+
+本切片删除了五个核心消费者中的兼容分支：
+
+- canonical form presenter；
+- V2 normalized field descriptor store；
+- canonical form renderer 的字段描述符投影；
+- contract V2 widget → native field bridge；
+- ActionView 列表列投影。
+
+现在的行为是：
+
+- `fieldDescriptor.relation` 存在时直接消费；
+- `componentConfig` 中的关系别名不能覆盖、补充或充当 fallback；
+- canonical `many2one` 缺少正式关系目标时抛 `ContractGapError`；
+- 测试同时覆盖“componentConfig 冲突但 canonical 有效”和“componentConfig 唯一但 canonical 缺失”两个方向。
+
+契约台账绑定同步改为单一权威表述，停止符号为 `requireDeclaredText`，目前仍为
+32 个绑定、0 个未闭合缺陷。组件接管清单和 `remediation_design.json` 源码摘要按最终
+源码刷新。
+
+产品改动提交为 `28542de40c3f31e1cb3a45efe1562035f88c7d6c`。dirty 候选上的
+`make ci.local.iteration` 执行 27 个目标、复用 21 个未变目标，16 个测试目标执行
+655 项测试、6 项静态检查，`unmapped_paths=0`，全部退出零。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T022524Z-2347904-979289514/receipt.json`
+
+回执 SHA256：
+`eda0ba9a4f546e1dfb860c531e812f9737ec0ed28e0a6bd6f68a5686c7e3979c`。
+
+按产品提交重建 clean 前端，构建指纹为
+`189bdb8c0ab110a6a65767541f55eb7efda66dd550b4c026a7316861a2bc0cca`。
+
+clean 运行态回读：
+
+- `/t/clean/api/runtime-version` 同时返回上述源码 SHA、构建指纹、`sc_clean`、
+  namespace `ns_c6fed472e939` 与 alias `clean`；
+- 根路径 `/build-info.json` 返回同一源码 SHA；
+- `local.clean.health` 与 `local.clean.entry_identity.verify` 均通过；
+- project/database/dbfilter/namespace 保持 clean 专属身份。
+
+在该 clean 精确 HEAD 上执行 `make ci.local.iteration`：48 个必需目标全部成立，其中
+19 个本轮执行、29 个复用，9 个测试目标执行 556 项测试，5 项静态检查通过，
+`unmapped_paths=0`，全部退出零。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T022945Z-2382566-128679342/receipt.json`
+
+回执 SHA256：
+`4507f12d1b8b84e877b1e8328c038d486e805c4eedd4f396cd538b7e96565374`。
+
+143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
+`bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
+
 ### 2026-11-27 FC-01 canonical 关系目标一致性收口
 
 上一轮补齐描述符透传后继续核对 canonical form presenter，确认关系目标仍存在第二条

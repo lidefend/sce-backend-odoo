@@ -91,6 +91,25 @@
     },
     "coverage_limit": "The 143-entry current-candidate browser matrix, remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
   },
+  "fc_01_canonical_relation_single_source": {
+    "status": "clean_exact_head_passed",
+    "head": "28542de40c3f31e1cb3a45efe1562035f88c7d6c",
+    "facts_verified": [
+      "fieldDescriptor.relation is the only relation target authority in the canonical consumer paths",
+      "componentConfig relation aliases cannot provide or override a target",
+      "missing canonical relation declarations stop with ContractGapError",
+      "normalized store, canonical renderer, native bridge and list-column projection share the same canonical relation source"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T022945Z-2382566-128679342/receipt.json",
+    "local_receipt_sha256": "4507f12d1b8b84e877b1e8328c038d486e805c4eedd4f396cd538b7e96565374",
+    "runtime_identity": {
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "namespace_id": "ns_c6fed472e939",
+      "frontend_build_fingerprint": "189bdb8c0ab110a6a65767541f55eb7efda66dd550b4c026a7316861a2bc0cca"
+    },
+    "coverage_limit": "The 143-entry current-candidate browser matrix, remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
+  },
   "not_a_product_acceptance_receipt": true,
   "coverage_boundary": "One formal product-entry universe derived from current declarations plus 11 source-grounded consumer findings. Declared acceptance status is preserved as provenance; current-candidate runtime coverage is not inherited and remains not_run until exercised.",
   "rows": [
