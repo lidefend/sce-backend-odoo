@@ -265,6 +265,7 @@ def main() -> int:
         "queryMode: field.queryMode || 'domain'",
         "found?.label || key",
         "operators?.[0]?.value || '='",
+        "return [{ value: '=', label: '等于', needs_value: true }]",
     ):
         if forbidden in action_toolbar_source:
             errors.append(

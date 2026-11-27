@@ -599,7 +599,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Commit and publish the FC-03 custom-filter operator slice to PR 1019, then continue the next frontend contract-consumption check without inheriting b1aeaabfd remote results. Real browser readback remains blocked until managed port 5175 is released by the other worktree.",
+  "next_exact_step": "Commit and publish the FC-03 custom-filter operator-options slice to PR 1019, then stop query-surface local convergence and hand off the remaining FC-03 browser/user behavior as not_run until the managed acceptance port is available.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2572,6 +2572,30 @@
       ],
       "scope_limit": "Local component, contract guard and static checks only. Production custom-filter interaction, real browser navigation, user acceptance, FC-03 overall closure and FC-06 remain not_run."
     },
+    "fc03_custom_filter_operator_options_no_default": {
+      "status": "passed_local_targeted",
+      "stage_identity": "ca7a8a24b5b1be2e6fcf0a0c01cbc1e61c2f6b05 plus the owned custom-filter-operator-options dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T141827Z-446880-305052927/receipt.json",
+      "receipt_sha256": "187c3c3f4245cf9d2da7906eef4c8f986f3c0eda38b680619a3d9021e1eeb1e7",
+      "required_targets": 86,
+      "executed_targets": 86,
+      "reused_targets": 0,
+      "test_targets": 65,
+      "executed_test_count": 2168,
+      "static_checks": 11,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "the custom-filter operator menu contains only operators declared by the current field contract",
+        "an empty operator collection remains empty and cannot expose a frontend-synthesized equals option",
+        "the action toolbar component and contract consumer checks pass",
+        "the web consumer guard rejects reintroduction of the synthetic operator option",
+        "the component-driver inventory was regenerated for the changed production source input"
+      ],
+      "scope_limit": "Local component, contract guard and static checks only. Production custom-filter interaction, real browser navigation, user acceptance, FC-03 overall closure and FC-06 remain not_run."
+    },
     "fc03_preset_filter_label_presentation": {
       "status": "passed_local_targeted",
       "candidate_head": "98db6ed386f0bbe096febaf954d188de553eb9ce",
@@ -2665,12 +2689,12 @@
       "scope_limit": "P4 smoke and selector alignment only. The repaired candidate has not yet been pushed; exact-head remote CI, browser address-bar readback, mainline qualification and user acceptance remain not_run."
     },
     "remote_publication": {
-      "status": "remote_ci_passed_for_b1a_query_chip_slice_next_custom_filter_operator_local",
+      "status": "remote_ci_passed_for_ca7_custom_filter_operator_slice_next_operator_options_local",
       "pull_request": 1019,
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "b1aeaabfd5a4b4ed8dcd1149578a5bb5ec7cb72f",
+      "current_head": "ca7a8a24b5b1be2e6fcf0a0c01cbc1e61c2f6b05",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",
@@ -2696,9 +2720,11 @@
         "head 457a66708 passed public_guard run 140536744575, merge_policy_gate run 140541081186, professional_quality_gate run 140540852893 and frontend_release_gate run 140536633931",
         "head 457a66708 passed the selected backend impact suite through plan 140536815502, suite 140537072648 and coverage 140540626108",
         "head b1aeaabfd passed public_guard run 140546310672, merge_policy_gate run 140550517371, professional_quality_gate run 140550335143 and frontend_release_gate run 140546202008",
-        "head b1aeaabfd passed the selected backend impact suite through plan 140546360621, suite 140546593572 and coverage 140550154730"
+        "head b1aeaabfd passed the selected backend impact suite through plan 140546360621, suite 140546593572 and coverage 140550154730",
+        "head ca7a8a24b passed public_guard run 140552957580, merge_policy_gate run 140557030536, professional_quality_gate run 140556210941 and frontend_release_gate run 140552828224",
+        "head ca7a8a24b passed the selected backend impact suite through plan 140553018083, suite 140553245041 and coverage 140556034921"
       ],
-      "coverage_limit": "The query-chip authority candidate is green on b1aeaabfd. The next custom-filter operator slice will require its own exact-head remote checks. Real browser readback, the 143-entry matrix, role/company journeys, FC-03 overall closure and FC-06 remain not_run."
+      "coverage_limit": "The custom-filter operator candidate is green on ca7a8a24b. The next operator-options slice will require its own exact-head remote checks. Real browser readback, the 143-entry matrix, role/company journeys, FC-03 overall closure and FC-06 remain not_run."
     }
   }
 }

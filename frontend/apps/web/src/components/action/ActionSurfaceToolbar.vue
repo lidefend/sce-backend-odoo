@@ -559,11 +559,9 @@ const allGroupChips = computed(() => [...menuGroupChips.value, ...props.customGr
 const activeCustomFilterField = computed(() =>
   props.customFilterFields.find((field) => field.identity === customFilterField.value) || null,
 );
-const activeCustomFilterOperators = computed<CustomOperator[]>(() => {
-  const operators = activeCustomFilterField.value?.operators || [];
-  if (operators.length) return operators;
-  return [{ value: '=', label: '等于', needs_value: true }];
-});
+const activeCustomFilterOperators = computed<CustomOperator[]>(() =>
+  activeCustomFilterField.value?.operators || [],
+);
 const activeCustomFilterChoices = computed(() => activeCustomFilterField.value?.choices || []);
 const customFilterInputType = computed(() => {
   const type = activeCustomFilterField.value?.type;
