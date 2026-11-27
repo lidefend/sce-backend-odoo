@@ -8,7 +8,7 @@
   "baseline_state": "latest_main_includes_relation_active_actions_contract_and_exact_push_history_scan_release_qualification_not_run",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/frontend_convergence_next_20261126.md",
-  "current_batch": "FC-00 formal universe plus FC-01 semantic, selection and boundary closure",
+  "current_batch": "FC-02 navigation, product configuration, context and authorization presentation gap closure",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
@@ -207,6 +207,7 @@
         "frontend/apps/web/src/components/template/formSection.types.ts",
         "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
         "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
         "frontend/apps/web/src/app/contracts/v2/store.ts",
         "frontend/apps/web/src/app/contracts/v2/types.ts",
         "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
@@ -563,7 +564,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Commit and publish the descriptor-only legacy widget projection, then continue FC-01 with the next source-confirmed declaration consumer while leaving production role/company journeys for the runtime phase.",
+  "next_exact_step": "Continue FC-02 gap closure with breadcrumb/deep-link and company/project context presentation, then run a representative page presentation check against the current governed runtime.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2075,6 +2076,34 @@
         "a missing fieldDescriptor remains an explicit contract gap"
       ],
       "scope_limit": "Local units and component fixtures only; production role/company pages and user acceptance remain not_run."
+    },
+    "fc02_navigation_and_create_capability_gap": {
+      "status": "passed_local_targeted",
+      "stage_identity": "64c27a5c544b51182f4c63ae04e88ce15b787aa0 plus the owned FC-02 relation-create projection scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T085058Z-1727166-883290215/receipt.json",
+      "receipt_sha256": "a2b99a12bc164c4abdf7214b76546c415dc70252ca37148f7aa411a93bf80266",
+      "executed_targets": 53,
+      "reused_targets": 9,
+      "test_targets": 36,
+      "executed_test_count": 1385,
+      "static_checks": 10,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "baseline_checks": [
+        "verify.frontend.navigation_shell.unit: formal scene hydration, menu authorization, breadcrumb, keyboard and navigation guards passed",
+        "verify.frontend.intent_request_identity.unit: 28 request identity cases passed",
+        "verify.frontend.business_entry.matrix.universe: 143 declared entries remain complete"
+      ],
+      "facts_verified": [
+        "relation create mode is consumed only from relationEntry.create_mode",
+        "a model name and default values cannot invent quick-create capability",
+        "the backend-authored quick mode remains available when explicitly declared"
+      ],
+      "gap": "relationCreateMode special-cased the sc.dictionary model name and could expose a create affordance without an explicit create_mode declaration",
+      "repair": "removed the model special case and added a negative case proving default values or model identity cannot create authorization",
+      "scope_limit": "Navigation source/unit guards and the create-capability projection are locally validated; production role/company pages and the 143-entry browser matrix remain not_run."
     },
     "remote_publication": {
       "status": "draft_open_mainline_sync_validation_not_awaited",

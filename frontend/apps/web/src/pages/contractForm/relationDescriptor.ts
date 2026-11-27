@@ -277,9 +277,6 @@ export function relationCreateMode(descriptor?: FieldDescriptor): 'page' | 'dial
   if (entry.createMode === 'page' && entry.canCreate && entry.actionId) return 'page';
   if (entry.createMode === 'dialog' && entry.canCreate && entry.actionId && entry.menuId) return 'dialog';
   if (entry.createMode === 'quick' && entry.canCreate) return 'quick';
-  if (entry.model === 'sc.dictionary' && entry.canCreate && Object.keys(entry.defaultVals || {}).length) {
-    return 'quick';
-  }
   return 'none';
 }
 

@@ -217,6 +217,14 @@ assert.equal(relationCreateMode({
     menu_id: 12,
   },
 } as never), 'dialog', 'a backend-authorized dialog create entry must remain in-page');
+assert.equal(relationCreateMode({
+  relation: 'sc.dictionary',
+  relationEntry: {
+    can_read: true,
+    can_create: true,
+    default_vals: { type: 'doc_type' },
+  },
+} as never), 'none', 'a model name or default values cannot invent a quick-create mode');
 
 for (const scenario of [
   { managed: false, decisionMode: false, label: '返回', semanticIdentity: 'return-list' },

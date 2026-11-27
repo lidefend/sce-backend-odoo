@@ -616,6 +616,31 @@ published-branch 同步并入候选，merge commit 为
 
 该切片只是本地单测与组件验证，不代表生产角色/公司页面、143 入口矩阵完成。
 
+### 2026-11-27 FC-02 导航与创建能力查漏
+
+FC-02 按收敛和查漏补缺启动，没有新增页面能力。正式导航基线先通过：
+
+- `verify.frontend.navigation_shell.unit`：场景 hydration、菜单授权、面包屑、键盘和
+  导航守卫；
+- `verify.frontend.intent_request_identity.unit`：28 个请求身份用例；
+- `verify.frontend.business_entry.matrix.universe`：143 个正式入口集合完整。
+
+首轮源码审计发现 `relationCreateMode` 仍按 `sc.dictionary` 模型名推断 quick create。
+后端已经在 `relation_entry.create_mode` 显式声明该能力，因此前端模型特判会形成第二套
+创建授权。该分支已删除：
+
+- 只有声明的 `create_mode=quick/page/dialog` 和相应资格才能产生创建能力；
+- 模型名、默认值或字段外观都不能自行产生快速新建；
+- 增加对应的区分性负例。
+
+`make ci.local.iteration` 在该切片上执行 53 个目标、复用 9 个未变目标，
+36 个测试目标执行 1385 项测试、10 项静态检查全部通过。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T085058Z-1727166-883290215/receipt.json`
+
+生产角色/公司页面和 143 入口浏览器矩阵仍未运行；下一步继续检查面包屑、深链及
+公司/项目上下文呈现。
+
 ### 2026-11-27 FC-01 原生表单与附件分类语义收口
 
 本轮按“本地一个合格切片即发布、后续直接更新同一 PR”的方式推进。draft PR #1019

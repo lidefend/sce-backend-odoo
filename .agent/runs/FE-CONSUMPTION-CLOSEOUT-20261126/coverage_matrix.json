@@ -302,6 +302,18 @@
     "local_receipt_sha256": "b7641c95d758483f4ee92d7d54abd3eefea0670594408bfa82b62ee4ca3fbe54",
     "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
   },
+  "fc_02_navigation_gap_closure": {
+    "status": "active_gap_closure",
+    "first_gap": "relationCreateMode inferred dictionary quick-create from model name and defaults instead of relation_entry.create_mode",
+    "repair": "Removed the model special case; explicit contract create_mode is now the only create-capability source.",
+    "baseline_checks": [
+      "navigation shell: formal scene hydration, menu authorization, breadcrumb, keyboard and navigation guards",
+      "request identity: 28 cases",
+      "business entry universe: 143 declared entries complete"
+    ],
+    "runtime_coverage": "not_run_current_candidate",
+    "coverage_limit": "Unit and source convergence only; role/company browser journeys remain not_run."
+  },
   "post_slice_iteration_attempt": {
     "status": "failed_validation_tool",
     "head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
