@@ -702,6 +702,12 @@ ActionView 通过 `return_url` 解析目标路由，再消费其页面契约身�
 回执 SHA256：
 `7fb022c0402ab323b7f6fc3b464ad24e9c8f05a72f2e460e2475c0b746d538ea`。
 
+产品切片提交为 `1a7344da961118e3db9457702477bba1c8b34202`。精确 HEAD 构建指纹为
+`ff46cc84d7f2ce60668994beb1f99e3d2d7e5e9a1b0b53448cfa78faebbff41c`，构建
+`build-info.sha` 与 HEAD 一致；日志
+`.runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/return-label-url-build.log`，
+日志 SHA256 `27b33604867aa6cb96652e62a578e361bc2ab960c58a6b24b0d44c1581adf0f0`。
+
 下一步需要在受管浏览器中回读场景入口和跨模型返回链路的实际地址栏，再判断业务分类
 label 是否应删除；当前只证明纯构造与组件契约。
 

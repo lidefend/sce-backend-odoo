@@ -2281,7 +2281,8 @@
     },
     "fc02_return_label_derived_from_contract": {
       "status": "passed_local_targeted",
-      "stage_identity": "5b01369624c9b0a3fecc8bc3ad5a25be114fc616 plus the owned return-label URL scope",
+      "candidate_head": "1a7344da961118e3db9457702477bba1c8b34202",
+      "stage_identity": "1a7344da961118e3db9457702477bba1c8b34202",
       "command": "make ci.local.iteration",
       "receipt": ".runtime/frontend-dev-validation/executions/20261127T101416Z-2532766-453572306/receipt.json",
       "receipt_sha256": "7fb022c0402ab323b7f6fc3b464ad24e9c8f05a72f2e460e2475c0b746d538ea",
@@ -2300,6 +2301,14 @@
         "ActionView derives the return label by resolving return_url and consuming route page identity",
         "platform capability, workspace scenario lifecycle, page-action guard and strict typecheck pass"
       ],
+      "frontend_build": {
+        "status": "passed",
+        "source_revision": "1a7344da961118e3db9457702477bba1c8b34202",
+        "log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/return-label-url-build.log",
+        "log_sha256": "27b33604867aa6cb96652e62a578e361bc2ab960c58a6b24b0d44c1581adf0f0",
+        "build_info_sha256": "df95942d28a07b59be04ecc64e4fb8c47b939ae27edf37ad91bc3cef3375a660",
+        "frontend_build_fingerprint": "ff46cc84d7f2ce60668994beb1f99e3d2d7e5e9a1b0b53448cfa78faebbff41c"
+      },
       "failure_recovery": [
         "the first affected iteration rejected a computed object that hid the guarded router.resolve(target).href call; the implementation was split into explicit href and label computations"
       ],
