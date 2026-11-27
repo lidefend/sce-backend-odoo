@@ -448,6 +448,7 @@ export function resolveContractV2FieldDescriptorMap(
     const relation = asText(descriptor.relation);
     const relationField = asText(descriptor.relationField);
     const referenceModelField = asText(descriptor.referenceModelField);
+    const currencyField = asText(descriptor.currencyField);
     const attachmentRole = asText(descriptor.attachmentRole);
     const filename = asText(descriptor.filename);
     const digits = Array.isArray(descriptor.digits) && descriptor.digits.length === 2
@@ -487,6 +488,7 @@ export function resolveContractV2FieldDescriptorMap(
       ...(relation ? { relation } : {}),
       ...(relationField ? { relationField } : {}),
       ...(referenceModelField ? { referenceModelField } : {}),
+      ...(currencyField ? { currencyField } : {}),
       ...(attachmentRole ? { attachmentRole } : {}),
       ...(digits ? { digits } : {}),
       ...(unit ? { unit } : {}),

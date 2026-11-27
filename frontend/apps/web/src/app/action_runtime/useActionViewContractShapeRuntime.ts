@@ -10,7 +10,7 @@ import {
   resolveContractV2SearchContract,
   resolveContractV2SurfacePolicies,
 } from '../contracts/v2/store';
-import type { ContractV2NormalizedStore } from '../contracts/v2/types';
+import type { ContractV2FieldDescriptor, ContractV2NormalizedStore } from '../contracts/v2/types';
 import { contractGapError, requireDeclaredBoolean, requireDeclaredText } from '../contract/contractGap';
 import { isRegisteredComponentKey } from '../presentation/professionalComponentRegistry';
 
@@ -125,6 +125,34 @@ function normalizeDeclaredDigits(value: unknown): [number, number] | undefined {
     : undefined;
 }
 
+const LIST_COLUMN_TRANSPORT_KEYS = [
+  'optional',
+  'display_field',
+  'value_field',
+  'aggregation_field',
+  'sum',
+  'aggregate',
+  'aggregate_label',
+  'sort_field',
+  'filter_field',
+  'export_field',
+  'semantic_status',
+  'reason_code',
+  'source_authority',
+  'cell_role',
+  'cellRole',
+  'mutation',
+] as const;
+
+function listColumnTransportConfig(value: unknown): Dict {
+  const source = value && typeof value === 'object' && !Array.isArray(value) ? value as Dict : {};
+  return Object.fromEntries(
+    LIST_COLUMN_TRANSPORT_KEYS
+      .filter((key) => Object.prototype.hasOwnProperty.call(source, key))
+      .map((key) => [key, source[key]]),
+  );
+}
+
 export function extractKanbanFieldsFromContract(store: ContractV2NormalizedStore | null): string[] {
   if (String(store?.snapshot.pageInfo.viewType || '').trim() === 'kanban') {
     const fields = uniqueFields(
@@ -156,19 +184,17 @@ export function extractViewFieldLabelsFromContract(store: ContractV2NormalizedSt
 export function extractListFieldSemanticsFromContract(store: ContractV2NormalizedStore | null): Dict[] {
   const schemas: Dict[] = [];
   resolveContractV2FieldWidgets(store).forEach((widget) => {
-    const config = (widget.componentConfig || {}) as Dict;
-    const fieldCode = String(
-      widget.fieldCode
-      || config.display_field
-      || config.name
-      || '',
-    ).trim();
+    const config = listColumnTransportConfig(widget.componentConfig);
+    const descriptor = widget.fieldDescriptor || {};
+    const fieldCode = String(widget.fieldCode || descriptor.fieldCode || '').trim();
     if (!fieldCode) return;
     schemas.push({
       ...config,
       name: fieldCode,
-      type: config.data_type || config.fieldType || widget.fieldDescriptor?.fieldType,
-      widget: config.nativeWidget || widget.fieldDescriptor?.widgetType || config.widget || widget.widgetType,
+      type: String(descriptor.fieldType || '').trim(),
+      widget: String(descriptor.widgetType || '').trim(),
+      currency_field: String(descriptor.currencyField || '').trim(),
+      digits: normalizeDeclaredDigits(descriptor.digits),
     });
   });
 
@@ -232,20 +258,28 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
   function extractColumnSchemaFromContract(contract: unknown): Dict[] {
     const store = contract as ContractV2NormalizedStore | null;
     const descriptors = resolveContractV2FieldDescriptorMap(store);
-    return resolveContractV2FieldWidgets(store).map((widget) => ({
-      name: widget.fieldCode,
-      label: widget.label,
-      string: widget.label,
-      widget: widget.widgetType,
-      componentKey: descriptors[widget.fieldCode]?.componentKey
-        || String((widget as { componentKey?: unknown }).componentKey || '').trim(),
-      relation: descriptors[widget.fieldCode]?.relation || '',
-      attachmentRole: descriptors[widget.fieldCode]?.attachmentRole || '',
-      digits: descriptors[widget.fieldCode]?.digits,
-      unit: descriptors[widget.fieldCode]?.unit,
-      temporal: descriptors[widget.fieldCode]?.temporal,
-      ...(widget.componentConfig || {}),
-    }));
+    return resolveContractV2FieldWidgets(store).map((widget) => {
+      const descriptor: ContractV2FieldDescriptor = descriptors[widget.fieldCode]
+        || {} as ContractV2FieldDescriptor;
+      return {
+        ...listColumnTransportConfig(widget.componentConfig),
+        name: widget.fieldCode,
+        label: descriptor.label || widget.label,
+        string: descriptor.label || widget.label,
+        type: descriptor.fieldType,
+        widget: descriptor.widgetType,
+        componentKey: String(descriptor.componentKey || '').trim(),
+        relation: String(descriptor.relation || '').trim(),
+        attachmentRole: String(descriptor.attachmentRole || '').trim(),
+        currency_field: descriptor.currencyField,
+        digits: descriptor.digits,
+        unit: descriptor.unit,
+        temporal: descriptor.temporal,
+        selection: descriptor.selection,
+        sortable: descriptor.sortable,
+        invisible: descriptor.invisible,
+      };
+    });
   }
 
   function resolveListColumnOptions(contract: unknown, profile: { columns?: string[]; hidden_columns?: string[]; column_labels?: Record<string, string> } | null): ListColumnOption[] {
@@ -271,8 +305,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         const widgets = store?.widgetsByFieldCodeAll.get(name) || [];
         const denied = widgets.map(widget => {
           const status = store?.widgetStatusById.get(widget.widgetId);
-          return status?.visible === false || status?.auth === 'none'
-            || widget.componentConfig?.invisible === true || widget.componentConfig?.column_invisible === true;
+          return status?.visible === false || status?.auth === 'none';
         });
         if (denied.some(Boolean) && denied.some(value => !value)) {
           throw contractGapError({kind: 'contract_defect', missing: `list_column.${name}.occurrence_authority`,
@@ -280,7 +313,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         }
         // Optional/default hidden columns remain configurable; an explicit
         // contract denial cannot be reversed by a historical personal choice.
-        return schema.invisible !== true && schema.column_invisible !== true
+        return schema.invisible !== true
           && v2FieldStatus[name]?.visible !== false && !denied.some(Boolean);
       })
       .map((name) => {
@@ -288,9 +321,9 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         const field = fieldsMap[name];
         const status = v2FieldStatus[name];
         const optional = String(schema.optional || '').trim();
-        const invisible = schema.invisible === true || schema.column_invisible === true || status?.visible === false;
-        const sortableRaw = Object.prototype.hasOwnProperty.call(schema, 'sortable')
-          ? schema.sortable
+        const invisible = schema.invisible === true || status?.visible === false;
+        const sortableRaw = Object.prototype.hasOwnProperty.call(field || {}, 'sortable')
+          ? field?.sortable
           : undefined;
         const type = String(field?.fieldType || '').trim();
         const widget = String(field?.widgetType || '').trim();
@@ -311,7 +344,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
           label: String(labels[name] || schema.label || schema.string || field?.label || name).trim() || name,
           optional,
           defaultVisible: !hidden.has(name) && optional !== 'hide' && !invisible,
-          sortable: sortableRaw === false ? false : undefined,
+          sortable: typeof sortableRaw === 'boolean' ? sortableRaw : undefined,
           type: type || undefined,
           widget: widget || undefined,
           componentKey: componentKey || undefined,
@@ -338,11 +371,11 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
           displayField: String(schema.display_field || name).trim() || name,
           valueField,
           aggregationField: String(schema.aggregation_field || (aggregate === 'sum' ? valueField : '')).trim() || undefined,
-          dataType: String(schema.data_type || type || '').trim() || undefined,
-          currencyField: String(schema.currency_field || '').trim() || undefined,
-          digits: normalizeDeclaredDigits(schema.digits || schema.precision),
-          unit: (field?.unit || schema.unit) as ListColumnOption['unit'],
-          temporal: (field?.temporal || schema.temporal) as ListColumnOption['temporal'],
+          dataType: type || undefined,
+          currencyField: String(field?.currencyField || '').trim() || undefined,
+          digits: normalizeDeclaredDigits(field?.digits),
+          unit: field?.unit as ListColumnOption['unit'],
+          temporal: field?.temporal as ListColumnOption['temporal'],
           aggregate: aggregate || 'none',
           sortField: String(schema.sort_field || valueField).trim() || undefined,
           filterField: String(schema.filter_field || valueField).trim() || undefined,

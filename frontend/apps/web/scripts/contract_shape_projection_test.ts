@@ -120,6 +120,86 @@ check(
   'list field semantics preserve the field widget instead of the table container widget',
 );
 
+// List-column transport declarations remain available, but componentConfig is
+// not a second field-semantic authority. A conflicting transport payload must
+// not replace the descriptor's type, widget, money field, precision, unit,
+// temporal authority, selection or visibility.
+const semanticAuthorityWidget = {
+  widgetId: 'field.amount_display',
+  fieldCode: 'amount_display',
+  label: 'Container label',
+  widgetType: 'table',
+  componentKey: 'sc.value.percentage',
+  fieldDescriptor: {
+    fieldCode: 'amount_display',
+    label: 'Declared amount',
+    fieldType: 'float',
+    widgetType: 'float_time',
+    semanticType: 'duration',
+    componentKey: 'sc.value.duration',
+    currencyField: 'currency_id',
+    digits: [16, 3],
+    unit: { kind: 'duration', code: 'hour', label: '小时' },
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+    sortable: true,
+    invisible: false,
+  },
+  componentConfig: {
+    fieldType: 'char',
+    nativeWidget: 'text',
+    data_type: 'char',
+    widget: 'text',
+    componentKey: 'sc.value.percentage',
+    currency_field: 'wrong_currency_id',
+    digits: [4, 1],
+    unit: { kind: 'percent', code: 'percent', label: '%' },
+    temporal: { kind: 'date', timezoneAuthority: 'record' },
+    selection: [['wrong', 'Wrong']],
+    relation: 'res.partner',
+    invisible: true,
+    display_field: 'amount_display',
+    value_field: 'amount',
+    sort_field: 'amount',
+    filter_field: 'amount',
+    export_field: 'amount',
+    aggregate: 'sum',
+  },
+};
+const semanticAuthorityStore = {
+  snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
+  widgetsById: new Map([[semanticAuthorityWidget.widgetId, semanticAuthorityWidget]]),
+  widgetsByFieldCode: new Map([[semanticAuthorityWidget.fieldCode, semanticAuthorityWidget]]),
+  widgetsByFieldCodeAll: new Map([[semanticAuthorityWidget.fieldCode, [semanticAuthorityWidget]]]),
+  widgetStatusById: new Map(),
+  primaryDataSource: {},
+} as unknown as ContractV2NormalizedStore;
+const semanticAuthorityRows = extractListFieldSemanticsFromContract(semanticAuthorityStore);
+check(semanticAuthorityRows[0]?.data_type, 'float', 'request field semantics use descriptor fieldType');
+check(semanticAuthorityRows[0]?.widget, 'float_time', 'request field semantics use descriptor widgetType');
+check(semanticAuthorityRows[0]?.currency_field, 'currency_id', 'request dependencies use descriptor currencyField');
+check(semanticAuthorityRows[0]?.value_field, 'amount', 'list transport keeps its declared value field');
+check(semanticAuthorityRows[0]?.sort_field, 'amount', 'list transport keeps its declared sort field');
+
+const semanticAuthorityOption = runtime.resolveListColumnOptions(
+  semanticAuthorityStore,
+  { columns: ['amount_display'] },
+)[0];
+assert.ok(semanticAuthorityOption);
+check(semanticAuthorityOption?.label, 'Declared amount', 'list column label comes from fieldDescriptor');
+check(semanticAuthorityOption?.type, 'float', 'list column type comes from fieldDescriptor');
+check(semanticAuthorityOption?.widget, 'float_time', 'list column widget comes from fieldDescriptor');
+check(semanticAuthorityOption?.componentKey, 'sc.value.duration', 'list column component identity comes from fieldDescriptor');
+check(semanticAuthorityOption?.currencyField, 'currency_id', 'list column currency field comes from fieldDescriptor');
+check(JSON.stringify(semanticAuthorityOption?.digits), JSON.stringify([16, 3]), 'list column digits come from fieldDescriptor');
+check(semanticAuthorityOption?.unit?.code, 'hour', 'list column unit comes from fieldDescriptor');
+check(semanticAuthorityOption?.temporal?.kind, 'datetime', 'list column temporal authority comes from fieldDescriptor');
+check(semanticAuthorityOption?.relation, undefined, 'componentConfig cannot introduce a relation target');
+check(semanticAuthorityOption?.selection, undefined, 'componentConfig cannot introduce selection semantics');
+check(semanticAuthorityOption?.defaultVisible, true, 'componentConfig cannot override descriptor visibility');
+check(semanticAuthorityOption?.sortable, true, 'list column sortability comes from fieldDescriptor');
+check(semanticAuthorityOption?.valueField, 'amount', 'list transport keeps its declared value field');
+check(semanticAuthorityOption?.sortField, 'amount', 'list transport keeps its declared sort field');
+
 const storeWithListProfile = (listProfile: Record<string, unknown>) => ({
   snapshot: {
     layoutContract: { listProfile },
@@ -159,7 +239,22 @@ cases += 1;
 // Contract denial must survive the complete parse -> preference -> display chain.
 const names = ['normal','optional','invisible','column_invisible','status_hidden','no_auth'];
 const configs: Record<string, Record<string, unknown>> = {optional:{optional:'hide'},invisible:{invisible:true},column_invisible:{column_invisible:true}};
-const widgets = names.map(name => ({widgetId:name,fieldCode:name,componentConfig:configs[name] || {}}));
+const descriptors: Record<string, Record<string, unknown>> = {
+  invisible: {fieldCode:'invisible',label:'Invisible',fieldType:'char',widgetType:'text',componentKey:'sc.display.text',invisible:true},
+  column_invisible: {fieldCode:'column_invisible',label:'Column invisible',fieldType:'char',widgetType:'text',componentKey:'sc.display.text',invisible:true},
+};
+const widgets = names.map(name => ({
+  widgetId:name,
+  fieldCode:name,
+  componentConfig:configs[name] || {},
+  fieldDescriptor:descriptors[name] || {
+    fieldCode:name,
+    label:name,
+    fieldType:'char',
+    widgetType:'text',
+    componentKey:'sc.display.text',
+  },
+}));
 const fixture = {
   snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
   widgetsById: new Map(widgets.map(widget => [widget.widgetId,widget])),
