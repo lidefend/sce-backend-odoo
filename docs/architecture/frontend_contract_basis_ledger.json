@@ -464,6 +464,20 @@
       "regressionGuard": "verify.frontend.canonical_form_presenter.unit",
       "behaviourTest": "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
       "stopDetail": "Effective widget status may be stricter than fieldDescriptor, but it cannot make an invisible field visible, make a readonly field editable, or make a required field optional. Any relaxation raises ContractGapError with field.<fieldCode>.status_consistency.<property>; the behavior test covers one allowed tightening and all three forbidden relaxations."
+    },
+    {
+      "surface": "ActionView list-column field semantic authority",
+      "declared": "fieldDescriptor fieldType/widgetType/componentKey/currencyField/digits/unit/temporal/selection/invisible/sortable",
+      "declaredBy": "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+      "declaredMethod": "decodeContractV2FieldDescriptor",
+      "declaredSymbol": "componentKey: SEMANTIC_COMPONENT_REGISTRY[semanticType] || ''",
+      "consumedBy": "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+      "consumedSymbol": "function listColumnTransportConfig(",
+      "onMissing": "stop",
+      "stopSymbol": "contractGapError",
+      "regressionGuard": "verify.frontend.contract_shape_projection.unit",
+      "behaviourTest": "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+      "stopDetail": "ActionView list columns may consume declared list transport values such as value_field, sort_field, aggregate and filter_field, but field type, widget, component identity, currency field, digits, unit, temporal kind, selection and visibility come only from the decoded fieldDescriptor. The normalized store must preserve currencyField; an unregistered component identity stops with ContractGapError. A conflicting componentConfig cannot reintroduce or override field semantics."
     }
   ],
   "registeredMechanismExemptions": [
