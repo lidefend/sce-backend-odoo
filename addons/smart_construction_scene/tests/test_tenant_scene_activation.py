@@ -1325,6 +1325,74 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
         denied = {**row, "route_kind": "DENIED", "allowed_operation": "none"}
         self.assertEqual(self.filtered({}, {"denied_actions": [denied]})["denied_actions"], [denied])
 
+    def test_initialization_preserves_native_menu_before_business_scene_selection(self):
+        menu_xmlid = tenant_scene_activation.ENTERPRISE_SETUP_MENU_XMLID
+        action_xmlid = tenant_scene_activation.ENTERPRISE_SETUP_ACTION_XMLID
+        entries = [{
+            "code": tenant_scene_activation.ENTERPRISE_SETUP_CODE,
+            "enablement_scope": "enterprise_initialization",
+            "target": {
+                "menu_xmlid": menu_xmlid,
+                "action_xmlid": action_xmlid,
+            },
+        }]
+        surface_index = {
+            menu_xmlid: {
+                "location": "scenario",
+                "scenario_key": "config.enterprise_initialization",
+                "scenario_active": True,
+            },
+            "test.project": {
+                "location": "scenario",
+                "scenario_key": "project.management",
+                "scenario_active": True,
+            },
+        }
+        initialize = {
+            "menu_id": 9,
+            "action_id": 90,
+            "menu_xmlid": menu_xmlid,
+            "action_xmlid": action_xmlid,
+            "allowed_operation": "read",
+            "source": "native_business_config_menu_projection",
+        }
+        ordinary = {
+            "menu_id": 1,
+            "action_id": 11,
+            "menu_xmlid": "test.project",
+            "action_xmlid": "test.action.project",
+            "allowed_operation": "read",
+            "source": "native_business_config_menu_projection",
+        }
+        result = business_enablement.filter_business_authority(
+            {"primary_actions": [initialize, ordinary]},
+            surface_index=surface_index,
+            enabled={},
+            entries=entries,
+            menu_xmlids_by_id={9: menu_xmlid, 1: "test.project"},
+        )
+        self.assertEqual(result["primary_actions"], [initialize])
+        self.assertEqual(
+            {row["reason_code"] for row in result["denied_actions"]},
+            {"BUSINESS_SCENARIO_NOT_ENABLED"},
+        )
+        for change in (
+            {"source": "client"},
+            {"menu_xmlid": "test.project", "menu_id": 1},
+            {"action_xmlid": "test.action.project", "action_id": 11},
+            {"allowed_operation": "none"},
+        ):
+            with self.subTest(change=change):
+                spoofed = {**initialize, **change}
+                blocked = business_enablement.filter_business_authority(
+                    {"primary_actions": [spoofed]},
+                    surface_index=surface_index,
+                    enabled={},
+                    entries=entries,
+                    menu_xmlids_by_id={9: menu_xmlid},
+                )
+                self.assertEqual(blocked["primary_actions"], [])
+
     def test_route_cannot_self_declare_initialization_scope(self):
         row = {"action_id": 88, "scene_key": "unknown.legacy", "allowed": True,
                "source": "scene_internal_action_authority", "enablement_scope": "enterprise_initialization"}

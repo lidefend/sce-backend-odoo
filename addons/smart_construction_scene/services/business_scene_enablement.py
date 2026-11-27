@@ -7,6 +7,11 @@ from copy import deepcopy
 BUSINESS_PREFIX = "business.v1:"
 BUSINESS_SCOPE = "business.v1"
 AUTHORITY_BUCKETS = ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions", "menu_containers")
+ENTERPRISE_INITIALIZATION_SCOPE = "enterprise_initialization"
+ENTERPRISE_INITIALIZATION_SOURCES = frozenset({
+    "native_business_config_menu_projection",
+    "scene_internal_action_authority",
+})
 
 
 def business_key(scene_key):
@@ -71,6 +76,35 @@ def _scenario_locations(location):
     if location.get("location") == "scenario":
         return [location]
     return []
+
+
+def _initialization_authority_row(row, entry, menu_xmlid):
+    """Whether a producer-published row belongs to the pre-scene initialization lifecycle.
+
+    Business-scene selection starts after enterprise initialization. Only the
+    exact native initialization identity (or the already-supported menu-less
+    internal handling action) may cross that boundary. This never creates an
+    entry and never accepts a client-declared scope.
+    """
+    if not isinstance(row, dict) or not isinstance(entry, dict):
+        return False
+    if entry.get("enablement_scope") != ENTERPRISE_INITIALIZATION_SCOPE:
+        return False
+    if row.get("allowed") is False or row.get("allowed_operation") == "none":
+        return False
+    source = str(row.get("source") or "").strip()
+    if source not in ENTERPRISE_INITIALIZATION_SOURCES:
+        return False
+    if source == "scene_internal_action_authority":
+        return not row.get("menu_xmlid") and not row.get("menu_id")
+    target = entry.get("target") if isinstance(entry.get("target"), dict) else {}
+    return bool(
+        str(row.get("menu_xmlid") or menu_xmlid or "").strip()
+        == str(target.get("menu_xmlid") or "").strip()
+        and str(row.get("action_xmlid") or "").strip()
+        == str(target.get("action_xmlid") or "").strip()
+        and _int_or(row.get("action_id"), 0) > 0
+    )
 
 
 def _int_or(value, default):
@@ -218,6 +252,14 @@ def filter_business_authority(authority, *, surface_index, enabled, entries, men
         menu_keys=authority_menu_keys,
     )
     entry_by_key = {entry["code"]: entry for entry in entries if entry.get("code")}
+    initialization_entry_by_menu = {}
+    for entry in entries:
+        if entry.get("enablement_scope") != ENTERPRISE_INITIALIZATION_SCOPE:
+            continue
+        target = entry.get("target") if isinstance(entry.get("target"), dict) else {}
+        menu_xmlid = str(target.get("menu_xmlid") or "").strip()
+        if menu_xmlid:
+            initialization_entry_by_menu[menu_xmlid] = entry
     denied = result.setdefault("denied_actions", [])
     for bucket in AUTHORITY_BUCKETS:
         kept = []
@@ -225,15 +267,13 @@ def filter_business_authority(authority, *, surface_index, enabled, entries, men
             menu = row.get("menu_xmlid") or menu_xmlids_by_id.get(row.get("menu_id"))
             location = surface_index.get(menu)
             legacy = entry_by_key.get(row.get("scene_key"))
+            initialization_entry = initialization_entry_by_menu.get(menu) or legacy
             # Initialization precedes business-scene enablement. Preserve only
-            # an already-authorized internal action without its own menu
-            # carrier; resolving the legacy scene's menu must not make it look
-            # like an unselected business page and short-circuit this lifecycle.
-            if (not menu and not row.get("menu_id")
-                    and legacy
-                    and legacy.get("enablement_scope") == "enterprise_initialization"
-                    and row.get("source") == "scene_internal_action_authority"
-                    and row.get("allowed") is True):
+            # producer-published rows with the exact initialization identity;
+            # resolving the legacy scene's menu must not make either the native
+            # admin entry or internal handling action look like an unselected
+            # business page.
+            if _initialization_authority_row(row, initialization_entry, menu):
                 kept.append(row)
                 continue
             if not location and legacy and not menu and not row.get("menu_id"):
