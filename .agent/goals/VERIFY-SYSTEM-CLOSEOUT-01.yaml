@@ -1,0 +1,9 @@
+schema_version: 1
+goal:
+  id: VERIFY-SYSTEM-CLOSEOUT-01
+  status: active
+  title: Verification system read-only audit
+  objective: Prove planning, execution, receipts and release qualification boundaries; report defects without implementing R2.
+  formal_product_layer: P4
+  layer_target: verification system audit
+  module: [verification, ci]

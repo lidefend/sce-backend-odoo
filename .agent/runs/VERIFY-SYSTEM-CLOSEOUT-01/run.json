@@ -1,0 +1,88 @@
+{
+  "schema_version": 2,
+  "baseline_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+  "scope": [
+    "docs/audit/verify_system_closeout_01/",
+    ".agent/runs/VERIFY-SYSTEM-CLOSEOUT-01/run.json",
+    ".agent/goals/VERIFY-SYSTEM-CLOSEOUT-01.yaml",
+    ".agent/active-runs.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "R1 audit documents and pure verification-tool regressions; isolated filesystem/subprocess fault injection only."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "If audit PR published, exact audit HEAD documentation integration checks; historical/main runs read-only."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "R1 explicitly excludes dispatch; inspect existing exact-main evidence only, R3 requires separate authorization."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Frontend validation carrying shared contract targets must consume the passed backend channel receipt for the same run and source identity."
+    }
+  },
+  "checks": {
+    "tools": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "Current bfc954 main full qualification absent",
+    "F01-F05 tool/coverage findings require independent review and R2 authorization"
+  ],
+  "next_exact_step": "Independent review of R1 audit package; obtain R2 authorization before any verifier/product changes or main-full dispatch.",
+  "id": "VERIFY-SYSTEM-CLOSEOUT-01",
+  "branch": "audit/verify-system-closeout-01-20261127",
+  "status": "verification_pending",
+  "goal": ".agent/goals/VERIFY-SYSTEM-CLOSEOUT-01.yaml",
+  "record": "docs/audit/verify_system_closeout_01/findings.md",
+  "preserved_preexisting_stash": "83b3387db9c6eea3c364cd7016ba53da788fe0d2",
+  "r1": {
+    "status": "audit_delivered_pending_independent_review",
+    "evidence_index": "docs/audit/verify_system_closeout_01/evidence_index.json",
+    "findings": "docs/audit/verify_system_closeout_01/findings.md",
+    "remote_writes": false,
+    "database_writes": false,
+    "product_changes": false
+  },
+  "results": {
+    "local_iteration": {
+      "status": "passed",
+      "source_head": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+      "log": ".runtime/verify-system-closeout-01/local-iteration.log",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T044343Z-3433333-425090602/receipt.json",
+      "executed_targets": 1
+    },
+    "audit_tool_regressions": {
+      "status": "passed",
+      "index": "docs/audit/verify_system_closeout_01/evidence_index.json"
+    },
+    "audit_negative_matrix": {
+      "status": "failed_safety_properties_reproduced",
+      "index": "docs/audit/verify_system_closeout_01/failure_replay_matrix.json"
+    },
+    "current_main_qualification": {
+      "status": "not_verified",
+      "index": "docs/audit/verify_system_closeout_01/mainline_workflow_matrix.json"
+    }
+  }
+}
