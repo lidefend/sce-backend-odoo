@@ -2650,8 +2650,10 @@ RULES = (
     Rule((
         "frontend/apps/web/scripts/cross_model_action_navigation_test.ts",
         "frontend/apps/web/src/app/navigationContext.ts",
+        "scripts/verify/navigation_context_smoke.js",
     ), (
         "verify.frontend.cross_model_action_navigation.unit",
+        "verify.action_view_runtime_smoke.behavior",
     )),
     Rule((
         "addons/smart_core/core/native_advisory.py",

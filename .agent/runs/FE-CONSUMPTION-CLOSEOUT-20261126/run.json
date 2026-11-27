@@ -106,6 +106,7 @@
     "scripts/verify/frontend_page_identity_lifecycle_smoke.js",
     "scripts/verify/frontend_page_identity_smoke.js",
     "scripts/verify/frontend_page_identity_guard.py",
+    "scripts/verify/navigation_context_smoke.js",
     "scripts/verify/frontend_localized_display_contract_test.ts",
     "scripts/verify/frontend_my_work_approval_guard.py",
     "scripts/verify/frontend_dev_incremental.py",
@@ -2354,19 +2355,53 @@
         "reason": "governed Compose acceptance profile was not selected, so preflight rejected before starting containers or writing data"
       }
     },
+    "fc02_navigation_context_smoke_baseline_alignment": {
+      "status": "passed_local_targeted",
+      "candidate_head": "2036e8d9ad006078536026a621ea7fc284b214d1",
+      "stage_identity": "2036e8d9ad006078536026a621ea7fc284b214d1 plus the owned P4 smoke-alignment dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T104953Z-2835923-581077450/receipt.json",
+      "receipt_sha256": "1bdca13918bb5017eb69a5076909a0ac6ee60242d7483516a7ac9043b8584814",
+      "required_targets": 77,
+      "executed_targets": 76,
+      "reused_targets": 1,
+      "test_targets": 56,
+      "executed_test_count": 1838,
+      "static_checks": 11,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "failure_classification": "validation_tool_defect",
+      "facts_verified": [
+        "navigation_context_smoke no longer expects business-category presentation labels in the route query",
+        "navigationContext.ts and navigation_context_smoke.js select verify.action_view_runtime_smoke.behavior",
+        "the selector positive cases pass for both inputs and an unrelated navigation input remains unselected",
+        "the action-view runtime smoke, incremental selector unit and strict typecheck all pass",
+        "the full affected iteration resolves every required target with no unmapped, not_run or blocked target"
+      ],
+      "remote_failure_recovery": [
+        "PR head 2036e8d9a failed frontend_release_gate because the P4 smoke retained a stale label expectation",
+        "merge_policy_gate failed as a dependent wait result rather than as an independent product defect",
+        "public_guard and professional_quality_gate passed on the same exact head"
+      ],
+      "scope_limit": "P4 smoke and selector alignment only. The repaired candidate has not yet been pushed; exact-head remote CI, browser address-bar readback, mainline qualification and user acceptance remain not_run."
+    },
     "remote_publication": {
-      "status": "draft_open_mainline_sync_validation_not_awaited",
+      "status": "draft_open_remote_failure_recorded_repair_pending_push",
       "pull_request": 1019,
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
-      "base_sha": "9395d93f92badffc87d32c5979cf7c70e374e975",
+      "base_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "d352aa3221e9ade09d27da60413e6c580fa6a11a",
+      "current_head": "2036e8d9ad006078536026a621ea7fc284b214d1",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",
-        "later qualified slices were pushed directly to the same PR as requested"
+        "later qualified slices were pushed directly to the same PR as requested",
+        "at head 2036e8d9a public_guard and professional_quality_gate passed",
+        "at head 2036e8d9a frontend_release_gate failed on the stale navigation context smoke",
+        "the merge_policy_gate failure followed the upstream frontend_release_gate result"
       ],
-      "coverage_limit": "The owner explicitly directed continuation without waiting for remote checks. Remote CI, integration readiness and merge qualification are not claimed in this iteration."
+      "coverage_limit": "The local P4 repair is validated but not yet published. No remote result is inherited across the pending head change, and integration readiness is not claimed."
     }
   }
 }

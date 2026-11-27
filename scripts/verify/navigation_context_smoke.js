@@ -52,8 +52,6 @@ function main() {
     {
       current_business_category_code: 'project',
       default_business_category_code: 'project',
-      current_business_category_label: '项目办理',
-      default_business_category_label: '项目办理',
       ctx_source: 'business_category_create_picker',
       default_business_category_id: '18',
       default_project_id: '7',

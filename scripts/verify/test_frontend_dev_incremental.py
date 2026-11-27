@@ -1209,6 +1209,21 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]),
         )
 
+    def test_navigation_context_selects_action_view_runtime_smoke(self) -> None:
+        for path in (
+            "frontend/apps/web/src/app/navigationContext.ts",
+            "scripts/verify/navigation_context_smoke.js",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.action_view_runtime_smoke.behavior",
+                    select_targets([path]),
+                )
+        self.assertNotIn(
+            "verify.action_view_runtime_smoke.behavior",
+            select_targets(["frontend/apps/web/src/app/businessScenarioNavigation.ts"]),
+        )
+
     def test_route_query_inputs_select_canonical_url_checks(self) -> None:
         for path in (
             "frontend/apps/web/src/app/routeQuery.ts",

@@ -538,6 +538,38 @@ clean 运行态回读：
 143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
 `bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
 
+### 2026-11-27 P4 navigation context smoke 对齐 label-free URL
+
+PR #1019 的精确 head `2036e8d9ad006078536026a621ea7fc284b214d1` 远端结果已回读：
+
+- `public_guard`、`professional_quality_gate` 通过；
+- `frontend_release_gate` 失败；
+- `merge_policy_gate` 在等待上游结果后失败，属于级联失败，不是第二项独立产品缺陷。
+
+首个有效根因在 P4 测试基线：`scripts/verify/navigation_context_smoke.js` 仍要求
+`current_business_category_label` 和 `default_business_category_label` 出现在导航 URL。
+产品代码已按契约收敛为只写 category code、category id 和允许的 default values，
+因此错误属于陈旧断言，不是产品回退；未修改后端，也未恢复任何前端展示兜底。
+
+本切片完成：
+
+- smoke 删除 business-category 展示 label 期望，保留 code、id 与 default values；
+- 增量选测把 `navigationContext.ts` 和该 smoke 映射到
+  `verify.action_view_runtime_smoke.behavior`；
+- 选测单测同时覆盖两个相关输入的正例和一个无关导航输入的反例。
+
+`make ci.local.iteration` 在 `2036e8d9a` 加当前 owned dirty scope 上成立 77 个必需目标，
+其中 76 个本轮执行、1 个复用；56 个测试目标执行 1838 项测试、11 项静态检查，
+`unmapped=0`、`not_run=0`、`blocked=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T104953Z-2835923-581077450/receipt.json`
+
+回执 SHA256：
+`1bdca13918bb5017eb69a5076909a0ac6ee60242d7483516a7ac9043b8584814`。
+
+修复尚未推送，因此该结果只证明本地 P4 基线已对齐。下一精确动作是提交并推送同一 PR，
+再回读新 head 的四项必需检查；真实浏览器地址栏回读、主线资格、部署和用户验收仍未完成。
+
 ### 2026-11-27 FC-02 页面身份声明化与选测补口
 
 本切片属于共享前端呈现消费层，不修改后端契约、权限或数据。页面身份不再把
