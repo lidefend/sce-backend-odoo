@@ -2,7 +2,7 @@
   "schema_version": 2,
   "id": "P0-RELATION-ACTIVE-ACTIONS-CONTRACT-20261127",
   "branch": "fix/p0-relation-active-actions-contract-20261127",
-  "baseline_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+  "baseline_sha": "09c95df6b2d0dad6c841d86b0b4a6d1435dcf094",
   "status": "verification_pending",
   "goal": ".agent/goals/P0-RELATION-ACTIVE-ACTIONS-CONTRACT-20261127.yaml",
   "record": "docs/ops/iterations/p0_relation_active_actions_contract_20261127.md",
@@ -151,5 +151,5 @@
       "reason": "The candidate has not yet been committed and frozen."
     }
   },
-  "next_exact_step": "Commit the complete P0 candidate, run make ci.local.iteration on the exact clean HEAD, then publish the independent PR and await exact-head required CI."
+  "next_exact_step": "Commit the post-main-sync run baseline, run make ci.local.iteration on the exact clean HEAD, then publish the independent PR and await exact-head required CI."
 }
