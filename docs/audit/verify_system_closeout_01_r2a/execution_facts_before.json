@@ -1,0 +1,9 @@
+{
+  "verifier_head": "196673db5422a7e2d852dd51bf420c89d67c0524",
+  "verifier_sha256": "8d8038c8761788e54b7b2d79837cea85a1e40c0e36c46edfe6042f14f854c8dc",
+  "injection": "full plan, narrowed ORM selection, valid log and artifact hashes",
+  "returncode": 0,
+  "observed_status": "PASS",
+  "finding": "FAILED",
+  "scope": "real CLI with isolated GitHub transport; no real main qualification"
+}

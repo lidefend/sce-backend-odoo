@@ -1,0 +1,8 @@
+{
+  "roundtrip": "PASSED_EXACT_BYTES",
+  "original_sha256": "f6f829833177426f66ec89d72f503c44fd74bb7ef0615cd1d7bafd514aaac5ab",
+  "encoded_sha256": "ab77aaed1bfb834008ee4b2cd26b4055ceb851c38223a805cf1f9cceb0e56ded",
+  "changed_files_checked": 8,
+  "personal_data_pattern_hits": [],
+  "scope": "Current changed file bytes only; historical old blob remains blocked"
+}

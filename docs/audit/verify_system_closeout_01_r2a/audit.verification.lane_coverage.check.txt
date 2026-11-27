@@ -1,0 +1,1 @@
+[verification-lane-coverage] PASS surface within the frozen baseline (5 review trigger(s); structural coverage only, not a functional acceptance)

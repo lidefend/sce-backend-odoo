@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1769`
+- Total assets: `1771`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `248`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1296`
+- PR dedupe candidates: `1298`
 
 ## By Layer
 
@@ -18,7 +18,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 647 |
 | contract | 434 |
-| unit | 358 |
+| unit | 360 |
 | odoo_integration | 161 |
 | e2e | 58 |
 | security | 57 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1515 |
+| pr_candidate | 1517 |
 | integration_candidate | 189 |
 | release_candidate | 56 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1296 |
+| deduplicate_before_required | 1298 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 188 |
 | keep_release_only | 56 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1517 |
+| <5m | 1519 |
 | 10-30m | 190 |
 | 30-60m | 58 |
 | unknown | 3 |
@@ -154,7 +154,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 647 |
 | platform owner | 434 |
-| test owner | 359 |
+| test owner | 361 |
 | backend owner | 161 |
 | qa owner | 58 |
 | security owner | 57 |
@@ -165,10 +165,10 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1512 |
+| scripts/verify | 1513 |
 | scripts/ops | 122 |
 | frontend/apps/web/scripts | 63 |
-| scripts/ci | 43 |
+| scripts/ci | 44 |
 | scripts/audit | 13 |
 | make | 5 |
 | scripts/e2e | 5 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-0a7689dc | contract | `scripts/ci/test_backend_test_suite_dispatch_contract.py` | platform owner |
 | T-ASSET-a09b0856 | unit | `scripts/ci/test_ci_path_ownership.py` | test owner |
 | T-ASSET-a827439b | unit | `scripts/ci/test_ci_risk_classifier.py` | test owner |
-| ... | ... | 1216 more | ... |
+| ... | ... | 1218 more | ... |
 
 ## Dedupe Hotspots
 
@@ -350,6 +350,7 @@ Generated from `test_inventory.csv`.
 | `frontend/apps/web/scripts/low_code_workbench` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/ci/test_backend_test` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/ci/test_ci_risk` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
+| `scripts/ci/test_main_full` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/ci/test_trusted_scan` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/be_close_01` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/business_entry_matrix` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |

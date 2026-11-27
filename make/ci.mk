@@ -1311,6 +1311,7 @@ release.main_full: guard.prod.forbid
 verify.ci.main_full_release.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ci/main_full_release_dispatch.py scripts/ci/test_main_full_release_dispatch.py
 	@python3 scripts/ci/test_main_full_release_dispatch.py
+	@python3 scripts/ci/test_main_full_release_evidence.py
 
 .PHONY: ci.frontend_release_gate.dispatch
 PAYMENT_REQUEST_DIAGNOSTIC ?= 0

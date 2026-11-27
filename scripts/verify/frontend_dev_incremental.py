@@ -30,9 +30,11 @@ from scripts.ops.agent_run_context import (
     declared_check_targets,
     delta_paths,
     resolve_run,
+    readback_path,
 )
 from scripts.ops.incremental_execution import (
     committed_runtime_tree_sha256,
+    ENVIRONMENT_FIELDS,
     current_identity as incremental_current_identity,
     verified_receipt as incremental_verified_receipt,
     write_index as write_incremental_index,
@@ -138,10 +140,7 @@ TEST_TARGET_SUFFIXES = (
 HOST_STANDALONE_TEST_FILES = {
     "addons/smart_core/tests/test_native_view_parser_surfaces.py",
 }
-REUSE_ENVIRONMENT_IDENTITY_FIELDS = (
-    "environmentIdentitySha256",
-    "environmentReadbackSha256",
-)
+REUSE_ENVIRONMENT_IDENTITY_FIELDS = ENVIRONMENT_FIELDS
 TARGET_LAYER_ORDER = ("frontend", "backend", "contract", "docs", "governance")
 
 
@@ -736,6 +735,8 @@ RULES = (
     Rule((
         "scripts/ci/main_full_release_dispatch.py",
         "scripts/ci/test_main_full_release_dispatch.py",
+        "scripts/ci/main_full_release_evidence.py",
+        "scripts/ci/test_main_full_release_evidence.py",
     ), (
         "verify.ci.scheduled_gates",
     )),
@@ -1898,6 +1899,7 @@ RULES = (
     Rule((
         "scripts/verify/frontend_dev_incremental.py",
         "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/verify/test_incremental_environment.py",
         "scripts/ops/incremental_execution.py",
         "make/frontend.mk",
     ), (
@@ -4906,7 +4908,11 @@ def execute_targets(
     # (for example a changed runtime readback outside the Git source tree).
     source_receipt = (
         None if set(required_targets) & (non_reusable_targets or set())
-        else incremental_verified_receipt(root, paths, required_targets, identity)
+        else incremental_verified_receipt(
+            root, paths, required_targets, identity,
+            channel=None if channel == CHANNEL_ALL else channel,
+            run_id=None if channel == CHANNEL_ALL else run_id,
+        )
     )
     resume_receipt, _, carried_results = (
         resumable_receipt_results(
@@ -5062,6 +5068,32 @@ def execute_targets(
     return returncode
 
 
+
+def governed_environment_identity(root: Path, run: dict, required: set[str]) -> dict:
+    identity = current_execution_identity(root)
+    runtime_checks = {key: check for key, check in run['checks'].items()
+                      if check['target'] in required and check.get('kind') != 'offline'}
+    if not runtime_checks:
+        return identity
+    observed = {}
+    for key, check in runtime_checks.items():
+        if 'readback' not in check:
+            continue
+        path = root / readback_path(root, check['readback'])
+        if path.is_file():
+            observed[key] = hashlib.sha256(path.read_bytes()).hexdigest()
+    identity['environmentIdentitySha256'] = hashlib.sha256(json.dumps({
+        'host': identity.get('environmentIdentitySha256'),
+        'declared_environment': run['environment'],
+    }, sort_keys=True).encode()).hexdigest()
+    # Incomplete runtime observations never certify an equivalent environment.
+    identity['environmentReadbackSha256'] = (
+        hashlib.sha256(json.dumps(observed, sort_keys=True).encode()).hexdigest()
+        if len(observed) == len(runtime_checks) else ''
+    )
+    return identity
+
+
 def execute_worktree(
     root: Path = ROOT,
     channel: str = CHANNEL_ALL,
@@ -5104,6 +5136,7 @@ def execute_worktree(
         iteration_checkpoint_sha=checkpoint,
         iteration_checkpoint_kind=checkpoint_kind,
         excluded_targets=excluded,
+        worktree_identity=governed_environment_identity(root, run, required),
     )
 
 
@@ -5189,7 +5222,9 @@ def main() -> int:
         raise SystemExit(
             "at least one --path is required outside --watch, --plan-* and --execute-worktree modes"
         )
-    return execute_targets(args.path)
+    targets = set(select_iteration_targets(args.path))
+    return execute_targets(args.path, non_reusable_targets=
+        targets - implicitly_registered_offline_targets(targets))
 
 
 if __name__ == "__main__":

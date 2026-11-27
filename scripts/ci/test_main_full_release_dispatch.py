@@ -96,7 +96,7 @@ class DispatchTest(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp, patch.object(
             dispatch, "assert_repository"
-        ), patch.object(dispatch, "assert_clean_worktree"), patch.object(
+        ), patch.object(dispatch, "assert_local_source"), patch.object(
             dispatch, "assert_remote_main"
         ), patch.object(dispatch, "expected_tree", return_value=TREE), patch.object(
             dispatch, "list_runs", side_effect=list_runs
@@ -148,6 +148,12 @@ class DispatchTest(unittest.TestCase):
 
 class VerifyTest(unittest.TestCase):
     def setUp(self) -> None:
+        tree_patch = patch.object(dispatch, "expected_tree", return_value=TREE)
+        evidence_patch = patch.object(dispatch, "verify_evidence", return_value={"status": "VERIFIED"})
+        source_patch = patch.object(dispatch, "assert_local_source")
+        source_patch.start(); self.addCleanup(source_patch.stop)
+        tree_patch.start(); evidence_patch.start()
+        self.addCleanup(tree_patch.stop); self.addCleanup(evidence_patch.stop)
         self.rows = [
             {
                 "workflow": workflow,

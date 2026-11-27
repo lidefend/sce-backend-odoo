@@ -1,0 +1,16 @@
+import hashlib,importlib.util,json,os,subprocess,sys,tempfile
+from pathlib import Path
+root=Path.cwd();sys.path.insert(0,str(root));sys.path.insert(0,str(root/"scripts/ci"))
+from scripts.ci.test_main_full_release_evidence import OperatorCliTests,Fixture
+old=subprocess.check_output(['git','show','196673db5422a7e2d852dd51bf420c89d67c0524:scripts/ci/main_full_release_evidence.py'])
+with tempfile.TemporaryDirectory(prefix='old-verifier-transport-') as tmp:
+    package=Path(tmp)/'scripts'/'ci';package.mkdir(parents=True)
+    (package.parent/'__init__.py').write_text('__path__.append('+repr(str(root/'scripts'))+')\n')
+    (package/'__init__.py').write_text('__path__.append('+repr(str(root/'scripts/ci'))+')\n')
+    (package/'main_full_release_evidence.py').write_bytes(old)
+    os.environ['PYTHONPATH']=tmp
+    case=OperatorCliTests();case.fixture=Fixture()
+    code,output,result,_=case.execute(lambda fixture:fixture.change_execution_fact('selection'))
+    report={'verifier_head':'196673db5422a7e2d852dd51bf420c89d67c0524','verifier_sha256':hashlib.sha256(old).hexdigest(),'injection':'full plan, narrowed ORM selection, valid log and artifact hashes','returncode':code,'observed_status':result.get('status'),'finding':'FAILED' if code==0 else 'NOT_REPRODUCED','scope':'real CLI with isolated GitHub transport; no real main qualification'}
+    Path('.runtime/verify-system-closeout-01-r2a/execution-facts-before.json').write_text(json.dumps(report,indent=2)+'\n')
+    print(json.dumps(report))
