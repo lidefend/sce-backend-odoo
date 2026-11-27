@@ -292,9 +292,9 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         const sortableRaw = Object.prototype.hasOwnProperty.call(schema, 'sortable')
           ? schema.sortable
           : undefined;
-        const type = String(schema.type || field?.fieldType || '').trim();
-        const widget = String(schema.widget || field?.widgetType || field?.fieldType || '').trim();
-        const declaredComponentKey = String(schema.componentKey || field?.componentKey || '').trim();
+        const type = String(field?.fieldType || '').trim();
+        const widget = String(field?.widgetType || '').trim();
+        const declaredComponentKey = String(field?.componentKey || '').trim();
         if (declaredComponentKey && !isRegisteredComponentKey(declaredComponentKey)) {
           throw contractGapError({
             kind: 'contract_defect',
@@ -305,7 +305,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         const componentKey = declaredComponentKey;
         const valueField = String(schema.value_field || name).trim() || name;
         const aggregate = String(schema.aggregate || (schema.sum ? 'sum' : '')).trim();
-        const rawSelection = Array.isArray(schema.selection) ? schema.selection : field?.selection;
+        const rawSelection = field?.selection;
         return {
           name,
           label: String(labels[name] || schema.label || schema.string || field?.label || name).trim() || name,
@@ -317,7 +317,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
           componentKey: componentKey || undefined,
           cellRole: String(schema.cell_role || schema.cellRole || '').trim() || undefined,
           relation: String(field?.relation || '').trim() || undefined,
-          attachmentRole: String(schema.attachment_role || schema.attachmentRole || field?.attachmentRole || '').trim() || undefined,
+          attachmentRole: String(field?.attachmentRole || '').trim() || undefined,
           mutation: schema.mutation && typeof schema.mutation === 'object'
             ? schema.mutation as Record<string, unknown>
             : undefined,

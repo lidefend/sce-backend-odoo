@@ -7,7 +7,7 @@ import {
   normalizeDeclaredDigits,
   resolveCurrencyDisplayLabel,
 } from '../../app/presentation/businessValuePresentation';
-import { contractGapError } from '../../app/contract/contractGap';
+import { contractGapError, requireDeclaredText } from '../../app/contract/contractGap';
 import { projectMany2oneCapabilities } from '../../components/template/formSection.mapper';
 import {
   MANY2ONE_CREATE_OPTION,
@@ -43,12 +43,9 @@ function selectionOptions(value: unknown): TemplateSelectOption[] {
 }
 
 function declaredSelectionOptions(field: CanonicalFormField): TemplateSelectOption[] {
-  const config = asRecord(field.componentConfig);
   const descriptor = asRecord(field.fieldDescriptor);
-  const options = Object.prototype.hasOwnProperty.call(config, 'selection')
-    ? selectionOptions(config.selection)
-    : selectionOptions(descriptor.selection);
-  const fieldType = text(field.fieldType || config.fieldType).toLowerCase();
+  const options = selectionOptions(descriptor.selection);
+  const fieldType = text(descriptor.fieldType).toLowerCase();
   if (fieldType === 'selection' && !options.length) {
     throw contractGapError({
       kind: 'contract_defect',
@@ -79,9 +76,7 @@ function relationValue(value: unknown): CanonicalRelationValue | null {
 }
 
 function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
-  const config = asRecord(field.componentConfig);
   const canonicalDescriptor = asRecord(field.fieldDescriptor);
-  const configRelationEntry = asRecord(config.relationEntry);
   const selection = declaredSelectionOptions(field).map((option) => [option.value, option.label] as [string, string]);
   return {
     ...canonicalDescriptor,
@@ -92,15 +87,6 @@ function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
     required: field.required,
     readonly: field.readonly || field.disabled,
     ...(selection.length ? { selection } : {}),
-    ...(text(config.filename) ? { filename: text(config.filename) } : {}),
-    ...(normalizeDeclaredDigits(config.digits) ? { digits: normalizeDeclaredDigits(config.digits) } : {}),
-    ...(canonicalDescriptor.subview ? { subview: canonicalDescriptor.subview } : {}),
-    ...(Object.keys(configRelationEntry).length
-      ? { relationEntry: configRelationEntry }
-      : canonicalDescriptor.relationEntry
-        ? { relationEntry: canonicalDescriptor.relationEntry }
-        : {}),
-    ...(canonicalDescriptor.widgetOptions ? { widgetOptions: canonicalDescriptor.widgetOptions } : {}),
   };
 }
 
@@ -124,10 +110,14 @@ export function canonicalFieldToFormSection(
   resolveCanonicalField?: (fieldCode: string) => CanonicalFormField | undefined,
 ): FormSectionFieldSchema {
   const config = asRecord(field.componentConfig);
-  const type = text(field.fieldType || config.fieldType).toLowerCase();
+  const descriptorRecord = asRecord(field.fieldDescriptor);
+  const type = requireDeclaredText(descriptorRecord.fieldType, {
+    missing: `field.${field.fieldCode || '(unknown)'}.fieldType`,
+    requiredDeclarationLayer: 'P0:smart_core:field_descriptor',
+  }).toLowerCase();
   const descriptor = asRecord(fieldDescriptor(field));
   const selection = declaredSelectionOptions(field);
-  const semanticType = text(descriptor.semanticType || config.semanticType).toLowerCase();
+  const semanticType = text(descriptor.semanticType).toLowerCase();
   const presentationType = semanticType === 'money' ? 'monetary' : type;
   const relationshipCollection = fieldIsBusinessRelationCollection(field);
   let relation = type === 'many2one' ? relationValue(field.value) : null;
@@ -171,16 +161,16 @@ export function canonicalFieldToFormSection(
     })
     : { relationCreateMode: 'none' as const };
   const digits = ['float', 'monetary'].includes(type)
-    ? normalizeDeclaredDigits(config.digits || descriptor.digits)
+    ? normalizeDeclaredDigits(descriptor.digits)
     : undefined;
   const currencyField = semanticType === 'money'
-    ? text(config.currencyField || descriptor.currencyField)
+    ? text(descriptor.currencyField)
     : '';
   const currencyLabel = semanticType === 'money'
-    ? resolveCurrencyDisplayLabel(config.currencyLabel || config.currency_label || config.currencyValue || config.currency_value)
+    ? resolveCurrencyDisplayLabel(config.currencyValue)
     : '';
-  const widget = text(config.nativeWidget || config.widget || field.widgetType).toLowerCase();
-  const widgetSemantics = asRecord(config.widgetSemantics || config.widget_semantics);
+  const widget = text(descriptor.widgetType).toLowerCase();
+  const widgetSemantics = asRecord(descriptor.widgetOptions);
   const readonlyEmptyText = text(widgetSemantics.readonly_empty_text);
   const dateRangeEndField = widget === 'daterange' && text(widgetSemantics.kind) === 'date_range'
     ? text(widgetSemantics.end_field)
@@ -239,13 +229,11 @@ export function canonicalFieldToFormSection(
     many2oneTextValue: relation?.displayName || selectedRelation?.label || undefined,
     relationQueryKeyword: relationKeyword || undefined,
     selectionOptions: selection,
-    relationOptions: runtimeRelationOptions.length
-      ? runtimeRelationOptions
-      : selectionOptions(config.options || config.relationOptions || config.relation_options),
+    relationOptions: runtimeRelationOptions,
     ...many2oneCapabilities,
     one2manyPageSize: type === 'one2many' ? relationEntry(descriptor)?.pageSize : undefined,
     descriptor,
-    fileName: text(config.fileName || config.file_name),
+    fileName: text(descriptor.filename),
   };
 }
 

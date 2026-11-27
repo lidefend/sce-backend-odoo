@@ -514,6 +514,10 @@ function snapshot(): ContractV2Snapshot {
           children: [], widgetList: [{
             widgetId: 'field.name', widgetType: 'input', fieldCode: 'name', label: 'Name', span: 12,
             semanticType: 'text', capabilities: [], componentConfig: { fieldType: 'char' },
+            fieldDescriptor: {
+              schemaVersion: '1.0.0', fieldCode: 'name', label: 'Name', fieldType: 'char',
+              widgetType: 'input', semanticType: 'text',
+            },
             ownerContainerId: 'field.name',
           }],
         }, {
@@ -522,6 +526,11 @@ function snapshot(): ContractV2Snapshot {
             widgetId: 'field.state', widgetType: 'select', fieldCode: 'state', label: 'State', span: 12,
             semanticType: 'status', capabilities: [], componentConfig: {
               fieldType: 'selection', selection: [['draft', 'Draft'], ['done', 'Done']],
+            },
+            fieldDescriptor: {
+              schemaVersion: '1.0.0', fieldCode: 'state', label: 'State', fieldType: 'selection',
+              widgetType: 'select', semanticType: 'status',
+              selection: [['draft', 'Draft'], ['done', 'Done']],
             },
             ownerContainerId: 'field.state',
           }],
@@ -535,6 +544,10 @@ function snapshot(): ContractV2Snapshot {
             children: [], widgetList: [{
               widgetId: 'field.line_ids', widgetType: 'table', fieldCode: 'line_ids', label: 'Lines', span: 24,
               semanticType: 'detail_collection', capabilities: [], componentConfig: { fieldType: 'one2many' },
+              fieldDescriptor: {
+                schemaVersion: '1.0.0', fieldCode: 'line_ids', label: 'Lines', fieldType: 'one2many',
+                widgetType: 'table', semanticType: 'detail_collection', relation: 'x.line',
+              },
               ownerContainerId: 'field.line_ids',
             }],
           }], widgetList: [],
@@ -641,6 +654,18 @@ function nativeButtonIdentity(name: string, nativeLocator: string, occurrenceInd
 const source = snapshot();
 const before = JSON.stringify(source);
 const store = createContractV2Store(decodeContractV2Snapshot(source));
+assert.deepEqual(
+  Object.fromEntries(Object.entries(resolveContractV2FieldDescriptorMap(store)).map(([fieldCode, descriptor]) => [
+    fieldCode,
+    [descriptor.fieldType, descriptor.semanticType],
+  ])),
+  {
+    name: ['char', 'text'],
+    state: ['selection', 'status'],
+    line_ids: ['one2many', 'detail_collection'],
+  },
+  'the normalized base fixture must expose complete canonical field semantics',
+);
 
 // The page used to carry its own `applyWorkflowAvailability` / `shouldShowWorkflowAction`
 // pair beside the presenter's decision.  No consumer ever read them, and the visibility
@@ -947,12 +972,23 @@ const dateRangeStartField = {
   ...nativeMonetaryField!,
   widgetId: 'field.date_start', fieldCode: 'date_start', fieldType: 'date', widgetType: 'date',
   value: '2026-09-01', label: '安排的日期',
-  componentConfig: { nativeWidget: 'daterange', widgetSemantics: { kind: 'date_range', start_field: 'date_start', end_field: 'date' } },
+  componentConfig: { nativeWidget: 'daterange' },
+  fieldDescriptor: {
+    schemaVersion: '1.0.0', fieldCode: 'date_start', label: '安排的日期', fieldType: 'date',
+    widgetType: 'daterange', semanticType: 'date',
+    temporal: { kind: 'date', timezoneAuthority: 'not_applicable' },
+    widgetOptions: { kind: 'date_range', start_field: 'date_start', end_field: 'date' },
+  },
 };
 const dateRangeEndField = {
   ...dateRangeStartField,
   widgetId: 'field.date', fieldCode: 'date', widgetType: 'date', value: '2026-09-30', label: '结束日期',
   componentConfig: { widget: 'date' },
+  fieldDescriptor: {
+    schemaVersion: '1.0.0', fieldCode: 'date', label: '结束日期', fieldType: 'date',
+    widgetType: 'date', semanticType: 'date',
+    temporal: { kind: 'date', timezoneAuthority: 'not_applicable' },
+  },
 };
 const dateRangeSchema = canonicalFieldToFormSection(
   dateRangeStartField,
@@ -974,8 +1010,11 @@ const readonlyEmptySchema = canonicalFieldToFormSection({
   widgetType: 'many2one',
   value: null,
   readonly: true,
-  componentConfig: {
-    widgetSemantics: { readonly_empty_text: '提交审批时生成' },
+  componentConfig: {},
+  fieldDescriptor: {
+    schemaVersion: '1.0.0', fieldCode: 'funding_baseline_id', label: '安排的日期',
+    fieldType: 'many2one', widgetType: 'many2one', semanticType: 'relation',
+    relation: 'x.contract', widgetOptions: { readonly_empty_text: '提交审批时生成' },
   },
 });
 assert.equal(
@@ -993,10 +1032,10 @@ const declaredOne2manySchema = canonicalFieldToFormSection({
   fieldType: 'one2many',
   widgetType: 'one2many',
   value: [],
-  componentConfig: { fieldType: 'one2many', relation: 'payment.request.line' },
+  componentConfig: {},
   fieldDescriptor: {
-    name: 'outflow_line_ids',
-    type: 'one2many',
+    schemaVersion: '1.0.0', fieldCode: 'outflow_line_ids', label: '明细',
+    fieldType: 'one2many', widgetType: 'one2many', semanticType: 'detail_collection',
     relation: 'payment.request.line',
     relationEntry: { page_size: 20, options_limit: 80, options_search_limit: 40 },
   },
@@ -1019,15 +1058,15 @@ const componentDeclaredOne2manySchema = canonicalFieldToFormSection({
     relationEntry: { page_size: 25, options_limit: 80, options_search_limit: 40 },
   },
   fieldDescriptor: {
-    name: 'outflow_line_ids',
-    type: 'one2many',
+    schemaVersion: '1.0.0', fieldCode: 'outflow_line_ids', label: '明细',
+    fieldType: 'one2many', widgetType: 'one2many', semanticType: 'detail_collection',
     relation: 'payment.request.line',
   },
 });
 assert.equal(
   componentDeclaredOne2manySchema.one2manyPageSize,
-  25,
-  'the canonical renderer must consume the producer relationEntry carrier',
+  undefined,
+  'componentConfig.relationEntry must not supply a second page-size authority',
 );
 const undeclaredOne2manySchema = canonicalFieldToFormSection({
   ...dateRangeStartField,
@@ -1036,8 +1075,12 @@ const undeclaredOne2manySchema = canonicalFieldToFormSection({
   fieldType: 'one2many',
   widgetType: 'one2many',
   value: [],
-  componentConfig: { fieldType: 'one2many', relation: 'payment.request.line' },
-  fieldDescriptor: { name: 'outflow_line_ids', type: 'one2many', relation: 'payment.request.line' },
+  componentConfig: {},
+  fieldDescriptor: {
+    schemaVersion: '1.0.0', fieldCode: 'outflow_line_ids', label: '明细',
+    fieldType: 'one2many', widgetType: 'one2many', semanticType: 'detail_collection',
+    relation: 'payment.request.line',
+  },
 });
 assert.equal(
   undeclaredOne2manySchema.one2manyPageSize,
@@ -1678,6 +1721,7 @@ assert.equal(
 
 const widgetIdentitySnapshot = snapshot();
 widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].widgetType = 'radio';
+widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].fieldDescriptor!.widgetType = 'radio';
 widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].nativeLocator = '/form/sheet/group/field[1]';
 widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].occurrenceIndex = 1;
 widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].nativeIdentity = {
@@ -1805,16 +1849,16 @@ assert.deepEqual(
   [{ value: 'draft', label: 'Draft' }, { value: 'done', label: 'Done' }],
   'canonical form controls must consume selection projected by fieldDescriptor',
 );
-assert.throws(
-  () => canonicalFieldToFormSection({
+assert.deepEqual(
+  canonicalFieldToFormSection({
     ...descriptorSelectionField,
     componentConfig: {
       ...descriptorSelectionField.componentConfig,
       selection: [['draft', '']],
     },
-  }),
-  { name: 'ContractGapError' },
-  'an explicitly declared malformed component selection must stop instead of falling back to the descriptor',
+  }).selectionOptions,
+  [{ value: 'draft', label: 'Draft' }, { value: 'done', label: 'Done' }],
+  'componentConfig selection is transport-only and cannot override or invalidate the canonical descriptor selection',
 );
 assert.throws(
   () => canonicalFieldToFormSection({
@@ -1829,7 +1873,9 @@ const descriptorWidgetOptionsSnapshot = snapshot();
 const relationScopeSnapshot = snapshot();
 const relationScopeWidget = relationScopeSnapshot.layoutContract.containerTree[0].children[0].widgetList[0];
 relationScopeWidget.fieldDescriptor = {
-  name: 'name', type: 'many2one', relation: 'x.source',
+  schemaVersion: '1.0.0', fieldCode: 'name', label: 'Name',
+  fieldType: 'many2one', widgetType: 'many2one', semanticType: 'relation',
+  relation: 'x.source',
   domain: "[('project_id', '=', project_id), ('state', '=', 'confirmed')]",
   context: { active_test: false },
 };
@@ -1841,10 +1887,18 @@ assert.deepEqual(declaredRelationScope.context, { active_test: false },
 relationScopeWidget.componentConfig.domain = [];
 relationScopeWidget.componentConfig.context = {};
 const overriddenRelationScope = resolveContractV2FieldDescriptorMap(createContractV2Store(relationScopeSnapshot)).name;
-assert.deepEqual(overriddenRelationScope.domain, [], 'explicit empty component domain retains precedence');
-assert.deepEqual(overriddenRelationScope.context, {}, 'explicit empty component context retains precedence');
+assert.equal(
+  overriddenRelationScope.domain,
+  relationScopeWidget.fieldDescriptor.domain,
+  'componentConfig domain is transport-only and cannot override the canonical descriptor',
+);
+assert.deepEqual(
+  overriddenRelationScope.context,
+  relationScopeWidget.fieldDescriptor.context,
+  'componentConfig context is transport-only and cannot override the canonical descriptor',
+);
 console.log('[canonical_form_presenter] relation descriptor domain/context projection PASS count=4');
-descriptorWidgetOptionsSnapshot.layoutContract.containerTree[0].children[0].widgetList[0].componentConfig.widgetOptions = {
+descriptorWidgetOptionsSnapshot.layoutContract.containerTree[0].children[0].widgetList[0].fieldDescriptor!.widgetOptions = {
   no_create: true,
   no_quick_create: true,
 };
@@ -2307,6 +2361,12 @@ const relationMappedField = canonicalFieldToFormSection({
   value: null,
   required: true,
   fieldDescriptor: {
+    schemaVersion: '1.0.0',
+    fieldCode: 'project_id',
+    label: 'Project',
+    fieldType: 'many2one',
+    widgetType: 'many2one',
+    semanticType: 'relation',
     relation: 'project.project',
     relationEntry: {
       can_read: true,
@@ -2558,6 +2618,10 @@ function addContextGroup(groupId: string, fieldCodes: string[]) {
     children: [], widgetList: [{
       widgetId: `field.${fieldCode}`, widgetType: 'input', fieldCode, label: fieldCode, span: 12,
       semanticType: 'readable_value', capabilities: [], componentConfig: { fieldType: 'char' },
+      fieldDescriptor: {
+        schemaVersion: '1.0.0', fieldCode, label: fieldCode, fieldType: 'char',
+        widgetType: 'input', semanticType: 'readable_value',
+      },
       ownerContainerId: `field.${fieldCode}`,
     }],
   }));
@@ -2688,6 +2752,10 @@ createFloorplanSnapshot.layoutContract.containerTree[0].children.push({
   children: [], widgetList: [{
     widgetId: 'field.empty_context', widgetType: 'input', fieldCode: 'empty_context', label: 'Empty context', span: 12,
     semanticType: 'readable_value', capabilities: [], componentConfig: { fieldType: 'char' },
+    fieldDescriptor: {
+      schemaVersion: '1.0.0', fieldCode: 'empty_context', label: 'Empty context',
+      fieldType: 'char', widgetType: 'input', semanticType: 'readable_value',
+    },
     ownerContainerId: 'field.empty_context',
   }],
 });
@@ -2818,6 +2886,10 @@ contextRailSnapshot.layoutContract.containerTree.splice(1, 0, {
     children: [], widgetList: [{
       widgetId: 'field.reference', widgetType: 'input', fieldCode: 'reference', label: 'Reference', span: 24,
       semanticType: 'readable_value', capabilities: [], componentConfig: { fieldType: 'char' },
+      fieldDescriptor: {
+        schemaVersion: '1.0.0', fieldCode: 'reference', label: 'Reference',
+        fieldType: 'char', widgetType: 'input', semanticType: 'readable_value',
+      },
       ownerContainerId: 'field.reference',
     }],
   }], widgetList: [],
@@ -2948,10 +3020,10 @@ assert.equal(
 
 const missingDescriptorRelationSnapshot = structuredClone(relationSnapshot);
 delete missingDescriptorRelationSnapshot.layoutContract.containerTree[0].children
-  .find((node) => node.containerId === 'field.project_id')!.widgetList[0].fieldDescriptor;
+  .find((node) => node.containerId === 'field.project_id')!.widgetList[0].fieldDescriptor!.relation;
 assert.throws(
   () => presentContractV2Form(
-    createContractV2Store(decodeContractV2Snapshot(missingDescriptorRelationSnapshot)),
+    createContractV2Store(missingDescriptorRelationSnapshot),
     'edit',
   ),
   /field\.project_id\.relation/,

@@ -244,10 +244,10 @@ Generated from repository source files. This report is informational during the 
 | 831 | Python source | `scripts/contract/generate_semantic_registry.py` |
 | 830 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 830 | Python source | `scripts/release/test_production_release_contract.py` |
-| 828 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 826 | Python source | `addons/smart_core/tests/test_release_preflight_target_validation.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
+| 823 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
 | 817 | Python source | `addons/smart_core/handlers/business_config_change_set.py` |
 | 814 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |

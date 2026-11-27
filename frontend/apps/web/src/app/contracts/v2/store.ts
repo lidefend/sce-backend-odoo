@@ -439,18 +439,17 @@ export function resolveContractV2FieldDescriptorMap(
   widgetsByFieldCode.forEach((widget, fieldCode) => {
     const code = asText(fieldCode);
     if (!code) return;
-    const config = asDict(widget.componentConfig);
     const descriptor = asDict(widget.fieldDescriptor);
     const uiUsage = asText(descriptor.uiUsage);
     const normalizedUiUsage: 'fact' | 'interaction' | undefined = uiUsage === 'fact' || uiUsage === 'interaction'
       ? uiUsage
       : undefined;
-    const fieldType = asText(config.fieldType || descriptor.fieldType);
+    const fieldType = asText(descriptor.fieldType);
     const relation = asText(descriptor.relation);
     const relationField = asText(descriptor.relationField);
     const referenceModelField = asText(descriptor.referenceModelField);
     const attachmentRole = asText(descriptor.attachmentRole);
-    const filename = asText(config.filename || descriptor.filename);
+    const filename = asText(descriptor.filename);
     const digits = Array.isArray(descriptor.digits) && descriptor.digits.length === 2
       ? [Number(descriptor.digits[0]), Number(descriptor.digits[1])] as [number, number]
       : undefined;
@@ -460,10 +459,10 @@ export function resolveContractV2FieldDescriptorMap(
     const temporal = descriptor.temporal && typeof descriptor.temporal === 'object' && !Array.isArray(descriptor.temporal)
       ? descriptor.temporal as ContractV2FieldDescriptor['temporal']
       : undefined;
-    const relationEntry = asDict(config.relationEntry || descriptor.relationEntry);
-    const widgetOptions = asDict(config.widgetOptions || descriptor.widgetOptions);
-    const subview = asDict(config.subview || descriptor.subview);
-    const formStructureRoleCandidate = asDict(widget.formStructureRole || config.formStructureRole || descriptor.formStructureRole);
+    const relationEntry = asDict(descriptor.relationEntry);
+    const widgetOptions = asDict(descriptor.widgetOptions);
+    const subview = asDict(descriptor.subview);
+    const formStructureRoleCandidate = asDict(widget.formStructureRole || descriptor.formStructureRole);
     const roleName = asText(formStructureRoleCandidate.role);
     const canonicalRoles = new Set<ContractV2FormStructureRoleName>(['summary', 'task', 'context', 'risk', 'relation', 'activity', 'audit']);
     const formStructureRole: ContractV2FormStructureRole | undefined = (
@@ -477,14 +476,14 @@ export function resolveContractV2FieldDescriptorMap(
       } : undefined;
     out[code] = {
       fieldCode: code,
-      label: asText(widget.label || descriptor.label) || code,
+      label: asText(descriptor.label) || code,
       fieldType,
-      widgetType: asText(widget.widgetType),
+      widgetType: asText(descriptor.widgetType),
       componentKey: asText(descriptor.componentKey),
-      semanticType: asText(widget.semanticType || descriptor.semanticType),
-      ...(typeof (config.required ?? descriptor.required) === 'boolean' ? { required: Boolean(config.required ?? descriptor.required) } : {}),
-      ...(typeof (config.readonly ?? descriptor.readonly) === 'boolean' ? { readonly: Boolean(config.readonly ?? descriptor.readonly) } : {}),
-      ...(typeof (config.invisible ?? descriptor.invisible) === 'boolean' ? { invisible: Boolean(config.invisible ?? descriptor.invisible) } : {}),
+      semanticType: asText(descriptor.semanticType),
+      ...(typeof descriptor.required === 'boolean' ? { required: descriptor.required } : {}),
+      ...(typeof descriptor.readonly === 'boolean' ? { readonly: descriptor.readonly } : {}),
+      ...(typeof descriptor.invisible === 'boolean' ? { invisible: descriptor.invisible } : {}),
       ...(relation ? { relation } : {}),
       ...(relationField ? { relationField } : {}),
       ...(referenceModelField ? { referenceModelField } : {}),
@@ -492,14 +491,12 @@ export function resolveContractV2FieldDescriptorMap(
       ...(digits ? { digits } : {}),
       ...(unit ? { unit } : {}),
       ...(temporal ? { temporal } : {}),
-      ...(selectionPairs(config.selection ?? descriptor.selection)
-        ? { selection: selectionPairs(config.selection ?? descriptor.selection) }
+      ...(selectionPairs(descriptor.selection)
+        ? { selection: selectionPairs(descriptor.selection) }
         : {}),
       ...(descriptor.domainExpression !== undefined ? { domainExpression: descriptor.domainExpression } : {}),
-      ...(Object.prototype.hasOwnProperty.call(config, 'domain') ? { domain: config.domain }
-        : Object.prototype.hasOwnProperty.call(descriptor, 'domain') ? { domain: descriptor.domain } : {}),
-      ...(Object.prototype.hasOwnProperty.call(config, 'context') ? { context: config.context }
-        : Object.prototype.hasOwnProperty.call(descriptor, 'context') ? { context: descriptor.context } : {}),
+      ...(Object.prototype.hasOwnProperty.call(descriptor, 'domain') ? { domain: descriptor.domain } : {}),
+      ...(Object.prototype.hasOwnProperty.call(descriptor, 'context') ? { context: descriptor.context } : {}),
       ...(Object.keys(relationEntry).length ? { relationEntry } : {}),
       ...(Object.keys(widgetOptions).length ? { widgetOptions } : {}),
       ...(Object.keys(subview).length ? { subview } : {}),
@@ -517,9 +514,8 @@ export function resolveContractV2FieldDescriptorMap(
       ...(typeof descriptor.trim === 'boolean' ? { trim: descriptor.trim } : {}),
       ...(Array.isArray(descriptor.related) && descriptor.related.length ? { related: descriptor.related } : {}),
       ...(Number.isInteger(descriptor.size) && Number(descriptor.size) > 0 ? { size: Number(descriptor.size) } : {}),
-      ...(asText(config.semanticType) ? { semanticType: asText(config.semanticType) } : {}),
-      ...(asText(config.surfaceRole) ? { surfaceRole: asText(config.surfaceRole) } : {}),
-      ...(typeof config.technical === 'boolean' ? { technical: config.technical } : {}),
+      ...(asText(descriptor.surfaceRole) ? { surfaceRole: asText(descriptor.surfaceRole) } : {}),
+      ...(typeof descriptor.technical === 'boolean' ? { technical: descriptor.technical } : {}),
       ...(formStructureRole ? { formStructureRole } : {}),
     };
   });

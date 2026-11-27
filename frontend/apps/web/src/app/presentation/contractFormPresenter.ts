@@ -219,9 +219,7 @@ function presentFieldValue(
   hasRuntimeValue: boolean,
   declaredRelationModel: string,
 ): unknown | CanonicalRelationValue {
-  const fieldType = text(
-    widget.componentConfig.fieldType || widget.fieldDescriptor?.fieldType,
-  ).toLowerCase();
+  const fieldType = text(widget.fieldDescriptor?.fieldType).toLowerCase();
   const selected = hasRuntimeValue ? runtimeValue : contractValue;
   if (fieldType === 'many2one') {
     const runtimeRelation = relationParts(runtimeValue);
@@ -271,11 +269,9 @@ function fieldFromWidget(
   store: ContractV2NormalizedStore,
 ): CanonicalFormField {
   const statusResolved = Boolean(status);
-  const fieldType = text(
-    widget.componentConfig.fieldType || widget.fieldDescriptor?.fieldType,
-  );
+  const fieldType = text(widget.fieldDescriptor?.fieldType);
   const declaredRelationModel = fieldType.toLowerCase() === 'many2one' ? relationModel(widget) : '';
-  const semanticType = text(widget.fieldDescriptor?.semanticType || widget.semanticType);
+  const semanticType = text(widget.fieldDescriptor?.semanticType);
   const componentResolution = resolveContractSemanticComponent({
     semanticType,
     fieldType,
@@ -299,20 +295,17 @@ function fieldFromWidget(
     : false;
   const fieldAuth = text(status?.auth);
   const componentConfig = { ...widget.componentConfig };
-  const currencyField = text(
-    componentConfig.currencyField
-    || widget.fieldDescriptor?.currencyField,
-  );
+  const currencyField = text(widget.fieldDescriptor?.currencyField);
   if (semanticType === 'money' && currencyField) {
     const runtimeCurrencyValue = runtimeValues?.[currencyField];
     componentConfig.currencyValue = hasCurrencyDisplayLabel(runtimeCurrencyValue)
       ? runtimeCurrencyValue
       : contractValues[currencyField];
   }
-  const widgetSemantics = componentConfig.widgetSemantics
-    && typeof componentConfig.widgetSemantics === 'object'
-    && !Array.isArray(componentConfig.widgetSemantics)
-    ? componentConfig.widgetSemantics as ContractV2Dictionary
+  const widgetSemantics = widget.fieldDescriptor?.widgetOptions
+    && typeof widget.fieldDescriptor.widgetOptions === 'object'
+    && !Array.isArray(widget.fieldDescriptor.widgetOptions)
+    ? widget.fieldDescriptor.widgetOptions as ContractV2Dictionary
     : {};
   const dateRangeEndField = text(widgetSemantics.end_field);
   if (fieldType === 'date' && dateRangeEndField) {
@@ -326,8 +319,10 @@ function fieldFromWidget(
   return {
     widgetId: widget.widgetId,
     fieldCode: widget.fieldCode,
-    widgetType: widget.widgetType,
-    label: text(authoritativeFieldLabels[widget.fieldCode]) || widget.label,
+    widgetType: text(widget.fieldDescriptor?.widgetType),
+    label: text(authoritativeFieldLabels[widget.fieldCode])
+      || text(widget.fieldDescriptor?.label)
+      || widget.fieldCode,
     hideLabel: container.nolabel === true,
     value: presentFieldValue(
       widget,

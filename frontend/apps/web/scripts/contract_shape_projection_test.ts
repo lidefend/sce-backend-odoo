@@ -98,6 +98,7 @@ const tagCollectionWidget = {
     fieldCode: 'company_ids',
     fieldType: 'many2many',
     widgetType: 'many2many_tags',
+    componentKey: 'sc.select.tags',
   },
   componentConfig: {
     fieldType: 'many2many',
@@ -198,6 +199,7 @@ const durationWidget = {
   componentConfig: { fieldType: 'float', nativeWidget: 'float_time' },
   fieldDescriptor: {
     fieldType: 'float',
+    componentKey: 'sc.value.duration',
     digits: [16, 3],
     unit: { kind: 'duration', code: 'hour', label: '小时' },
   },
@@ -235,6 +237,7 @@ const percentageWidget = {
   componentConfig: { fieldType: 'float', digits: [16, 4] },
   fieldDescriptor: {
     fieldType: 'float',
+    componentKey: 'sc.value.percentage',
     digits: [16, 4],
     unit: { kind: 'percent', code: 'percent', label: '%' },
   },
