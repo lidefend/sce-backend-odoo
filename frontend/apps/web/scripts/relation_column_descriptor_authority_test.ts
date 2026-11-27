@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { currentContextEpoch, invalidateContextRequests } from '../src/app/contextEpoch';
 import { useRecordRelationshipNavigation } from '../src/pages/contractForm/useRecordRelationshipNavigation';
 import { relationEntry } from '../src/pages/contractForm/relationDescriptor';
 
@@ -82,6 +83,52 @@ for (const testCase of cases) {
   }
   checked += 1;
 }
+
+let releaseDescriptors!: (value: { store: typeof descriptorStore }) => void;
+let descriptorOwnerCurrent = true;
+const staleOwnerDescriptors = { value: {} as Record<string, unknown> };
+const staleOwnerNavigation = useRecordRelationshipNavigation({
+  one2manyRelationModel: () => 'payment.request.line',
+  relationFieldDescriptors: staleOwnerDescriptors,
+  effectiveFieldDescriptor: () => ({
+    type: 'one2many',
+    relation: 'payment.request.line',
+    relationEntry: { can_read: true },
+  }),
+  relationEntry,
+  captureRelationRequest: () => () => descriptorOwnerCurrent,
+  loadModelContractV2: () => new Promise((resolve) => {
+    releaseDescriptors = resolve;
+  }),
+});
+const staleOwnerLoad = staleOwnerNavigation.ensureRelationFieldDescriptors('payment_request_line_ids');
+descriptorOwnerCurrent = false;
+releaseDescriptors({ store: descriptorStore });
+await staleOwnerLoad;
+assert.deepEqual(Object.keys(staleOwnerDescriptors.value), [], 'a stale owner cannot cache relation field descriptors');
+
+const previousEpoch = currentContextEpoch();
+const staleContextDescriptors = { value: {} as Record<string, unknown> };
+const staleContextNavigation = useRecordRelationshipNavigation({
+  one2manyRelationModel: () => 'payment.request.line',
+  relationFieldDescriptors: staleContextDescriptors,
+  effectiveFieldDescriptor: () => ({
+    type: 'one2many',
+    relation: 'payment.request.line',
+    relationEntry: { can_read: true },
+  }),
+  relationEntry,
+  captureRelationRequest: () => () => true,
+  loadModelContractV2: () => new Promise((resolve) => {
+    releaseDescriptors = resolve;
+  }),
+});
+const staleContextLoad = staleContextNavigation.ensureRelationFieldDescriptors('payment_request_line_ids');
+invalidateContextRequests();
+assert.notEqual(currentContextEpoch(), previousEpoch);
+releaseDescriptors({ store: descriptorStore });
+await staleContextLoad;
+assert.deepEqual(Object.keys(staleContextDescriptors.value), [], 'an old context cannot cache relation field descriptors');
 
 // Regression case: the exact acceptance defect (settlement detail opened by
 // fixture_role_pm) declared payment.request / payment.request.line unreadable

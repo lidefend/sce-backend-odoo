@@ -39,7 +39,7 @@
         v-if="!field.readonly"
         :key="uploadTick"
         class="attachment-upload"
-        :disabled="adapter.busy"
+        :disabled="adapter.busy || attachmentUploading"
         :multiple="true"
         choose-label="上传附件"
         empty-label="未选择文件"
@@ -433,6 +433,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { businessRowErrorKey } from '../../app/businessValidationError';
+import { currentContextEpoch } from '../../app/contextEpoch';
 import { FIELD_VALUE_EMPTY_TEXT } from '../../utils/fieldSemantics';
 import type { FormSectionFieldSchema } from './formSection.types';
 import ScButton from '../design-system/ScButton.vue';
@@ -958,11 +959,25 @@ function o2mRowMessages(row: RelationFieldRow) {
 }
 
 const attachmentError = ref('');
+const attachmentUploading = ref(false);
 const uploadTick = ref(0);
 const attachmentNameMap = ref<Record<number, string>>({});
 const attachmentNameAttempted = new Set<number>();
 let attachmentNamesDisposed = false;
-onBeforeUnmount(() => { attachmentNamesDisposed = true; });
+onBeforeUnmount(() => {
+  attachmentNamesDisposed = true;
+  attachmentUploading.value = false;
+});
+watch(
+  () => props.adapter.relationRuntimeGeneration?.() ?? 0,
+  () => {
+    attachmentNameAttempted.clear();
+    attachmentNameMap.value = {};
+    attachmentError.value = '';
+    attachmentUploading.value = false;
+  },
+  { flush: 'sync' },
+);
 
 function attachmentDisplayName(option: { id: number; label: string }) {
   const label = String(option.label || '');
@@ -980,10 +995,18 @@ async function lazyLoadAttachmentName(id: number) {
   // Keep failures attempted for this mounted component: reactive renders are
   // not an authority to retry denied/missing metadata indefinitely.
   attachmentNameAttempted.add(id);
+  const requestKey = `attachment-name:${id}`;
+  const revision = relationQueryAuthority.begin(requestKey);
+  const contextEpoch = currentContextEpoch();
+  const generation = props.adapter.relationRuntimeGeneration?.() ?? 0;
+  const isCurrent = () => !attachmentNamesDisposed
+    && relationQueryAuthority.isCurrent(requestKey, revision)
+    && currentContextEpoch() === contextEpoch
+    && (props.adapter.relationRuntimeGeneration?.() ?? 0) === generation;
   try {
     const result = await readRecord({ model: 'ir.attachment', ids: [id], fields: ['id', 'name'] });
     const record = result.records?.find(row => Number(row.id) === id);
-    if (!attachmentNamesDisposed && typeof record?.name === 'string' && record.name.trim()) {
+    if (isCurrent() && typeof record?.name === 'string' && record.name.trim()) {
       attachmentNameMap.value = { ...attachmentNameMap.value, [id]: record.name };
     }
   } catch {
@@ -1000,21 +1023,37 @@ async function handleAttachmentUpload(field: FormSectionFieldSchema, files: File
   attachmentError.value = '';
   if (field.readonly) return;
   if (!files || files.length === 0) return;
+  if (attachmentUploading.value) return;
   const model = props.adapter.currentModel;
   const resId = props.adapter.currentRecordId;
   if (!model || !resId) {
     attachmentError.value = '请先保存单据后再上传附件';
     return;
   }
+  const requestKey = `attachment-upload:${field.name}`;
+  const revision = relationQueryAuthority.begin(requestKey);
+  const contextEpoch = currentContextEpoch();
+  const generation = props.adapter.relationRuntimeGeneration?.() ?? 0;
+  const isCurrent = () => !attachmentNamesDisposed
+    && relationQueryAuthority.isCurrent(requestKey, revision)
+    && currentContextEpoch() === contextEpoch
+    && (props.adapter.relationRuntimeGeneration?.() ?? 0) === generation
+    && props.adapter.currentModel === model
+    && props.adapter.currentRecordId === resId;
+  if (!isCurrent()) return;
+  attachmentUploading.value = true;
   try {
     const newIds: number[] = [];
     const newNames: Record<number, string> = {};
     for (const file of files) {
       const { data, mimetype } = await fileToBase64(file);
+      if (!isCurrent()) return;
       const created = await uploadFile({ model, res_id: resId, name: file.name, mimetype, data });
+      if (!isCurrent()) return;
       newIds.push(created.id);
       newNames[created.id] = created.name || file.name;
     }
+    if (!isCurrent()) return;
     props.adapter.setRelationIds(
       field.name,
       mergeUploadedAttachmentIds(props.adapter.relationIds(field.name), newIds),
@@ -1022,7 +1061,9 @@ async function handleAttachmentUpload(field: FormSectionFieldSchema, files: File
     attachmentNameMap.value = { ...attachmentNameMap.value, ...newNames };
     uploadTick.value += 1;
   } catch (err) {
-    attachmentError.value = err instanceof Error ? err.message : '附件上传失败';
+    if (isCurrent()) attachmentError.value = err instanceof Error ? err.message : '附件上传失败';
+  } finally {
+    if (isCurrent()) attachmentUploading.value = false;
   }
 }
 

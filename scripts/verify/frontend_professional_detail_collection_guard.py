@@ -281,6 +281,12 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             or "props.adapter.relationRuntimeGeneration?.()" not in renderer
             or "{ flush: 'sync' }" not in renderer):
         failures.append("detail collection does not invalidate cell queries with the shared page generation")
+    if (':disabled="adapter.busy || attachmentUploading"' not in renderer
+            or "attachment-upload:${field.name}" not in renderer
+            or "attachment-name:${id}" not in renderer
+            or "props.adapter.currentRecordId === resId" not in renderer
+            or "attachmentNameAttempted.clear()" not in renderer):
+        failures.append("detail collection attachment requests are not bound to the shared page and record identity")
     if "JSON.stringify(row.values)" in renderer:
         failures.append("detail collection relation queries still depend on unrelated row values")
     if "preserveSelectedOne2manyRelationOption" not in renderer or "currentValue" not in relation_query:

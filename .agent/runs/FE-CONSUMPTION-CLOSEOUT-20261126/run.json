@@ -119,7 +119,9 @@
     "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
     "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
     "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
     "frontend/apps/web/scripts/record_entry_contract_test.ts",
+    "frontend/apps/web/scripts/relation_column_descriptor_authority_test.ts",
     "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
     "frontend/apps/web/scripts/route_query_normalization_test.ts",
     "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
@@ -649,7 +651,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Commit and publish the qualified FC-04 one2many column-candidate request isolation slice to PR 1019, then read the new exact-head required checks before continuing the remaining relation lifecycle audit.",
+  "next_exact_step": "Commit and publish the qualified FC-04 relation descriptor and attachment lifecycle closure batch to PR 1019, then read one exact-head result set for that batch before deciding whether non-browser FC-04 source work remains.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2763,6 +2765,38 @@
       ],
       "scope_limit": "Local component, detail-collection lifecycle and static checks only. Real browser inline relation selection, cross-company relation creation, the 143-entry browser matrix, user acceptance and FC-04 overall closure remain not_run."
     },
+    "fc04_relation_descriptor_attachment_lifecycle_batch": {
+      "status": "passed_local_targeted",
+      "stage_identity": "dcaf6c6c3fe15f628c667676a7a4cb645864ab29 plus the owned relation descriptor and attachment lifecycle batch dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T172443Z-1917387-178911338/receipt.json",
+      "receipt_sha256": "06fbdeba8e920ea27a6eb1ad10bcee404816cb57091f69cabc0140fe620618e5",
+      "required_targets": 86,
+      "executed_targets": 46,
+      "reused_targets": 40,
+      "test_targets": 29,
+      "executed_test_count": 1102,
+      "static_checks": 7,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "relation field descriptor contract loads capture the shared page request owner and context epoch before transport",
+        "a failed or superseded descriptor load cannot publish relation column metadata into the replacement page context",
+        "attachment name metadata requests are bound to the shared relation runtime generation and context epoch",
+        "attachment upload name attempts and cached values are cleared when the shared page/context generation changes",
+        "attachment uploads are single-flight in the owning relation renderer",
+        "uploads recheck generation, context epoch, model and record identity before each network write and before relation-id publication",
+        "an upload resolved after record/context invalidation cannot mutate the replacement relation value",
+        "the real X2Many attachment component exercised metadata, upload, stale-generation and unmount paths with 48 checks",
+        "lint, strict typecheck and every affected target exited zero"
+      ],
+      "failure_recovery": [
+        "the first attachment test did not yield the event loop for the FileReader boundary, so the file intent was never reached; the test now waits at the asynchronous file-conversion boundary",
+        "the first full batch run rejected two modified existing tests as outside scope; both were registered to their owning relation check without widening production scope"
+      ],
+      "scope_limit": "Local relation component, descriptor cache and attachment lifecycle checks only. Real browser uploads, cross-company relation creation, the 143-entry browser matrix, user acceptance and FC-04 overall closure remain not_run."
+    },
     "fc03_preset_filter_label_presentation": {
       "status": "passed_local_targeted",
       "candidate_head": "98db6ed386f0bbe096febaf954d188de553eb9ce",
@@ -2856,12 +2890,12 @@
       "scope_limit": "P4 smoke and selector alignment only. The repaired candidate has not yet been pushed; exact-head remote CI, browser address-bar readback, mainline qualification and user acceptance remain not_run."
     },
     "remote_publication": {
-      "status": "remote_ci_passed_for_1b3_one2many_lifecycle_slice_next_column_candidates_local",
+      "status": "dcaf_pushed_remote_checks_deferred_because_followup_batch_supersedes_it",
       "pull_request": 1019,
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "1b3e8fc932e8643959f06a81903a1b7c7291c8ff",
+      "current_head": "dcaf6c6c3fe15f628c667676a7a4cb645864ab29",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",
@@ -2905,13 +2939,16 @@
         "head 1b3e8fc93 passed public_guard run 46037782274, merge_policy_gate run 46037782444, professional_quality_gate run 46037782375 and frontend_release_gate run 46037782388",
         "head 1b3e8fc93 passed wait_for_fact_checks check 140637583703",
         "head 1b3e8fc93 passed the selected backend impact suite through plan check 140637661500, suite check 140637880822 and coverage check 140641257880",
-        "the column-candidate isolation slice requires its own exact-head remote checks and does not inherit 1b3e8fc93 results"
+        "the column-candidate isolation slice requires its own exact-head remote checks and does not inherit 1b3e8fc93 results",
+        "head dcaf6c6c3 was published through make pr.push with exact-head preflight and a clean worktree",
+        "the dcaf6c6c3 production build fingerprint is dc9e2d0bd52c8bbbe5ca065b0b74b163152ceafd4cb2a05ce916499fd3318ab7",
+        "dcaf6c6c3 remote checks were not used as evidence because the next consolidated relation lifecycle batch supersedes that head"
       ],
       "failure_recovery": [
         "direct exact-head readback confirms public_guard, professional_quality_gate and frontend_release_gate all completed successfully for bd9af577c",
         "the failed aggregate job was not treated as a product failure; a fresh exact-head run will be produced through make pr.push because no managed in-place workflow rerun entry exists"
       ],
-      "coverage_limit": "The one2many lifecycle candidate is green on 1b3e8fc93. The row relation-column candidate slice requires its own exact-head remote checks. Real browser readback, the 143-entry matrix, role/company journeys, FC-03 overall closure, FC-04 overall closure and FC-06 remain not_run."
+      "coverage_limit": "The one2many lifecycle candidate is green on 1b3e8fc93; dcaf6c6c3 was locally qualified and published but superseded before waiting for its full remote result. The consolidated descriptor/attachment batch requires the next exact-head result set. Real browser readback, the 143-entry matrix, role/company journeys, FC-03 overall closure, FC-04 overall closure and FC-06 remain not_run."
     }
   }
 }

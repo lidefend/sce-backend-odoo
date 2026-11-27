@@ -1034,6 +1034,35 @@ dirty scope 上成立 86 个必需目标，全部本轮执行；65 个测试目�
 该候选仍需提交推送后的新精确 HEAD 远端验证。真实浏览器行内关系选择、跨公司关系创建、
 143 入口矩阵、FC-04 整体收口和用户验收仍未完成。
 
+### 2026-11-27 FC-04 关系描述符与附件异步生命周期批次
+
+行内候选查询切片 `dcaf6c6c3fe15f628c667676a7a4cb645864ab29` 已通过受管推送更新
+#1019；精确 HEAD 生产构建指纹为
+`dc9e2d0bd52c8bbbe5ca065b0b74b163152ceafd4cb2a05ce916499fd3318ab7`。
+该 head 的远端结果因其后生命周期批次会再次更新 PR 而未用作后续证据。
+
+本批次合并处理同一 FC-04 链路中的三个剩余异步状态问题，不再逐项提交：
+
+- 关系字段描述符缓存请求绑定共享页面 owner 与 context epoch，旧请求不能写入替换页面；
+- 附件名称元数据查询绑定 relation runtime generation 与 context epoch，页面失效后不能回填旧名称；
+- 附件上传按所属关系 renderer 单飞，并在文件转换、网络返回和关系值发布前重复校验
+  generation、context epoch、model 与 record identity；
+- 失活页面的上传响应不能把旧附件 ID 写入新表单；
+- generation 变化时清空附件名称缓存、重试记录、上传忙碌态和所属关系查询状态；
+
+定向验证覆盖真实 X2Many SFC 的 48 项附件生命周期断言，以及关系描述符 owner/epoch
+负例。`make ci.local.iteration` 在 `dcaf6c6c3` 加当前 owned dirty scope 上成立
+86 个必需目标，其中 46 个本轮执行、40 个复用；29 个测试目标执行 1102 项测试、
+7 项静态检查，`unmapped=0`、`not_run=0`、`blocked=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T172443Z-1917387-178911338/receipt.json`
+
+回执 SHA256：
+`06fbdeba8e920ea27a6eb1ad10bcee404816cb57091f69cabc0140fe620618e5`。
+
+该批次仍需提交推送后的同一 exact-head 远端结果。真实浏览器附件上传、行内关系选择、
+跨公司关系创建、143 入口矩阵、FC-04 整体收口和用户验收仍未完成。
+
 ### 2026-11-27 FC-02 页面身份声明化与选测补口
 
 本切片属于共享前端呈现消费层，不修改后端契约、权限或数据。页面身份不再把

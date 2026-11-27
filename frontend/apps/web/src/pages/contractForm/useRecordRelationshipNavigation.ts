@@ -18,11 +18,16 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     // was never entitled to issue. Fail closed on the declaration and keep the
     // existing char-field fallback (mirrors openRelationSearchDialog).
     if (relationEntry(effectiveFieldDescriptor?.(name))?.canRead !== true) return;
+    const ownsRequest = captureRelationRequest?.(`relation-field-descriptors:${relation}`) ?? (() => true);
+    const contextEpoch = currentContextEpoch();
+    const isCurrent = () => ownsRequest() && currentContextEpoch() === contextEpoch;
+    if (!isCurrent()) return;
     try {
       const response = await loadModelContractV2(relation, {
         viewType: 'form',
         renderProfile: 'edit',
       });
+      if (!isCurrent()) return;
       const fields = resolveContractV2FormFieldMap(response.store) as Record<string, FieldDescriptor>;
       if (Object.keys(fields).length) {
         relationFieldDescriptors.value = {
