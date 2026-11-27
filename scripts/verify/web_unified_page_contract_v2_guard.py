@@ -15,6 +15,8 @@ WEB_CONTRACT_CLIENT = ROOT / "frontend/apps/web/src/app/contracts/v2/client.ts"
 WEB_CONTRACT_V2 = ROOT / "frontend/apps/web/src/app/contracts/unifiedPageContractV2.ts"
 WEB_ACTION_SHAPE = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts"
 WEB_FILTER_COMPUTED = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts"
+WEB_FIELD_FILTER = ROOT / "frontend/apps/web/src/app/runtime/actionViewFieldFilterRuntime.ts"
+WEB_ACTION_TOOLBAR = ROOT / "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue"
 WEB_ACTION_PRESENTATION = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts"
 WEB_ACTION_RUNTIME = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewActionRuntime.ts"
 WEB_ACTION_NAV = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts"
@@ -125,6 +127,8 @@ def main() -> int:
     v2_source = WEB_CONTRACT_V2.read_text(encoding="utf-8") if WEB_CONTRACT_V2.exists() else ""
     shape_source = WEB_ACTION_SHAPE.read_text(encoding="utf-8") if WEB_ACTION_SHAPE.exists() else ""
     filter_source = WEB_FILTER_COMPUTED.read_text(encoding="utf-8") if WEB_FILTER_COMPUTED.exists() else ""
+    field_filter_source = WEB_FIELD_FILTER.read_text(encoding="utf-8") if WEB_FIELD_FILTER.exists() else ""
+    action_toolbar_source = WEB_ACTION_TOOLBAR.read_text(encoding="utf-8") if WEB_ACTION_TOOLBAR.exists() else ""
     action_presentation_source = WEB_ACTION_PRESENTATION.read_text(encoding="utf-8") if WEB_ACTION_PRESENTATION.exists() else ""
     action_runtime_source = WEB_ACTION_RUNTIME.read_text(encoding="utf-8") if WEB_ACTION_RUNTIME.exists() else ""
     nav_source = WEB_ACTION_NAV.read_text(encoding="utf-8") if WEB_ACTION_NAV.exists() else ""
@@ -230,6 +234,26 @@ def main() -> int:
         if forbidden in preflight_source:
             errors.append(
                 "web load preflight must not derive saved-filter route identity from display text: "
+                f"{forbidden}"
+            )
+    for forbidden in ("raw.type || 'char'", "operators[0]?.value || '='"):
+        if forbidden in filter_source:
+            errors.append(
+                "web custom filter fields must not synthesize type or operator declarations: "
+                f"{forbidden}"
+            )
+    for forbidden in ("label: text(payload.label) || field", "text(payload.queryMode || 'domain')"):
+        if forbidden in field_filter_source:
+            errors.append(
+                "web field-filter execution must not synthesize a label or query mode: "
+                f"{forbidden}"
+            )
+    if "queryMode: filter.queryMode" not in field_filter_source:
+        errors.append("web serialized field filters must retain the declared query mode")
+    for forbidden in ("queryMode: field.queryMode || 'domain'", "found?.label || key"):
+        if forbidden in action_toolbar_source:
+            errors.append(
+                "web action toolbar must not synthesize query mode or custom group labels: "
                 f"{forbidden}"
             )
     if "search.sort_options" in shape_source or "sort_options" in shape_source:

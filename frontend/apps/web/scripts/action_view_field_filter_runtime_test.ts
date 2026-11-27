@@ -16,9 +16,11 @@ const booleanFilter = buildActionViewFieldFilter({
   type: 'boolean',
   operator: '=',
   value: false,
+  queryMode: 'domain',
 });
 assert.equal(booleanFilter.domain[0][2], false);
 assert.equal(parseActionViewFieldFilter(serializeActionViewFieldFilter(booleanFilter))?.value, false);
+assert.equal(parseActionViewFieldFilter(serializeActionViewFieldFilter(booleanFilter))?.queryMode, 'domain');
 
 const zeroFilter = buildActionViewFieldFilter({
   field: 'sequence',
@@ -27,6 +29,7 @@ const zeroFilter = buildActionViewFieldFilter({
   type: 'integer',
   operator: '=',
   value: 0,
+  queryMode: 'domain',
 });
 assert.equal(zeroFilter.domain[0][2], 0);
 assert.equal(parseActionViewFieldFilter(serializeActionViewFieldFilter(zeroFilter))?.value, 0);
@@ -46,12 +49,36 @@ assert.throws(
 );
 assert.throws(
   () => buildActionViewFieldFilter({
+    field: 'name',
+    occurrenceKey: 'name@/search[1]/field[5]',
+    label: '',
+    type: 'char',
+    operator: 'ilike',
+    queryMode: 'domain',
+    value: 'alpha',
+  }),
+  (error: unknown) => Boolean(error && typeof error === 'object' && (error as { name?: string }).name === 'ContractGapError'),
+);
+assert.throws(
+  () => buildActionViewFieldFilter({
+    field: 'name',
+    occurrenceKey: 'name@/search[1]/field[6]',
+    label: '名称',
+    type: 'char',
+    operator: 'ilike',
+    value: 'alpha',
+  }),
+  (error: unknown) => Boolean(error && typeof error === 'object' && (error as { name?: string }).name === 'ContractGapError'),
+);
+assert.throws(
+  () => buildActionViewFieldFilter({
     field: 'partner_id',
     occurrenceKey: 'partner@/search[1]/field[4]',
     label: '客户',
     type: 'many2one',
     operator: '=',
     value: Number.NaN,
+    queryMode: 'domain',
   }),
   (error: unknown) => Boolean(error && typeof error === 'object' && (error as { name?: string }).name === 'ContractGapError'),
 );

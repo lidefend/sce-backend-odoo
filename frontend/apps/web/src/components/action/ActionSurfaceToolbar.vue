@@ -694,7 +694,7 @@ function applyCustomFilter() {
     operator: customFilterOperator.value,
     value,
     domain,
-    queryMode: field.queryMode || 'domain',
+    queryMode: field.queryMode,
   });
 }
 
@@ -709,8 +709,9 @@ function applyCustomGroup() {
   const key = String(customGroupField.value || '').trim();
   if (!key) return;
   const found = props.customGroupFields.find((chip) => chip.key === key);
+  if (!found?.label) return;
   searchMenuOpen.value = false;
-  emit('custom-group', { key, label: found?.label || key });
+  emit('custom-group', { key, label: found.label });
 }
 
 async function saveFavorite() {

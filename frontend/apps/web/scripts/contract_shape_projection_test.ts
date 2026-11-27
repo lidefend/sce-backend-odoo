@@ -762,6 +762,40 @@ check(unlabeledFilterRuntime.contractGroupByChips.value.length, 0, 'a grouping w
 check(unlabeledFilterRuntime.nativeFilterFields.value.length, 0, 'a filter field without a declared label is withheld');
 check(unlabeledFilterRuntime.customGroupByChips.value.length, 0, 'a custom grouping without a declared label is withheld');
 check(unlabeledFilterRuntime.customFilterFields.value.length, 0, 'a custom filter field without a declared label is withheld');
+const customFilterRuntime = useActionViewFilterComputedRuntime({
+  actionContract: ref({
+    snapshot: {
+      layoutContract: { listProfile: {} },
+      actionContract: { surfacePolicies: { filters_max: 10, filters_primary_max: 3 } },
+      statusContract: { selectorStatus: [] },
+      searchContract: {
+        custom: {
+          filters: {
+            enabled: true,
+            fields: [
+              { field: 'state', label: '状态', type: 'selection', operators: [{ value: '=', label: '等于' }] },
+              { field: 'missing_type', label: '缺类型', operators: [{ value: '=', label: '等于' }] },
+              { field: 'missing_operator', label: '缺操作符', type: 'char' },
+            ],
+          },
+        },
+      },
+    },
+    widgetsById: new Map(),
+    widgetsByFieldCode: new Map(),
+    widgetsByFieldCodeAll: new Map(),
+    widgetStatusById: new Map(),
+    primaryDataSource: {},
+  } as unknown as ContractV2NormalizedStore),
+  activeGroupByField: ref(''),
+  parseContractContextRaw: () => ({}),
+  isActionViewNumericToken: () => false,
+  hasActionViewNoiseMarker: () => false,
+});
+check(customFilterRuntime.customFilterFields.value.length, 1, 'custom filters without declared type or operator are withheld');
+check(customFilterRuntime.customFilterFields.value[0]?.field, 'state', 'a declared custom filter remains available');
+check(customFilterRuntime.customFilterFields.value[0]?.type, 'selection', 'the declared custom filter type is preserved');
+check(customFilterRuntime.customFilterFields.value[0]?.operator, '=', 'the declared custom filter operator is preserved');
 const unsupportedSortOptions = runtime.buildListSortOptions({
   snapshot: {
     layoutContract: { listProfile: {} },

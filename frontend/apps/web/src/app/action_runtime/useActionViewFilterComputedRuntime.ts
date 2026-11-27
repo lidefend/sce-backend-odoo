@@ -227,7 +227,8 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
         const label = String(raw.label || raw.string || '').trim();
         const type = String(raw.type || '').trim();
         const occurrenceKey = String(raw.occurrence_key || raw.occurrenceKey || '').trim();
-        if (!field || !label || !type || !occurrenceKey) return null;
+        const queryMode = String(raw.query_mode || raw.queryMode || '').trim();
+        if (!field || !label || !type || !occurrenceKey || !queryMode) return null;
         if (options.isActionViewNumericToken(field) || options.isActionViewNumericToken(label)) return null;
         if (!isSelectorEnabled(selectorTokens(`custom_filter.${occurrenceKey}`, `filter.${field}`, field))) return null;
         return {
@@ -240,7 +241,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
           operator: String(raw.operator || '').trim(),
           operators: Array.isArray(raw.operators) ? raw.operators : [],
           choices: Array.isArray(raw.choices) ? raw.choices : [],
-          queryMode: String(raw.query_mode || raw.queryMode || '').trim(),
+          queryMode,
           native: true,
         };
       })
@@ -258,11 +259,12 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
         const raw = row as Dict;
         const field = String(raw.field || '').trim();
         const label = String(raw.label || '').trim();
-        const type = String(raw.type || 'char').trim();
-        if (!field || !label || nativeFields.has(field)) return null;
+        const type = String(raw.type || '').trim();
+        const operators = Array.isArray(raw.operators) ? raw.operators : [];
+        const operator = String((operators[0] as Dict | undefined)?.value || '').trim();
+        if (!field || !label || !type || !operator || nativeFields.has(field)) return null;
         if (options.isActionViewNumericToken(field) || options.isActionViewNumericToken(label)) return null;
         if (!isSelectorEnabled(selectorTokens(`custom_filter.${field}`, `filter.${field}`, field))) return null;
-        const operators = Array.isArray(raw.operators) ? raw.operators : [];
         const choices = Array.isArray(raw.choices) ? raw.choices : [];
         return {
           identity: `custom:${field}`,
@@ -271,7 +273,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
           label,
           type,
           relation: String(raw.relation || '').trim(),
-          operator: String(operators[0]?.value || '=').trim(),
+          operator,
           operators,
           choices,
           queryMode: 'domain',

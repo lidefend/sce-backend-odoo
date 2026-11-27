@@ -38,6 +38,7 @@
     "frontend/apps/web/src/app/navigationContext.ts",
     "frontend/apps/web/src/app/routeQuery.ts",
     "frontend/apps/web/src/app/runtime/actionViewAssigneeOptionsContract.ts",
+    "frontend/apps/web/src/app/runtime/actionViewFieldFilterRuntime.ts",
     "frontend/apps/web/src/app/runtime/actionViewKanbanTitleField.ts",
     "frontend/apps/web/src/app/runtime/actionViewSurfacePolicyBudget.ts",
     "frontend/apps/web/src/app/runtime/actionViewRoutePresetRuntime.ts",
@@ -98,6 +99,7 @@
     "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
     "frontend/apps/web/scripts/list_surface_component_test.mjs",
     "frontend/apps/web/scripts/action_surface_renderer_registry_test.ts",
+    "frontend/apps/web/scripts/action_view_field_filter_runtime_test.ts",
     "frontend/apps/web/scripts/activity_page_retention_test.ts",
     "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
     "frontend/apps/web/scripts/collection_view_semantics_test.ts",
@@ -138,6 +140,7 @@
     "frontend/apps/web/src/app/action_runtime/nativeImportLifecycle.ts",
     "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
     "frontend/apps/web/src/components/business/NativeImportWizard.vue",
+    "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
     "make/codex.mk",
     "scripts/ops/integration_cycle.py",
     "scripts/ops/test_integration_cycle.py",
@@ -596,7 +599,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Commit and publish the FC-03 saved-filter identity slice to PR 1019, then continue the next frontend contract-consumption check without inheriting d83713a2c remote results. Real browser readback remains blocked until managed port 5175 is released by the other worktree.",
+  "next_exact_step": "Commit and publish the FC-03 custom-filter declaration slice to PR 1019, then continue the next frontend contract-consumption check without inheriting ab42c9c7e remote results. Real browser readback remains blocked until managed port 5175 is released by the other worktree.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2486,6 +2489,36 @@
       ],
       "scope_limit": "Local contract consumer, unit fixtures and static checks only. Production saved-filter URL readback, real browser navigation, user acceptance, FC-03 overall closure and FC-06 remain not_run."
     },
+    "fc03_custom_filter_declared_semantics": {
+      "status": "passed_local_targeted",
+      "stage_identity": "ab42c9c7e9d33c1dc6854ff85bd4e38056597f3e plus the owned custom-filter-declaration dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T132614Z-6482-690678129/receipt.json",
+      "receipt_sha256": "6613e7c6979ab6a535666b39163749e4a58eb54853da7cd493c606e0cb941000",
+      "required_targets": 86,
+      "executed_targets": 86,
+      "reused_targets": 0,
+      "test_targets": 65,
+      "executed_test_count": 2168,
+      "static_checks": 11,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "custom filter fields require declared type and at least one declared operator",
+        "native filter fields require their declared query mode",
+        "field-filter execution requires a declared display label instead of falling back to the field name",
+        "field-filter query mode is retained through serialization and parsing instead of defaulting to domain",
+        "the action toolbar no longer synthesizes query mode or a custom grouping label from a technical key",
+        "missing type, operator, label and query-mode cases fail closed with ContractGapError",
+        "the web consumer guard rejects the removed default and technical-label fallbacks",
+        "the component-driver inventory was regenerated for the changed production source input"
+      ],
+      "failure_recovery": [
+        "the first full iteration rejected the owned action_view_field_filter_runtime_test.ts before product targets because the file had been registered in a check input list rather than the run scope; it was moved into the existing run scope and the same candidate was rerun"
+      ],
+      "scope_limit": "Local contract consumer, unit fixtures and static checks only. Production custom-filter query-bar behavior, real browser navigation, user acceptance, FC-03 overall closure and FC-06 remain not_run."
+    },
     "fc03_preset_filter_label_presentation": {
       "status": "passed_local_targeted",
       "candidate_head": "98db6ed386f0bbe096febaf954d188de553eb9ce",
@@ -2579,12 +2612,12 @@
       "scope_limit": "P4 smoke and selector alignment only. The repaired candidate has not yet been pushed; exact-head remote CI, browser address-bar readback, mainline qualification and user acceptance remain not_run."
     },
     "remote_publication": {
-      "status": "remote_ci_passed_for_d837_filter_label_slice_next_saved_filter_identity_local",
+      "status": "remote_ci_passed_for_ab42_saved_filter_identity_slice_next_custom_filter_local",
       "pull_request": 1019,
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "d83713a2c362531982b2cc38081219d137adfe4e",
+      "current_head": "ab42c9c7e9d33c1dc6854ff85bd4e38056597f3e",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",
@@ -2604,9 +2637,11 @@
         "head 60bc0aa29 passed the selected backend impact suite through plan 140511062550, suite 140511301383 and coverage 140514377453",
         "the filter-label fail-closed slice requires its own exact-head remote checks and does not inherit 60bc0aa29 results",
         "head d83713a2c passed public_guard run 140519689432, merge_policy_gate run 140522865073, professional_quality_gate run 140522444546 and frontend_release_gate run 140519566329",
-        "head d83713a2c passed the selected backend impact suite through plan 140519734242, suite 140519946702 and coverage 140522259993"
+        "head d83713a2c passed the selected backend impact suite through plan 140519734242, suite 140519946702 and coverage 140522259993",
+        "head ab42c9c7e passed public_guard run 140527858460, merge_policy_gate run 140531591888, professional_quality_gate run 140531476055 and frontend_release_gate run 140527742504",
+        "head ab42c9c7e passed the selected backend impact suite through plan 140527918139, suite 140528148575 and coverage 140531286970"
       ],
-      "coverage_limit": "The undeclared-filter-label candidate is green on d83713a2c. The next saved-filter identity slice will require its own exact-head remote checks. Real browser readback, the 143-entry matrix, role/company journeys, FC-03 overall closure and FC-06 remain not_run."
+      "coverage_limit": "The saved-filter identity candidate is green on ab42c9c7e. The next custom-filter declaration slice will require its own exact-head remote checks. Real browser readback, the 143-entry matrix, role/company journeys, FC-03 overall closure and FC-06 remain not_run."
     }
   }
 }
