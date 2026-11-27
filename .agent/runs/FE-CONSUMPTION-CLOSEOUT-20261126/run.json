@@ -24,6 +24,7 @@
     "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
     "frontend/apps/web/src/app/action_runtime/useActionViewAssigneeRuntime.ts",
     "frontend/apps/web/src/app/action_runtime/useActionViewContentDisplayRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts",
     "frontend/apps/web/src/app/runtime/actionViewAssigneeOptionsContract.ts",
     "frontend/apps/web/src/app/runtime/actionViewKanbanTitleField.ts",
     "frontend/apps/web/src/App.vue",
