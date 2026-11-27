@@ -615,6 +615,27 @@ clean 运行态回读：
 PR #1019 当前更新到 `37b836c96bf2deb3aad20b1d333aac4c86477dec`。远端集成、浏览器
 矩阵、部署和用户验收仍不属于当前本地迭代结论。
 
+### 2026-11-27 FC-01 批量负责人候选声明消费
+
+后端 `batch_policy.assignee_options` 已完整声明负责人查询，但前端仍默认
+`res.users`、`id/name`、空 domain、`name asc` 和 80。该切片移除这些前端产品默认：
+
+- `model`、`fields`、`domain`、`order` 与正整数 `limit` 只从清单批量策略消费；
+- 字段为空、domain 非数组、order 为空或 limit 非法均以 `ContractGapError` 停机；
+- 纯声明解析拆到独立 runtime 模块，与 API client 解耦；
+- 契约台账达到 38 个绑定、0 个未闭合缺陷。
+
+本地组合门禁执行 27 个目标、复用 21 个，16 个测试目标执行 666 项测试、
+6 项静态检查，`unmapped_paths=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T043934Z-3393976-531192137/receipt.json`
+
+回执 SHA256：
+`5327ff8b553c820198d5232bd782f490942dcbc77b834fc3a19ce67fd3f88e0c`。
+
+PR #1019 已更新到 `298ff9e26146ed11ba62c6d6fa0e1abb004b6095`。远端集成、浏览器
+矩阵、部署和用户验收仍未在本轮宣称完成。
+
 ### 2026-11-27 FC-01 ActionView 列表列字段语义单一权威
 
 继续核对列表列投影时确认，字段描述符已提供类型、控件、组件身份、币种字段、精度、

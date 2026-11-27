@@ -224,6 +224,19 @@
     "local_receipt_sha256": "ff676a47115310dc2759295244a01956822b104c074b9d303e3ef8faf0e6a06a",
     "coverage_limit": "Affected-target validation only; schema-decoration consumers still have an is_favorite name fallback pending the next slice. Remote integration and browser acceptance remain not_run."
   },
+  "fc_01_declared_assignee_options": {
+    "status": "local_targeted_passed",
+    "head": "298ff9e26146ed11ba62c6d6fa0e1abb004b6095",
+    "facts_verified": [
+      "batch assignee queries consume model, fields, domain, order and limit from the declared batch policy",
+      "frontend defaults are removed and malformed declarations stop with ContractGapError",
+      "the pure assignee declaration parser is independently testable without the API client",
+      "the contract-basis ledger reports 38 bindings with 0 open defects"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T043934Z-3393976-531192137/receipt.json",
+    "local_receipt_sha256": "5327ff8b553c820198d5232bd782f490942dcbc77b834fc3a19ce67fd3f88e0c",
+    "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
+  },
   "post_slice_iteration_attempt": {
     "status": "failed_validation_tool",
     "head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
@@ -237,7 +250,7 @@
     "pull_request": 1019,
     "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
     "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
-    "current_head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
+    "current_head": "298ff9e26146ed11ba62c6d6fa0e1abb004b6095",
     "coverage_limit": "Publication only. Remote CI and integration qualification are deferred by owner direction."
   },
   "not_a_product_acceptance_receipt": true,
@@ -251,7 +264,7 @@
       "sources": [
         {
           "path": "docs/architecture/frontend_contract_basis_ledger.json",
-          "sha256": "f3c6cbe0151a0bc584fc1ca6262f0ade45745e52f2a3c4e44f7aba2058a3bc3c"
+          "sha256": "1a42c71d22f520a67aca3d9ac1a66fc9ecfd094776b831b0027ef757d091c33f"
         }
       ],
       "planned_discriminating_cases": [
@@ -260,7 +273,7 @@
       ],
       "behavior_status": "new_semantic_bindings_verified_full_coverage_extension_pending",
       "evidence": [
-        "verify.frontend.contract_basis.unit test_count=15 bindings=37",
+        "verify.frontend.contract_basis.unit test_count=15 bindings=38",
         "verify.p0_contract_producer.p0a.unit test_count=72"
       ],
       "blocking_for_topic_completion": true

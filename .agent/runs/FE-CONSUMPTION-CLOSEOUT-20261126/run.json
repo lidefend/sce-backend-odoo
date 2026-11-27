@@ -523,7 +523,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head 37b836c96bf2deb3aad20b1d333aac4c86477dec, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head 298ff9e2, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1714,6 +1714,30 @@
       ],
       "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
     },
+    "fc01_declared_assignee_options": {
+      "status": "passed_local_targeted",
+      "head": "298ff9e26146ed11ba62c6d6fa0e1abb004b6095",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T043934Z-3393976-531192137/receipt.json",
+      "receipt_sha256": "5327ff8b553c820198d5232bd782f490942dcbc77b834fc3a19ce67fd3f88e0c",
+      "executed_targets": 27,
+      "reused_targets": 21,
+      "test_targets": 16,
+      "executed_test_count": 666,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "batch assignee model, fields, domain, order and limit are consumed from the declared batch policy",
+        "frontend res.users, id/name, empty-domain, name-asc and 80 defaults are removed",
+        "missing or invalid fields, domain, order and limit stop with ContractGapError",
+        "the pure declaration parser is isolated from the API client for deterministic verification",
+        "the contract-basis ledger reports 38 bindings with 0 open defects"
+      ],
+      "failure_recovery": [
+        "the first focused test loaded the API client's browser environment; the pure parser was moved into an independent runtime module",
+        "the active run scope was extended for the assignee hook before the zero-exit governed rerun"
+      ],
+      "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
+    },
     "post_slice_iteration_attempt": {
       "status": "failed",
       "classification": "validation_tool_defect",
@@ -1732,7 +1756,7 @@
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
+      "current_head": "298ff9e26146ed11ba62c6d6fa0e1abb004b6095",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",
