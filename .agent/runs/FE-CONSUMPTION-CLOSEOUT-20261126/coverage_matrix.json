@@ -262,6 +262,20 @@
     "local_receipt_sha256": "ba05929b83941a2c7f521a8a6c8c728862bba9ebeb7de3d55c33a4b022d355d9",
     "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
   },
+  "fc01_action_view_kanban_title_authority": {
+    "status": "local_targeted_passed",
+    "head": "ca2e773dfebe0d9e60d366ed3a1bc8f240bf9cca",
+    "facts_verified": [
+      "ActionView Kanban title selection consumes the declared title_field",
+      "the title field must belong to the declared Kanban field set",
+      "missing or mismatched declarations stop with ContractGapError",
+      "display_name, name, first-column and id fallbacks are removed",
+      "the V2 policy projection guard passes without weakening"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T051336Z-3751010-136436832/receipt.json",
+    "local_receipt_sha256": "1a9e0e8640fa1c2672770230d4cc8af207862ee2d7d71ede82ea9b16ad28fab5",
+    "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
+  },
   "post_slice_iteration_attempt": {
     "status": "failed_validation_tool",
     "head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
@@ -275,7 +289,7 @@
     "pull_request": 1019,
     "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
     "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
-    "current_head": "8c8f1fc7935522eb385971d9e01e5d648be1032b",
+    "current_head": "ca2e773dfebe0d9e60d366ed3a1bc8f240bf9cca",
     "coverage_limit": "Publication only. Remote CI and integration qualification are deferred by owner direction."
   },
   "not_a_product_acceptance_receipt": true,
@@ -289,7 +303,7 @@
       "sources": [
         {
           "path": "docs/architecture/frontend_contract_basis_ledger.json",
-          "sha256": "062a885e53fdc81901dadf98a8b2a2b167f93ad8d6763c14ee9fd984bcce661e"
+          "sha256": "66d0eca8eda3d8f472da6284c8547aceb66f428ecbd2a601119dad59e78aa677"
         }
       ],
       "planned_discriminating_cases": [
@@ -298,7 +312,7 @@
       ],
       "behavior_status": "new_semantic_bindings_verified_full_coverage_extension_pending",
       "evidence": [
-        "verify.frontend.contract_basis.unit test_count=15 bindings=39",
+        "verify.frontend.contract_basis.unit test_count=15 bindings=40",
         "verify.p0_contract_producer.p0a.unit test_count=72"
       ],
       "blocking_for_topic_completion": true

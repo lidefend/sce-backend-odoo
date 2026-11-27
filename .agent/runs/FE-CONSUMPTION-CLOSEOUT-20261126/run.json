@@ -529,7 +529,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head 8c8f1fc7, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head ca2e773d, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1787,6 +1787,31 @@
       ],
       "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
     },
+    "fc01_action_view_kanban_title_authority": {
+      "status": "passed_local_targeted",
+      "base_head": "721f6aff1e0e04e654344d4ec66af58aecbbedc4",
+      "head": "ca2e773dfebe0d9e60d366ed3a1bc8f240bf9cca",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T051336Z-3751010-136436832/receipt.json",
+      "receipt_sha256": "1a9e0e8640fa1c2672770230d4cc8af207862ee2d7d71ede82ea9b16ad28fab5",
+      "executed_targets": 33,
+      "reused_targets": 15,
+      "test_targets": 22,
+      "executed_test_count": 802,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "ActionView Kanban title selection consumes the declared title_field",
+        "the title field must belong to the declared Kanban field set",
+        "missing or mismatched title declarations stop with ContractGapError",
+        "display_name, name, first-column and id fallbacks are removed",
+        "non-Kanban empty field sets do not invent a title field",
+        "the contract-basis ledger reports 40 bindings with 0 open defects"
+      ],
+      "failure_recovery": [
+        "the pure title helper initially triggered the V2 policy projection guard because its error path contained list_profile; the helper was isolated in a runtime module, and the guard passed without weakening"
+      ],
+      "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
+    },
     "post_slice_iteration_attempt": {
       "status": "failed",
       "classification": "validation_tool_defect",
@@ -1805,7 +1830,7 @@
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "8c8f1fc7935522eb385971d9e01e5d648be1032b",
+      "current_head": "ca2e773dfebe0d9e60d366ed3a1bc8f240bf9cca",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",

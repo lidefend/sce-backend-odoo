@@ -679,6 +679,29 @@ PR #1019 当前更新到 `6286e216b868a8fe93af4ae8e750f22aa0315052`。远端集�
 PR #1019 当前更新到 `8c8f1fc7935522eb385971d9e01e5d648be1032b`。远端集成、
 浏览器矩阵、部署和用户验收仍未在本轮宣称完成。
 
+### 2026-11-27 FC-01 ActionView 看板标题权威收口
+
+虽然 Kanban presentation 已要求声明 `title_field`，ActionView 的标题选择仍有
+`display_name → name → 首列 → id` 回退链。本切片补齐入口层：
+
+- ActionView 只消费声明的 `title_field`；
+- 标题字段必须属于声明的 Kanban 字段集合；
+- 缺少标题声明或声明不在字段集合中即 `ContractGapError`；
+- 非 Kanban 空字段集返回空标题字段，不产生无关页面错误；
+- 纯标题选择模块从 V2 策略消费 hook 中拆出，未通过关闭静态守卫解决检查；
+- 契约台账达到 40 个绑定、0 个未闭合缺陷。
+
+本地组合门禁执行 33 个目标、复用 15 个，22 个测试目标执行 802 项测试、
+6 项静态检查，`unmapped_paths=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T051336Z-3751010-136436832/receipt.json`
+
+回执 SHA256：
+`1a9e0e8640fa1c2672770230d4cc8af207862ee2d7d71ede82ea9b16ad28fab5`。
+
+PR #1019 当前更新到 `ca2e773dfebe0d9e60d366ed3a1bc8f240bf9cca`。远端集成、
+浏览器矩阵、部署和用户验收仍未在本轮宣称完成。
+
 ### 2026-11-27 FC-01 ActionView 列表列字段语义单一权威
 
 继续核对列表列投影时确认，字段描述符已提供类型、控件、组件身份、币种字段、精度、
