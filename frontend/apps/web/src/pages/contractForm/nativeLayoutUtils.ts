@@ -1245,14 +1245,16 @@ export function collectNativeLayoutFieldNames(
 export function collectNativeFavoriteFieldNames(nodes: NativeLayoutLikeNode[], out: Set<string>) {
   for (const node of nodes) {
     const name = String(node?.name || '').trim();
-    const label = String(node?.label || node?.string || '').trim();
+    const attributes = node?.attributes
+      && typeof node.attributes === 'object'
+      && !Array.isArray(node.attributes)
+      ? node.attributes as Record<string, unknown>
+      : {};
+    const fieldInfo = nativeNodeFieldInfo(node);
+    const widget = String(node?.widget || attributes.widget || fieldInfo.widget || '').trim().toLowerCase();
     if (
       name
-      && (
-        nativeNodeWidget(node) === 'boolean_favorite'
-        || name === 'is_favorite'
-        || (nativeNodeWidget(node) === 'checkbox' && label.includes('仪表板'))
-      )
+      && widget === 'boolean_favorite'
     ) {
       out.add(name);
     }

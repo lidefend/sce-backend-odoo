@@ -94,7 +94,11 @@ import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime
 import { collectUnifiedPageContractV2FieldWidgets } from '../src/app/contracts/unifiedPageContractV2';
 import { computed, reactive, ref } from 'vue';
 import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormProgress';
-import { nativeNodeWidget, nativeNodeWidgetSemantics } from '../src/pages/contractForm/nativeLayoutUtils';
+import {
+  collectNativeFavoriteFieldNames,
+  nativeNodeWidget,
+  nativeNodeWidgetSemantics,
+} from '../src/pages/contractForm/nativeLayoutUtils';
 
 const relationRuntime = useRelationRuntime();
 
@@ -1135,6 +1139,18 @@ assert.equal(nativeNodeWidget({
   attributes: { widget: 'daterange' },
   fieldInfo: { widget: 'date', widget_semantics: { kind: 'date_range', end_field: 'date' } },
 }), 'daterange');
+const declaredFavoriteFields = new Set<string>();
+collectNativeFavoriteFieldNames([
+  { type: 'field', name: 'dashboard_visible', widget: 'checkbox', string: '仪表板' },
+  { type: 'field', name: 'component_favorite', widget: 'checkbox', componentConfig: { nativeWidget: 'boolean_favorite' } },
+  { type: 'field', name: 'favorite_flag', widget: 'boolean_favorite' },
+  { type: 'field', name: 'is_favorite', widget: 'checkbox' },
+], declaredFavoriteFields);
+assert.deepEqual(
+  [...declaredFavoriteFields],
+  ['favorite_flag'],
+  'favorite persistence is selected only by declared native widget identity, never by field name, label or componentConfig',
+);
 
 const nestedOne2manyRows = reactive({ responsibility_ids: [{ isNew: true, dirty: true, removed: false }] });
 const nestedProgress = useRecordFormProgress({
