@@ -3,12 +3,12 @@
   "id": "FE-CONSUMPTION-CLOSEOUT-20261126",
   "status": "active",
   "branch": "fix/fe-consumption-closeout-20261126",
-  "branch_state": "remote_pr_open_fc01_active_main_synced_relation_contract",
-  "baseline_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
-  "baseline_state": "latest_main_includes_relation_active_actions_contract_and_exact_push_history_scan_release_qualification_not_run",
+  "branch_state": "remote_pr_open_fc04_clean_initialization_unblocked_by_independent_pr_1029_runtime_rerun_pending",
+  "baseline_sha": "bf3e78c2a9e81448f36425b05e133170aee39875",
+  "baseline_state": "origin_main_includes_independent_enterprise_initialization_route_authority_fix_from_pr_1029_topic_release_not_run",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/frontend_convergence_next_20261126.md",
-  "current_batch": "FC-04 clean current-configuration page baseline",
+  "current_batch": "FC-04 clean enterprise-initialization unblock and current-configuration journey",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
@@ -652,10 +652,8 @@
     "Freeze affected files and populated checks for FC-00/FC-01 in this run; set active and run make agent.run.resume.",
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
-  "blockers": [
-    "P1/P0 producer routing gap: system.init route authority for the clean system administrator does not release smart_construction_core.action_sc_enterprise_initialization, although the scene registry declares it with enablement_scope=enterprise_initialization; owner review is required before an independent backend fix"
-  ],
-  "next_exact_step": "Owner-review the missing enterprise-initialization route authority, then expose and execute the normal initialization/enablement journey before rerunning clean product-page probes.",
+  "blockers": [],
+  "next_exact_step": "Refresh local.clean from the synchronized candidate, verify that the authorized business-configuration administrator receives the enterprise-initialization route, then execute the formal initialization and scene-enablement journey before rerunning business-page probes.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2894,7 +2892,7 @@
       "scope_limit": "P4 smoke and selector alignment only. The repaired candidate has not yet been pushed; exact-head remote CI, browser address-bar readback, mainline qualification and user acceptance remain not_run."
     },
     "clean_current_configuration_browser_baseline": {
-      "status": "blocked_owner_review_enterprise_initialization_route_gap",
+      "status": "route_gap_resolved_by_independent_pr_1029_runtime_rerun_pending",
       "candidate_head": "32f3fdc28043b5889976d3e8c2f3acc68c2d03f9",
       "candidate_build_sha256": "bd2c388290b3a17a2e98a3934a4c1c5d1e47b38c4a98a56a850db90bf028af16",
       "runtime": {
@@ -2919,7 +2917,22 @@
         "the probe initially opened the root /login path, which cannot select sc_clean; it now defaults to /t/clean",
         "the probe initially waited for a browser load event instead of observing SPA history changes; it now polls the live URL with a bounded deadline"
       ],
-      "scope_limit": "Frontend behavior matches the current route authority and fails closed. The bootstrap journey is blocked before product page selection because the producer does not release enterprise initialization; no backend fix was made pending owner review. Remote CI, mainline qualification, deployment and user acceptance remain not_run."
+      "integration_resolution": {
+        "backend_pull_request": 1029,
+        "backend_head": "31a5664c2dcaf3c4e8097904fa75e9f5dd085a80",
+        "backend_base": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
+        "merge_commit": "bf3e78c2a9e81448f36425b05e133170aee39875",
+        "frontend_sync_head": "da7aa806bb93243660ce64f0054f8ec2419812a4",
+        "frontend_sync_recovery_bundle": "/home/lidefend/workspace/sce-backend-odoo/.git/codex/recovery/published-sync-bfc373b663d8f8d662f589fd1ab848c5792be0d0-bf3e78c2a9e81448f36425b05e133170aee39875.bundle",
+        "facts_verified": [
+          "PR 1029 was independently reviewed and merged through the protected pull-request entry",
+          "the merged backend change preserves the exact native enterprise-initialization menu and action while business scenes are disabled and keeps ordinary entries fail-closed",
+          "no role, group, ACL, record-rule, frontend or data-migration source was part of PR 1029",
+          "the published frontend branch was synchronized through the governed append-only GitHub entry with a verified recovery bundle"
+        ],
+        "runtime_status": "The route-authority fix is present in the synchronized source. The clean runtime has not yet been refreshed or read back on the synchronized candidate, so successful initialization and business-page access are not claimed."
+      },
+      "scope_limit": "Frontend behavior matched the prior route authority and failed closed. The producer gap is now resolved independently on main; clean runtime refresh, the formal initialization journey, business-page access, remote CI, mainline qualification, deployment and user acceptance remain not_run on the synchronized candidate."
     },
     "remote_publication": {
       "status": "dcaf_pushed_remote_checks_deferred_because_followup_batch_supersedes_it",
