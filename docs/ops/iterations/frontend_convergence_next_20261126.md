@@ -424,6 +424,53 @@ clean 运行态权威回读：
 仍未执行 143 个业务入口的当前候选页面、角色或办理旅程，也未完成远端 PR CI、主线资格、
 部署和用户验收。
 
+### 2026-11-27 多态引用缺口并线后的 clean 精确候选复验
+
+此前待审核的后端缺口不是权限、数据库或通用关系渲染能力，而是主线的最终 V2 字段描述符
+丢失了 Odoo 原生 `many2one_reference` 的模型指针声明。原生生产者已经解析出
+`model_field`，但 `_strict_field_descriptor` 没有把它作为 `referenceModelField` 送到最终
+wire contract；同时前端 decoder 把 `many2one_reference` 与 `many2one/one2many/many2many`
+一样要求固定 `relation`。真实契约因此会在严格解码阶段停机，无法进入通用渲染。
+
+该缺口已由最新主线 `bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5`（`Merge PR #1018`）
+同时解决：
+
+- 严格生产者保留并校验 `referenceModelField`，不再从最终边界重建或丢弃原生模型指针；
+- 前端 decoder 对 `many2one_reference` 要求该字段，并把固定关系字段类型单独处理；
+- schema、真实 contract 解码、缓存版本失效和增量选测已接入；
+- 固定 relation 与多态 reference 保持不同语义，`reference` 原生值仍可保留自身模型身份。
+
+本专题通过受管 `make workspace.branch.sync-main.extended` 将 22 个本地提交重放到该主线，
+产品冲突为零。没有在本专题修改任何后端文件；主线修复属于继承输入，不属于本专题后端改动。
+`origin/main` 已确认是当前 HEAD 的祖先。`bfc954c0b` 只有合入事实和源码复核，没有对应的
+全量发布资格回执，因此不把该候选写成 scheduled release qualified。
+
+产品候选提交为 `309158b3b4a40db001cfa54c3493f937022561c1`。按该精确 SHA 重建
+clean 前端，构建指纹为
+`f31b8461d155af579a678ed9e941fdb974202b03d802431f4342bb91d827f3d8`。
+
+clean 运行态回读：
+
+- `/t/clean/api/runtime-version` 同时返回上述源码 SHA、构建指纹、`sc_clean`、
+  namespace `ns_c6fed472e939` 与 alias `clean`；
+- 根路径 `/build-info.json` 返回同一源码 SHA；
+- `local.clean.health` 与 `local.clean.entry_identity.verify` 均通过；
+- project/database/dbfilter/namespace 保持 clean 专属身份，没有使用 dev/sample/acceptance
+  或客户数据。
+
+在该 clean 精确 HEAD 上执行 `make ci.local.iteration`：47 个必需目标全部成立，其中
+19 个本轮执行、28 个复用，10 个测试目标执行 572 项测试，5 项静态检查通过，
+`unmapped_paths=0`，退出零。前端契约台账保持 31 个 declaration bindings、
+0 个未闭合缺陷。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T014601Z-2033232-56232980/receipt.json`
+
+回执 SHA256：
+`a3553590405b8ab0ac5217da737fc62022a2eeff9fc622a7ab0bd5dd4725f373`。
+
+当前没有待提交审核的后端缺口。143 个业务入口的当前候选页面、角色和办理旅程仍未执行；
+远端 PR CI、`bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
+
 ### 2026-11-27 FC-01 plain value-shape 前端消费收口
 
 继续检查 plain collection 回退时确认，普通 `char/text/html` 字段遇到对象会按

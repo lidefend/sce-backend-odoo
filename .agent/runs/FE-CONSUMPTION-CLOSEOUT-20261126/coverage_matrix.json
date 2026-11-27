@@ -3,11 +3,19 @@
   "id": "FE-CONSUMPTION-CLOSEOUT-20261126",
   "kind": "source_findings_to_behavior_evidence",
   "reference_sha": "e62a4b5dcdf726b3c15292cddde185925b0d5725",
-  "execution_baseline_sha": "a92114f0efb6733253d827e3a9985af21ab96be6",
+  "execution_baseline_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
   "activation_recheck": {
     "source_observations": 11,
     "changed_source_observations": 0,
-    "conclusion": "all prepared source digests match the qualified execution baseline; no historical rescan required"
+    "conclusion": "the topic was replayed onto the integrated polymorphic-reference mainline; the inherited producer/decoder fix was rechecked without a historical full rescan"
+  },
+  "inherited_mainline_fix": {
+    "mainline_head": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+    "merge": "PR #1018",
+    "status": "integrated_frontend_clean_exact_head_passed",
+    "contract_gap": "many2one_reference lost its referenceModelField at the final producer boundary and was incorrectly required to have a fixed relation by the frontend decoder",
+    "current_source_behavior": "the strict producer preserves and validates referenceModelField; the frontend decoder requires it and treats many2one_reference separately from fixed relation field types",
+    "release_qualification": "not_run_for_bfc954c0b"
   },
   "fc_00": {
     "status": "completed",

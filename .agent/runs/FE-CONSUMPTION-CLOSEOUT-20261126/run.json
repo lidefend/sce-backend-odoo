@@ -5,7 +5,7 @@
   "branch": "fix/fe-consumption-closeout-20261126",
   "branch_state": "bound_clean_at_activation",
   "baseline_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
-  "baseline_state": "qualified_latest_main",
+  "baseline_state": "latest_main_contains_inherited_fix_release_qualification_not_run",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/frontend_convergence_next_20261126.md",
   "current_batch": "FC-00 formal universe plus FC-01 semantic, selection and boundary closure",
@@ -88,22 +88,22 @@
     "dbfilter": "^sc_clean$",
     "namespace_alias": "clean",
     "namespace_id": "ns_c6fed472e939",
-    "source_revision": "dc0bd3f9ea87baa5d11fecaf1b4afde27dd0f097",
+    "source_revision": "309158b3b4a40db001cfa54c3493f937022561c1",
     "modules": [
       "smart_construction_bundle",
       "sc_norm_engine"
     ],
     "demo_data": false,
     "fixture": false,
-    "frontend_build_fingerprint": "839e5e5e741f6d19f357cc75350149b82d49ac6299d0c38ac32bbd1d3d61a9ce",
+    "frontend_build_fingerprint": "f31b8461d155af579a678ed9e941fdb974202b03d802431f4342bb91d827f3d8",
     "health": "passed",
-    "health_note": "The clean profile serves the exact plain-value-shape frontend source and build fingerprint. Documentation and run updates do not change the product surface.",
-    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-plain-value-frontend-build.log",
-    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-plain-value-up.log",
-    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-plain-value-health.log",
-    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-plain-value-entry-identity.log",
-    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-plain-value-runtime-version.json",
-    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-plain-value-build-info.json",
+    "health_note": "The clean profile serves the exact frontend candidate rebased onto mainline bfc954c0b, which contains the inherited polymorphic-reference producer and decoder fix. No backend code was changed in this topic.",
+    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-frontend-build.log",
+    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-up.log",
+    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-health.log",
+    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-entry-identity.log",
+    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-runtime-version.json",
+    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-build-info.json",
     "authority": "Owner-directed isolated clean development profile; existing dev/sample/acceptance/customer data and volumes are excluded."
   },
   "verification_responsibility": {
@@ -508,7 +508,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix on mainline bfc954c0b, consuming the inherited polymorphic-reference declaration fix without modifying backend code in this topic.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from the clean-validated polymorphic-reference candidate, selecting the next confirmed consumer gap from the current declaration bindings without modifying backend code in this topic.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1066,6 +1066,70 @@
       "executed_test_count": 489,
       "static_checks": 5,
       "unmapped_paths": 0,
+      "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
+    },
+    "mainline_polymorphic_reference_inheritance": {
+      "status": "passed",
+      "mainline_head": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+      "merge": "PR #1018",
+      "gap": "The final V2 field descriptor omitted the native many2one_reference model pointer, while the frontend decoder required a fixed relation for the same field.",
+      "mainline_contract": [
+        "the strict assembler preserves and validates referenceModelField",
+        "the frontend decoder requires referenceModelField for many2one_reference",
+        "many2one_reference is no longer treated as a fixed-relation field type",
+        "schema, real-contract decoding, cache invalidation and incremental selection are wired in mainline"
+      ],
+      "branch_reconciliation": "22 local topic commits were replayed onto bfc954c0b through make workspace.branch.sync-main.extended with no product conflict.",
+      "release_limit": "The latest mainline merge is integrated and source-inspected, but no full release qualification receipt exists for bfc954c0b. This run does not claim scheduled release eligibility.",
+      "backend_changes_in_topic": 0
+    },
+    "fc01_polymorphic_clean_runtime": {
+      "status": "passed",
+      "product_source_revision": "309158b3b4a40db001cfa54c3493f937022561c1",
+      "frontend_build_fingerprint": "f31b8461d155af579a678ed9e941fdb974202b03d802431f4342bb91d827f3d8",
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "dbfilter": "^sc_clean$",
+      "namespace_id": "ns_c6fed472e939",
+      "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-frontend-build.log",
+      "frontend_build_log_sha256": "e63ec561a8da4532b4bbb0f8c4a5e1747bf58ac4fb285773b4a87510abeaab0b",
+      "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-up.log",
+      "up_log_sha256": "57964e3d6ac0e75a5de9face50de22d46b11cfd8032161a7c04453ad9e4ccb54",
+      "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-health.log",
+      "health_log_sha256": "3edb53ae8eaa7889b0a03472c49ccafd09763cf079679d2ff182f7f669dd4550",
+      "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-entry-identity.log",
+      "entry_identity_log_sha256": "08a8d638a4b2744492f8eb760b91130ef319be7d52b7865598a735375722dc78",
+      "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-runtime-version.json",
+      "runtime_version_log_sha256": "fc1fcbc5592daca249abd20fe3b92b3a072360516edc6b04982c6ef046c62bda",
+      "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-build-info.json",
+      "build_info_log_sha256": "77d7f9c585d254ec0fd947ee3cc0fa0537d188ce969f8ce93e9fec7fd47ec192",
+      "facts_verified": [
+        "the clean frontend was built from exact candidate 309158b3b4a40db001cfa54c3493f937022561c1",
+        "the Odoo container was recreated with the matching frontend build fingerprint",
+        "tenant runtime-version returns the exact source revision, build fingerprint, sc_clean database, namespace id and clean alias",
+        "root build-info.json returns the same exact source revision",
+        "local.clean.health and entry identity verification pass under the isolated clean profile"
+      ],
+      "scope_limit": "Environment, build and runtime identity readback only; it is not a business-entry browser journey or product acceptance."
+    },
+    "fc01_polymorphic_clean_exact_head_validation": {
+      "status": "passed",
+      "head": "309158b3b4a40db001cfa54c3493f937022561c1",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T014601Z-2033232-56232980/receipt.json",
+      "receipt_sha256": "a3553590405b8ab0ac5217da737fc62022a2eeff9fc622a7ab0bd5dd4725f373",
+      "executed_targets": 19,
+      "reused_targets": 28,
+      "test_targets": 10,
+      "executed_test_count": 572,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "the inherited polymorphic-reference producer and decoder chain remains selected and green at the synchronized candidate",
+        "the frontend contract-basis ledger remains at 31 declaration bindings and 0 open defects",
+        "lint, strict typecheck, frontend build-related static checks and affected consumer tests passed",
+        "the run resolved no outside-scope or unmapped paths"
+      ],
       "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
     }
   }
