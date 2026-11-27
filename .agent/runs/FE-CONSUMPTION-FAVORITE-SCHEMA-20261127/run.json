@@ -132,13 +132,39 @@
       "source_revision": "d1c69ef9edf5476dcc57603ab148f7d187267776"
     },
     "stack_transfer": {
-      "status": "applied_pending_validation",
+      "status": "validated",
       "source_head": "d1c69ef9edf5476dcc57603ab148f7d187267776",
       "destination_base_head": "40afa747ec1deaaf3027898bcba48081ff0ba4b0",
       "method": "governed independent worktree plus git apply of the exact reviewed patch; generated component-driver inventory regenerated from the combined source",
       "resolved_conflict": "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    },
+    "stack_exact_head_validation": {
+      "status": "passed",
+      "head": "3d0e669d795485dee631789c0c9d278b2f67ce1e",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T045451Z-3532764-691170337/receipt.json",
+      "receipt_sha256": "ae2869a24bd7f23f3024bbbcefa00e9f3ae3b0f40b0753eb18457e8bc22526c3",
+      "executed_targets": 14,
+      "reused_targets": 0,
+      "test_targets": 8,
+      "executed_test_count": 128,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "worktree_clean": true
+    },
+    "stack_exact_head_frontend_build": {
+      "status": "passed",
+      "head": "3d0e669d795485dee631789c0c9d278b2f67ce1e",
+      "command": "make verify.frontend.build ENV=dev ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev",
+      "log": ".runtime/agent-runs/FE-CONSUMPTION-FAVORITE-SCHEMA-20261127/frontend-build-stacked-exact-head.log",
+      "log_sha256": "fc24770257284d3a1a2912b541db7e192d0cebf3065ff2bd30f97aee7a73a34f",
+      "build_info_sha256": "68c62a54cbb3a9edfd5d79e9ffaf2a2acbbf407639008c2f9b597367c301e95b",
+      "frontend_build_fingerprint": "4d1827fbca4079b648627969783fd77d3c4786cafb2682b3d9a54eec1e3aad9f",
+      "source_revision": "3d0e669d795485dee631789c0c9d278b2f67ce1e"
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the stacked transfer, rerun exact-head local iteration and build on its full HEAD, then publish through governed PR tooling."
+  "next_exact_step": "Commit this evidence, run the final exact-head targeted publish gate, then publish the stack branch and integrate it into PR #1019 through governed PR tooling."
 }

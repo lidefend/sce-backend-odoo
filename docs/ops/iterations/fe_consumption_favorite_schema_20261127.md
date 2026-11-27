@@ -38,3 +38,13 @@
 `40afa747ec1deaaf3027898bcba48081ff0ba4b0`，唯一冲突是自动生成的 component-driver
 清单，已由受管生成入口重新生成，而非手工二选一。转接提交仍须对新的完整 HEAD 重跑
 本地精准门禁和构建。
+
+转接后的 clean 精确 HEAD 为 `3d0e669d795485dee631789c0c9d278b2f67ce1e`：
+
+- `make ci.local.iteration`：14 个受影响目标、8 个测试目标、128 项测试、5 项静态检查，
+  `unmapped=0`、`not_run=0`、`blocked=0`；
+- 前端构建通过，构建信息记录同一 source revision，构建指纹
+  `4d1827fbca4079b648627969783fd77d3c4786cafb2682b3d9a54eec1e3aad9f`；
+- 契约台账与当前同栈 assignee 变更合并后保持 38 个绑定、0 个未闭合缺陷。
+
+证据记录写入后会形成新的纯记录 HEAD；发布前以该完整 HEAD 重跑定向静态/测试门禁。
