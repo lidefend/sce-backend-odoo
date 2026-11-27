@@ -4,6 +4,7 @@ from __future__ import annotations
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_construction_core.services import capability_registry
+from .business_case import BusinessTransactionCase
 
 
 @tagged("post_install", "-at_install", "sc_smoke", "capability_registry")
@@ -87,6 +88,302 @@ class TestCapabilityRegistryService(TransactionCase):
         )
         roles = capability_registry._resolve_role_codes_for_user(user)
         self.assertIn("pm", roles)
+
+    def test_finance_operator_role_includes_dictionary_read_capability(self):
+        role_group = self.env.ref(
+            "smart_construction_core.group_sc_role_finance_user",
+            raise_if_not_found=False,
+        )
+        data_read_group = self.env.ref(
+            "smart_construction_core.group_sc_cap_data_read",
+            raise_if_not_found=False,
+        )
+        if not role_group or not data_read_group:
+            self.skipTest("smart_construction_core finance role data not installed")
+        user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Finance operator role dependency",
+            "login": "finance_operator_role_dependency",
+            "groups_id": [(6, 0, [
+                self.env.ref("base.group_user").id,
+                role_group.id,
+            ])],
+        })
+        self.assertIn(data_read_group, user.groups_id)
+        dictionary_model = self.env["sc.dictionary"].with_user(user)
+        self.assertTrue(dictionary_model.check_access_rights("read", raise_exception=False))
+
+    def test_finance_operator_contract_search_satisfies_native_search_view_dependencies(self):
+        from odoo.addons.smart_core.handlers.api_data import ApiDataHandler
+
+        role_group = self.env.ref(
+            "smart_construction_core.group_sc_role_finance_user",
+            raise_if_not_found=False,
+        )
+        if not role_group:
+            self.skipTest("smart_construction_core finance role data not installed")
+
+        company = self.env["res.company"].create({
+            "name": "Finance Role Default Configuration Company",
+        })
+        BusinessTransactionCase.register_business_company(
+            company,
+            tenant_key="finance-role-search-default-config",
+        )
+        company_env = self.env(context={
+            **self.env.context,
+            "allowed_company_ids": [company.id],
+        })
+        user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Finance contract search actor",
+            "login": "finance_contract_search_actor",
+            "company_id": company.id,
+            "company_ids": [(6, 0, [company.id])],
+            "groups_id": [(6, 0, [
+                self.env.ref("base.group_user").id,
+                role_group.id,
+            ])],
+        })
+        user_env = self.env(user=user.id, context={
+            **self.env.context,
+            "allowed_company_ids": [company.id],
+        })
+        self.assertEqual(user_env.user._sc_data_company_ids(), [company.id])
+
+        contract_model = user_env["construction.contract"]
+        handler = ApiDataHandler(user_env)
+        search_view_fields = handler._search_view_field_names(contract_model)
+        self.assertIn("category_id", search_view_fields)
+        self.assertIn("contract_type_id", search_view_fields)
+        relation_models = {
+            contract_model._fields[field_name].comodel_name
+            for field_name in search_view_fields
+            if contract_model._fields.get(field_name)
+            and contract_model._fields[field_name].type == "many2one"
+        }
+        self.assertIn("sc.dictionary", relation_models)
+        for model_name in sorted(relation_models):
+            self.assertTrue(
+                user_env[model_name].check_access_rights("read", raise_exception=False),
+                "%s search view relation %s is not readable by the standard finance role"
+                % (contract_model._name, model_name),
+            )
+
+        category = self.env["sc.dictionary"].create({
+            "name": "验收付款合同",
+            "code": "finance-search-contract-category",
+            "type": "contract_category",
+        })
+        contract_type = self.env["sc.dictionary"].create({
+            "name": "验收付款合同",
+            "code": "finance-search-contract-type",
+            "type": "contract_type",
+        })
+        project = company_env["project.project"].create({
+            "name": "Finance Search Project",
+            "company_id": company.id,
+        })
+        partner = company_env["res.partner"].create({
+            "name": "Finance Search Partner",
+            "company_id": company.id,
+        })
+        contract = company_env["construction.contract"].create({
+            "subject": "验收付款合同 CNY",
+            "type": "in",
+            "project_id": project.id,
+            "partner_id": partner.id,
+            "category_id": category.id,
+            "contract_type_id": contract_type.id,
+        })
+        self.assertEqual(contract.company_id, company)
+        company_env["construction.contract"].create({
+            "subject": "无关采购合同",
+            "type": "in",
+            "project_id": project.id,
+            "partner_id": partner.id,
+            "category_id": category.id,
+            "contract_type_id": contract_type.id,
+        })
+
+        result = handler.run({
+            "intent": "api.data",
+            "op": "list",
+            "model": "construction.contract",
+            "fields": ["id", "name", "display_name"],
+            "search_term": "验收付款合同 CNY",
+            "limit": 5,
+            "need_total": True,
+            "context": {"allowed_company_ids": [company.id]},
+        })
+        self.assertIsInstance(result, tuple)
+        data, meta = result
+        self.assertEqual(meta["op"], "list")
+        self.assertEqual(data["total"], 1)
+        self.assertEqual({row["id"] for row in data["records"]}, {contract.id})
+        self.assertFalse(
+            user_env["sc.dictionary"].check_access_rights("write", raise_exception=False),
+            "satisfying the read dependency must not grant dictionary write access",
+        )
+
+    def test_standard_role_action_and_operation_permissions_are_closed(self):
+        import json
+        from pathlib import Path
+
+        from odoo.tools.safe_eval import safe_eval
+        from odoo.addons.smart_core.handlers.api_data import ApiDataHandler
+
+        module_root = Path(__file__).resolve().parents[1]
+        rebinding = json.loads(
+            (module_root / "data/menu_entry_group_rebinding.json").read_text(
+                encoding="utf-8"
+            )
+        )
+
+        errors = []
+        action_entries = {}
+        for menu_xmlid in sorted(rebinding):
+            menu = self.env.ref(menu_xmlid, raise_if_not_found=False)
+            if not menu or not menu.action:
+                errors.append("%s: product menu action is missing" % menu_xmlid)
+                continue
+            action_xmlid = menu.action.get_external_id().get(menu.action.id) or ""
+            if action_xmlid:
+                action_entries.setdefault(action_xmlid, set()).add(
+                    "smart_construction_core.group_sc_%s" % rebinding[menu_xmlid]
+                )
+
+        actions = self.env["ir.actions.act_window"].sudo().browse()
+        for action_xmlid in sorted(action_entries):
+            action = self.env.ref(action_xmlid, raise_if_not_found=False)
+            if not action:
+                errors.append("%s: declared product action is missing" % action_xmlid)
+                continue
+            if action._name == "ir.actions.act_window" and action not in actions:
+                actions |= action
+
+        role_data = self.env["ir.model.data"].sudo().search([
+            ("module", "=", "smart_construction_core"),
+            ("model", "=", "res.groups"),
+            ("name", "=like", "group_sc_role_%"),
+        ])
+        role_groups = self.env["res.groups"]
+        for row in role_data:
+            role_groups |= self.env["res.groups"].sudo().browse(row.res_id).exists()
+        role_groups |= self.env.ref("smart_construction_core.group_sc_business_full")
+        role_groups |= self.env.ref("smart_construction_core.group_sc_role_experience")
+
+        for role_group in role_groups.sorted("id"):
+            role_xmlid = role_group.get_external_id().get(role_group.id) or role_group.name
+            login = "role_action_%s" % role_group.id
+            user = self.env["res.users"].with_context(no_reset_password=True).create({
+                "name": "Role action closure %s" % role_group.name,
+                "login": login,
+                "company_id": self.env.company.id,
+                "company_ids": [(6, 0, self.env.company.ids)],
+                "groups_id": [(6, 0, [
+                    self.env.ref("base.group_user").id,
+                    role_group.id,
+                ])],
+            })
+            closure = self.env["res.groups"]
+            pending = role_group
+            while pending:
+                current = pending[0]
+                pending = pending[1:]
+                if current in closure:
+                    continue
+                closure |= current
+                pending |= current.implied_ids - closure
+
+            user_env = self.env(user=user.id, context={
+                **self.env.context,
+                "allowed_company_ids": self.env.company.ids,
+            })
+            handler = ApiDataHandler(user_env)
+            model_checks = {}
+            for action in actions:
+                action_xmlid = action.get_external_id().get(action.id) or action.name
+                if action.groups_id and not (action.groups_id & closure):
+                    continue
+                if not any(user.has_group(group) for group in action_entries.get(action_xmlid, ())):
+                    continue
+                if not action.groups_id and action_xmlid.startswith("smart_construction_core."):
+                    errors.append("%s: visible product action has no authorization group" % action_xmlid)
+                model_name = action.res_model
+                if not model_name or model_name not in user_env:
+                    errors.append("%s %s: action target model is missing" % (role_xmlid, action_xmlid))
+                    continue
+
+                cached = model_checks.get(model_name)
+                if cached is None:
+                    model = user_env[model_name]
+                    search_view_fields = handler._filter_readable_fields(
+                        model,
+                        handler._search_view_field_names(model),
+                    )
+                    relation_models = {
+                        model._fields[field_name].comodel_name
+                        for field_name in search_view_fields
+                        if model._fields.get(field_name)
+                        and model._fields[field_name].type == "many2one"
+                    }
+                    cached = {
+                        "rights": {
+                            operation: model.check_access_rights(
+                                operation, raise_exception=False
+                            )
+                            for operation in ("read", "create", "write", "unlink")
+                        },
+                        "relations": {
+                            relation: user_env[relation].check_access_rights(
+                                "read", raise_exception=False
+                            )
+                            for relation in relation_models
+                            if relation in user_env
+                        },
+                    }
+                    model_checks[model_name] = cached
+
+                if not cached["rights"]["read"]:
+                    errors.append(
+                        "%s %s: action target %s is not readable"
+                        % (role_xmlid, action_xmlid, model_name)
+                    )
+                    continue
+                if not all(cached["relations"].values()):
+                    denied = sorted(
+                        relation for relation, allowed in cached["relations"].items()
+                        if not allowed
+                    )
+                    errors.append(
+                        "%s %s: search dependency not readable on %s: %s"
+                        % (role_xmlid, action_xmlid, model_name, ", ".join(denied))
+                    )
+
+                try:
+                    action_context = safe_eval(
+                        action.context or "{}",
+                        {
+                            "context": dict(user_env.context),
+                            "uid": user.id,
+                            "allowed_company_ids": list(self.env.company.ids),
+                        },
+                    )
+                except Exception:
+                    action_context = {}
+                if not isinstance(action_context, dict):
+                    action_context = {}
+                for context_key, operation in (
+                    ("create", "create"),
+                    ("edit", "write"),
+                    ("delete", "unlink"),
+                ):
+                    if action_context.get(context_key) is True and not cached["rights"][operation]:
+                        errors.append(
+                            "%s %s: action declares %s=true but target %s lacks %s ACL"
+                            % (role_xmlid, action_xmlid, context_key, model_name, operation)
+                        )
+
+        self.assertFalse(errors, "\n".join(errors))
 
 
 @tagged("post_install", "-at_install", "capability_verdict_projection")

@@ -82,16 +82,16 @@ class TestRoleCapabilityAuthority(TransactionCase):
             "group_sc_role_accounting_read": {f"p{number:02d}" for number in (2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14)},
             "group_sc_role_accounting_user": {f"p{number:02d}" for number in (2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14)},
             "group_sc_role_accounting_manager": {f"p{number:02d}" for number in (2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 13, 14)},
-            "group_sc_role_cost_user": {f"p{number:02d}" for number in (2, 3, 4, 6, 7, 8, 9, 10, 11, 13)},
+            "group_sc_role_cost_user": {f"p{number:02d}" for number in (2, 3, 6, 7, 8, 9, 10, 11, 13)},
             "group_sc_role_executive": {f"p{number:02d}" for number in (3, 5, 7, 13)},
             "group_sc_role_finance_user": {f"p{number:02d}" for number in (2, 3, 5, 6, 8, 13)},
             "group_sc_role_finance_manager": {f"p{number:02d}" for number in (2, 3, 5, 6, 8, 13)},
-            "group_sc_role_owner": {f"p{number:02d}" for number in (2, 3, 4, 5, 6, 7, 9, 11, 13, 14)},
-            "group_sc_role_project_manager": {f"p{number:02d}" for number in (2, 4, 5, 6, 7, 11, 13, 14)},
-            "group_sc_role_project_user": {f"p{number:02d}" for number in (3, 4, 5, 6, 7, 8, 9, 10, 11, 14)},
+            "group_sc_role_owner": {f"p{number:02d}" for number in (2, 3, 5, 6, 7, 9, 11, 13, 14)},
+            "group_sc_role_project_manager": {f"p{number:02d}" for number in (2, 5, 6, 7, 11, 13, 14)},
+            "group_sc_role_project_user": {f"p{number:02d}" for number in (3, 5, 6, 7, 8, 9, 10, 11, 14)},
             "group_sc_role_operation_user": {"p06"},
             "group_sc_business_full": {f"p{number:02d}" for number in range(1, 15)},
-            "group_sc_role_experience": {f"p{number:02d}" for number in range(1, 15)},
+            "group_sc_role_experience": {f"p{number:02d}" for number in (1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)},
         }
         for group_name, carriers in expected.items():
             group = self.env.ref(f"smart_construction_core.{group_name}")

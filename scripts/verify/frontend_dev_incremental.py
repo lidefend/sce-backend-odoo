@@ -354,6 +354,20 @@ RULES = (
         "addons/smart_construction_core/views/menu_business_taxonomy.xml",
     ), ("verify.smart_construction_core.module_baseline",)),
     Rule((
+        "addons/smart_construction_core/models/core/cost_domain.py",
+        "addons/smart_construction_core/models/core/material_acceptance.py",
+        "addons/smart_construction_core/models/core/project_project_financial.py",
+        "addons/smart_construction_core/views/core/construction_diary_views.xml",
+        "addons/smart_construction_core/views/core/contract_views.xml",
+        "addons/smart_construction_core/views/core/cost_domain_views.xml",
+        "addons/smart_construction_core/views/core/cost_plan_views.xml",
+        "addons/smart_construction_core/views/core/material_acceptance_views.xml",
+        "addons/smart_construction_core/views/core/material_supplier_return_views.xml",
+    ), (
+        "verify.smart_construction_core.module_baseline",
+        "verify.product_view_structure.contract.unit",
+    )),
+    Rule((
         "addons/smart_construction_scene/tests/test_enterprise_initialization_journey.py",
         "addons/smart_construction_scene/tests/test_source_bounded_scene_rules.py",
     ), ("verify.smart_construction_scene.module_baseline",)),

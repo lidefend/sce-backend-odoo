@@ -64,10 +64,13 @@
                         <button name="validate_tier" string="审批通过" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
                         <button name="reject_tier" string="审批驳回" type="object" invisible="not can_review or validation_status not in ('waiting', 'pending')"/>
                         <button name="action_confirm" string="提交审批" type="object" class="btn-primary"
+                                groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"
                                 invisible="state != 'draft' or validation_status in ('waiting', 'pending', 'validated')"/>
                         <button name="action_done" string="完成" type="object" class="btn-primary"
+                                groups="smart_construction_core.group_sc_cap_project_manager"
                                 invisible="state != 'confirmed'"/>
                         <button name="action_cancel" string="取消" type="object"
+                                groups="smart_construction_core.group_sc_cap_project_user,smart_construction_core.group_sc_cap_project_manager"
                                 invisible="state not in ('draft', 'confirmed')"/>
                         <field name="state" widget="statusbar"
                                statusbar_visible="draft,confirmed,done,legacy_confirmed,cancel"/>

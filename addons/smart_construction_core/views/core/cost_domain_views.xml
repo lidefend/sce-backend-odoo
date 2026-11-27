@@ -572,7 +572,7 @@
         <field name="arch" type="xml">
             <form string="进度计量">
                 <header>
-                    <button name="action_submit_progress" type="object" string="提交" class="btn-primary" invisible="state == 'submitted'"/>
+                    <button name="action_submit_progress" type="object" string="提交" class="btn-primary" groups="smart_construction_core.group_sc_cap_cost_user,smart_construction_core.group_sc_cap_cost_manager" invisible="state == 'submitted'"/>
                     <field name="state" widget="statusbar" statusbar_visible="draft,submitted"/>
                 </header>
                 <sheet>

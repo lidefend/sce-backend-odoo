@@ -54,7 +54,7 @@
                             <field name="name" readonly="1"/>
                             <field name="project_id"/>
                             <field name="source_inbound_id"/>
-                            <button name="action_load_inbound_lines" type="object" string="载入入库明细" invisible="not source_inbound_id or state != 'draft'"/>
+                            <button name="action_load_inbound_lines" type="object" string="载入入库明细" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager" invisible="not source_inbound_id or state != 'draft'"/>
                             <field name="supplier_id"/>
                         </group>
                         <group>
@@ -88,7 +88,7 @@
                             <field name="attachment_ids" widget="many2many_binary" nolabel="1"/>
                         </page>
                         <page string="关联库存凭证">
-                            <field name="stock_picking_id" readonly="1"/>
+                            <field name="stock_picking_id" readonly="1" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager"/>
                         </page>
                     </notebook>
                 </sheet>

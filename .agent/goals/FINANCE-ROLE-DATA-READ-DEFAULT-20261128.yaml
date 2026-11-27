@@ -1,0 +1,60 @@
+schema_version: 1
+goal:
+  id: FINANCE-ROLE-DATA-READ-DEFAULT-20261128
+  title: Close standard role action and search dependency permissions
+  status: active
+  execution_status: implementation
+  implementation_authorized: true
+  formal_product_layer: P1
+  layer_target: construction-industry standard role capability composition
+  module:
+    - smart_construction_core
+  standard_vs_user_specific: construction_standard
+  objective: >
+    Every standard product role must be self-consistent for the actions its
+    declared menus expose: the action target model is readable, explicit
+    create/edit action context has matching ACL, and native search-view relation
+    dependencies are readable. Role composition must not advertise accounting
+    entries or settlement operations to roles that cannot execute them.
+  why_here: >
+    This is construction-industry role composition. The capability already exists;
+    the standard role omitted a required dependency.
+  why_not_elsewhere:
+    - The frontend must not manufacture dictionary permission or replace declared labels.
+    - P0 generic APIs must not weaken dictionary ACL or fabricate relation labels.
+    - P3 runtime configuration is a repair path, not the standard product default.
+    - P4 clean fixtures must not permanently add missing capabilities to every finance account.
+  blast_radius: >
+    Standard role compositions now include the existing data, cost, settlement,
+    finance and material read capabilities required by their declared actions.
+    Product-owned actions and form buttons add capability gates where they declare
+    write operations. Inaccessible accounting entry menus are removed from project,
+    cost, owner and experience entry scopes. ACLs, record rules and frontend source
+    remain unchanged.
+  exclusions:
+    - ACL or record-rule changes
+    - native Odoo action/view permission projection changes
+    - frontend fallback labels
+    - unrestricted platform or configuration administration
+    - persistent database migration
+  tasks:
+    - id: FRD-02
+      status: active
+      outcome: >
+        Close standard role action-target, declared-operation and search-view
+        relation permissions across the product menu surface, while recording the
+        separate P0 native button/relation contract-projection gap.
+  acceptance:
+    - Finance-operator role members inherit data-center read capability.
+    - Every many2one target in the contract search view is readable by the standard finance-operator role.
+    - A free-text api.data contract list returns the matching contract for an initialized business company.
+    - The read dependency does not grant dictionary write access.
+    - Every standard role can read the target model of each product action it can reach through its declared menu carrier.
+    - Every action declaring create or edit exposes that operation only to a role with the matching ACL.
+    - Every readable many2one dependency in reachable product search views is readable by the same role.
+    - Accounting entry, cost, settlement and material actions are not exposed to roles that cannot execute their declared operation.
+    - Product-owned forms gate write buttons by the capability that owns the operation.
+    - Existing finance user and manager capability meaning is preserved.
+    - No ACL, record rule or frontend source changes.
+  run: .agent/runs/FINANCE-ROLE-DATA-READ-DEFAULT-20261128/run.json
+  record: docs/ops/iterations/finance_role_data_read_default_20261128.md

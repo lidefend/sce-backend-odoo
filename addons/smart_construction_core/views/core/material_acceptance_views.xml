@@ -488,7 +488,7 @@
                         <page string="来源追溯">
                             <group>
                                 <group string="执行结果">
-                                    <field name="stock_picking_id" readonly="1"/>
+                                    <field name="stock_picking_id" readonly="1" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager"/>
                                     <field name="source_transfer_outbound_id" readonly="1"/>
                                     <field name="payment_status_text" readonly="1"/>
                                     <field name="payment_paid_amount" readonly="1"/>
@@ -636,7 +636,7 @@
                         <page string="来源追溯">
                             <group>
                                 <group string="执行结果">
-                                    <field name="stock_picking_id" readonly="1"/>
+                                    <field name="stock_picking_id" readonly="1" groups="smart_construction_core.group_sc_cap_material_user,smart_construction_core.group_sc_cap_material_manager"/>
                                     <field name="transfer_inbound_id" readonly="1" invisible="outbound_type != 'transfer'"/>
                                 </group>
                                 <group string="来源记录" groups="smart_construction_core.group_sc_cap_config_admin">
