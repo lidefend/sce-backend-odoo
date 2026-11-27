@@ -1,0 +1,48 @@
+{
+  "schema": "r2a-clean-replacement/v1",
+  "base": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+  "branch": "fix/verify-system-closeout-01-r2a-clean-20261127",
+  "supersedes_pr": 1022,
+  "preserved_head": "7be328ae0fb987fc3a23c91bf49440ee12b71bbc",
+  "code_comparison": "IDENTICAL_TO_FINAL_REVIEWED_1022_WORKTREE",
+  "code_sha256": {
+    "make/ci.mk": "f03a70b10a56b6e682c7130f0760776a85667104cbd9d657a815b08f21b022cc",
+    "make/frontend.mk": "29ff62cb50292afb7ab0f2a89654e261ff4c46150300035536f3554783c43636",
+    "scripts/ci/backend_impact_plan.py": "3b51c2dc23083115c3c3426d4738afe1f29e27ec3375f4d673633460b2bfb12d",
+    "scripts/ci/main_full_release_dispatch.py": "50e4a3c54c69e457a113176bbd039e2a7fa887c8245eb2845a7b0f0fcdf86dcb",
+    "scripts/ci/main_full_release_evidence.py": "e528a190d7860556f24418e832f3944736e992e846679513bbc301a95c4e9c9e",
+    "scripts/ci/test_main_full_release_dispatch.py": "69e4832fdbe7854d5390bb8733734c2cea17cd0eb9c618a32e0575ade59cb3a6",
+    "scripts/ci/test_main_full_release_evidence.py": "6b6565c9e79d10e4ad5786b5767ce40e1a04f6c912062d3af7e387d1f71da3b3",
+    "scripts/ops/incremental_execution.py": "f0eeb0d11bf1511915d6030ebf512d877bd2c4f9e521d448d591164ac7fc4e5c",
+    "scripts/verify/frontend_dev_incremental.py": "bfef8b14a447d3ed156871605dbb507dead69cc24de77f57c86632e35eb7d9d5",
+    "scripts/verify/test_frontend_dev_incremental.py": "c7005a8987605e3f0cf75169ef91a581c4f0389c5a2e810c6f47d1501bc52afe",
+    "scripts/verify/test_incremental_environment.py": "163fa6a4c563c94161701326fd826c91faffd471d4b0e867332cfd73bd5c1ac6"
+  },
+  "local_targeted": "PASSED: freshly executed 6 operator unit tests, 6 CLI tests with independent negative cases, 286 executor tests",
+  "local_incremental": "PASSED: 2 executed, 5 identity-checked reuse; dirty source only; committed candidate receipt still required",
+  "logs": [
+    {
+      "path": "docs/audit/verify_system_closeout_01_r2a/clean_replacement/main-full.json",
+      "sha256": "f88c9e4ebce93075fca11407db3a018e1f4f4033e2e5bc83217ac381746d2ea5",
+      "raw_sha256": "f3d91005757d811264f72207df82efec18eb9f044fdd275810f920771f2a0c27"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01_r2a/clean_replacement/executor.json",
+      "sha256": "4494fd94687c74b5cb9ca74bb84c4d964c7b948f7f7416a4b678daaeeea37b2c",
+      "raw_sha256": "38365fcc55f8d4abd0118d80fa3bf40bf48ec4bba1b328d1d51b4e49a0556749"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01_r2a/clean_replacement/freeze-prepare.json",
+      "sha256": "e012c663629d6c79b7e715581ae0335a19b6f4a0df1abc0ac8a436a2c97686a4",
+      "raw_sha256": "c4c92a41e8db9199d601487a52f461fdbeb75e15d40c16e64ce8de80fdeaebff"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01_r2a/clean_replacement/local-dirty.json",
+      "sha256": "cd217f9c3bd978669c35ce3c2cc0bad9173491904dc7f775b364f32974cd8b3c",
+      "raw_sha256": "11e285bd846807c0f898a234983bbb0fcf6ada6c92d7f321e46e302e49484221"
+    }
+  ],
+  "history_scan": "PENDING exact committed candidate full ancestry",
+  "remote_integration": "NOT_VERIFIED",
+  "mainline_qualification": "NOT_VERIFIED; R3 excluded"
+}

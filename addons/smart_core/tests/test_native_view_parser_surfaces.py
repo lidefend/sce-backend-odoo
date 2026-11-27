@@ -739,6 +739,48 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(node["attributes"]["modifiers"], "{'readonly': true}")
         self.assertEqual(node["relation_active_actions"], {"create": False})
 
+    def test_form_relation_active_actions_preserve_dynamic_many2one_and_tags_create(self):
+        partner = _parse_test_xml(
+            '<field name="partner_id" can_create="state == \'draft\'" '
+            'can_write="state != \'done\'"/>'
+        )
+        partner_node = self.tree_form_parser._node_to_layout_from_dom(
+            partner,
+            {"partner_id": {"type": "many2one"}},
+            list(partner.iter()),
+        )
+        tags = _parse_test_xml(
+            '<field name="tag_ids" widget="many2many_tags" can_create="1"/>'
+        )
+        tags_node = self.tree_form_parser._node_to_layout_from_dom(
+            tags,
+            {"tag_ids": {"type": "many2many"}},
+            list(tags.iter()),
+        )
+
+        self.assertEqual(
+            partner_node["relation_active_actions"],
+            {
+                "create": {
+                    "kind": "field_compare",
+                    "semantics": "python",
+                    "field": "state",
+                    "operator": "==",
+                    "value": "draft",
+                    "raw": "state == 'draft'",
+                },
+                "write": {
+                    "kind": "field_compare",
+                    "semantics": "python",
+                    "field": "state",
+                    "operator": "!=",
+                    "value": "done",
+                    "raw": "state != 'done'",
+                },
+            },
+        )
+        self.assertEqual(tags_node["relation_active_actions"], {"create": True})
+
     def test_field_widget_semantics_preserves_date_range_and_semantic_feature(self):
         semantics = self.tree_form_parser._field_widget_semantics(
             "date_start",

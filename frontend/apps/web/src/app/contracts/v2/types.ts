@@ -380,6 +380,101 @@ export interface ContractV2NativeWidgetProvenance {
   reasonCode: string;
 }
 
+export interface ContractV2ContextGetOperand {
+  kind: 'context_get';
+  key: string;
+  default?: unknown;
+}
+
+export interface ContractV2FieldValueOperand {
+  kind: 'field_value';
+  field: string;
+}
+
+export interface ContractV2LiteralOperand {
+  kind: 'literal';
+  value: unknown;
+}
+
+export type ContractV2ModifierOperand =
+  | ContractV2ContextGetOperand
+  | ContractV2FieldValueOperand
+  | ContractV2LiteralOperand;
+
+export interface ContractV2StaticModifier {
+  kind: 'static';
+  value: boolean;
+  raw?: string;
+}
+
+export interface ContractV2FieldTruthyModifier {
+  kind: 'field_truthy';
+  field: string;
+  semantics?: 'python';
+  raw?: string;
+}
+
+export interface ContractV2FieldCompareModifier {
+  kind: 'field_compare';
+  field: string;
+  operator: '=' | '==' | '!=' | '<>' | '>' | '>=' | '<' | '<=' | 'in' | 'not in' | 'like' | 'ilike';
+  semantics?: 'python';
+  value?: unknown;
+  value_field?: string;
+  raw?: string;
+}
+
+export interface ContractV2NotModifier {
+  kind: 'not';
+  expr: ContractV2ModifierValue;
+  raw?: string;
+}
+
+export interface ContractV2GroupedModifier {
+  kind: 'all' | 'any';
+  exprs: ContractV2ModifierValue[];
+  raw?: string;
+}
+
+export interface ContractV2ValueTruthyModifier {
+  kind: 'value_truthy';
+  semantics: 'python';
+  value_expr: ContractV2ContextGetOperand;
+  raw?: string;
+}
+
+export interface ContractV2ValueCompareModifier {
+  kind: 'value_compare';
+  semantics: 'python';
+  operator: '=' | '==' | '!=' | '<>' | '>' | '>=' | '<' | '<=' | 'in' | 'not in' | 'like' | 'ilike';
+  left: ContractV2ModifierOperand;
+  right: ContractV2ModifierOperand;
+  raw?: string;
+}
+
+export interface ContractV2UnsupportedModifier {
+  kind: 'unsupported';
+  raw: string;
+  reason: 'unsupported_domain' | 'unsupported_expression';
+}
+
+export type ContractV2ModifierExpression =
+  | ContractV2StaticModifier
+  | ContractV2FieldTruthyModifier
+  | ContractV2FieldCompareModifier
+  | ContractV2NotModifier
+  | ContractV2GroupedModifier
+  | ContractV2ValueTruthyModifier
+  | ContractV2ValueCompareModifier
+  | ContractV2UnsupportedModifier;
+
+export type ContractV2ModifierValue = boolean | ContractV2ModifierExpression;
+
+export interface ContractV2RelationActiveActions {
+  create?: ContractV2ModifierValue;
+  write?: ContractV2ModifierValue;
+}
+
 export interface ContractV2FieldDescriptor extends ContractV2Dictionary {
   schemaVersion?: '1.0.0';
   fieldCode: string;
@@ -400,6 +495,7 @@ export interface ContractV2FieldDescriptor extends ContractV2Dictionary {
   domainExpression?: unknown;
   context?: unknown;
   relationEntry?: ContractV2Dictionary;
+  relationActiveActions?: ContractV2RelationActiveActions;
   widgetOptions?: ContractV2Dictionary;
   subview?: ContractV2Dictionary;
   filename?: string;
@@ -543,6 +639,7 @@ export interface ContractV2FormFieldDescriptor extends ContractV2Dictionary {
   referenceModelField?: string;
   selection?: Array<[string, string]>;
   relationEntry?: ContractV2Dictionary;
+  relationActiveActions?: ContractV2RelationActiveActions;
   widgetOptions?: ContractV2Dictionary;
   subview?: ContractV2Dictionary;
   filename?: string;

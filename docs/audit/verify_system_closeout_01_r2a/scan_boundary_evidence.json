@@ -1,0 +1,94 @@
+{
+  "schema": "r2a-scan-boundary/v1",
+  "source_head": "28456c75426876bab4fa068228726b401aa414a8",
+  "source_state": "owned dirty scope; hashes below bind implementation",
+  "authorization": "Owner explicitly approved PR candidate/full-global responsibility separation; rule patterns and exception registries unchanged",
+  "input_sha256": {
+    ".github/workflows/public_guard.yml": "ef9ff8bf8ddd5b7c9e9796769b023b091b75e4935bdd48810102f6144894965a",
+    "scripts/verify/repository_clean_history_guard.py": "129f20b4b1e81bf169aa47c4b40364bd1cfc797d4373f73b79f93e0b3ddfc162",
+    "scripts/verify/test_repository_clean_history_guard.py": "c1b0159f8d5fa5214ef6a473b35ec497c5981494d76319d91a400ccd6bdffdd6",
+    "scripts/ci/test_ci_risk_workflow_contract.py": "92446701e03161aa6bc49aaffb6f9ecf0ccab12bcae7c4995ae7bd37107c850a",
+    "scripts/verify/frontend_dev_incremental.py": "a13382b89e3ab6e2efdc199941a90ab8136754e4ce86027c634ef191a1217bc1",
+    "scripts/verify/test_frontend_dev_incremental.py": "96c51f1cc8c5c5704610123e09f03eaea1374f340b8975e214594e1e66b7ea0d"
+  },
+  "before": {
+    "public_guard_run": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45950046422",
+    "result": "RH018 on unrelated retained #1022 ref",
+    "candidate_ancestry_only": "PASS",
+    "same_head_with_retained_ref": "FAIL"
+  },
+  "local_incremental": {
+    "status": "passed",
+    "executed": 9,
+    "reused": 0,
+    "receipt": ".runtime/frontend-dev-validation/executions/20261127T061728Z-212307-93191192/receipt.json"
+  },
+  "logs": [
+    {
+      "target": "audit.verification.lane_coverage.check",
+      "status": "passed",
+      "path": "docs/audit/verify_system_closeout_01_r2a/scan_boundary/audit.verification.lane_coverage.check.json",
+      "sha256": "9decf00456f057527d4da2663267e772ebf21392e99853f6b6faea79b6a36623",
+      "raw_sha256": "0b60464e8d5a265edded8e1e45f92bcec5ec20fff47e2679a429c481abea1fdf"
+    },
+    {
+      "target": "verify.agent.ledger.unit",
+      "status": "passed",
+      "path": "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.agent.ledger.unit.json",
+      "sha256": "29a212f214f976220933d0351e514f998949228fc5f212348cae7c8242d3c7d2",
+      "raw_sha256": "29a3e7e99018650056d61c69ea3821bb4cce79ab293efc147d711bc64b86a252"
+    },
+    {
+      "target": "verify.baseline.iteration.execution.policy",
+      "status": "passed",
+      "path": "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.baseline.iteration.execution.policy.json",
+      "sha256": "e98b6005b9410ed3cf0a74d5edbe173e5eee44dcaaa8cf26e3dc44d7b30e6027",
+      "raw_sha256": "c6c466fbc56846e62c6bddf18d86d37c100c14a59ae1ea861be852ae913cf846"
+    },
+    {
+      "target": "verify.ci.scheduled_gates",
+      "status": "passed",
+      "path": "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.ci.scheduled_gates.json",
+      "sha256": "3cca72f0be79e65ef03fba95544e4204ffb3ba4cec75166defc965a8688d05ef",
+      "raw_sha256": "50fd5e11253a40163890bb3bc4863e75253cfed363a736c83bcc19d514ee73b6"
+    },
+    {
+      "target": "verify.ci.workflow.contract",
+      "status": "passed",
+      "path": "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.ci.workflow.contract.json",
+      "sha256": "eda699b6ec931b61b655e418ac118563f2566460ca3c93ed82925b9ba245d5c2",
+      "raw_sha256": "b5a639afbbb11e1d2d8f9e74709cee2f92aba96cc9dbeef5bfd94266a7d9b034"
+    },
+    {
+      "target": "verify.frontend.dev.incremental.unit",
+      "status": "passed",
+      "path": "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.frontend.dev.incremental.unit.json",
+      "sha256": "69c2131bb59e3174f4aa94af9c01a5c8abfb1465593804d44d7a7bda8572c96c",
+      "raw_sha256": "35e1a2d8a3f4745525890b59478f4d4d5bce0e9099464891fa885be0baf162b3"
+    },
+    {
+      "target": "verify.repository.clean_history.unit",
+      "status": "passed",
+      "path": "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.repository.clean_history.unit.json",
+      "sha256": "3b4418ecfed30048aa32703be7e1ca171db1ef02ce7d1dfd99457e84758f77a6",
+      "raw_sha256": "7ff2e63d9c864bb882c03ce2ac753893c9e64cd1967f17ba07927902743cc7b2"
+    },
+    {
+      "target": "verify.test.coverage.registry",
+      "status": "passed",
+      "path": "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.test.coverage.registry.json",
+      "sha256": "4b14e260edbe4628e7414f5ed51e34b36823de224065ceb9f9180c7a3ba44f55",
+      "raw_sha256": "41f7fd762a7de0bd86f93c0b9ae8549264199a411dfd76d5a52bb535caf661b5"
+    },
+    {
+      "target": "verify.trusted_scan.unit",
+      "status": "passed",
+      "path": "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.trusted_scan.unit.json",
+      "sha256": "666c7ac39047390302ea29f91f535fe002a45e068db7dce0dd74251cd81922cf",
+      "raw_sha256": "6fb18b2fb8d4ea97fe8dbe535875fd2ec03a0ccbb683612b572191b936461289"
+    }
+  ],
+  "global_scope": "Unchanged; retained history can still fail global audits",
+  "remote_integration": "NOT_VERIFIED for changed source",
+  "mainline_qualification": "NOT_VERIFIED; R3 excluded"
+}

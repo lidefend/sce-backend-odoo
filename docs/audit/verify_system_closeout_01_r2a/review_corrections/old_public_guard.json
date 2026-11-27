@@ -1,0 +1,19 @@
+{
+  "source_run": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45946415181",
+  "source_job": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45946415181/job/140332095204",
+  "raw_sha256": "d31eb8a6da1c9493294b3fc878fab9a7ddfb646f293fed11d9ac3bfbccc962cf",
+  "full_log_preserved_at_commit": "28456c75426876bab4fa068228726b401aa414a8",
+  "selection": "Only history-scan mode, RH018 failure and redaction declaration; unrelated checkout branch listings omitted",
+  "source_line_numbers_one_based": [
+    563,
+    571,
+    574,
+    579,
+    587,
+    588,
+    589,
+    590
+  ],
+  "excerpt_sha256": "6b3847c511df3adb3db789399173484df5848619cc2324e075d406bfeaef8e7f",
+  "excerpt_utf8": "2026-11-27T05:33:04.2106293Z \u001b[36;1m    echo \"[public_guard] history_scan=full reason=${GITHUB_EVENT_NAME}\"\u001b[0m\n2026-11-27T05:33:04.2108791Z \u001b[36;1m      echo \"[public_guard] history_scan=trusted_base_incremental base=${BASE_SHA}\"\u001b[0m\n2026-11-27T05:33:04.2109958Z \u001b[36;1m      echo \"[public_guard] history_scan=full reason=trusted_base_unavailable base=${BASE_SHA}\"\u001b[0m\n2026-11-27T05:33:04.2111191Z \u001b[36;1m    echo \"[public_guard] history_scan=full reason=unsupported_event event=${GITHUB_EVENT_NAME}\"\u001b[0m\n2026-11-27T05:33:04.2223760Z [public_guard] history_scan=trusted_base_incremental base=bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5\n2026-11-27T05:33:40.3633198Z [repository_clean_history_guard] FAIL\n2026-11-27T05:33:40.3634040Z - rule=RH018 path=docs/audit/verify_system_closeout_01_r2a/actual_execution_facts.json@1582beb6a28d classification=PERSONAL_DATA:MOBILE_PHONE_PATTERN\n2026-11-27T05:33:40.3634789Z sensitive_values_recorded=false\n"
+}

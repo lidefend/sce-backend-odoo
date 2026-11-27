@@ -944,6 +944,10 @@ export interface FieldDescriptor {
   relationField?: string;
   referenceModelField?: string;
   attachmentRole?: string;
+  relationActiveActions?: {
+    create?: boolean | object;
+    write?: boolean | object;
+  };
   editable?: boolean;
   filename?: string;
   digits?: [number, number];

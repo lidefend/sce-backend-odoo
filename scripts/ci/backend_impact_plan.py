@@ -49,6 +49,8 @@ CONTROL_PLANE = {
     'scripts/ci/ci_risk_classifier.py': 'verify.ci.workflow.contract',
     'scripts/ci/main_full_release_dispatch.py': 'verify.ci.scheduled_gates',
     'scripts/ci/test_main_full_release_dispatch.py': 'verify.ci.scheduled_gates',
+    'scripts/ci/main_full_release_evidence.py': 'verify.ci.scheduled_gates',
+    'scripts/ci/test_main_full_release_evidence.py': 'verify.ci.scheduled_gates',
     'scripts/ci/select_authoritative_workflow_run.py': 'verify.ci.workflow.contract',
     'scripts/db/create.sh': 'verify.frontend.acceptance.db_preparation.unit',
     'scripts/test/frontend_acceptance_db_ensure.sh': 'verify.frontend.acceptance.db_preparation.unit',

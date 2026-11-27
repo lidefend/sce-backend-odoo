@@ -1,9 +1,14 @@
 import assert from 'node:assert/strict';
-import formPayload from '../../../../artifacts/p0_contract_producer_01/ui-contract-v2-project-form.json';
+import fs from 'node:fs';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 
 let strictDescriptorCount = 0;
 
+const formPayload = JSON.parse(fs.readFileSync(
+  process.env.P0A_FORM_CONTRACT_PATH
+    || '.runtime/p0-contract-producer-evidence/ui-contract-v2-project-form.json',
+  'utf8',
+));
 const formSnapshot = decodeContractV2Snapshot(formPayload);
 assert.equal(formSnapshot.pageInfo.contractVersion, '2.7.0');
 function assertNoWireComponentIdentity(value: unknown, path = '$'): void {

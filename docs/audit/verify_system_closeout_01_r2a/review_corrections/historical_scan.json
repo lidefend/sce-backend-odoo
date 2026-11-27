@@ -1,0 +1,16 @@
+{
+  "old_head": "7be328ae0fb987fc3a23c91bf49440ee12b71bbc",
+  "historical_hits": [
+    {
+      "blob": "1582beb6a28df0d8f550a87ebff8f24c41b4d70f",
+      "path": "docs/audit/verify_system_closeout_01_r2a/actual_execution_facts.json",
+      "rules": [
+        "MOBILE_PHONE_PATTERN"
+      ],
+      "original_sha256": "f6f829833177426f66ec89d72f503c44fd74bb7ef0615cd1d7bafd514aaac5ab"
+    }
+  ],
+  "current_encoded_blob": "PASSED_ALL_UNMODIFIED_PERSONAL_DATA_PATTERNS",
+  "publish_on_same_history": "BLOCKED_BY_REACHABLE_OLD_BLOB",
+  "rules_changed": false
+}

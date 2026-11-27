@@ -180,11 +180,98 @@ assert.equal(resolveNativeOccurrenceBehavior({
 assert.deepEqual(resolveNativeRelationActiveActions({
   type: 'field',
   name: 'partner_id',
-  componentConfig: { relationActiveActions: { create: false, write: true } },
+  fieldDescriptor: { relationActiveActions: { create: false, write: true } },
 }, evaluateDraftModifier), {
   create: false,
   write: true,
 }, 'many2one relation actions remain separate from field readonly behavior');
+assert.deepEqual(resolveNativeRelationActiveActions({
+  type: 'field',
+  name: 'partner_id',
+  componentConfig: { relationActiveActions: { create: false, write: true } },
+}, evaluateDraftModifier), {
+  create: null,
+  write: null,
+}, 'componentConfig is not a fallback authority for relation actions');
+assert.deepEqual(resolveNativeRelationActiveActions({
+  type: 'field',
+  name: 'partner_id',
+  fieldDescriptor: {
+    relationActiveActions: {
+      create: {
+        kind: 'field_compare', semantics: 'python', field: 'state', operator: '==', value: 'draft',
+      },
+      write: {
+        kind: 'not',
+        expr: {
+          kind: 'field_compare', semantics: 'python', field: 'state', operator: '==', value: 'done',
+        },
+      },
+    },
+  },
+}, evaluateDraftModifier), {
+  create: true,
+  write: true,
+}, 'dynamic relation action expressions evaluate through the shared modifier engine');
+assert.deepEqual(resolveNativeRelationActiveActions({
+  type: 'field',
+  name: 'partner_id',
+  fieldDescriptor: { relationActiveActions: { create: true } },
+}, evaluateDraftModifier), {
+  create: true,
+  write: null,
+}, 'an undeclared write action is not inferred');
+assert.deepEqual(resolveNativeRelationActiveActions({
+  type: 'field',
+  name: 'partner_id',
+  fieldDescriptor: { relationActiveActions: { write: false } },
+}, evaluateDraftModifier), {
+  create: null,
+  write: false,
+}, 'an undeclared create action is not inferred');
+assert.deepEqual(resolveNativeRelationActiveActions({
+  type: 'field',
+  name: 'partner_id',
+  fieldDescriptor: { relationActiveActions: { create: true, write: false } },
+  componentConfig: { relationActiveActions: { create: false, write: true } },
+}, evaluateDraftModifier), {
+  create: true,
+  write: false,
+}, 'descriptor declarations win over conflicting componentConfig values');
+assert.deepEqual(resolveNativeRelationActiveActions({
+  type: 'field',
+  name: 'partner_id',
+  fieldDescriptor: {},
+  componentConfig: { relationActiveActions: { create: true, write: true } },
+}, evaluateDraftModifier), {
+  create: null,
+  write: null,
+}, 'a missing descriptor declaration does not fall back to legacy config');
+assert.deepEqual(resolveNativeRelationActiveActions({
+  type: 'field',
+  name: 'tag_ids',
+  fieldDescriptor: { relationActiveActions: { create: true } },
+}, evaluateDraftModifier), {
+  create: true,
+  write: null,
+}, 'many2many_tags consumes its declared create action only');
+assert.throws(
+  () => resolveNativeRelationActiveActions({
+    type: 'field',
+    name: 'partner_id',
+    fieldDescriptor: {
+      relationActiveActions: {
+        create: {
+          kind: 'unsupported',
+          raw: "context.get('can_create')",
+          reason: 'unsupported_expression',
+        },
+      },
+    },
+  }, evaluateDraftModifier),
+  /原生条件契约不可求值/,
+  'a structurally declared unsupported expression fails closed at evaluation instead of enabling the action',
+);
 assert.deepEqual(resolveNativeRelationActiveActions({
   type: 'field',
   name: 'reference',

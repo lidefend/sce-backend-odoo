@@ -689,11 +689,13 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "frontend/apps/web/src/app/contracts/v2/types.ts",
             "docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json",
             "frontend/apps/web/scripts/polymorphic_reference_real_contract_test.ts",
+            "frontend/apps/web/scripts/relation_active_actions_real_contract_test.ts",
             "scripts/verify/p0_contract_producer_descriptor_evidence.py",
             "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
         ):
             with self.subTest(path=path):
                 self.assertIn("verify.contract.polymorphic_reference.integration", select_targets([path]))
+                self.assertIn("verify.contract.relation_active_actions.integration", select_targets([path]))
         self.assertNotIn("verify.contract.polymorphic_reference.integration", select_targets([
             "addons/smart_construction_core/models/core/payment_request.py",
         ]))
@@ -1952,6 +1954,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         for path in (
             "scripts/ci/main_full_release_dispatch.py",
             "scripts/ci/test_main_full_release_dispatch.py",
+            "scripts/ci/main_full_release_evidence.py",
+            "scripts/ci/test_main_full_release_evidence.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(
@@ -2197,6 +2201,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]),
             [
                 "verify.contract.polymorphic_reference.integration",
+                "verify.contract.relation_active_actions.integration",
                 "verify.frontend.canonical_form_presenter.unit",
                 "verify.frontend.contract_fidelity.plan.unit",
                 "verify.frontend.contract_record_action_state.unit",
@@ -3350,13 +3355,16 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "scripts/ci/personal_data_scan.py",
             "scripts/ci/trusted_scan_scope.py",
             "scripts/ci/test_trusted_scan_scope.py",
-            "scripts/verify/repository_clean_history_guard.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
                     ["verify.trusted_scan.unit"],
                 )
+        self.assertEqual(select_targets(["scripts/verify/repository_clean_history_guard.py"]),
+                         ["verify.repository.clean_history.unit", "verify.trusted_scan.unit"])
+        self.assertEqual(select_targets(["scripts/verify/test_repository_clean_history_guard.py"]),
+                         ["verify.repository.clean_history.unit"])
         for path in (
             "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
             "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",
@@ -3845,6 +3853,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         for path in (
             "scripts/verify/frontend_dev_incremental.py",
             "scripts/ops/incremental_execution.py",
+            "scripts/verify/test_incremental_environment.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(

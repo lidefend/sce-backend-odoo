@@ -461,6 +461,7 @@ export function resolveContractV2FieldDescriptorMap(
       ? descriptor.temporal as ContractV2FieldDescriptor['temporal']
       : undefined;
     const relationEntry = asDict(descriptor.relationEntry);
+    const relationActiveActions = asDict(descriptor.relationActiveActions);
     const widgetOptions = asDict(descriptor.widgetOptions);
     const subview = asDict(descriptor.subview);
     const formStructureRoleCandidate = asDict(widget.formStructureRole || descriptor.formStructureRole);
@@ -500,6 +501,9 @@ export function resolveContractV2FieldDescriptorMap(
       ...(Object.prototype.hasOwnProperty.call(descriptor, 'domain') ? { domain: descriptor.domain } : {}),
       ...(Object.prototype.hasOwnProperty.call(descriptor, 'context') ? { context: descriptor.context } : {}),
       ...(Object.keys(relationEntry).length ? { relationEntry } : {}),
+      ...(Object.keys(relationActiveActions).length
+        ? { relationActiveActions: relationActiveActions as ContractV2FieldDescriptor['relationActiveActions'] }
+        : {}),
       ...(Object.keys(widgetOptions).length ? { widgetOptions } : {}),
       ...(Object.keys(subview).length ? { subview } : {}),
       ...(filename ? { filename } : {}),
@@ -541,6 +545,7 @@ export function toContractV2FormFieldDescriptor(row: ContractV2FieldDescriptor):
     ...(row.referenceModelField ? { referenceModelField: row.referenceModelField } : {}),
     ...(row.selection ? { selection: row.selection } : {}),
     ...(row.relationEntry ? { relationEntry: row.relationEntry } : {}),
+    ...(row.relationActiveActions ? { relationActiveActions: row.relationActiveActions } : {}),
     ...(row.widgetOptions ? { widgetOptions: row.widgetOptions } : {}),
     ...(row.subview ? { subview: row.subview } : {}),
     ...(row.filename ? { filename: row.filename } : {}),

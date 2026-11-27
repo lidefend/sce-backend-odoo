@@ -1,0 +1,7 @@
+.....................
+----------------------------------------------------------------------
+Ran 21 tests in 0.382s
+
+OK
+[test-coverage] odoo tag groups=237 (gated=5, on-demand=98, unwired=134), ci unit scripts=25
+[test-coverage] PASS all declared groups are gated or dispositioned

@@ -561,12 +561,32 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--local-hygiene", action="store_true")
     parser.add_argument("--trusted-base")
     parser.add_argument("--auto-trusted-base", action="store_true")
+    parser.add_argument("--candidate-head", help="Exact clean, non-shallow PR HEAD; scan its entire ancestry only")
     return parser.parse_args(argv)
+
+
+def assert_candidate_identity(root: Path, expected: str) -> None:
+    if not re.fullmatch(r"[0-9a-f]{40}", expected):
+        raise ValueError("candidate HEAD must be a full lowercase SHA")
+    if git(root, "rev-parse", "HEAD").strip() != expected:
+        raise ValueError("candidate HEAD differs from local HEAD")
+    if git(root, "rev-parse", "--is-shallow-repository").strip() != "false":
+        raise ValueError("candidate full ancestry requires a non-shallow repository")
+    if git(root, "status", "--porcelain", "--untracked-files=all").strip():
+        raise ValueError("candidate checkout must be clean")
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     root = args.root.resolve()
+    if args.candidate_head is not None:
+        try:
+            if args.trusted_base or args.auto_trusted_base or args.local_hygiene:
+                raise ValueError("candidate full ancestry cannot use global/incremental scan options")
+            assert_candidate_identity(root, args.candidate_head)
+        except (ValueError, subprocess.CalledProcessError) as exc:
+            print(f"[repository_clean_history_guard] DENY candidate identity: {exc}", file=sys.stderr)
+            return 2
     try:
         rules = load_policy(args.policy.resolve())
         rules["_personal_data_false_positives"] = load_personal_data_false_positives(
@@ -585,9 +605,9 @@ def main(argv: list[str] | None = None) -> int:
         rules["_policy_relative"] = ""
 
     errors: set[Finding] = set()
-    publication_revisions = public_revision_args(root)
+    publication_revisions = (args.candidate_head,) if args.candidate_head is not None else public_revision_args(root)
     scan_revisions = publication_revisions
-    scan_mode = "public_refs"
+    scan_mode = "candidate_full_ancestry" if args.candidate_head is not None else "public_refs"
     if args.trusted_base and args.auto_trusted_base:
         raise ValueError("explicit and automatic trusted bases are mutually exclusive")
     scope = (trusted_scan_scope.Scope(None, "custom_policy_requires_full_scan")
@@ -725,10 +745,18 @@ def main(argv: list[str] | None = None) -> int:
             )
         print("sensitive_values_recorded=false", file=sys.stderr)
         return 1
-    if not args.trusted_base and args.policy.resolve() == POLICY_PATH.resolve():
+    if args.candidate_head is not None:
+        try:
+            assert_candidate_identity(root, args.candidate_head)
+        except (ValueError, subprocess.CalledProcessError) as exc:
+            print(f"[repository_clean_history_guard] DENY candidate identity: {exc}", file=sys.stderr)
+            return 2
+    # Candidate ancestry cannot authorize reuse of an all-public-refs scan.
+    if args.candidate_head is None and not args.trusted_base and args.policy.resolve() == POLICY_PATH.resolve():
         trusted_scan_scope.record_scan_success(root, "history", trusted_base if scan_mode == "trusted_base_incremental" else None)
     print(
         f"[repository_clean_history_guard] PASS roots={len(roots)} reachable_scan={scan_mode} "
+        f"candidate_head={args.candidate_head or 'none'} "
         f"local_hygiene={args.local_hygiene} reflog_only={hygiene['reflog_only']} "
         f"unreachable={hygiene['unreachable']} tags={hygiene['tags']} "
         f"stash_refs={hygiene['stash_refs']} "

@@ -1,0 +1,92 @@
+..................................................
+----------------------------------------------------------------------
+Ran 50 tests in 0.440s
+
+OK
+...................................
+----------------------------------------------------------------------
+Ran 35 tests in 1.204s
+
+OK
+.........................
+----------------------------------------------------------------------
+Ran 25 tests in 0.068s
+
+OK
+.DEPENDENCY_PREPARATION={"attempt": "1", "baseline": "sc_test_template__ci_58538007386300ad2855b366", "demo": false, "dependency": "smart_core", "elapsed_seconds": 0.002, "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "installed": true, "run": "12", "schema": 1, "shard": "0", "suite": "product", "target": "sc_suite_ci_smart_core"}
+.DEPENDENCY_PREPARATION=clean reason=demo
+....DEPENDENCY_PREPARATION={"attempt": "1", "baseline": "sc_suite_prep_f40542e7532a8920fcb69922", "demo": false, "dependency": "smart_construction_core", "elapsed_seconds": 0.01, "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "installed": true, "run": "12", "schema": 1, "shard": "0", "suite": "product", "target": "sc_suite_ci_portal"}
+DEPENDENCY_PREPARATION={"attempt": "1", "baseline": "sc_suite_prep_f40542e7532a8920fcb69922", "demo": false, "dependency": "smart_construction_core", "elapsed_seconds": 0.003, "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "installed": false, "run": "12", "schema": 1, "shard": "0", "suite": "product", "target": "sc_suite_ci_seed"}
+......
+----------------------------------------------------------------------
+Ran 12 tests in 0.084s
+
+OK
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.002s
+
+OK
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.006s
+
+OK
+[complexity_baseline_lock] WARNING Makefile: line count increased to 276, reference 272
+[complexity_baseline_lock] PASS checked=11 warnings=1
+[frontend_product_page_header_guard] PASS adapters=3
+....................
+----------------------------------------------------------------------
+Ran 20 tests in 0.003s
+
+OK
+........................[orm-guard][FATAL] selected database has no ORM loading summary: fixture_db
+[orm-guard][FATAL] expected test identity never started in the log: odoo.addons.example.tests.
+[orm-guard][FATAL] the ORM report contains a failing summary:
+[orm-guard]   1 failed, 0 error(s) of 1 tests
+.........................................................
+----------------------------------------------------------------------
+Ran 81 tests in 5.525s
+
+OK
+..........................................
+----------------------------------------------------------------------
+Ran 42 tests in 0.464s
+
+OK
+....................................................................
+----------------------------------------------------------------------
+Ran 68 tests in 0.041s
+
+OK
+................................
+----------------------------------------------------------------------
+Ran 32 tests in 0.032s
+
+OK
+................
+----------------------------------------------------------------------
+Ran 16 tests in 0.081s
+
+OK
+.........
+----------------------------------------------------------------------
+Ran 9 tests in 0.001s
+
+OK
+.......
+----------------------------------------------------------------------
+Ran 7 tests in 0.598s
+
+OK
+.....................................................................................................
+----------------------------------------------------------------------
+Ran 101 tests in 2.496s
+
+OK
+..................................
+----------------------------------------------------------------------
+Ran 34 tests in 4.544s
+
+OK
+[verify.ci.workflow.contract] PASS
