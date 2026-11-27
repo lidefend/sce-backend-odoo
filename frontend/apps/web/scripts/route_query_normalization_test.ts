@@ -4,6 +4,7 @@ import {
   normalizeEmbeddedSceneQuery,
   stripCanonicalSceneIdentityQuery,
 } from '../src/app/routeQuery';
+import { buildBusinessCategoryCreateNavQuery } from '../src/app/navigationContext';
 
 const malformedActionQuery = normalizeEmbeddedSceneQuery({
   menu_id: '379&action_id=506&view_mode=tree',
@@ -72,5 +73,19 @@ assert.deepEqual(stripCanonicalSceneIdentityQuery({
   scene_label: 'Role home',
   menu_id: '3',
 }), { menu_id: '3' });
+assert.deepEqual(buildBusinessCategoryCreateNavQuery({
+  categoryCode: 'finance.payment.apply.pay',
+  option: {
+    label: 'Payment request',
+    categoryId: 7,
+    defaultValues: { project_id: 9 },
+  },
+}), {
+  current_business_category_code: 'finance.payment.apply.pay',
+  default_business_category_code: 'finance.payment.apply.pay',
+  ctx_source: 'business_category_create_picker',
+  default_business_category_id: '7',
+  default_project_id: '9',
+});
 
 console.log('[route-query-normalization] PASS');

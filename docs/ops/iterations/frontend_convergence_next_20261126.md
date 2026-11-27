@@ -711,6 +711,37 @@ ActionView 通过 `return_url` 解析目标路由，再消费其页面契约身�
 下一步需要在受管浏览器中回读场景入口和跨模型返回链路的实际地址栏，再判断业务分类
 label 是否应删除；当前只证明纯构造与组件契约。
 
+### 2026-11-27 FC-02 business-category label 退出 URL
+
+新生成的业务分类导航只保留 code、category id、允许 code 与 default values；
+`current/default_business_category_label` 不再写入或跨路由传播。旧深链中的 label 仍可被
+当前表单读取，但辅助同步会清理它，避免继续扩散。展示标签由当前关系选择契约或页面身份
+提供。
+
+同时把 URL 去污染规则加入页面身份守卫，禁止重新引入：
+
+- `/s/:sceneKey` 下重复的 `scene_key/scene_label`；
+- `entry_title`；
+- `return_label`；
+- business-category 展示 label 的导航白名单。
+
+验证：
+
+- 路由归一、跨模型动作导航、canonical form presenter 和严格类型通过；
+- `make ci.local.iteration`：`76` 个必需目标全部成立，其中 `40` 个本轮执行、`36` 个复用；
+  `26` 个测试目标执行 `926` 项测试、`6` 项静态检查，`unmapped=0`、`not_run=0`、
+  `blocked=0`。
+
+回执：
+`.runtime/frontend-dev-validation/executions/20261127T102631Z-2646869-746704896/receipt.json`
+
+回执 SHA256：
+`8ef19601f63bb1c2ed4fe64ea29c61d65f5252544795b8caa851ed34eff7ddcd`。
+
+深度浏览器目标 `verify.frontend.page_identity.deep.browser` 本次未运行：受管 Compose
+acceptance profile 未显式选择，预检在启动容器和写入数据前拒绝。真实地址栏回读、远端 CI
+和用户验收仍未完成。
+
 ### 2026-11-27 主线 relationActiveActions 契约并入
 
 主线 `9395d93f92badffc87d32c5979cf7c70e374e975` 已包含 P0 PR #1026 的

@@ -91,6 +91,8 @@ assert.equal(sameModelQuery.search, 'source search', 'same-model actions retain 
 assert.equal(sameModelQuery.field_filter, sourceQuery.field_filter, 'same-model actions retain field-query context');
 assert.equal(sameModelQuery.entry_context, sourceQuery.entry_context, 'same-model actions retain validated workspace context');
 assert.equal(sameModelQuery.entry_title, undefined, 'presentation titles never persist in the address bar');
+assert.equal(sameModelQuery.current_business_category_label, undefined, 'presentation category labels never persist');
+assert.equal(sameModelQuery.default_business_category_label, undefined, 'paired presentation category labels never persist');
 
 const sameModelActionViewTarget = buildContractActionRouteTarget({
   nextActionId: 700,

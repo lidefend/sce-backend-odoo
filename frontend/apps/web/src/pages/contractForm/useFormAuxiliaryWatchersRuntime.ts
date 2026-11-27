@@ -46,8 +46,6 @@ export function useFormAuxiliaryWatchersRuntime(params: {
       if (!['record', 'model-form'].includes(String(activeRoute.name || ''))) return;
       if (activeModel !== params.modelName() || activeRecordId !== params.recordId()) return;
       const query = params.currentQuery();
-      const hasRouteLabel = String(query.current_business_category_label || query.default_business_category_label || '').trim();
-      if (hasRouteLabel) return;
       const nextQuery: LocationQueryRaw = {
         ...Object.fromEntries(
           Object.entries(query).map(([key, value]) => [
@@ -57,8 +55,8 @@ export function useFormAuxiliaryWatchersRuntime(params: {
               : String(value || ''),
           ]),
         ),
-        current_business_category_label: state.label,
-        default_business_category_label: state.label,
+        current_business_category_label: undefined,
+        default_business_category_label: undefined,
       };
       if (state.code) {
         nextQuery.current_business_category_code = String(query.current_business_category_code || state.code);

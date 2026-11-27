@@ -69,6 +69,7 @@
     "frontend/apps/web/src/pages/contractForm/nativeSectionNavigation.ts",
     "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
     "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+    "frontend/apps/web/src/pages/contractForm/relationSelectionRuntime.ts",
     "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
     "frontend/apps/web/src/pages/contractForm/types.ts",
     "frontend/apps/web/src/pages/contractForm/useRelationRuntime.ts",
@@ -77,6 +78,7 @@
     "frontend/apps/web/src/pages/contractForm/useRecordFormState.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordFormFieldSchemas.ts",
+    "frontend/apps/web/src/pages/contractForm/useFormAuxiliaryWatchersRuntime.ts",
     "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
     "frontend/apps/web/src/router/index.ts",
     "frontend/apps/web/src/utils/display.ts",
@@ -582,7 +584,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "After binding the return-label URL slice build, perform a governed browser URL readback on a scene and cross-model return flow, then decide whether business-category labels can be derived from the active contract.",
+  "next_exact_step": "Bind the URL contamination guard and category-label slice, then run the deep browser target with an explicitly governed acceptance profile for real address-bar readback.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2313,6 +2315,35 @@
         "the first affected iteration rejected a computed object that hid the guarded router.resolve(target).href call; the implementation was split into explicit href and label computations"
       ],
       "scope_limit": "Local route construction and component contracts only; browser address-bar readback, business-category label derivation, remote CI and user acceptance remain not_run."
+    },
+    "fc02_url_presentation_query_guard": {
+      "status": "passed_local_targeted",
+      "stage_identity": "bc30a1ae8a873746e400a19f34c8ec104484d008 plus the owned URL query cleanup scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T102631Z-2646869-746704896/receipt.json",
+      "receipt_sha256": "8ef19601f63bb1c2ed4fe64ea29c61d65f5252544795b8caa851ed34eff7ddcd",
+      "required_targets": 76,
+      "executed_targets": 40,
+      "reused_targets": 36,
+      "test_targets": 26,
+      "executed_test_count": 926,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "new business-category navigation writes codes, ids and defaults without presentation labels",
+        "category-label route values are no longer propagated through the shared contract navigation whitelist",
+        "form auxiliary synchronization removes stale category labels while retaining codes",
+        "the page-identity guard rejects reintroduced scene_key, scene_label, entry_title or return_label query sources",
+        "route-query, cross-model navigation, canonical form presentation and strict typecheck pass"
+      ],
+      "scope_limit": "Local route and component contracts only; browser address-bar readback, remote CI and user acceptance remain not_run.",
+      "browser_readback": {
+        "status": "not_run",
+        "target": "verify.frontend.page_identity.deep.browser",
+        "reason": "governed Compose acceptance profile was not selected, so preflight rejected before starting containers or writing data"
+      }
     },
     "remote_publication": {
       "status": "draft_open_mainline_sync_validation_not_awaited",

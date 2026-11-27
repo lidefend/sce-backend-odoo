@@ -73,6 +73,29 @@ identity_adapter = (FRONTEND / "app/pageIdentityAdapters.ts").read_text(encoding
 if "legacyTitle" in identity_adapter:
     fail("page identity must not retain a legacy title fallback")
 
+route_query = (FRONTEND / "app/routeQuery.ts").read_text(encoding="utf-8")
+for forbidden in ("scene_key: key", "scene_label:"):
+    if forbidden in route_query:
+        fail(f"canonical scene URL reintroduced redundant identity: {forbidden}")
+if "delete query.entry_title;" not in route_query:
+    fail("entry presentation titles must not enter route queries")
+
+navigation_context = (FRONTEND / "app/navigationContext.ts").read_text(encoding="utf-8")
+for forbidden in ("'entry_title'", "'return_label'"):
+    if forbidden in navigation_context:
+        fail(f"presentation-only navigation query remains allowlisted: {forbidden}")
+
+for relative in ("app/businessScenarioNavigation.ts", "app/enterpriseSetupNavigation.ts"):
+    source = (FRONTEND / relative).read_text(encoding="utf-8")
+    if "return_label" in source:
+        fail(f"return labels must be derived from identity: {relative}")
+
+action_view = (FRONTEND / "views/ActionView.vue").read_text(encoding="utf-8")
+if "resolveContextReturnHref(route.query" not in action_view or "返回${identity.title}" not in action_view:
+    fail("action return label must derive from the declared return target identity")
+if "route.query.return_label" in action_view:
+    fail("action view must not consume a URL-provided return label")
+
 form_labels = (FRONTEND / "pages/contractForm/uiLabels.ts").read_text(encoding="utf-8")
 if "`记录 #${params.recordId}`" in form_labels:
     fail("form subtitle still exposes record id")
