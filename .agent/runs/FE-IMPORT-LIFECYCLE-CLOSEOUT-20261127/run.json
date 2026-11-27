@@ -105,8 +105,34 @@
         "CollectionImportSummary"
       ],
       "remaining_production_surface": "NativeImportWizard through useActionViewCollectionActionRuntime"
+    },
+    "exact_head_validation": {
+      "status": "passed",
+      "head": "f8fcce8616c30780e07b87a8815fa4a19fd91356",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T052846Z-3934058-580796211/receipt.json",
+      "receipt_sha256": "fa37b1e6405cec9ac93cce07dd6dfcf840e343ad96ceec8d4a0233b5bb5f2142",
+      "executed_targets": 7,
+      "reused_targets": 2,
+      "test_targets": 1,
+      "executed_test_count": 42,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "worktree_clean": true
+    },
+    "exact_head_frontend_build": {
+      "status": "passed",
+      "head": "f8fcce8616c30780e07b87a8815fa4a19fd91356",
+      "command": "make verify.frontend.build ENV=dev ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev",
+      "log": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/frontend-build-exact-head.log",
+      "log_sha256": "8a0240c8ea919d7f5262f5106cdf0697513b09a3667a5e7d990fb4adb33d3438",
+      "build_info_sha256": "2e6a4818a92fe6c0311893bab4c5276e40240468cd74c294462a3dc4cd1996bf",
+      "frontend_build_fingerprint": "cd2a673e7e21a7ee3ab6b3555fc76c15c190cd925916725d415dabc4c67f8a74",
+      "source_revision": "f8fcce8616c30780e07b87a8815fa4a19fd91356"
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the import lifecycle slice and rerun exact-clean-head validation and build."
+  "next_exact_step": "Commit this exact-head evidence and publish the import lifecycle stack branch without modifying the PR #1019 source worktree."
 }

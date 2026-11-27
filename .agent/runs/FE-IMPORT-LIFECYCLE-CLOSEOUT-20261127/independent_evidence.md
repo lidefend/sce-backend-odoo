@@ -30,3 +30,13 @@ or claim FC-06 complete before FC-05 handling-chain closure.
 Browser role/company journeys are still `not_run`. This slice does not prove
 FC-06 or the 143-entry matrix complete; FC-05 handling-chain closure remains a
 separate prerequisite before FC-06 closure.
+
+## Clean exact-head result
+
+Commit `f8fcce8616c30780e07b87a8815fa4a19fd91356` passed:
+
+- clean exact-head `make ci.local.iteration`: 7 executed targets, 2 reused,
+  42 non-zero tests, 5 static checks, no unmapped/not-run/blocked target;
+- production build from the same source revision, fingerprint
+  `cd2a673e7e21a7ee3ab6b3555fc76c15c190cd925916725d415dabc4c67f8a74`;
+- no remote source-branch mutation and no browser journey in this independent slice.
