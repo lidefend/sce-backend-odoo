@@ -275,6 +275,13 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         ))
         self.assertTrue(any("hard-coded hour/minute" in failure for failure in failures))
 
+    def test_generic_float_precision_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            ("field.(float).digits", "field.(float).legacy_default"),
+        ) if path == "utils/fieldSemantics.ts" else source(path))
+        self.assertTrue(any("generic float formatting" in failure for failure in failures))
+
     def test_temporal_authority_consumption_drop_fails(self):
         failures = guard.validate(lambda path: source(
             path,

@@ -300,7 +300,7 @@ assert.equal(one2manyColumnDisplayValue({
   required: false,
   digits: [16, 0],
 }, 3260000), '3,260,000');
-assert.equal(one2manyColumnDisplayValue({ name: 'quantity', label: '数量', ttype: 'float', required: false }, 1280.5), '1,280.50');
+assert.equal(one2manyColumnDisplayValue({ name: 'quantity', label: '数量', ttype: 'float', required: false, digits: [16, 2] }, 1280.5), '1,280.50');
 const percentageColumns = one2manyColumnsFromSubview({ tree: {
   columns: [{ name: 'completion_ratio', label: '完成率', type: 'float' }],
   columns_schema: [{

@@ -11,7 +11,11 @@ import {
 import { presentCollectionKanbanCell } from '../src/app/presentation/collectionKanbanPresentation';
 import { presentCollectionKanbanTitle } from '../src/app/presentation/collectionKanbanPresentation';
 import { formatProductMyWorkFact } from '../src/app/presentation/productMyWorkPresentation';
-import { FIELD_VALUE_EMPTY_TEXT, hasDeclaredAttachmentIdentity } from '../src/utils/fieldSemantics';
+import {
+  FIELD_VALUE_EMPTY_TEXT,
+  formatNumericFieldValue,
+  hasDeclaredAttachmentIdentity,
+} from '../src/utils/fieldSemantics';
 import { isListAttachmentCountColumn, presentListCell } from '../src/pages/listPage/listCellPresentation';
 import { formatDisplayValue } from '../src/utils/display';
 
@@ -63,17 +67,27 @@ assert.equal(presentCollectionKanbanCell({
 }).text, '1234.5', 'Kanban never infers money from a field name');
 
 const rateNamedFloat = presentDeclaredBusinessValue({
-  field: { name: 'conversion_rate', type: 'float', componentKey: 'sc.input.number' },
+  field: {
+    name: 'conversion_rate',
+    type: 'float',
+    componentKey: 'sc.input.number',
+    digits: [16, 2],
+  },
   value: 12.5,
 });
 assert.equal(rateNamedFloat.kind, 'plain');
-assert.equal(rateNamedFloat.text, '12.50', 'field names never infer percentage identity; plain floats share the authority default');
+assert.equal(rateNamedFloat.text, '12.50', 'field names never infer percentage identity; plain floats consume declared digits');
 assert.equal(presentCollectionKanbanCell({
   field: 'conversion_rate',
   value: 12.5,
   statusFields: [],
-  columnOptions: [{ name: 'conversion_rate', type: 'float', componentKey: 'sc.input.number' }],
-}).text, '12.50', 'Kanban never infers percentage from a field name; plain floats share the authority default');
+  columnOptions: [{
+    name: 'conversion_rate',
+    type: 'float',
+    componentKey: 'sc.input.number',
+    digits: [16, 2],
+  }],
+}).text, '12.50', 'Kanban never infers percentage from a field name; plain floats consume declared digits');
 
 const declaredPercentage = presentDeclaredBusinessValue({
   field: {
@@ -399,6 +413,27 @@ assert.deepEqual(presentDeclaredBusinessValue({
 }, 'a valid status declaration still renders the platform empty value');
 assert.equal(statusBadgeSemantic('approved'), 'success');
 assert.equal(statusBadgeSemantic('rejected'), 'danger');
+assert.equal(
+  formatNumericFieldValue(12.5, 'float', { digits: [16, 3] }),
+  '12.500',
+  'generic float values consume their declared scale',
+);
+assert.equal(formatNumericFieldValue(2.7, 'integer'), '3', 'integer precision follows the declared field type');
+assert.throws(
+  () => formatNumericFieldValue(12.5, 'float'),
+  { name: 'ContractGapError' },
+  'generic float values without declared digits must stop instead of defaulting to two places',
+);
+assert.throws(
+  () => formatNumericFieldValue(12.5, 'float', { digits: [16, 25] }),
+  { name: 'ContractGapError' },
+  'invalid generic float digits must stop instead of being rounded to a frontend default',
+);
+assert.throws(
+  () => formatNumericFieldValue(null, 'float'),
+  { name: 'ContractGapError' },
+  'an empty generic float still requires its declared display precision',
+);
 assert.equal(presentCollectionKanbanCell({
   field: 'opaque_state',
   value: 'pending',

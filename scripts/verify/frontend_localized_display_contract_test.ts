@@ -172,9 +172,9 @@ assert.throws(() => presentDeclaredBusinessValue({
   value: 'unknown_key',
 }), /pricing_mode.*缺少有效选择项标签/);
 
-assert.equal(formatNumericFieldValue('1234.5', 'float'), '1,234.50');
+assert.equal(formatNumericFieldValue('1234.5', 'float', { digits: [16, 2] }), '1,234.50');
 assert.equal(formatNumericFieldValue('1234', 'integer'), '1,234');
-assert.equal(formatDisplayValue(1234.5, { type: 'float' }), '1,234.50');
+assert.equal(formatDisplayValue(1234.5, { type: 'float', digits: [16, 2] }), '1,234.50');
 
 // 日期在两路径一致；datetime 是声明式档位差异（集合 compact、记录／表单 full），不是各写一套规则。
 assert.equal(formatDisplayValue('2026-09-21', temporalColumn('date')), '2026-09-21');
@@ -196,7 +196,7 @@ assert.equal(
   presentListCell({ raw: '', column: listColumn('float'), numeric: true }).text,
   FIELD_VALUE_EMPTY_TEXT,
 );
-assert.equal(formatDisplayValue('', { type: 'float' }), FIELD_VALUE_EMPTY_TEXT);
+assert.equal(formatDisplayValue('', { type: 'float', digits: [16, 2] }), FIELD_VALUE_EMPTY_TEXT);
 
 assert.equal(containsAttachmentReference('合同.pdf | /web/content/123'), true);
 assert.equal(

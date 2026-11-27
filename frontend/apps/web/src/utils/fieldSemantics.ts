@@ -132,17 +132,25 @@ export function formatNumericFieldValue(
   type: string,
   options?: { locale?: string; digits?: [number, number] },
 ): string | null {
-  const parsed = numericFieldValue(value);
-  if (parsed === null) return null;
   const declaredScale = Array.isArray(options?.digits) && options.digits.length === 2
     ? Number(options.digits[1])
     : null;
+  const validDeclaredScale = declaredScale !== null
+    && Number.isInteger(declaredScale)
+    && declaredScale >= 0
+    && declaredScale <= 20;
+  if (type === 'float' && !validDeclaredScale) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'field.(float).digits',
+      requiredDeclarationLayer: 'P0:smart_core:field_descriptor_digits_projection',
+    }, '浮点字段缺少契约声明精度 digits');
+  }
+  const parsed = numericFieldValue(value);
+  if (parsed === null) return null;
   const fractionDigits = type === 'integer'
     ? 0
-    : declaredScale !== null
-      && Number.isInteger(declaredScale)
-      && declaredScale >= 0
-      && declaredScale <= 20
+    : validDeclaredScale
       ? declaredScale
       : 2;
   return parsed.toLocaleString(options?.locale || 'zh-CN', {

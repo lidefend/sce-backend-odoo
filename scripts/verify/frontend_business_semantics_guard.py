@@ -89,6 +89,8 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("monetary precision still falls back to currency-code metadata")
     if "const scale = resolveMonetaryScale(digits);" not in authority:
         failures.append("monetary helpers do not validate declared digits through the shared scale authority")
+    if "field.(float).digits" not in field_semantics:
+        failures.append("generic float formatting does not require declared digits")
     if "presentDeclaredBusinessValue" not in kanban_adapter:
         failures.append("Kanban adapter does not consume declared business-value semantics")
     if "unit: option?.unit" not in kanban_adapter:

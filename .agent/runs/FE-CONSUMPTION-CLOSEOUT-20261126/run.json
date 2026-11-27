@@ -508,7 +508,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue FC-01 with the remaining declared semantic coverage matrix, prioritizing status/boolean/json consumers and their fail-closed negative cases; do not inherit the historical 143-entry browser matrix.",
+  "next_exact_step": "Commit the generic float precision candidate, rebuild the isolated clean runtime from that exact HEAD, verify health and identity readback, then rerun ci.local.iteration on the clean HEAD before continuing the remaining FC-01 semantic coverage matrix.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -939,6 +939,27 @@
       "static_checks": 5,
       "unmapped_paths": 0,
       "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
+    },
+    "fc01_generic_float_precision": {
+      "status": "passed",
+      "stage_identity": "c849d7b9f3ba12115e62e5b18474696adccbcd39 plus the owned generic-float dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T001639Z-1368391-544409898/receipt.json",
+      "receipt_sha256": "d4df165aff9b9ba1fcfc499eabbddc84e753205c3319fbc8090e5faa308c8cbe",
+      "executed_targets": 26,
+      "reused_targets": 21,
+      "test_targets": 17,
+      "executed_test_count": 713,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "generic float display consumes declared digits and does not default to two places",
+        "missing or invalid float digits stop with ContractGapError even for empty values",
+        "integer zero-scale presentation remains derived from the declared integer type",
+        "collection, localized display and Kanban fixtures now declare their float precision explicitly",
+        "status, boolean and JSON existing consumers were inspected without introducing a non-contract fallback"
+      ],
+      "scope_limit": "Local targeted validation only; clean exact-HEAD runtime, remote PR CI, mainline qualification, the 143-entry browser matrix and user acceptance remain not_run."
     }
   }
 }

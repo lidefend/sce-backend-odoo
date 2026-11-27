@@ -424,6 +424,36 @@ clean 运行态权威回读：
 仍未执行 143 个业务入口的当前候选页面、角色或办理旅程，也未完成远端 PR CI、主线资格、
 部署和用户验收。
 
+### 2026-11-27 FC-01 通用 float 精度消费收口
+
+继续检查 status、boolean、JSON 后，现有 status 选择/类型停机、boolean 类型词表和 JSON
+只读展示未发现新的未声明业务分支。通用数值呈现仍有一个实质缺口：`float` 没有
+`digits` 时默认显示两位，而契约并未提供该默认值。
+
+本切片完成：
+
+- 共享 `formatNumericFieldValue` 对 `float` 强制消费合法 `digits`；
+- 缺失或非法精度抛 `ContractGapError`，空值也必须先具备显示精度声明；
+- `integer` 的 0 位精度继续来自已声明字段类型，不冒充前端默认；
+- 列表汇总、主从明细、列表/看板/表单和本地化显示统一使用该 formatter；
+- 更新既有测试载体，为依赖两位小数的 float 显式声明 `digits`；
+- `frontend_contract_basis_ledger.json` 新增通用 float 精度绑定；
+- 静态守卫禁止重新引入未声明两位小数回退。
+
+`make ci.local.iteration` 在 `c849d7b9f3ba12115e62e5b18474696adccbcd39`
+加当前 owned dirty scope 上执行 26 个目标、复用 21 个未变目标，其中 17 个测试目标
+共执行 713 项测试、6 项静态检查，`outside_scope=[]`、`unmapped_paths=0`，全部退出零。
+原始回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T001639Z-1368391-544409898/receipt.json`
+
+回执 SHA256：
+`d4df165aff9b9ba1fcfc499eabbddc84e753205c3319fbc8090e5faa308c8cbe`。
+
+该证据只证明当前 dirty 候选的本地精准消费与治理检查。产品提交后仍需按新精确 HEAD
+重建 clean 前端与 Odoo 容器，并在 clean HEAD 重新执行本地增量入口。143 个业务入口的
+当前候选页面、角色或办理旅程仍未执行，远端 PR CI、主线资格、部署和用户验收均未完成。
+
 ### 2026-11-27 FC-01 relation label 权威消费收口
 
 继续核对 many2one/many2many 候选项与已选记录时发现，缺少权威显示标签时会生成 `#<id>`，
