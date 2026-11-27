@@ -2,7 +2,7 @@
 
 审计基线：`bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5`（PR #1018 合并提交）。独立分支：`audit/verify-system-closeout-01-20261127`。本包只增加审计材料、可复现的隔离实验和任务记录；没有修改产品、验证器、CI 策略、数据库或性能预算，也没有派发、部署或合并。
 
-**R1 已完成审计交付；验证体系和当前主线全量资格尚未收口。** 独立审查后再授权 R2。失败日志中的模拟 run ID 101–106 是隔离传输桩，不是 GitHub 真实故障运行。
+**R1 独立复审：APPROVE WITH SCOPE CORRECTIONS；验证体系和当前主线全量资格尚未收口。** 本次复审认可审计事实，不授予 R2 修复、合并或部署权限。失败日志中的模拟 run ID 101–106 是隔离传输桩，不是 GitHub 真实故障运行。
 
 ## 当前主线事实
 
@@ -33,7 +33,7 @@
 
 最小 R2：统一两条复用路径的身份约束；明确本地跨 run 复用与同 run handoff 的不同权限；环境身份无法证明的相关目标必须重跑。保留未变输入可复用的正例，禁止简单关闭所有缓存。
 
-### F02 · P1 · FAILED：本地主线核验器只核对工作流外壳
+### F02 · P0 · FAILED：本地主线核验器只核对工作流外壳
 
 定位：`scripts/ci/main_full_release_dispatch.py:load_manifest/verify_full`。
 
@@ -93,9 +93,26 @@ NOT_VERIFIED：旧本地回执用于当前输入的逐份授权。已盘点现�
 
 | 批次 | 分类与范围 | 必须保留的验证入口 |
 | --- | --- | --- |
-| R2-A | 验证工具：F01 聚合身份、F02 正式资格核验、F03 失败传播；按提交分清边界 | 本包隔离复现，`verify.frontend.dev.incremental.unit`、`verify.ci.main_full_release.unit`、`verify.integration.cycle.unit`、release-condition/Workflow 回归 |
-| R2-B | 验证选择与结果协议：F04、F05；先逐项确认聚合覆盖再修改 | 真实 Make/Node 负例、原生竞态 Make 目标经过增量入口、`verify.ci.workflow.contract`、覆盖登记守卫 |
-| R2-C | 基线债务：84 条无直接选测边和 22 个缺资产目标的责任确认 | 逐项分类/处置与 `verify.verification.lane_coverage`；不能删除失败史或放宽基线 |
+| R2-A | 主线资格与回执安全：先 F02（P0），再 F01，后 F03；独立交付审查，尚未授权 | 本包隔离复现，`verify.frontend.dev.incremental.unit`、`verify.ci.main_full_release.unit`、`verify.integration.cycle.unit`、release-condition/Workflow 回归 |
+| R2-B | 测试执行与覆盖完整性：F04、F05及其余 84 条边的聚合覆盖确认；独立交付审查，尚未授权 | 真实 Make/Node 负例、原生竞态 Make 目标经过增量入口、`verify.ci.workflow.contract`、覆盖登记守卫 |
+| R2-C | 历史债务：先核实 22 个缺资产目标，再分批治理无引用目标、过期登记和持续覆盖检查；保留有恢复价值的工具，尚未授权 | 逐项分类/处置与 `verify.verification.lane_coverage`；不能删除失败史或放宽基线 |
 | R3 | 精确候选 CI、受保护合并后主线全量 | 经另行审查授权后执行 `make release.main_full EXPECTED_MAIN=<当时精确40位main>`；同 SHA 全责任和正式 artifact 验证 |
 
 产品代码修复：NOT_APPLICABLE；当前复现均属于 P4 工具或证据边界。部署：NOT_APPLICABLE；未执行。完整业务浏览器验收：NOT_VERIFIED。本包不授权 R2，更不授权合并。
+
+
+## R1 独立复审边界修正（2026-11-27）
+
+复审对象为 PR #1020 的 `83cc97f93bdf17757e744109fbac1e2e3b88db7c`，审计源码基线不变。R1 可作为 R2 事实依据；PR 继续 Draft，不合并、不部署。以下是后续整改验收标准，不是执行授权。
+
+- F01 保持 P1：权威环境指纹必须有生产者，环境等价无法证明时只重跑相关目标；保留静态检查的安全复用。不能推导所有 ORM 都可跨环境误复用；跨 run 内容复用与同 run handoff 分别定义。
+- F02 提升 P0：精确 main SHA → 真实 commit tree → 六工作流的 Run/Attempt/Job → 完整后端分片及辅助证据 → 正式 artifact → 与 manifest 交叉核对 → 再读 main → PASS/DENY。缺一项不得签发 PASS。
+- F03 保持 P2：必需终态失败优先 FAIL；没有失败且仍在运行才 PENDING；必需任务缺失 FAIL/DENY，身份不符 DENY。保留等待预算并输出完整矩阵。
+- F04 保持 P1：已证明执行器可假成功，尚未证明正式业务验证已因此漏检。每个子 Runner 的退出状态进入汇总，保留合法嵌套负例，不能全文搜索 ERROR/FAILED 代替协议。
+- F05 保持 P2：已证明本地反馈阻断，不是静默通过。允许聚合目标承接多个生产者，追踪 producer → owner target → actual execution → result evidence，不强制一脚本一目标。
+
+验证状态分别记录 **SELECTED、DISPATCHED、EXECUTED、PASSED、REUSABLE**，不得互相代替。121 份回执仅限所选工作区本地增量记录；隔离 SIGINT 实验不证明混合 ORM/浏览器恢复；670/103 等结构债务不要求在 R2 大扫除。
+
+每批保留修复前失败证据，验证工具单测、真实入口、故障拒绝、恢复与安全复用、覆盖登记、本地精确候选回执和新 HEAD PR CI。合并后主线资格由 R3 独立完成；不得用尚有缺陷的核验器旧 PASS 证明整改成功。影响明确时不扩大无关 ORM/浏览器；影响未知时只保守扩大无法证明的责任范围。
+
+**CI Qualification、Product Acceptance、Deployment Qualification 是三项独立结论。** R2-A、R2-B、R2-C 分开交付、分开审查；R3 使用届时最新 main。下一步等待所有者明确授权 R2-A，当前不实施。

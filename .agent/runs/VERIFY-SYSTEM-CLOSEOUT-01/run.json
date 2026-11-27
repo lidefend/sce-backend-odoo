@@ -46,10 +46,10 @@
     }
   },
   "blockers": [
-    "Current bfc954 main full qualification absent",
-    "F01-F05 tool/coverage findings require independent review and R2 authorization"
+    "Current audited main full qualification absent",
+    "R2-A/B/C explicitly not authorized"
   ],
-  "next_exact_step": "Independent review of R1 audit package; obtain R2 authorization before any verifier/product changes or main-full dispatch.",
+  "next_exact_step": "Wait for explicit owner authorization of R2-A; then implement F02 first, F01 second, F03 third in a separately reviewed repair batch. Keep PR #1020 Draft.",
   "id": "VERIFY-SYSTEM-CLOSEOUT-01",
   "branch": "audit/verify-system-closeout-01-20261127",
   "status": "verification_pending",
@@ -57,12 +57,15 @@
   "record": "docs/audit/verify_system_closeout_01/findings.md",
   "preserved_preexisting_stash": "83b3387db9c6eea3c364cd7016ba53da788fe0d2",
   "r1": {
-    "status": "audit_delivered_pending_independent_review",
+    "status": "approved_with_scope_corrections",
     "evidence_index": "docs/audit/verify_system_closeout_01/evidence_index.json",
     "findings": "docs/audit/verify_system_closeout_01/findings.md",
-    "remote_writes": false,
+    "remote_writes": true,
     "database_writes": false,
-    "product_changes": false
+    "product_changes": false,
+    "reviewed_head": "83cc97f93bdf17757e744109fbac1e2e3b88db7c",
+    "review_source": "owner-provided independent review, 2026-11-27",
+    "remote_write_scope": "Draft audit PR #1020 publication only; no workflow dispatch, merge or deployment"
   },
   "results": {
     "local_iteration": {
@@ -84,5 +87,10 @@
       "status": "not_verified",
       "index": "docs/audit/verify_system_closeout_01/mainline_workflow_matrix.json"
     }
+  },
+  "r2_authorization": {
+    "A": false,
+    "B": false,
+    "C": false
   }
 }
