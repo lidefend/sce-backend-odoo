@@ -2091,6 +2091,14 @@
       "unmapped_paths": 0,
       "not_run_targets": 0,
       "blocked_targets": 0,
+      "frontend_build": {
+        "status": "passed",
+        "source_revision": "c8b3c0a07ce66f368520f8c62bbfd0e948b79e53",
+        "log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/fc02-navigation-create-build.log",
+        "log_sha256": "f0e5a8b11b41dadca5862577bdee96a6e1ad042e5d87b28401104d262d443a80",
+        "build_info_sha256": "de1581b38cc86a30b394222a29d472af314c9997d99beadd689cf6001f225235",
+        "frontend_build_fingerprint": "784b50ede63f2ff343d27170d319b7036436cf00bf0eca95e083eead40da3bc9"
+      },
       "baseline_checks": [
         "verify.frontend.navigation_shell.unit: formal scene hydration, menu authorization, breadcrumb, keyboard and navigation guards passed",
         "verify.frontend.intent_request_identity.unit: 28 request identity cases passed",
