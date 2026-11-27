@@ -1,0 +1,2 @@
+PASS tests=1
+make: *** [Makefile:2: verify.audit.unit] Error 3

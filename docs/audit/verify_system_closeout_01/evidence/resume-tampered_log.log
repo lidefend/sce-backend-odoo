@@ -1,0 +1,10 @@
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+Ran 1 test in 0.001s
+OK
+Ran 1 test in 0.001s
+OK
+Ran 1 test in 0.001s
+OK
+Ran 1 test in 0.001s
+OK
+[local.incremental] PASSED layers=frontend,governance executed=4 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/tampered_log/receipt.json

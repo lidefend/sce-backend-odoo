@@ -1,0 +1,27 @@
+TAP version 13
+# Subtest: real failure
+not ok 1 - real failure
+  ---
+  duration_ms: 0.562822
+  type: 'test'
+  location: '/tmp/sce-r1-executor-lvaqciuz/fail.mjs:1:31'
+  failureType: 'testCodeFailure'
+  error: 'injected'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/sce-r1-executor-lvaqciuz/fail.mjs:1:62)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1306:25)
+    Test.start (node:internal/test_runner/test:1177:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 60.506685
+make: *** [Makefile:2: verify.audit.unit] Error 1

@@ -1,0 +1,1 @@
+{"conclusion":"failure","created_at":"2026-11-27T00:01:00Z","event":"workflow_dispatch","head_branch":"main","head_repository":{"full_name":"lidefend/sce-backend-odoo"},"head_sha":"bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5","id":102,"path":".github/workflows/professional_quality_gate.yml","repository":{"full_name":"lidefend/sce-backend-odoo"},"run_attempt":1,"status":"completed"}

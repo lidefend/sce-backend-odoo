@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "source_head": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+  "source_tree": "e40eb31c080d45d2998a2171bae031e0f2470c47",
+  "observed_at": "2026-11-27T04:41:57.329687+00:00",
+  "audit_scope": "R1 read-only; no product/policy/database edits or remote dispatch",
+  "status": "VERIFIED",
+  "scope": "hash integrity only",
+  "files": [
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/lane-summary.log",
+      "sha256": "87005ab55f92f1454962cd13681548adef1c382f4d450f91e34e83345e3192c7"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/latest-failure-selection.log",
+      "sha256": "09a9359495b1cb9e423680af03b3ac44e9ec040d0d2cac8cc1c13e58c5b0383b"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/native-node.log",
+      "sha256": "16682e0a7465080e72a48fb71fe440e93f6d7fdfbd84472694a3e42012a751a6"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-all_pending.log",
+      "sha256": "f9c02862a6c6c6346811a02e399b5928e69172644df0fedb4aaa90494ab087ce"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-bare_pass.log",
+      "sha256": "c26de83abdc9496cd1301470918ec39ecca1cf389ef0ae1c6504da1800d1c431"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-condition_cross_head.log",
+      "sha256": "eb5db38544f43d231a626f2396c0c3adfbebd2c953a44e96aaaa66a7bea5abe0"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-condition_latest_failure.log",
+      "sha256": "c294de2d521d7437cacd6143278ed78ad5ae275b4f6eafb70030cc1746ea179b"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-condition_missing_auxiliary.log",
+      "sha256": "1418dd8e1ae981e7f5b36cc09de5d0586fdd431c5fc37a351eb1357ee0be84b5"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-condition_pending.log",
+      "sha256": "c294de2d521d7437cacd6143278ed78ad5ae275b4f6eafb70030cc1746ea179b"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-condition_stale_main.log",
+      "sha256": "427eec864a1c7767e1d20113922473587693d4aebbd6a630ea0e5c371d371149"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-condition_success.log",
+      "sha256": "597bd4a4c549051deb716251e1f677c749b1076c13d0f3ae972cbe635bd17a7c"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-cross_head.log",
+      "sha256": "35600c3b05484188e17f8b9450ca0f3388a4a6a11eb886b396c3bfb1f211fe27"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-failed_and_pending.log",
+      "sha256": "f9c02862a6c6c6346811a02e399b5928e69172644df0fedb4aaa90494ab087ce"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-incomplete_tap.log",
+      "sha256": "64bcb21adb71f952f4fc492198af1d6d7e424cdeb31d5ed25e9470b761d0e28c"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-main_advanced_during_wait.log",
+      "sha256": "a3b52f15ac3bc26c5d789812af7b27bb0805aafc7e9ae6bbd5969cca0988c5cd"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-masked_child_failure.log",
+      "sha256": "7d5d62328cb02fb49b70363aee60d882331ae61072f3e168b163f5b1ba0ceacc"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-missing_condition.log",
+      "sha256": "13e4d0c4b983a6caeb5f5e50e91659078a5ee6eaae2a04688194872c0b96af9b"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-missing_workflow.log",
+      "sha256": "33d002628444dcfdd51c1a8f7e7e5c8874438fde0f19931a388d19efbf6727a1"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-mixed_incomplete.log",
+      "sha256": "b84a124d8f7743b84a8fdfd3b82a76fff87f77291e12226052433ccd28bb8583"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-node_failure.log",
+      "sha256": "5c4e628b0e844a66bd60e8c1df1c6911f289f1cf9da76b49788b78462c5b0e47"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-node_pass.log",
+      "sha256": "bd03116c60347180dc070ed7ee207008d4019f6ff69021b5cdb4ebcf74436acf"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-node_skip.log",
+      "sha256": "05b052885ca5e33c27dfb190b44044e7b1076d800c8b7e16954db5885bba4779"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-nonzero_with_pass.log",
+      "sha256": "5aa47ff0848d0f5cf68f6dd9fd237ebe0df9a3cbc78f18c473d7eba0464e22cd"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-wrong_tree.log",
+      "sha256": "13e4d0c4b983a6caeb5f5e50e91659078a5ee6eaae2a04688194872c0b96af9b"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/replay-zero.log",
+      "sha256": "78b4891608c42b34efc893236ddd40cc82030552a53d7e77ea9f29ec0a026e13"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/resume-different_run.log",
+      "sha256": "a0c2fd7ac80cfb4c374defc2ec5621d1f6f50102217f2160bea110380e5c783d"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/resume-environment_changed.log",
+      "sha256": "c8f3f88b3ff085afea1c5b6d32bb127f1bbb4b790f633325610b3cc4bee526f5"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/resume-fresh_full.log",
+      "sha256": "6d96507defc20e617c717fe0338971bdf66d63ba271424cd1e4e64e7a7d281e5"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/resume-interrupted.log",
+      "sha256": "468d05bfa985ad8988287ca6992e2b206107e2ea2089eac182c70360ab0c91aa"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/resume-resumed.log",
+      "sha256": "a57bef8e4ca3e6894516bdd68e430aae7a35beff2c523994cff764aa3024ee8e"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/resume-tampered_log.log",
+      "sha256": "bc56cd62cc77f651e221fff9fcbb9ece0afffd14f7843388297e8c33fa09f5ec"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01/evidence/unmapped-node.log",
+      "sha256": "10156f236f3e314167badb66babe3c33ac30967640eedd17a50279025f1c538d"
+    }
+  ],
+  "suite_runs": [
+    {
+      "targets": [
+        "verify.frontend.dev.incremental.unit",
+        "verify.changed.odoo.tests.unit"
+      ],
+      "returncode": 0,
+      "seconds": 7.63,
+      "log": ".runtime/verify-system-closeout-01/executor.log",
+      "status": "VERIFIED",
+      "source_head": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+      "log_sha256": "8616584ac83508eb04a9379514c41c1a91b03e8d226d072c6c249312b1479e64"
+    },
+    {
+      "targets": [
+        "verify.ci.workflow.contract",
+        "verify.ci.main_full_release.unit",
+        "verify.integration.cycle.unit",
+        "verify.backend_iteration_lanes.unit"
+      ],
+      "returncode": 0,
+      "seconds": 16.91,
+      "log": ".runtime/verify-system-closeout-01/ci.log",
+      "status": "VERIFIED",
+      "source_head": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+      "log_sha256": "9a3adec68750a16bdbf5d916b443cdd2f3b99fe066afc7fc69bde3516a95e440"
+    },
+    {
+      "targets": [
+        "verify.verification.lane_coverage"
+      ],
+      "returncode": 0,
+      "seconds": 46.14,
+      "log": ".runtime/verify-system-closeout-01/coverage.log",
+      "status": "VERIFIED",
+      "source_head": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+      "log_sha256": "f7473557d4f9bc32d9d528f531be56744d2bb1ad203a8ff8e25ee3afa4d7bd1b"
+    }
+  ],
+  "audit_package_validation": {
+    "json": "passed",
+    "python_syntax": "passed",
+    "tracked_evidence_hashes": "32/32",
+    "ledger_tests": 18,
+    "local_iteration": {
+      "status": "passed",
+      "source_head": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+      "log": ".runtime/verify-system-closeout-01/local-iteration.log",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T044343Z-3433333-425090602/receipt.json",
+      "executed_targets": 1
+    }
+  }
+}

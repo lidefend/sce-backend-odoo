@@ -1,0 +1,336 @@
+{
+  "schema_version": 1,
+  "source_head": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+  "source_tree": "e40eb31c080d45d2998a2171bae031e0f2470c47",
+  "observed_at": "2026-11-27T04:41:57.329687+00:00",
+  "audit_scope": "R1 read-only; no product/policy/database edits or remote dispatch",
+  "status": "NOT_VERIFIED",
+  "current_main_runs": [
+    {
+      "id": 45923448372,
+      "name": "public_guard",
+      "event": "push",
+      "head_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-27T01:35:41Z",
+      "updated_at": "2026-11-27T01:36:58Z",
+      "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448372",
+      "jobs": [
+        {
+          "id": 140259266927,
+          "name": "public_guard_classify",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-27T01:35:43Z",
+          "completed_at": "2026-11-27T01:35:55Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448372/job/140259266927"
+        },
+        {
+          "id": 140259332235,
+          "name": "public_guard",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-27T01:35:56Z",
+          "completed_at": "2026-11-27T01:36:57Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448372/job/140259332235"
+        }
+      ]
+    },
+    {
+      "id": 45923448422,
+      "name": "professional_quality_gate",
+      "event": "push",
+      "head_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-27T01:35:41Z",
+      "updated_at": "2026-11-27T01:40:30Z",
+      "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448422",
+      "jobs": [
+        {
+          "id": 140259267933,
+          "name": "professional_authorization",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-27T01:35:44Z",
+          "completed_at": "2026-11-27T01:35:56Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448422/job/140259267933"
+        },
+        {
+          "id": 140259269480,
+          "name": "python310_runtime_compatibility",
+          "status": "completed",
+          "conclusion": "skipped",
+          "started_at": "2026-11-27T01:35:42Z",
+          "completed_at": "2026-11-27T01:35:42Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448422/job/140259269480"
+        },
+        {
+          "id": 140259342515,
+          "name": "professional_quality_checks",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-27T01:35:58Z",
+          "completed_at": "2026-11-27T01:40:24Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448422/job/140259342515"
+        },
+        {
+          "id": 140259343714,
+          "name": "backend_impact_suite",
+          "status": "completed",
+          "conclusion": "skipped",
+          "started_at": "2026-11-27T01:35:57Z",
+          "completed_at": "2026-11-27T01:35:56Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448422/job/140259343714"
+        },
+        {
+          "id": 140259343970,
+          "name": "contract_only_checks",
+          "status": "completed",
+          "conclusion": "skipped",
+          "started_at": "2026-11-27T01:35:57Z",
+          "completed_at": "2026-11-27T01:35:56Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448422/job/140259343970"
+        },
+        {
+          "id": 140259344244,
+          "name": "backend_acceptance_suite",
+          "status": "completed",
+          "conclusion": "skipped",
+          "started_at": "2026-11-27T01:35:57Z",
+          "completed_at": "2026-11-27T01:35:56Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448422/job/140259344244"
+        },
+        {
+          "id": 140259344300,
+          "name": "backend_demo_suite",
+          "status": "completed",
+          "conclusion": "skipped",
+          "started_at": "2026-11-27T01:35:57Z",
+          "completed_at": "2026-11-27T01:35:56Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448422/job/140259344300"
+        },
+        {
+          "id": 140260696420,
+          "name": "professional_quality_gate",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-27T01:40:26Z",
+          "completed_at": "2026-11-27T01:40:30Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448422/job/140260696420"
+        }
+      ]
+    },
+    {
+      "id": 45923448260,
+      "name": "frontend_release_gate",
+      "event": "push",
+      "head_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-27T01:35:41Z",
+      "updated_at": "2026-11-27T01:41:38Z",
+      "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448260",
+      "jobs": [
+        {
+          "id": 140259266954,
+          "name": "frontend_release_gate",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-27T01:35:43Z",
+          "completed_at": "2026-11-27T01:41:22Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448260/job/140259266954"
+        },
+        {
+          "id": 140259267355,
+          "name": "managed_orm",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-27T01:35:44Z",
+          "completed_at": "2026-11-27T01:41:37Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448260/job/140259267355"
+        }
+      ]
+    },
+    {
+      "id": 45923448264,
+      "name": "merge_policy_gate",
+      "event": "push",
+      "head_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+      "status": "completed",
+      "conclusion": "success",
+      "created_at": "2026-11-27T01:35:41Z",
+      "updated_at": "2026-11-27T01:42:07Z",
+      "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448264",
+      "jobs": [
+        {
+          "id": 140259266706,
+          "name": "classify",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-27T01:35:43Z",
+          "completed_at": "2026-11-27T01:35:55Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448264/job/140259266706"
+        },
+        {
+          "id": 140259332079,
+          "name": "wait_for_fact_checks",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-27T01:35:57Z",
+          "completed_at": "2026-11-27T01:41:53Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448264/job/140259332079"
+        },
+        {
+          "id": 140259334129,
+          "name": "fast",
+          "status": "completed",
+          "conclusion": "skipped",
+          "started_at": "2026-11-27T01:35:55Z",
+          "completed_at": "2026-11-27T01:35:55Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448264/job/140259334129"
+        },
+        {
+          "id": 140261148616,
+          "name": "merge_policy_gate",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-11-27T01:41:55Z",
+          "completed_at": "2026-11-27T01:42:06Z",
+          "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45923448264/job/140261148616"
+        }
+      ]
+    }
+  ],
+  "absent_full_responsibilities": [
+    "same-head full professional backend partitions",
+    "full frontend release/browser scope",
+    "auxiliary_backend_suite workflow",
+    "release_candidate_gate workflow and release-condition.json"
+  ],
+  "direct_reason": "No schedule/operator full-audit execution for this SHA in observed run set; main push jobs deliberately use selected scopes. Not an observed current-main red CI failure.",
+  "historical_qualification": {
+    "status": "VERIFIED",
+    "head": "a92114f0efb6733253d827e3a9985af21ab96be6",
+    "runs": [
+      {
+        "id": 45890128615,
+        "name": "release_candidate_gate",
+        "event": "workflow_dispatch",
+        "head_sha": "a92114f0efb6733253d827e3a9985af21ab96be6",
+        "conclusion": "success",
+        "created_at": "2026-11-26T20:18:52Z",
+        "updated_at": "2026-11-26T20:46:30Z",
+        "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45890128615"
+      },
+      {
+        "id": 45890123545,
+        "name": "auxiliary_backend_suite",
+        "event": "workflow_dispatch",
+        "head_sha": "a92114f0efb6733253d827e3a9985af21ab96be6",
+        "conclusion": "success",
+        "created_at": "2026-11-26T20:18:49Z",
+        "updated_at": "2026-11-26T20:25:35Z",
+        "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45890123545"
+      },
+      {
+        "id": 45890118293,
+        "name": "merge_policy_gate",
+        "event": "workflow_dispatch",
+        "head_sha": "a92114f0efb6733253d827e3a9985af21ab96be6",
+        "conclusion": "success",
+        "created_at": "2026-11-26T20:18:47Z",
+        "updated_at": "2026-11-26T20:25:32Z",
+        "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45890118293"
+      },
+      {
+        "id": 45890112910,
+        "name": "frontend_release_gate",
+        "event": "workflow_dispatch",
+        "head_sha": "a92114f0efb6733253d827e3a9985af21ab96be6",
+        "conclusion": "success",
+        "created_at": "2026-11-26T20:18:44Z",
+        "updated_at": "2026-11-26T20:46:14Z",
+        "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45890112910"
+      },
+      {
+        "id": 45890107596,
+        "name": "professional_quality_gate",
+        "event": "workflow_dispatch",
+        "head_sha": "a92114f0efb6733253d827e3a9985af21ab96be6",
+        "conclusion": "success",
+        "created_at": "2026-11-26T20:18:41Z",
+        "updated_at": "2026-11-26T20:36:15Z",
+        "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45890107596"
+      },
+      {
+        "id": 45890102365,
+        "name": "public_guard",
+        "event": "workflow_dispatch",
+        "head_sha": "a92114f0efb6733253d827e3a9985af21ab96be6",
+        "conclusion": "success",
+        "created_at": "2026-11-26T20:18:39Z",
+        "updated_at": "2026-11-26T20:26:30Z",
+        "html_url": "https://github.com/lidefend/sce-backend-odoo/actions/runs/45890102365"
+      }
+    ],
+    "scope": "historical workflow status only; does not qualify bfc954; operator manifest alone has defects documented in findings"
+  },
+  "recent_prs": [
+    {
+      "pr": 1013,
+      "title": "fix(ci): qualify current contract checks and precise impact ownership",
+      "head": "306fd7ee464927c98860c5dd8888e193ee1d4593",
+      "merge": "162bdc3c78558f6ebc5cadef123c9f7a82564121",
+      "url": "https://github.com/lidefend/sce-backend-odoo/pull/1013",
+      "merged": true
+    },
+    {
+      "pr": 1014,
+      "title": "fix(ci): close stable projection guard and affected-check gaps",
+      "head": "b491513fdd0f614177c370f8a9fe7e5dc6029e33",
+      "merge": "c55e907bdd50a1fdb720839b1aabd8b5cc17fc35",
+      "url": "https://github.com/lidefend/sce-backend-odoo/pull/1014",
+      "merged": true
+    },
+    {
+      "pr": 1015,
+      "title": "fix(ci): close full-release probe, workflow guard and fixture prerequisites",
+      "head": "8f762cae0829f57301bc9758158d7379015d64c7",
+      "merge": "d41a3837428ac88369d5157732583014ced30350",
+      "url": "https://github.com/lidefend/sce-backend-odoo/pull/1015",
+      "merged": true
+    },
+    {
+      "pr": 1016,
+      "title": "perf: remove duplicate snapshot reads and payment reservation queries",
+      "head": "b8af064c8390fb9778588451b2bec89c33dd1953",
+      "merge": "9a56e0cdc38e47a1bd37b930199214418f712f6a",
+      "url": "https://github.com/lidefend/sce-backend-odoo/pull/1016",
+      "merged": true
+    },
+    {
+      "pr": 1017,
+      "title": "perf: batch navigation identity resolution and policy projection",
+      "head": "292fba7d7af44dddf8c07b0230014c8c0e47d534",
+      "merge": "a92114f0efb6733253d827e3a9985af21ab96be6",
+      "url": "https://github.com/lidefend/sce-backend-odoo/pull/1017",
+      "merged": true
+    },
+    {
+      "pr": 1018,
+      "title": "fix(P0): preserve polymorphic reference semantics across strict contracts",
+      "head": "4ca12989cb8c4cd9533babf95bc4f86560a94b7c",
+      "merge": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+      "url": "https://github.com/lidefend/sce-backend-odoo/pull/1018",
+      "merged": true
+    }
+  ],
+  "efficiency": {
+    "remote_poll": "up to 1020 iterations, 20s sleep, sequential API call per 4/5 dependency workflows; six-hour job timeout",
+    "local_poll": "queries all six even after observed failure; waits for all terminal",
+    "dispatch": "sequential dispatch API calls, but workflow bodies run independently; no evidence they wait serially for completion",
+    "improvement": "one coherent failure/pending matrix, fail on terminal mandatory failures, refresh current main after wait, retain pinned run attempts; no budget reduction"
+  }
+}

@@ -1,0 +1,17 @@
+[main-full-release] PASS main=bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5 kind=operator_full_audit
+
+TRANSPORT CALLS
+{"command": "gh", "args": ["repo", "view", "lidefend/sce-backend-odoo", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]}
+{"command": "git", "args": ["ls-remote", "origin", "refs/heads/main"]}
+{"command": "gh", "args": ["run", "view", "101", "--repo", "lidefend/sce-backend-odoo", "--json", "databaseId,headSha,headBranch,event,status,conclusion,url,workflowName,attempt"]}
+{"command": "gh", "args": ["run", "view", "102", "--repo", "lidefend/sce-backend-odoo", "--json", "databaseId,headSha,headBranch,event,status,conclusion,url,workflowName,attempt"]}
+{"command": "gh", "args": ["run", "view", "103", "--repo", "lidefend/sce-backend-odoo", "--json", "databaseId,headSha,headBranch,event,status,conclusion,url,workflowName,attempt"]}
+{"command": "gh", "args": ["run", "view", "104", "--repo", "lidefend/sce-backend-odoo", "--json", "databaseId,headSha,headBranch,event,status,conclusion,url,workflowName,attempt"]}
+{"command": "gh", "args": ["run", "view", "105", "--repo", "lidefend/sce-backend-odoo", "--json", "databaseId,headSha,headBranch,event,status,conclusion,url,workflowName,attempt"]}
+{"command": "gh", "args": ["run", "view", "106", "--repo", "lidefend/sce-backend-odoo", "--json", "databaseId,headSha,headBranch,event,status,conclusion,url,workflowName,attempt"]}
+{"command": "gh", "args": ["run", "view", "101", "--repo", "lidefend/sce-backend-odoo", "--json", "databaseId,headSha,headBranch,event,status,conclusion,url,workflowName,attempt"]}
+{"command": "gh", "args": ["run", "view", "102", "--repo", "lidefend/sce-backend-odoo", "--json", "databaseId,headSha,headBranch,event,status,conclusion,url,workflowName,attempt"]}
+{"command": "gh", "args": ["run", "view", "103", "--repo", "lidefend/sce-backend-odoo", "--json", "databaseId,headSha,headBranch,event,status,conclusion,url,workflowName,attempt"]}
+{"command": "gh", "args": ["run", "view", "104", "--repo", "lidefend/sce-backend-odoo", "--json", "databaseId,headSha,headBranch,event,status,conclusion,url,workflowName,attempt"]}
+{"command": "gh", "args": ["run", "view", "105", "--repo", "lidefend/sce-backend-odoo", "--json", "databaseId,headSha,headBranch,event,status,conclusion,url,workflowName,attempt"]}
+{"command": "gh", "args": ["run", "view", "106", "--repo", "lidefend/sce-backend-odoo", "--json", "databaseId,headSha,headBranch,event,status,conclusion,url,workflowName,attempt"]}

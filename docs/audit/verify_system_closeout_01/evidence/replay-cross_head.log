@@ -1,0 +1,6 @@
+[main-full-release] DENY: run identity mismatch for public_guard.yml
+
+TRANSPORT CALLS
+{"command": "gh", "args": ["repo", "view", "lidefend/sce-backend-odoo", "--json", "nameWithOwner", "--jq", ".nameWithOwner"]}
+{"command": "git", "args": ["ls-remote", "origin", "refs/heads/main"]}
+{"command": "gh", "args": ["run", "view", "101", "--repo", "lidefend/sce-backend-odoo", "--json", "databaseId,headSha,headBranch,event,status,conclusion,url,workflowName,attempt"]}

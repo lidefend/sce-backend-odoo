@@ -1,0 +1,1 @@
+[release-condition] DENY: workflow is not successful: .github/workflows/auxiliary_backend_suite.yml

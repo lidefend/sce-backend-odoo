@@ -1,0 +1,32 @@
+[verification-lane-coverage] read-only measurement
+  targets defined            : 2589 (phony 2461)
+  reachable from any anchor  : 277 -> unreached 2320
+  zero-reference targets     : 670  (unregistered 0; stale 0)
+  scripts on disk            : 2558  (owned surface 889; verify-registry lifecycle 1669)
+  targets, absent-asset recipe: 22  (unregistered 0; stale 0)
+  scripts never referenced   : 103  (unregistered 0; stale 0)
+  lane local.iteration                       : 5 targets / 10 scripts
+  lane local.quick                           : 164 targets / 286 scripts
+  lane remote.professional.backend.verify    : 109 targets / 224 scripts
+  lane remote.professional.backend.tests     : 6 targets / 9 scripts
+  lane remote.professional.backend.reports   : 4 targets / 9 scripts
+  lane remote.standard_backend               : 5 targets / 9 scripts
+  lane remote.frontend.standard              : 70 targets / 45 scripts
+  lane remote.frontend.full                  : 131 targets / 120 scripts
+  lane runtime.acceptance.business_scenes    : 2 targets / 1 scripts
+  lane runtime.feedback.acceptance           : 8 targets / 2 scripts
+  lane deployment.postverify                 : 4 targets / 0 scripts
+  local.quick-only scripts   : 22  (merge green remotely, fail only on the local exact-head lane)
+  remote-only scripts        : 92  (a local pass proves less than a remote pass)
+  UNREGISTERED divergence    : local 0 / remote 0 (must be 0)
+  stale exemptions           : 0 / 0 (must be 0)
+
+  ---- structural coverage only; NOT a functional acceptance ----
+  required chain (unregistered) : targets 0 / scripts 0 (must be 0)
+  newly-unregistered divergences: local 0 / remote 0 (must be 0)
+  registrations missing owner   : 0 (must be 0)
+  registrations missing basis   : 0 (must be 0)
+  expired registrations         : 0 (must be 0)
+  unwired required checks       : 0 (must be 0)
+  historical-open (registered)  : targets 670 / scripts 103 / absent-assets 22 / exemptions 114
+  scan scope                    : make targets 2589 / scripts on disk 2558 / registries baseline+dispositions+exemptions

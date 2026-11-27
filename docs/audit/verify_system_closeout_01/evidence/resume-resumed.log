@@ -1,0 +1,4 @@
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.workspace.branch.sync-main resumed=3 source=.runtime/frontend-dev-validation/executions/interrupted/receipt.json
+Ran 1 test in 0.001s
+OK
+[local.incremental] PASSED layers=frontend,governance executed=1 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/resumed/receipt.json
