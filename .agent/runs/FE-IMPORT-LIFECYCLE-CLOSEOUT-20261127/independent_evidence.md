@@ -75,3 +75,15 @@ checks completed. The r2 import candidate was replayed onto that exact full HEAD
 Again, only the generated component-driver inventory conflicted and was
 regenerated through its governed target. The r3 branch requires a final
 exact-head validation before handoff.
+
+## r3 clean exact-head result
+
+Commit `50faa32bb171e7c1e87e2fc5ab39369840a4d4c7` passed:
+
+- `make ci.local.iteration`: 9 executed targets, 3 test targets, 341 non-zero
+  tests, 5 static checks, no unmapped/not-run/blocked target;
+- production build from the same source revision, fingerprint
+  `afac180ee125ec246d9af68ff7eb154dae412c836cfba8d6fbf8d5981771407e`.
+
+This is ready for product-writer handoff once PR #1019's `public_guard`
+false-positive blocker is resolved.
