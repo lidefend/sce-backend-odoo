@@ -143,6 +143,21 @@ def main() -> int:
         errors.append("strict web contract client must request ui.contract.v2")
     if "intent: 'ui.contract'," in source or 'intent: "ui.contract",' in source:
         errors.append("web contract API must not request legacy ui.contract directly")
+    if "row.fieldDescriptor || row.field_descriptor" not in v2_source:
+        errors.append("web v2 widget synthesis must read semantic identity from fieldDescriptor")
+    for secondary_authority in (
+        "componentConfig.relationEntry",
+        "componentConfig.relation_entry",
+        "componentConfig.widgetOptions",
+        "componentConfig.widget_options",
+        "componentConfig.subview",
+        "componentConfig.subView",
+    ):
+        if secondary_authority in v2_source:
+            errors.append(
+                "web v2 widget synthesis must not use componentConfig as a semantic fallback: "
+                f"{secondary_authority}"
+            )
     for token in (
         "loadActionContractV2",
         "loadModelContractV2",

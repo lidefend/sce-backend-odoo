@@ -151,6 +151,49 @@ function asText(value: unknown): string {
   return String(value || '').trim();
 }
 
+const COMPONENT_CONFIG_BUSINESS_SEMANTIC_KEYS = [
+  'fieldType',
+  'field_type',
+  'relation',
+  'relationField',
+  'relation_field',
+  'referenceModelField',
+  'reference_model_field',
+  'relationEntry',
+  'relation_entry',
+  'relationActiveActions',
+  'relation_active_actions',
+  'widgetOptions',
+  'widget_options',
+  'options',
+  'subview',
+  'subView',
+  'selection',
+  'digits',
+  'unit',
+  'temporal',
+  'currencyField',
+  'currency_field',
+  'attachmentRole',
+  'attachment_role',
+  'filename',
+  'required',
+  'readonly',
+  'invisible',
+  'domain',
+  'domainExpression',
+  'domain_expression',
+  'context',
+] as const;
+
+function transportOnlyComponentConfig(source: Dict): Dict {
+  const out = { ...source };
+  COMPONENT_CONFIG_BUSINESS_SEMANTIC_KEYS.forEach((key) => {
+    delete out[key];
+  });
+  return out;
+}
+
 function readDictAlias(source: Dict, key: string, alias: string): Dict {
   return asDict(source[key] || source[alias]);
 }
@@ -185,27 +228,16 @@ function synthesizeUnifiedPageContractV2Widget(row: Dict): UnifiedPageContractV2
   const label = asText(row.label || row.string || row.title || fieldInfo.label || fieldCode);
   const componentKey = asText(row.componentKey || row.component_key || fieldInfo.componentKey || fieldInfo.component_key);
   const componentConfig = asDict(row.componentConfig || row.component_config || fieldInfo.componentConfig || fieldInfo.component_config || attributes.componentConfig || attributes.component_config);
-  const relationEntry = asDict(fieldInfo.relation_entry || fieldInfo.relationEntry || componentConfig.relationEntry || componentConfig.relation_entry);
-  const widgetOptions = asDict(fieldInfo.widgetOptions || fieldInfo.widget_options || fieldInfo.options || componentConfig.widgetOptions || componentConfig.widget_options);
-  const subview = asDict(fieldInfo.subview || fieldInfo.subView || componentConfig.subview || componentConfig.subView);
+  const fieldDescriptor = asDict(row.fieldDescriptor || row.field_descriptor);
   return {
     widgetId,
     widgetType,
     fieldCode,
     label,
     componentKey: componentKey || 'sc.display.text',
-    componentConfig: {
-      ...(componentConfig || {}),
-      ...(asText(fieldInfo.type || fieldInfo.ttype) ? { fieldType: asText(fieldInfo.type || fieldInfo.ttype) } : {}),
-      ...(asText(fieldInfo.relation) ? { relation: asText(fieldInfo.relation) } : {}),
-      ...(asText(fieldInfo.relation_field || fieldInfo.relationField) ? { relation_field: asText(fieldInfo.relation_field || fieldInfo.relationField) } : {}),
-      ...(Array.isArray(fieldInfo.selection) ? { selection: fieldInfo.selection } : {}),
-      ...(Object.keys(relationEntry).length ? { relationEntry } : {}),
-      ...(Object.keys(widgetOptions).length ? { widgetOptions } : {}),
-      ...(Object.keys(subview).length ? { subview } : {}),
-    },
-    fieldType: asText(fieldInfo.type || fieldInfo.ttype) || undefined,
-    relation: asText(fieldInfo.relation) || undefined,
+    componentConfig: transportOnlyComponentConfig(componentConfig),
+    fieldType: asText(fieldDescriptor.fieldType) || undefined,
+    relation: asText(fieldDescriptor.relation) || undefined,
   };
 }
 

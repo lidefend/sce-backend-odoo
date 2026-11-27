@@ -24,6 +24,7 @@ import {
   extractListFieldSemanticsFromContract,
   useActionViewContractShapeRuntime,
 } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
+import { collectUnifiedPageContractV2Widgets } from '../src/app/contracts/unifiedPageContractV2';
 import { resolveDeclaredAssigneeQuery } from '../src/app/runtime/actionViewAssigneeOptionsContract';
 import { resolveDeclaredKanbanTitleField } from '../src/app/runtime/actionViewKanbanTitleField';
 import {
@@ -207,6 +208,57 @@ check(semanticAuthorityOption?.defaultVisible, true, 'componentConfig cannot ove
 check(semanticAuthorityOption?.sortable, true, 'list column sortability comes from fieldDescriptor');
 check(semanticAuthorityOption?.valueField, 'amount', 'list transport keeps its declared value field');
 check(semanticAuthorityOption?.sortField, 'amount', 'list transport keeps its declared sort field');
+
+const synthesizedV2Widgets = collectUnifiedPageContractV2Widgets({
+  pageInfo: {
+    pageId: 'contract-closure',
+    contractVersion: '2.7.0',
+    clientType: 'web_pc',
+  },
+  layoutContract: {
+    containerTree: [{
+      containerId: 'root',
+      children: [],
+      widgetList: [{
+        widgetId: 'field.partner_id',
+        widgetType: 'many2one',
+        fieldCode: 'partner_id',
+        label: 'Partner',
+        componentKey: 'sc.relation',
+        fieldDescriptor: {
+          fieldType: 'many2one',
+          relation: 'res.partner',
+        },
+        componentConfig: {
+          fieldType: 'char',
+          relation: 'res.users',
+          relationEntry: { page_size: 999 },
+          relationActiveActions: { create: true, write: true },
+          widgetOptions: { readonly_empty_text: 'forged' },
+          subview: { policies: { can_create: true } },
+          selection: [['forged', 'Forged']],
+          nativeWidget: 'many2one',
+        },
+      }],
+    }],
+  },
+  actionContract: { actionRuleList: [] },
+});
+const synthesizedV2Widget = synthesizedV2Widgets[0];
+assert.ok(synthesizedV2Widget);
+check(synthesizedV2Widget?.fieldType, 'many2one', 'legacy widget projection reads field type from fieldDescriptor');
+check(synthesizedV2Widget?.relation, 'res.partner', 'legacy widget projection reads relation from fieldDescriptor');
+check(synthesizedV2Widget?.componentConfig?.nativeWidget, 'many2one', 'transport-only widget config is preserved');
+for (const key of [
+  'fieldType', 'relation', 'relationEntry', 'relationActiveActions',
+  'widgetOptions', 'subview', 'selection',
+]) {
+  check(
+    synthesizedV2Widget?.componentConfig?.[key],
+    undefined,
+    `legacy widget projection removes ${key} from componentConfig`,
+  );
+}
 
 const storeWithListProfile = (listProfile: Record<string, unknown>) => ({
   snapshot: {

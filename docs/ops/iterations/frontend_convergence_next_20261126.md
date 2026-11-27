@@ -562,6 +562,29 @@ clean 运行态回读：
 测试已改为在同一前提内计算期望与执行值，相关治理门禁重跑通过。远端 exact-head CI、
 143 业务入口浏览器矩阵、角色/公司旅程、部署和用户验收仍未执行或未宣称完成。
 
+### 2026-11-27 FC-01 legacy widget 采集器单一语义权威
+
+扫描剩余生产消费者时发现，`unifiedPageContractV2.ts` 的旧 widget 采集器仍可从
+`componentConfig` 回填 `relationEntry`、`widgetOptions`、`subview`、字段类型和关系，
+并把这些值作为兼容投影返回。这形成了 `fieldDescriptor` 之外的第二套语义来源。
+
+本切片完成：
+
+- 旧 widget 采集器只从 occurrence `fieldDescriptor` 读取 `fieldType` 与 `relation`；
+- 返回的 `componentConfig` 仅保留传输字段，移除关系、选择、精度、单位、时区、
+  domain/context、relationEntry、relationActiveActions、widgetOptions 和 subview 等业务语义；
+- 增加伪造 componentConfig 的类型、关系、relationEntry、widgetOptions、subview、
+  selection 均不生效的负例；
+- Web V2 consumer 守卫禁止重新引入 `componentConfig.*` 语义 fallback。
+
+`make ci.local.iteration` 执行 53 个目标、复用 9 个未变目标，36 个测试目标执行
+1385 项测试、10 项静态检查全部通过，`unmapped=0`、`not_run=0`、`blocked=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T080051Z-1260505-664266119/receipt.json`
+
+首次完整迭代发现生产源码变化后的组件接管派生清单摘要过期；按拥有层重建清单后，
+剩余受影响目标全部通过。该结果不证明生产角色/公司页面、143 入口矩阵或用户验收。
+
 ### 2026-11-27 FC-01 原生表单与附件分类语义收口
 
 本轮按“本地一个合格切片即发布、后续直接更新同一 PR”的方式推进。draft PR #1019
