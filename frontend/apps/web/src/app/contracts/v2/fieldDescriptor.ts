@@ -43,6 +43,7 @@ const OPTIONAL_KEYS = [
   'invisible',
   'relation',
   'relationField',
+  'referenceModelField',
   'selection',
   'domain',
   'domainExpression',
@@ -79,8 +80,8 @@ const FIELD_TYPES = new Set([
   'datetime', 'selection', 'many2one', 'one2many', 'many2many', 'binary',
   'json', 'many2one_reference', 'reference',
 ]);
-const RELATION_FIELD_TYPES = new Set([
-  'many2one', 'one2many', 'many2many', 'many2one_reference', 'reference',
+const FIXED_RELATION_FIELD_TYPES = new Set([
+  'many2one', 'one2many', 'many2many',
 ]);
 const FORM_STRUCTURE_ROLES = new Set([
   'summary', 'task', 'context', 'risk', 'relation', 'activity', 'audit',
@@ -401,6 +402,14 @@ export function decodeContractV2FieldDescriptor(
   const technical = decodeOptionalBoolean(raw, 'technical', path, issues);
   const relation = decodeOptionalText(raw, 'relation', path, issues) || '';
   const relationField = decodeOptionalText(raw, 'relationField', path, issues);
+  const referenceModelField = decodeOptionalText(raw, 'referenceModelField', path, issues);
+  if (raw.referenceModelField !== undefined && (
+    typeof raw.referenceModelField !== 'string'
+    || !/^[A-Za-z_][A-Za-z0-9_]*$/.test(raw.referenceModelField)
+    || raw.referenceModelField === fieldCode
+  )) {
+    push(issues, `${path}.referenceModelField`, 'FIELD_DESCRIPTOR_REFERENCE_MODEL_FIELD_INVALID', 'must name a distinct same-record model pointer field');
+  }
   const currencyField = decodeOptionalText(raw, 'currencyField', path, issues) || '';
   const filename = decodeOptionalText(raw, 'filename', path, issues);
   const surfaceRole = decodeOptionalText(raw, 'surfaceRole', path, issues);
@@ -472,8 +481,11 @@ export function decodeContractV2FieldDescriptor(
       push(issues, path, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'datetime requires matching fieldType and temporal datetime');
     }
   }
-  if (RELATION_FIELD_TYPES.has(fieldType) && !relation) {
-    push(issues, path, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'relation field types require relation');
+  if (FIXED_RELATION_FIELD_TYPES.has(fieldType) && !relation) {
+    push(issues, path, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'fixed relation field types require relation');
+  }
+  if (fieldType === 'many2one_reference' && !referenceModelField) {
+    push(issues, path, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'many2one_reference requires referenceModelField');
   }
   if (relation === 'ir.attachment' && !attachmentRole) {
     push(issues, path, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'ir.attachment requires attachmentRole');
@@ -501,6 +513,7 @@ export function decodeContractV2FieldDescriptor(
     ...(invisible !== undefined ? { invisible } : {}),
     ...(relation ? { relation } : {}),
     ...(relationField ? { relationField } : {}),
+    ...(referenceModelField ? { referenceModelField } : {}),
     ...(selection ? { selection } : {}),
     ...(raw.domain !== undefined ? { domain: raw.domain } : {}),
     ...(raw.domainExpression !== undefined ? { domainExpression: raw.domainExpression } : {}),

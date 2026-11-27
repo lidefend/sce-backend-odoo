@@ -900,6 +900,13 @@ entries:
   gate: 'scripts/verify/p0_contract_producer_money_evidence.py :: p0_contract_producer_p0a_money_evidence'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: p0_polymorphic_reference_evidence
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-contract
+  dispose: class-selected
+  gate: 'make:verify.contract.polymorphic_reference.integration :: p0_polymorphic_reference_evidence'
+  reason: Real notification contract and native Reference evidence; affected local selection plus owning-module remote ORM coverage. No independent recurring tag gate.
 - group: p0_contract_descriptor_conformance_evidence
   kind: odoo_tag
   status: on-demand

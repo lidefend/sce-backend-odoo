@@ -16,6 +16,27 @@ import {
   resolvePageBlockCurrencyLabel,
 } from '../src/app/pageOrchestration';
 
+const polymorphicDescriptor = {
+  schemaVersion: '1.0.0', fieldCode: 'source_id', label: 'Source',
+  fieldType: 'many2one_reference', widgetType: 'many2one', semanticType: 'reference',
+  referenceModelField: 'source_model',
+};
+const polymorphic = decodeContractV2FieldDescriptor(polymorphicDescriptor).descriptor;
+assert.equal(polymorphic.referenceModelField, 'source_model');
+assert.equal(polymorphic.relation, undefined);
+for (const invalid of [undefined, null, '', ' ', 4, 'source.model', 'source_id']) {
+  assert.throws(() => decodeContractV2FieldDescriptor({ ...polymorphicDescriptor, referenceModelField: invalid }), /FIELD_DESCRIPTOR/);
+}
+const selfIdentifyingReference = { ...polymorphicDescriptor, referenceModelField: undefined };
+assert.equal(decodeContractV2FieldDescriptor({ ...selfIdentifyingReference, fieldType: 'reference' }).descriptor.relation, undefined);
+for (const fieldType of ['many2one', 'one2many', 'many2many']) {
+  const fixed = { ...selfIdentifyingReference, fieldType, widgetType: fieldType,
+    semanticType: fieldType === 'many2one' ? 'relation' : fieldType === 'one2many' ? 'detail_collection' : 'relation_collection' };
+  assert.throws(() => decodeContractV2FieldDescriptor(fixed), /CONDITIONAL_REQUIRED/);
+  assert.equal(decodeContractV2FieldDescriptor({ ...fixed, relation: 'res.partner' }).descriptor.relation, 'res.partner');
+}
+assert.throws(() => decodeContractV2FieldDescriptor({ ...polymorphicDescriptor, guessedModel: 'res.partner' }), /UNKNOWN_KEY/);
+
 const readyMoney = {
   schemaVersion: '1.0.0',
   fieldCode: 'payment.pending_amount',

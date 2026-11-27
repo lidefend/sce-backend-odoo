@@ -674,6 +674,28 @@ class TestAssembledSharedRead(unittest.TestCase):
             "upc-v2-sha256-next",
         )
 
+    def test_polymorphic_descriptor_version_rejects_old_assembled_and_etag(self):
+        handler = Path(__file__).resolve().parents[1] / "handlers" / "ui_contract_v2.py"
+        tree = ast.parse(handler.read_text())
+        current = next(ast.literal_eval(node.value) for node in tree.body
+                       if isinstance(node, ast.Assign) and any(
+                           isinstance(target, ast.Name) and target.id == "ASSEMBLED_CONTRACT_CACHE_VERSION"
+                           for target in node.targets))
+        self.assertNotEqual(current, "ui-contract-v2-demand-driven-snapshot-v125")
+        payload = self._entry_payload()
+        payload["_assembled_v2"]["cache_version"] = "ui-contract-v2-demand-driven-snapshot-v125"
+        self.cache.put("page", "source", payload)
+        gate = dict(self.GATE, cache_version=current)
+        self.assertIsNone(self._hit(gate={"cache_version": current}))
+        self.assertFalse(TARGET.assembled_snapshot_gate_matches(payload, **gate))
+        self.assertEqual(self.cache.get_assembled_runtime_etag(
+            "page", "source", source_type="runtime_intent", **gate), "")
+        # Native source remains reusable only through reassembly.
+        self.assertEqual(self.cache.get("page", "source")["ui_data"], payload["ui_data"])
+        payload["_assembled_v2"]["cache_version"] = current
+        self.cache.put("page", "source", payload)
+        self.assertIsNotNone(self._hit(gate={"cache_version": current}))
+
     def test_runtime_etag_lookup_requires_an_exact_live_assembled_identity(self):
         self._store()
 

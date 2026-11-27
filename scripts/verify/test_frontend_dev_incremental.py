@@ -681,6 +681,23 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.industry_business_model_02.orm", targets)
                 self.assertIn("verify.industry_business_model_02.data_audit", targets)
 
+    def test_polymorphic_contract_selects_real_producer_decoder_chain(self):
+        for path in (
+            "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+            "addons/smart_core/handlers/ui_contract_v2.py",
+            "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+            "frontend/apps/web/src/app/contracts/v2/types.ts",
+            "docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json",
+            "frontend/apps/web/scripts/polymorphic_reference_real_contract_test.ts",
+            "scripts/verify/p0_contract_producer_descriptor_evidence.py",
+            "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
+        ):
+            with self.subTest(path=path):
+                self.assertIn("verify.contract.polymorphic_reference.integration", select_targets([path]))
+        self.assertNotIn("verify.contract.polymorphic_reference.integration", select_targets([
+            "addons/smart_construction_core/models/core/payment_request.py",
+        ]))
+
     def test_navigation_projection_selects_real_identity_and_policy_consumers(self):
         for path in (
             "addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py",
@@ -2154,6 +2171,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "frontend/apps/web/src/app/contracts/v2/types.ts",
             ]),
             [
+                "verify.contract.polymorphic_reference.integration",
                 "verify.frontend.canonical_form_presenter.unit",
                 "verify.frontend.contract_fidelity.plan.unit",
                 "verify.frontend.contract_record_action_state.unit",

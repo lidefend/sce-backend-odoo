@@ -61,6 +61,7 @@ def validate_semantic_contract(contract: dict) -> list[str]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--form-output", required=True)
+    parser.add_argument("--polymorphic-output")
     args = parser.parse_args()
 
     run = subprocess.run(
@@ -69,7 +70,8 @@ def main() -> int:
             "--no-print-directory",
             "local.test.test",
             "MODULE=smart_construction_core",
-            "TEST_TAGS=p0_contract_descriptor_conformance_evidence",
+            ("TEST_TAGS=p0_contract_descriptor_conformance_evidence,p0_polymorphic_reference_evidence"
+             if args.polymorphic_output else "TEST_TAGS=p0_contract_descriptor_conformance_evidence"),
         ],
         cwd=ROOT,
         text=True,
@@ -126,6 +128,33 @@ def main() -> int:
         json.dumps(contract, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
         encoding="utf-8",
     )
+    if args.polymorphic_output:
+        from jsonschema import Draft202012Validator
+        prefix = "P0_POLYMORPHIC_REFERENCE_EVIDENCE_B64="
+        encoded = next((line.split(prefix, 1)[1].strip() for line in
+                        log_path.read_text(encoding="utf-8").splitlines() if prefix in line), "")
+        if not encoded:
+            print("[p0-descriptor-evidence] FAIL polymorphic producer output missing")
+            return 8
+        polymorphic = json.loads(base64.b64decode(encoded).decode("utf-8"))
+        validator = Draft202012Validator(json.loads((ROOT / "docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json").read_text()))
+        descriptors = []
+        def collect(rows):
+            for row in rows:
+                descriptors.extend(widget["fieldDescriptor"] for widget in row.get("widgetList", []) if widget.get("fieldDescriptor"))
+                collect(row.get("children", []))
+        collect(polymorphic["notification"]["layoutContract"]["containerTree"])
+        descriptors.append(polymorphic["native_reference"])
+        if not any(row.get("fieldType") == "many2one_reference" for row in descriptors):
+            raise ValueError("real contract must contain many2one_reference")
+        for descriptor in descriptors:
+            validator.validate(descriptor)
+        polymorphic["producer_evidence"] = {"receipt": str(receipt_path), "descriptors": len(descriptors)}
+        target = Path(args.polymorphic_output)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(polymorphic, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        print(f"[p0-descriptor-evidence] polymorphic_schema=PASS descriptors={len(descriptors)} output={target}")
+
     print(
         "[p0-descriptor-evidence] PASS "
         f"project_id={payload.get('project_id')} form={args.form_output}"
