@@ -39,7 +39,7 @@
     <template #actions>
       <ScButton v-if="completed" variant="primary" @click="settle(completed)">{{ labels.done_label }}</ScButton>
       <template v-else>
-      <ScButton variant="ghost" :disabled="busy" @click="cancel">{{ labels.cancel_label }}</ScButton>
+      <ScButton variant="ghost" :disabled="executing" @click="cancel">{{ labels.cancel_label }}</ScButton>
       <ScButton variant="secondary" :disabled="busy || !inspected" @click="validate">{{ labels.validate_label }}</ScButton>
       <ScButton variant="primary" :disabled="busy || !validated" @click="execute">{{ labels.execute_label }}</ScButton>
       </template>
@@ -48,10 +48,15 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, ref } from 'vue';
 import { exportRecordsCsv, importRecords, type ApiDataImportContract, type NativeImportField } from '../../api/data';
 import { fileToBase64 } from '../../api/files';
 import { contractGapError } from '../../app/contract/contractGap';
+import { onContextEpochChange } from '../../app/contextEpoch';
+import {
+  createNativeImportRequestOwner,
+  type NativeImportRequestTicket,
+} from '../../app/action_runtime/nativeImportLifecycle';
 import ScDialog from '../design-system/ScDialog.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScSelect from '../design-system/ScSelect.vue';
@@ -72,6 +77,7 @@ const optionFields = ref<NonNullable<ApiDataImportContract['option_fields']>>([]
 const options = ref<Record<string, unknown>>({});
 let inputContext: Input | null = null;
 const busy = ref(false);
+const executing = ref(false);
 const validated = ref(false);
 const contract = ref<ApiDataImportContract | null>(null);
 const mapping = ref<Array<string | false>>([]);
@@ -80,6 +86,8 @@ const messages = ref<ApiDataImportContract['messages']>([]);
 const labels = computed(() => contract.value?.wizard);
 let request: Parameters<typeof importRecords>[0] | null = null;
 let resolveResult: ((result: ApiDataImportContract | null) => void) | null = null;
+const lifecycle = createNativeImportRequestOwner();
+let activeToken: NativeImportRequestTicket | null = null;
 const fieldOptions = computed(() => {
   const options = [{ value: '', label: labels.value?.ignore_label || '' }];
   function visit(fields: NativeImportField[], path: string[], names: string[]) {
@@ -107,10 +115,13 @@ function requireNativeContract(value: ApiDataImportContract) {
 }
 async function open(input: Input): Promise<ApiDataImportContract | null> {
   if (busy.value || resolveResult) return null;
+  const token = lifecycle.begin(`${input.model}:${JSON.stringify(input.context)}`);
+  activeToken = token;
   busy.value = true;
   try {
     const described = await importRecords({ model: input.model, fileName: '', fileBase64: '',
-      context: input.context, phase: 'describe', dryRun: true });
+      context: input.context, phase: 'describe', dryRun: true, signal: token.signal });
+    if (!lifecycle.isCurrent(token)) return null;
     requireNativeContract(described);
     if (!described.option_fields?.length || !described.native_options) {
       throw contractGapError({ kind: 'contract_defect', missing: 'native_import.option_fields',
@@ -130,20 +141,34 @@ async function open(input: Input): Promise<ApiDataImportContract | null> {
     optionFields.value = described.option_fields; options.value = { ...described.native_options };
     messages.value = []; message.value = ''; validated.value = false; visible.value = true;
     return new Promise(resolve => { resolveResult = resolve; });
-  } finally { busy.value = false; }
+  } catch (error) {
+    if (!lifecycle.isCurrent(token)) return null;
+    busy.value = false;
+    activeToken = null;
+    lifecycle.invalidate('closed');
+    throw error;
+  } finally {
+    if (lifecycle.isCurrent(token)) busy.value = false;
+  }
 }
 async function exportUpdateFile() {
-  if (busy.value || !inputContext || !updateExport.value?.enabled) return;
+  const token = activeToken;
+  if (!token || !lifecycle.isCurrent(token) || busy.value || !inputContext || !updateExport.value?.enabled) return;
   busy.value = true; message.value = '';
   try {
     const result = await exportRecordsCsv({ model: inputContext.model, context: inputContext.context,
-      fields: updateExport.value.fields, importCompatible: updateExport.value.import_compatible });
+      fields: updateExport.value.fields, importCompatible: updateExport.value.import_compatible,
+      signal: token.signal });
+    if (!lifecycle.isCurrent(token)) return;
     if (!result.count) { message.value = updateExport.value.empty_label; return; }
     const link = document.createElement('a');
     link.href = `data:${result.mime_type};base64,${result.content_b64}`;
     link.download = result.file_name; link.click();
-  } catch (error) { message.value = error instanceof Error ? error.message : String(error); }
-  finally { busy.value = false; }
+  } catch (error) {
+    if (lifecycle.isCurrent(token)) message.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    if (lifecycle.isCurrent(token)) busy.value = false;
+  }
 }
 function invalidatePreview() {
   inspected.value = false; validated.value = false; mapping.value = [];
@@ -159,19 +184,26 @@ function changeOption(name: string, value: unknown) {
   options.value[name] = value; invalidatePreview();
 }
 async function inspect() {
-  if (busy.value || !selectedFile.value || !inputContext) return;
+  const token = activeToken;
+  if (!token || !lifecycle.isCurrent(token) || busy.value || !selectedFile.value || !inputContext) return;
   busy.value = true; invalidatePreview();
   try {
     const file = selectedFile.value;
     const { data, mimetype } = await fileToBase64(file);
     request = { model: inputContext.model, fileName: file.name, fileBase64: data, fileType: mimetype,
       context: inputContext.context, idempotencyKey: inputContext.buildIdempotencyKey(file) };
-    const result = await importRecords({ ...request, phase: 'inspect', dryRun: true, options: options.value });
+    const result = await importRecords({
+      ...request, phase: 'inspect', dryRun: true, options: options.value, signal: token.signal,
+    });
+    if (!lifecycle.isCurrent(token)) return;
     requireNativeContract(result);
     contract.value = result; mapping.value = [...result.mapping];
     options.value = { ...result.native_options }; inspected.value = true;
-  } catch (error) { message.value = error instanceof Error ? error.message : String(error); }
-  finally { busy.value = false; }
+  } catch (error) {
+    if (lifecycle.isCurrent(token)) message.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    if (lifecycle.isCurrent(token)) busy.value = false;
+  }
 }
 function changeMapping(index: number, value: string | number) {
   if (busy.value) return;
@@ -179,27 +211,53 @@ function changeMapping(index: number, value: string | number) {
   validated.value = false; messages.value = []; message.value = labels.value?.mapping_changed_label || '';
 }
 async function run(phase: 'validate' | 'execute') {
-  if (!request || !contract.value || !inspected.value || busy.value || (phase === 'execute' && !validated.value)) return;
+  const token = activeToken;
+  if (!token || !lifecycle.isCurrent(token) || !request || !contract.value || !inspected.value
+    || busy.value || (phase === 'execute' && (!validated.value || executing.value))) return;
   busy.value = true; message.value = '';
+  if (phase === 'execute') executing.value = true;
   try {
     const result = await importRecords({ ...request, fields: [...mapping.value], columns: contract.value.headers,
-      phase, dryRun: phase !== 'execute', options: options.value });
+      phase, dryRun: phase !== 'execute', options: options.value, signal: token.signal });
+    if (!lifecycle.isCurrent(token)) return;
     messages.value = result.messages || [];
     validated.value = result.valid === true && result.error_count === 0;
     if (phase === 'execute' && validated.value) completed.value = result;
     else if (validated.value) message.value = labels.value?.valid_label || '';
   } catch (error) {
+    if (!lifecycle.isCurrent(token)) return;
     validated.value = false;
     message.value = error instanceof Error ? error.message : String(error);
-  } finally { busy.value = false; }
+  } finally {
+    if (lifecycle.isCurrent(token)) {
+      busy.value = false;
+      executing.value = false;
+    }
+  }
 }
 function validate() { return run('validate'); }
 function execute() { return run('execute'); }
 function settle(result: ApiDataImportContract | null) {
-  visible.value = false; request = null; inputContext = null;
+  const hadActiveSession = Boolean(activeToken || resolveResult);
+  activeToken = null;
+  if (hadActiveSession) lifecycle.invalidate(result ? 'settled' : 'closed');
+  visible.value = false; request = null; inputContext = null; busy.value = false; executing.value = false;
   const resolve = resolveResult; resolveResult = null; resolve?.(result);
 }
-function cancel() { if (!busy.value) settle(completed.value); }
+function cancel() {
+  if (executing.value) return;
+  settle(null);
+}
+const stopContextWatch = onContextEpochChange(() => {
+  if (activeToken) settle(null);
+});
+onBeforeUnmount(() => {
+  stopContextWatch();
+  activeToken = null;
+  lifecycle.dispose();
+  visible.value = false; busy.value = false; executing.value = false;
+  const resolve = resolveResult; resolveResult = null; resolve?.(null);
+});
 defineExpose({ open });
 </script>
 
