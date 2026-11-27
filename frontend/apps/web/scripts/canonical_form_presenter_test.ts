@@ -2889,6 +2889,52 @@ assert.equal(
   'readonly presentation must retain the relation identity separately from its display text',
 );
 
+const conflictingRelationSnapshot = snapshot();
+conflictingRelationSnapshot.layoutContract.containerTree[0].children.push({
+  containerId: 'field.conflicting_project_id',
+  containerType: 'field',
+  type: 'field',
+  name: 'conflicting_project_id',
+  title: '',
+  span: 12,
+  children: [],
+  widgetList: [{
+    widgetId: 'field.conflicting_project_id',
+    widgetType: 'select',
+    fieldCode: 'conflicting_project_id',
+    label: 'Conflicting project',
+    span: 12,
+    semanticType: 'relation',
+    capabilities: [],
+    componentConfig: { relation: 'res.partner', fieldType: 'many2one' },
+    fieldDescriptor: {
+      schemaVersion: '1.0.0',
+      fieldCode: 'conflicting_project_id',
+      label: 'Conflicting project',
+      fieldType: 'many2one',
+      widgetType: 'select',
+      semanticType: 'relation',
+      relation: 'project.project',
+    },
+    ownerContainerId: 'field.conflicting_project_id',
+  }],
+});
+conflictingRelationSnapshot.statusContract.widgetStatus.push({
+  widgetId: 'field.conflicting_project_id',
+  visible: true,
+  readonly: false,
+  required: false,
+  disabled: false,
+});
+assert.throws(
+  () => presentContractV2Form(
+    createContractV2Store(decodeContractV2Snapshot(conflictingRelationSnapshot)),
+    'edit',
+  ),
+  /conflicting_project_id.*relation_model_consistency/,
+  'canonical presentation must reject conflicting relation target declarations even before a value is selected',
+);
+
 const emptySnapshot = snapshot();
 emptySnapshot.dataContract.mainData.name = false;
 const emptyName = collectFields(presentContractV2Form(createContractV2Store(emptySnapshot), 'readonly').zones.primary)

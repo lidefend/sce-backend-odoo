@@ -39,6 +39,7 @@ import { resolveContractSemanticComponent } from './professionalComponentRegistr
 import { NODE_COMPONENT_REGISTRY } from './semantic_registry.generated';
 import { resolveWorkflowActionAvailability } from '../contracts/v2/workflowActionAvailability';
 import { declaredActionAuthorityDenial } from '../contracts/v2/actionRuleAuthority';
+import { contractGapError } from '../contract/contractGap';
 
 function asDict(value: unknown): ContractV2Dictionary {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as ContractV2Dictionary : {};
@@ -193,10 +194,21 @@ function declaredContainerColumns(container: ContractV2Container): number | unde
 }
 
 function relationModel(widget: ContractV2Widget): string {
-  return text(widget.componentConfig.relation
-    || widget.componentConfig.relationModel
-    || widget.componentConfig.relation_model
-    || widget.fieldDescriptor?.relation);
+  const declared = text(widget.fieldDescriptor?.relation);
+  const configured = [
+    text(widget.componentConfig.relation),
+    text(widget.componentConfig.relationModel),
+    text(widget.componentConfig.relation_model),
+  ].filter(Boolean);
+  const candidates = Array.from(new Set([...configured, ...(declared ? [declared] : [])]));
+  if (candidates.length > 1) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${widget.fieldCode}.relation_model_consistency`,
+      requiredDeclarationLayer: 'P0:smart_core:relation_target_projection',
+    }, `关系字段 ${widget.fieldCode} 的 relation_model_consistency 冲突`);
+  }
+  return candidates[0] || '';
 }
 
 function relationParts(value: unknown): { id: string | number; displayName: string } | null {
@@ -216,6 +228,7 @@ function presentFieldValue(
   contractValue: unknown,
   runtimeValue: unknown,
   hasRuntimeValue: boolean,
+  declaredRelationModel: string,
 ): unknown | CanonicalRelationValue {
   const fieldType = text(
     widget.componentConfig.fieldType || widget.fieldDescriptor?.fieldType,
@@ -242,7 +255,7 @@ function presentFieldValue(
     const displayName = runtimeRelation?.displayName
       || (String(runtimeId) === String(contractRelation?.id ?? '') ? contractRelation?.displayName : '')
       || '';
-    return Object.freeze({ id: runtimeId, displayName, model: relationModel(widget) });
+    return Object.freeze({ id: runtimeId, displayName, model: declaredRelationModel });
   }
   if (fieldType !== 'boolean' && (selected === false || selected === null || selected === undefined)) return null;
   if (['date', 'datetime'].includes(fieldType) && text(selected).toLowerCase() === 'false') return null;
@@ -272,6 +285,7 @@ function fieldFromWidget(
   const fieldType = text(
     widget.componentConfig.fieldType || widget.fieldDescriptor?.fieldType,
   );
+  const declaredRelationModel = fieldType.toLowerCase() === 'many2one' ? relationModel(widget) : '';
   const semanticType = text(widget.fieldDescriptor?.semanticType || widget.semanticType);
   const componentResolution = resolveContractSemanticComponent({
     semanticType,
@@ -331,6 +345,7 @@ function fieldFromWidget(
       contractValues[widget.fieldCode],
       runtimeValues?.[widget.fieldCode],
       hasRuntimeValue,
+      declaredRelationModel,
     ),
     fieldType,
     componentKey: componentResolution.componentKey,

@@ -1376,6 +1376,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_generic_form_and_relation_surfaces_select_static_owners_only(self) -> None:
         for path in (
             "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
+            "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
             "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
             "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
             "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",

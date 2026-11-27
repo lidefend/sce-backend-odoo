@@ -16,9 +16,9 @@ Generated from repository source files. This report is informational during the 
 | 6739 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 6599 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5973 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 5745 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 5746 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
-| 5220 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 5221 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 5076 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 5028 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4844 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
@@ -237,6 +237,7 @@ Generated from repository source files. This report is informational during the 
 | 843 | Python source | `scripts/verify/test_scene_r3_action_target_scene_resolution.py` |
 | 842 | Python source | `scripts/verify/guard_registry_audit.py` |
 | 841 | Python source | `scripts/verify/test_sc_data_scope_rule_coverage_guard.py` |
+| 839 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
 | 838 | Python source | `addons/smart_construction_scene/scene_registry.py` |
 | 837 | Python source | `addons/smart_construction_core/core_extension_system_init_rows.py` |
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
@@ -247,7 +248,6 @@ Generated from repository source files. This report is informational during the 
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 826 | Python source | `addons/smart_core/tests/test_release_preflight_target_validation.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
-| 824 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
 | 817 | Python source | `addons/smart_core/handlers/business_config_change_set.py` |
 | 814 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
@@ -283,9 +283,9 @@ Generated from repository source files. This report is informational during the 
 | 6739 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 6599 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5973 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 5745 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 5746 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
-| 5220 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 5221 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 5076 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 5028 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4844 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |

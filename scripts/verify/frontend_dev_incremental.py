@@ -1327,6 +1327,7 @@ RULES = (
         "/components/template/FormSection.vue",
         "/components/template/formSection.mapper.ts",
         "/components/template/formSection.types.ts",
+        "/app/presentation/contractFormPresenter.ts",
         "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
     ), (
         "verify.frontend.canonical_form_presenter.unit",
@@ -2131,7 +2132,7 @@ RULES = (
     ), (
         "verify.daily_dev.acceptance_fixture.unit",
     )),
-    Rule(("/pages/contractForm/", "/components/template/"), (
+    Rule(("/pages/contractForm/", "/components/template/", "/app/presentation/contractFormPresenter.ts"), (
         "verify.frontend.canonical_form_presenter.unit",
         "verify.frontend.primitive_adapter.unit",
         "verify.frontend.product_page_pattern.unit",
