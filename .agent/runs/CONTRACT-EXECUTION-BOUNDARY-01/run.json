@@ -1,0 +1,54 @@
+{
+  "schema_version": 2,
+  "id": "CONTRACT-EXECUTION-BOUNDARY-01",
+  "status": "verification_pending",
+  "branch": "audit/contract-execution-boundary-01-20261127",
+  "baseline_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
+  "goal": ".agent/goals/CONTRACT-EXECUTION-BOUNDARY-01.yaml",
+  "record": "docs/architecture/contract_execution_boundary_v1.md",
+  "scope": [
+    "docs/architecture/contract_execution_boundary_v1.md",
+    ".agent/goals/CONTRACT-EXECUTION-BOUNDARY-01.yaml",
+    ".agent/runs/CONTRACT-EXECUTION-BOUNDARY-01/run.json",
+    ".agent/active-runs.json",
+    "docs/audit/contract_execution_boundary_01/e1_source_inventory.json",
+    "docs/audit/contract_execution_boundary_01/e1_findings.md",
+    "docs/audit/contract_execution_boundary_01/inventory_method.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "read-only source research; no runtime/DB/network execution"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Documentation PR governance and source-reference checks only; no product runtime tests."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head documentation PR CI",
+      "reason": "Automatically triggered PR checks only; paused main CI closeout is not resumed."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "make release.main_full",
+      "reason": "Architecture draft only; no runtime change or qualification claim."
+    }
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Publish documentation Draft PR after documentation governance checks; continue E1 dynamic-source tracing and owner review. No implementation or mainline CI closeout.",
+  "execution_scope": "research_only",
+  "source_equivalence": "git diff origin/main -- frontend addons scripts/verify/frontend_dev_incremental.py returned empty; main SHA confirmed by ls-remote",
+  "registration": "Independent documentation-only topic; paused CI records preserved in stash 0ef40ca76709bac912f7a721a34ece11bc91142c and original runtime result index.",
+  "audit_summary": {
+    "frontend_files": 874,
+    "backend_authority_files": 85,
+    "request_candidate_sites": 319,
+    "literal_intent_declarations": 94,
+    "dynamic_intent_declarations": 93,
+    "request_reachable_module_candidates": 164,
+    "parse_diagnostics": 0
+  }
+}
