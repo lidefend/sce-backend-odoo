@@ -105,6 +105,12 @@ smart_core_pkg.__path__ = [str(CORE_DIR.parent)]
 core_pkg = sys.modules.setdefault("odoo.addons.smart_core.core", types.ModuleType("odoo.addons.smart_core.core"))
 core_pkg.__path__ = [str(CORE_DIR)]
 smart_core_pkg.core = core_pkg
+contract_runtime_pkg = sys.modules.setdefault(
+    "odoo.addons.smart_core.core.contract_runtime",
+    types.ModuleType("odoo.addons.smart_core.core.contract_runtime"),
+)
+contract_runtime_pkg.__path__ = [str(CORE_DIR / "contract_runtime")]
+core_pkg.contract_runtime = contract_runtime_pkg
 odoo_pkg = sys.modules["odoo"]
 odoo_pkg._ = lambda value: value
 _install_lxml_fixture_shim()
