@@ -92,11 +92,6 @@ function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
     required: field.required,
     readonly: field.readonly || field.disabled,
     ...(selection.length ? { selection } : {}),
-    ...(text(config.relation || config.relationModel || config.relation_model)
-      ? { relation: text(config.relation || config.relationModel || config.relation_model) }
-      : text(canonicalDescriptor.relation)
-        ? { relation: text(canonicalDescriptor.relation) }
-      : {}),
     ...(text(config.filename) ? { filename: text(config.filename) } : {}),
     ...(normalizeDeclaredDigits(config.digits) ? { digits: normalizeDeclaredDigits(config.digits) } : {}),
     ...(canonicalDescriptor.subview ? { subview: canonicalDescriptor.subview } : {}),

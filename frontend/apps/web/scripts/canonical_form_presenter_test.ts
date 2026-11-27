@@ -2850,6 +2850,15 @@ relationSnapshot.layoutContract.containerTree[0].children.push({
     widgetId: 'field.project_id', widgetType: 'select', fieldCode: 'project_id', label: 'Project', span: 12,
     semanticType: 'relation', capabilities: [],
     componentConfig: { relation: 'project.project', fieldType: 'many2one' },
+    fieldDescriptor: {
+      schemaVersion: '1.0.0',
+      fieldCode: 'project_id',
+      label: 'Project',
+      fieldType: 'many2one',
+      widgetType: 'select',
+      semanticType: 'relation',
+      relation: 'project.project',
+    },
     ownerContainerId: 'field.project_id',
   }],
 });
@@ -2926,13 +2935,27 @@ conflictingRelationSnapshot.statusContract.widgetStatus.push({
   required: false,
   disabled: false,
 });
+conflictingRelationSnapshot.dataContract.mainData.conflicting_project_id = [111, 'Descriptor project'];
+const conflictingRelationField = collectFields(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(conflictingRelationSnapshot)),
+  'edit',
+).zones.primary).find((field) => field.fieldCode === 'conflicting_project_id');
+assert.equal(
+  conflictingRelationField?.value.model,
+  'project.project',
+  'componentConfig relation aliases must not override or branch the canonical field descriptor target',
+);
+
+const missingDescriptorRelationSnapshot = structuredClone(relationSnapshot);
+delete missingDescriptorRelationSnapshot.layoutContract.containerTree[0].children
+  .find((node) => node.containerId === 'field.project_id')!.widgetList[0].fieldDescriptor;
 assert.throws(
   () => presentContractV2Form(
-    createContractV2Store(decodeContractV2Snapshot(conflictingRelationSnapshot)),
+    createContractV2Store(decodeContractV2Snapshot(missingDescriptorRelationSnapshot)),
     'edit',
   ),
-  /conflicting_project_id.*relation_model_consistency/,
-  'canonical presentation must reject conflicting relation target declarations even before a value is selected',
+  /field\.project_id\.relation/,
+  'canonical presentation must not recover a relation target from componentConfig',
 );
 
 const emptySnapshot = snapshot();

@@ -137,10 +137,8 @@ export type RuntimeFieldStateLike = {
 export type ContractV2WidgetLike = Record<string, unknown> & {
   fieldCode?: unknown;
   label?: unknown;
-  fieldType?: unknown;
-  relation?: unknown;
   widgetType?: unknown;
-  componentConfig?: unknown;
+  fieldDescriptor?: unknown;
 };
 
 export type ContractV2ContainerLike = Record<string, unknown> & {
@@ -333,18 +331,18 @@ export function applyNativeFieldOrderPreview<T extends NativeLayoutLikeNode>(
 export function contractV2WidgetToNativeFieldNode(widget: ContractV2WidgetLike): NativeLayoutLikeNode | null {
   const fieldName = String(widget?.fieldCode || '').trim();
   if (!fieldName) return null;
-  const componentConfig = widget.componentConfig && typeof widget.componentConfig === 'object'
-    ? widget.componentConfig as Record<string, unknown>
+  const descriptor = widget.fieldDescriptor && typeof widget.fieldDescriptor === 'object'
+    ? widget.fieldDescriptor as Record<string, unknown>
     : {};
   const fieldInfo: Record<string, unknown> = {
     name: fieldName,
     label: widget.label || fieldName,
     string: widget.label || fieldName,
-    type: widget.fieldType || componentConfig.fieldType || componentConfig.ttype || 'char',
-    ...(widget.relation || componentConfig.relation ? { relation: widget.relation || componentConfig.relation } : {}),
-    ...(typeof componentConfig.required === 'boolean' ? { required: componentConfig.required } : {}),
-    ...(typeof componentConfig.readonly === 'boolean' ? { readonly: componentConfig.readonly } : {}),
-    ...(Array.isArray(componentConfig.selection) ? { selection: componentConfig.selection } : {}),
+    type: descriptor.fieldType,
+    ...(descriptor.relation ? { relation: descriptor.relation } : {}),
+    ...(typeof descriptor.required === 'boolean' ? { required: descriptor.required } : {}),
+    ...(typeof descriptor.readonly === 'boolean' ? { readonly: descriptor.readonly } : {}),
+    ...(Array.isArray(descriptor.selection) ? { selection: descriptor.selection } : {}),
   };
   return {
     type: 'field',

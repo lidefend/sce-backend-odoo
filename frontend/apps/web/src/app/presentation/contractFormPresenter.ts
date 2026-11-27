@@ -39,7 +39,7 @@ import { resolveContractSemanticComponent } from './professionalComponentRegistr
 import { NODE_COMPONENT_REGISTRY } from './semantic_registry.generated';
 import { resolveWorkflowActionAvailability } from '../contracts/v2/workflowActionAvailability';
 import { declaredActionAuthorityDenial } from '../contracts/v2/actionRuleAuthority';
-import { contractGapError } from '../contract/contractGap';
+import { requireDeclaredText } from '../contract/contractGap';
 
 function asDict(value: unknown): ContractV2Dictionary {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as ContractV2Dictionary : {};
@@ -194,21 +194,10 @@ function declaredContainerColumns(container: ContractV2Container): number | unde
 }
 
 function relationModel(widget: ContractV2Widget): string {
-  const declared = text(widget.fieldDescriptor?.relation);
-  const configured = [
-    text(widget.componentConfig.relation),
-    text(widget.componentConfig.relationModel),
-    text(widget.componentConfig.relation_model),
-  ].filter(Boolean);
-  const candidates = Array.from(new Set([...configured, ...(declared ? [declared] : [])]));
-  if (candidates.length > 1) {
-    throw contractGapError({
-      kind: 'contract_defect',
-      missing: `field.${widget.fieldCode}.relation_model_consistency`,
-      requiredDeclarationLayer: 'P0:smart_core:relation_target_projection',
-    }, `关系字段 ${widget.fieldCode} 的 relation_model_consistency 冲突`);
-  }
-  return candidates[0] || '';
+  return requireDeclaredText(widget.fieldDescriptor?.relation, {
+    missing: `field.${widget.fieldCode}.relation`,
+    requiredDeclarationLayer: 'P0:smart_core:relation_target_projection',
+  });
 }
 
 function relationParts(value: unknown): { id: string | number; displayName: string } | null {

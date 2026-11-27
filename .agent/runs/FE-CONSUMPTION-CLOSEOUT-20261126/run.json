@@ -48,6 +48,7 @@
     "frontend/apps/web/src/pages/ListPage.vue",
     "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
     "frontend/apps/web/src/pages/contractForm/fieldUtils.ts",
+    "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
     "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
     "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
     "frontend/apps/web/src/pages/contractForm/types.ts",
@@ -262,6 +263,7 @@
       "inputs": [
         "frontend/packages/schema/src/index.ts",
         "frontend/apps/web/src/pages/contractForm/fieldUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
         "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
         "frontend/apps/web/src/components/professional-fields/professionalRelationFieldModel.ts",
         "frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts",

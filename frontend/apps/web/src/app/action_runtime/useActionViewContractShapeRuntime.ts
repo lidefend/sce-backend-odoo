@@ -316,7 +316,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
           widget: widget || undefined,
           componentKey: componentKey || undefined,
           cellRole: String(schema.cell_role || schema.cellRole || '').trim() || undefined,
-          relation: String(schema.relation || schema.relation_model || field?.relation || '').trim() || undefined,
+          relation: String(field?.relation || '').trim() || undefined,
           attachmentRole: String(schema.attachment_role || schema.attachmentRole || field?.attachmentRole || '').trim() || undefined,
           mutation: schema.mutation && typeof schema.mutation === 'object'
             ? schema.mutation as Record<string, unknown>

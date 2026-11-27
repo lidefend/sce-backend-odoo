@@ -47,7 +47,7 @@
     "frontend/apps/web/src/app/contracts/v2/clientCapabilities.ts": "312c9a97bfe775894199dbfaa9f96f6fb3afadad553bd2fb87b06d8aa9c0c5a0",
     "frontend/apps/web/src/app/contracts/v2/actionRuleAuthority.ts": "2257d27b9909fc97d0f732d69ff07773c9f38573123cd27cd765f375c3899a26",
     "frontend/apps/web/src/app/contracts/v2/schema.ts": "49853e281d51a1d03295a8915617a7933eebb88cb1de0ab10e78e8aabbb5237b",
-    "frontend/apps/web/src/app/contracts/v2/store.ts": "74748be6cf2e82c776a3d7c179025c33eebd734870092687b456054b4ff218dd",
+    "frontend/apps/web/src/app/contracts/v2/store.ts": "685b122db668dfb8ffbd7be442789cefd592101c96ee583b5632361b90bf99a2",
     "frontend/apps/web/src/app/pageContract.ts": "0631b16d5ae8d2826fc58eff868e65883841a4463482f57ec1a40ae31644202d",
     "frontend/apps/web/src/app/pageOrchestration.ts": "7a0b03b1d2f2a0fb027897aa940c9dfe5867cc27d50ec2b7e713045d3b098104",
     "frontend/apps/web/src/api/intents.ts": "6477025fc26ab80902065bd5e094dbc6376ff7d520883b1bf5bc479605a15fd2",

@@ -446,8 +446,8 @@ export function resolveContractV2FieldDescriptorMap(
       ? uiUsage
       : undefined;
     const fieldType = asText(config.fieldType || descriptor.fieldType);
-    const relation = asText(config.relation || descriptor.relation);
-    const relationField = asText(config.relationField || descriptor.relationField);
+    const relation = asText(descriptor.relation);
+    const relationField = asText(descriptor.relationField);
     const referenceModelField = asText(descriptor.referenceModelField);
     const attachmentRole = asText(descriptor.attachmentRole);
     const filename = asText(config.filename || descriptor.filename);
