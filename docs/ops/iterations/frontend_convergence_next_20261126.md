@@ -664,11 +664,21 @@ clean 运行态回读：
   `54` 个测试目标执行 `1722` 项测试、`11` 项静态检查，`unmapped=0`、`not_run=0`、
   `blocked=0`。
 
+产品切片提交为 `5c255b7613f37ff4cc59e2bdec23e114b1118aa0`。在该 clean 精确 HEAD 上恢复
+受影响集合：`74` 个必需目标全部成立，其中 `24` 个本轮执行、`50` 个复用；`11` 个测试
+目标执行 `654` 项测试、`5` 项静态检查，`unmapped=0`、`not_run=0`、`blocked=0`。
+
 回执：
-`.runtime/frontend-dev-validation/executions/20261127T095812Z-2365192-596188390/receipt.json`
+`.runtime/frontend-dev-validation/executions/20261127T100426Z-2429142-187623519/receipt.json`
 
 回执 SHA256：
-`0a1980afa597402504eac86250cc6bbcc1767bdc6c891a48332468654a33e8d7`。
+`5c05576db0ccede93507523eba9f68cf11f467a4bb7d18c410f352cf08ed9903`。
+
+精确 HEAD 构建指纹为
+`9e4d558654ebe480a570ae94ad6897351b0ec02bc6022f8ac41dc28fc6ff596e`，构建
+`build-info.sha` 与 HEAD 一致；日志
+`.runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/entry-title-url-build.log`，
+日志 SHA256 `4b48d6151dcab40a50917984822de5c34afa724d39b4d2376b2117b72c35560f`。
 
 剩余可重建展示参数主要是 `return_label` 与 business-category label；随后需要受管浏览器的
 当前地址栏回读，不能只以纯函数结果宣称页面 URL 已优化。

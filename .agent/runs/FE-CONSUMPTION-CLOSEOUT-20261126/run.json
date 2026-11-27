@@ -2244,16 +2244,17 @@
     },
     "fc02_entry_title_out_of_url": {
       "status": "passed_local_targeted",
-      "stage_identity": "ecff7bb834548c2f55ac95661f9e2ddd837fa6ee plus the owned entry-title URL scope",
+      "candidate_head": "5c255b7613f37ff4cc59e2bdec23e114b1118aa0",
+      "stage_identity": "5c255b7613f37ff4cc59e2bdec23e114b1118aa0",
       "command": "make ci.local.iteration",
-      "receipt": ".runtime/frontend-dev-validation/executions/20261127T095812Z-2365192-596188390/receipt.json",
-      "receipt_sha256": "0a1980afa597402504eac86250cc6bbcc1767bdc6c891a48332468654a33e8d7",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T100426Z-2429142-187623519/receipt.json",
+      "receipt_sha256": "5c05576db0ccede93507523eba9f68cf11f467a4bb7d18c410f352cf08ed9903",
       "required_targets": 74,
-      "executed_targets": 73,
-      "reused_targets": 1,
-      "test_targets": 54,
-      "executed_test_count": 1722,
-      "static_checks": 11,
+      "executed_targets": 24,
+      "reused_targets": 50,
+      "test_targets": 11,
+      "executed_test_count": 654,
+      "static_checks": 5,
       "unmapped_paths": 0,
       "not_run_targets": 0,
       "blocked_targets": 0,
@@ -2264,6 +2265,14 @@
         "same-model and cross-model action navigation no longer retain presentation titles",
         "route-query, cross-model navigation, page identity and strict typecheck pass"
       ],
+      "frontend_build": {
+        "status": "passed",
+        "source_revision": "5c255b7613f37ff4cc59e2bdec23e114b1118aa0",
+        "log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/entry-title-url-build.log",
+        "log_sha256": "4b48d6151dcab40a50917984822de5c34afa724d39b4d2376b2117b72c35560f",
+        "build_info_sha256": "7b0e61de72cefdc845ae9c6b8064f428a50cc2ba627de2ce6a5f11aed571f488",
+        "frontend_build_fingerprint": "9e4d558654ebe480a570ae94ad6897351b0ec02bc6022f8ac41dc28fc6ff596e"
+      },
       "scope_limit": "Local URL and identity tests only; browser address-bar readback, remaining return/category presentation labels, remote CI and user acceptance remain not_run."
     },
     "remote_publication": {
