@@ -209,8 +209,8 @@ Generated from repository source files. This report is informational during the 
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
 | 945 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
+| 940 | Python source | `scripts/verify/test_local_quick_evidence.py` |
 | 939 | Python source | `scripts/ci/test_backend_test_suite_dispatch_contract.py` |
-| 939 | Python source | `scripts/verify/test_local_quick_evidence.py` |
 | 920 | Python source | `scripts/ci/backend_suite_plan.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 914 | Python source | `scripts/audit/test_verification_lane_coverage.py` |

@@ -3,9 +3,9 @@
   "id": "FE-CONSUMPTION-CLOSEOUT-20261126",
   "status": "active",
   "branch": "fix/fe-consumption-closeout-20261126",
-  "branch_state": "remote_pr_open_fc01_active",
-  "baseline_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
-  "baseline_state": "latest_main_contains_inherited_fix_release_qualification_not_run",
+  "branch_state": "remote_pr_open_fc01_active_main_synced_relation_contract",
+  "baseline_sha": "9395d93f92badffc87d32c5979cf7c70e374e975",
+  "baseline_state": "latest_main_includes_relation_active_actions_contract_release_qualification_not_run",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/frontend_convergence_next_20261126.md",
   "current_batch": "FC-00 formal universe plus FC-01 semantic, selection and boundary closure",
@@ -95,7 +95,21 @@
     "scripts/verify/test_business_entry_matrix_universe_guard.py",
     "scripts/verify/frontend_collection_kanban_record_card_guard.py",
     "scripts/verify/test_frontend_collection_kanban_record_card_guard.py",
-    "make/frontend.mk"
+    "make/frontend.mk",
+    ".agent/runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/run.json",
+    ".agent/runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/independent_evidence.md",
+    "frontend/apps/web/scripts/native_import_lifecycle_test.ts",
+    "frontend/apps/web/src/api/data.ts",
+    "frontend/apps/web/src/app/action_runtime/nativeImportLifecycle.ts",
+    "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
+    "frontend/apps/web/src/components/business/NativeImportWizard.vue",
+    "make/codex.mk",
+    "scripts/ops/integration_cycle.py",
+    "scripts/ops/test_integration_cycle.py",
+    "scripts/ops/validation_delivery_plan.py",
+    "scripts/verify/test_branch_governance_consistency_guard.py",
+    "scripts/verify/test_local_quick_evidence.py",
+    "scripts/verify/test_validation_delivery_plan.py"
   ],
   "environment": {
     "kind": "offline",
@@ -532,7 +546,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head 3722406c, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
+  "next_exact_step": "Run make ci.local.iteration on the clean merge candidate d352aa322, then reconcile only remaining frontend-owned or integrated child-PR scope before selecting the next FC-01 declaration consumer. Remote/integration qualification remains a later phase.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1890,13 +1904,68 @@
       "coverage_effect": "Dependent frontend targets were not run in this attempt and the prior exact-head affected-target receipt remains the only product-test evidence for this head",
       "repair_owner": "P4 local-test evidence parser; no product source change was made for this failure"
     },
+    "mainline_relation_contract_handoff": {
+      "status": "merged_and_target_validated",
+      "prior_candidate_head": "af10e45f7489053328500906c0d83ce088ea8595",
+      "mainline_head": "9395d93f92badffc87d32c5979cf7c70e374e975",
+      "merge_candidate_head": "d352aa3221e9ade09d27da60413e6c580fa6a11a",
+      "merge_parents": [
+        "af10e45f7489053328500906c0d83ce088ea8595",
+        "9395d93f92badffc87d32c5979cf7c70e374e975"
+      ],
+      "source_prs": [
+        1024,
+        1026
+      ],
+      "recovery_bundle": "/home/lidefend/workspace/sce-backend-odoo/.git/codex/recovery/published-sync-af10e45f7489053328500906c0d83ce088ea8595-9395d93f92badffc87d32c5979cf7c70e374e975.bundle",
+      "conflict_resolution": [
+        "kept the existing descriptor-only frontend field mapping while adding relationActiveActions from the mainline P0 descriptor",
+        "kept relationField, referenceModelField and attachmentRole in the compatibility schema together with relationActiveActions",
+        "refreshed source hash bindings and all generated convergence evidence after the semantic merge"
+      ],
+      "facts_verified": [
+        "the real smart_core assembler emits occurrence relationActiveActions in the strict field descriptor",
+        "the strict frontend decoder accepts the real producer output and relation consumers read the descriptor only",
+        "the merged candidate retains native import lifecycle closure on top of the current mainline"
+      ],
+      "coverage_limit": "This proves the local merge candidate only. Remote exact-head CI, the 143-entry browser matrix, role/company journeys and FC-06 remain not_run."
+    },
+    "mainline_merge_local_iteration": {
+      "status": "passed",
+      "stage_identity": "d352aa3221e9ade09d27da60413e6c580fa6a11a plus the owned run-record and local-Quick test correction",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T074128Z-1031756-379838348/receipt.json",
+      "receipt_sha256": "19a58d00d674b0f4634995b15d934528d7c271d034f17d965c21a64dbb8549a1",
+      "executed_targets": 61,
+      "test_targets": 43,
+      "executed_test_count": 1512,
+      "static_checks": 11,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "failure_recovery": [
+        "the first attempt stopped at verify.branch.governance.consistency because the test computed its expected worker count after leaving the mocked unknown-memory scope",
+        "the test now computes expected and actual worker counts under the same environment assumption; the owning target passed before the full affected set was resumed"
+      ],
+      "scope_limit": "Local affected-target validation only; remote integration, browser journeys and user acceptance are not claimed."
+    },
+    "mainline_merge_frontend_build": {
+      "status": "passed",
+      "source_revision": "d352aa3221e9ade09d27da60413e6c580fa6a11a",
+      "command": "make verify.frontend.build ENV=dev ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev",
+      "log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/main-sync-frontend-build.log",
+      "log_sha256": "3591100875d2a1bc099106b37be7c95d33c2673c468fa564851eeddb18d93b3a",
+      "build_info_sha256": "08adc34b21a08f64f0cc3c6c760d88ea95a3a20ef8f43be72e4f9ace19ec217d",
+      "frontend_build_fingerprint": "968f32fc064ce1cf2e43c116fb095e9f0a63cb93909c1230b757655fae11dd67",
+      "scope_limit": "Production build evidence only; it is not a browser or deployment readback."
+    },
     "remote_publication": {
-      "status": "draft_open_checks_not_awaited",
+      "status": "draft_open_mainline_sync_validation_not_awaited",
       "pull_request": 1019,
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
-      "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+      "base_sha": "9395d93f92badffc87d32c5979cf7c70e374e975",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "3722406c16b2047fbb0db0d84111c931775590bf",
+      "current_head": "d352aa3221e9ade09d27da60413e6c580fa6a11a",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",

@@ -538,6 +538,30 @@ clean 运行态回读：
 143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
 `bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
 
+### 2026-11-27 主线 relationActiveActions 契约并入
+
+主线 `9395d93f92badffc87d32c5979cf7c70e374e975` 已包含 P0 PR #1026 的
+`relationActiveActions` FieldDescriptor 发布，并包含 PR #1024 的候选扫描边界修复。
+#1019 通过受管 published-branch 入口建立并校验恢复 bundle，随后以 merge commit
+`d352aa3221e9ade09d27da60413e6c580fa6a11a` 追加该主线。
+
+冲突解析保持前端只在 `fieldDescriptor` 上读取业务语义，同时接收主线新增的
+`relationActiveActions`；兼容 schema 同时保留 `relationField`、`referenceModelField`、
+`attachmentRole` 和 `relationActiveActions`。相关源码哈希与全部派生收敛证据均已重建。
+
+在该合并候选上执行 `make ci.local.iteration`：61 个目标、43 个测试目标、
+1512 项测试、11 项静态检查全部通过，`unmapped=0`、`not_run=0`、`blocked=0`。
+真实生产者到严格前端消费者的 relation 契约集成通过。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T074128Z-1031756-379838348/receipt.json`
+
+同一源码的生产前端构建通过，构建指纹
+`968f32fc064ce1cf2e43c116fb095e9f0a63cb93909c1230b757655fae11dd67`。
+
+首次本地迭代暴露的 P4 失败是 Quick 并发测试跨 mock 作用域读取不同内存前提；
+测试已改为在同一前提内计算期望与执行值，相关治理门禁重跑通过。远端 exact-head CI、
+143 业务入口浏览器矩阵、角色/公司旅程、部署和用户验收仍未执行或未宣称完成。
+
 ### 2026-11-27 FC-01 原生表单与附件分类语义收口
 
 本轮按“本地一个合格切片即发布、后续直接更新同一 PR”的方式推进。draft PR #1019
