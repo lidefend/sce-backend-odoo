@@ -29,6 +29,7 @@
     "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
     "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
     "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+    "frontend/apps/web/src/app/presentation/canonicalFormFloorplan.ts",
     "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
     "frontend/apps/web/src/app/runtimeTimeZone.ts",
     "frontend/apps/web/src/components/FieldValue.vue",
