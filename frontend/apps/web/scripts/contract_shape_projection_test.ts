@@ -26,7 +26,10 @@ import {
 } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
 import { resolveDeclaredAssigneeQuery } from '../src/app/runtime/actionViewAssigneeOptionsContract';
 import { resolveDeclaredKanbanTitleField } from '../src/app/runtime/actionViewKanbanTitleField';
-import { resolveDeclaredPrimaryFilterBudget } from '../src/app/action_runtime/useActionViewFilterComputedRuntime';
+import {
+  resolveDeclaredFilterBudget,
+  resolveDeclaredPrimaryFilterBudget,
+} from '../src/app/action_runtime/useActionViewFilterComputedRuntime';
 import {
   resolveContractV2FieldDescriptorMap,
   resolveContractV2FormFieldMap,
@@ -641,6 +644,24 @@ for (const invalid of [{}, { filters_primary_max: -1 }, { filters_primary_max: 1
     (error: unknown) => isContractGapError(error)
       && error.defect.missing === 'surface_policies.filters_primary_max',
     'primary filter budget must stop instead of defaulting or clamping',
+  );
+}
+check(
+  resolveDeclaredFilterBudget({ filters_max: 0 }, 'filters_max'),
+  0,
+  'total filter budget preserves an explicit zero',
+);
+check(
+  resolveDeclaredFilterBudget({ filters_max: 12 }, 'filters_max'),
+  12,
+  'total filter budget consumes the declared value instead of the former eight-item cap',
+);
+for (const invalid of [{}, { filters_max: -1 }, { filters_max: 2.5 }, { filters_max: '12' }]) {
+  assert.throws(
+    () => resolveDeclaredFilterBudget(invalid, 'filters_max'),
+    (error: unknown) => isContractGapError(error)
+      && error.defect.missing === 'surface_policies.filters_max',
+    'total filter budget must stop instead of silently truncating to eight',
   );
 }
 

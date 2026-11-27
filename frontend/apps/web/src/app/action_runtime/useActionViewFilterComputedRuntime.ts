@@ -42,18 +42,26 @@ type UseActionViewFilterComputedRuntimeOptions = {
   hasActionViewNoiseMarker: (key: unknown, label: unknown, domainRaw: unknown, contextRaw: unknown) => boolean;
 };
 
-export function resolveDeclaredPrimaryFilterBudget(surfacePolicies: Dict): number {
-  const value = requireDeclaredNumber(surfacePolicies.filters_primary_max, {
-    missing: 'surface_policies.filters_primary_max',
+export function resolveDeclaredFilterBudget(
+  surfacePolicies: Dict,
+  key: 'filters_primary_max' | 'filters_max',
+): number {
+  const missing = `surface_policies.${key}`;
+  const value = requireDeclaredNumber(surfacePolicies[key], {
+    missing,
     requiredDeclarationLayer: 'P0:smart_core:contract_governance_user_surface',
     min: 0,
   });
   if (!Number.isInteger(value) || value < 0) throw contractGapError({
     kind: 'contract_defect',
-    missing: 'surface_policies.filters_primary_max',
+    missing,
     requiredDeclarationLayer: 'P0:smart_core:contract_governance_user_surface',
-  }, 'Primary filter budget must be a non-negative integer');
+  }, `${key} must be a non-negative integer`);
   return value;
+}
+
+export function resolveDeclaredPrimaryFilterBudget(surfacePolicies: Dict): number {
+  return resolveDeclaredFilterBudget(surfacePolicies, 'filters_primary_max');
 }
 
 function resolveGroupByFromContextRaw(value: unknown): string {
@@ -105,6 +113,10 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
   const contractFilterChips = computed(() => {
     const rows = resolveContractV2SearchContract(options.actionContract.value).filters;
     if (!Array.isArray(rows)) return [];
+    const max = resolveDeclaredFilterBudget(
+      resolveContractV2SurfacePolicies(options.actionContract.value),
+      'filters_max',
+    );
     return rows
       .map((row) => {
         const key = String(row?.key || '').trim();
@@ -121,7 +133,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
         return { key, label, domain, domainRaw, context, contextRaw };
       })
       .filter(Boolean)
-      .slice(0, 8);
+      .slice(0, max);
   });
 
   const filterPrimaryBudget = computed(() => {
