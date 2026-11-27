@@ -182,6 +182,23 @@
         "agent.run.resume now reports the check as reusable at the exact branch head"
       ],
       "coverage_limit": "This repairs P4 check reuse bookkeeping only; browser role/company journeys and FC-06 closure remain incomplete."
+    },
+    "p4_stack_merge_gate_correction": {
+      "status": "passed",
+      "classification": "validation_tooling_false_positive",
+      "root_cause": "pr.merge.preflight hard-coded main as the only legal PR target and integration.cycle required main-only remote checks, so the explicitly declared #1025 -> #1019 stack was rejected",
+      "repair": [
+        "validation_delivery_plan accepts an explicit expected base and verifies the live branch ref at that exact name",
+        "integration_cycle stack mode accepts a clean mergeable PR with no remote checks, but rejects failed or pending checks when present",
+        "make pr.merge.preflight/pr.merge pass PR_STACK=1 and PR_BASE explicitly and keep default main behavior unchanged",
+        "backend main closure remains skipped only in explicit stack mode"
+      ],
+      "validation": [
+        "PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.test_validation_delivery_plan: 20 tests passed",
+        "make verify.integration.cycle.unit: 29 tests passed",
+        "make -n pr.merge.preflight PR=1025 PR_STACK=1 PR_BASE=fix/fe-consumption-closeout-20261126: exact stack preflight expands with expected base and skips backend main closure"
+      ],
+      "coverage_limit": "This changes only P4 merge tooling. It does not establish browser role/company journeys or FC-06 completion."
     }
   },
   "blockers": [],

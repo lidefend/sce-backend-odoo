@@ -75,3 +75,28 @@ and original log SHA256
 
 This correction changes only P4 evidence bookkeeping. Browser role/company
 journeys and overall FC-06 closure remain not claimed.
+
+## P4 stack merge-gate correction
+
+The first stack merge preflight rejected #1025 before evaluating its evidence
+because `validation_delivery_plan.py` treated every PR target other than `main`
+as invalid. The PR identity and product head were exact; this was a P4 false
+positive for an explicitly declared feature-branch stack.
+
+The P4 repair keeps main as the default and adds opt-in stack handling:
+
+- `--expected-base` verifies both the PR base name and the live branch ref;
+- stack merge readiness accepts the normal no-check state for a feature-branch
+  target, while still rejecting any failed or pending checks that do exist;
+- `PR_STACK=1 PR_BASE=<feature-branch>` is explicit at the Make entry;
+- backend main closure is skipped only in that explicit stack mode.
+
+Focused validation:
+
+- validation delivery plan tests: 20 passed;
+- integration cycle tests: 29 passed;
+- dry-run preflight for #1025 uses expected base
+  `fix/fe-consumption-closeout-20261126` and skips backend main closure.
+
+This is merge-tooling correction only; browser role/company journeys and FC-06
+overall completion remain not claimed.
