@@ -3,6 +3,7 @@ goal:
   id: ENTERPRISE-INITIALIZATION-ROUTE-AUTHORITY-20261128
   title: Preserve the enterprise initialization entry before business-scene enablement
   status: active
+  execution_status: eir_01_completed_eir_02_remote_checks_running
   implementation_authorized: true
   formal_product_layer: P1
   layer_target: construction scene lifecycle authority at the enterprise-initialization boundary
