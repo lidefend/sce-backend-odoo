@@ -132,7 +132,7 @@ goal:
     product_tests: relation_descriptor_and_attachment_lifecycle_batch_passed_clean_probe_unit_passed
     contract_basis: passed_42_bindings_zero_open_defects
     local_targeted: passed_backend_60_targets_1181_tests_and_frontend_87_targets_1580_tests_with_same_run_handoff
-    browser: clean_initialization_completed_with_disposable_fixture_business_pages_pending_rebuilt_runtime
+    browser: clean_initialization_and_three_finance_business_pages_passed_on_exact_code_build
     database: prior_clean_runtime_identity_passed_synchronized_candidate_refresh_not_run
     ci_dispatch: synchronized_candidate_requires_new_exact_head_checks
   exclusions:
@@ -141,10 +141,9 @@ goal:
   - full_industry_business_acceptance_without_separate_scope
   - changing_existing_ci_candidate_or_merging_it
   - publishing_or_committing_this_plan_in_this_turn
-  next_exact_step: Commit the contract-load lifecycle fix, rebuild local.clean from the clean
-    commit, and repeat the three finance business-page probes. Keep the loaded-contract missing
-    declaration path fail-closed; do not modify backend contract declarations or permissions
-    unless a fresh response proves an actual declaration gap.
+  next_exact_step: Publish the clean candidate to PR 1019 through make pr.push and read one
+    exact-head required-check result set. Preserve the runtime evidence as code-HEAD evidence;
+    do not infer mainline, deployment or complete FC-04 completion from the PR run.
   run: .agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/run.json
   preparation_status: activated
   preparation_authorized: true

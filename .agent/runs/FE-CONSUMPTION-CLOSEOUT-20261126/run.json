@@ -3,7 +3,7 @@
   "id": "FE-CONSUMPTION-CLOSEOUT-20261126",
   "status": "active",
   "branch": "fix/fe-consumption-closeout-20261126",
-  "branch_state": "remote_pr_open_fc04_clean_initialization_unblocked_by_independent_pr_1029_runtime_rerun_pending",
+  "branch_state": "remote_pr_open_fc04_clean_initialization_and_business_pages_passed_exact_code_head_remote_checks_pending",
   "baseline_sha": "bf3e78c2a9e81448f36425b05e133170aee39875",
   "baseline_state": "origin_main_includes_independent_enterprise_initialization_route_authority_fix_from_pr_1029_topic_release_not_run",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
@@ -180,17 +180,17 @@
     "dbfilter": "^sc_clean$",
     "namespace_alias": "clean",
     "namespace_id": "ns_c6fed472e939",
-    "source_revision": "e26341a037f85c338acba2750006f816d41004a4",
+    "source_revision": "f1b81f8e58a2570ee57890129212a08f5f950052",
     "modules": [
       "smart_construction_bundle",
       "sc_norm_engine"
     ],
     "demo_data": false,
-    "fixture": false,
-    "frontend_build_fingerprint": "8dd6497bf847a5b3486c2c801a3b083cf024755a9fe61b044dbdb7fd6e663f84",
+    "fixture": "explicit_disposable_clean_fixture",
+    "frontend_build_fingerprint": "4806cb1fa58efec79a565bfa99565c9b40367db45c10ae90dd1fd5521a72cf0f",
     "health": "passed",
-    "health_note": "The last clean runtime readback is exact candidate e26341a037f85c338acba2750006f816d41004a4. Later commits b3cbe05f67c8b7c7a829cdd197829cc2405e68e3 and 3fbfdaa3fd3eb3453b5ae0e283181404bbc31399 are locally target-validated and published on PR #1019; their clean runtime rerun is deferred to the integration phase per owner direction.",
-    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-frontend-build.log",
+    "health_note": "The clean runtime now serves exact code candidate f1b81f8e58a2570ee57890129212a08f5f950052 with frontend build 4806cb1fa58efec79a565bfa99565c9b40367db45c10ae90dd1fd5521a72cf0f. The final branch HEAD after this governance-only record commit is checked separately by exact-head PR CI.",
+    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-finance-pages-final-exact-head-r2.json",
     "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-up.log",
     "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-health.log",
     "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-entry-identity.log",
@@ -658,7 +658,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Refresh local.clean from the synchronized candidate, verify that the authorized business-configuration administrator receives the enterprise-initialization route, then execute the formal initialization and scene-enablement journey before rerunning business-page probes.",
+  "next_exact_step": "Publish the clean frontend candidate to PR 1019 through the governed push entry, then read one exact-head required-check result set. Do not claim mainline, deployment or complete FC-04 before those separate gates pass.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2946,7 +2946,7 @@
       "scope_limit": "P4 ownership and selector closure only. These receipts do not prove the clean enterprise-initialization journey, product-page behavior, remote PR integration, deployment or user acceptance."
     },
     "clean_enterprise_initialization_and_business_pages": {
-      "status": "initialization_passed_action_budget_loading_fix_pending_runtime_confirmation",
+      "status": "passed_initialization_and_exact_clean_business_page_runtime",
       "candidate_head": "51ff89563f9e02a896062336bbbe161d0752b5bc",
       "source_revision": "51ff89563f9e02a896062336bbbe161d0752b5bc",
       "frontend_build_sha256": "a6409f67d7fb6450be6fbd6dc0251a71f45c9663ea29697fa8d72599a3bf82a3",
@@ -2967,32 +2967,31 @@
         "the finance role received 51 released navigation nodes after enablement, including payment application, payment execution and receipt registration",
         "the first three finance page attempts showed a ContractGapError at surface_policies.actions_primary_max",
         "the corresponding real ui.contract.v2 response already declared actionContract.surfacePolicies.actions_primary_max=3",
-        "loaded-store, missing-store and missing-declaration unit cases now distinguish pending load from a genuinely incomplete loaded contract; targeted and full local channels pass",
-        "the clean runtime has not yet been rebuilt from the loading-lifecycle fix, so the three business pages are not yet claimed as rendered"
+        "loaded-store, missing-store and missing-declaration unit cases distinguish pending load from a genuinely incomplete loaded contract",
+        "the exact clean runtime rebuilt from code HEAD f1b81f8e58a2570ee57890129212a08f5f950052 serves frontend build 4806cb1fa58efec79a565bfa99565c9b40367db45c10ae90dd1fd5521a72cf0f",
+        "payment application, payment execution and receipt registration each rendered the list surface with contract_gaps=0 and the declared empty state",
+        "the exact-head browser readback observed action budget 3 and filter budget 4 on all three surfaces with zero console errors"
       ],
       "evidence": [
         ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-business-config-admin-route-authority-after-1029.json",
         ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-enterprise-centers-response.json",
         ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-finance-pages-current-rerun.json",
-        ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/finance-payment-contract-response.json"
+        ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/finance-payment-contract-response.json",
+        ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-finance-pages-final-exact-head-r2.json"
       ],
       "channel_receipts": {
-        "backend": {
-          "path": ".runtime/frontend-dev-validation/executions/20261127T201436Z-3236189-497457762/receipt.json",
-          "sha256": "4a427952666fd3913b659f0cba0b94e75fa14440b15d16ad370db40e57a6093e",
-          "required_targets": 60,
-          "test_count": 1182,
-          "static_checks": 10
-        },
-        "frontend": {
-          "path": ".runtime/frontend-dev-validation/executions/20261127T202033Z-3305591-737943507/receipt.json",
-          "sha256": "3e348ea7213ae289223f853bc9edd549f4fa107796913deb0089869d0cc1a28c",
-          "required_targets": 88,
-          "test_count": 1402,
-          "static_checks": 4
+        "all_affected": {
+          "path": ".runtime/frontend-dev-validation/executions/20261127T202928Z-3388677-153985122/receipt.json",
+          "sha256": "3cd5c0ec196877edba9319bc881b4cd14fadeddb3a92eeafbcc0eceadfd6068c",
+          "required_targets": 90,
+          "test_count": 2288,
+          "static_checks": 13,
+          "unmapped_paths": 0,
+          "not_run_targets": 0,
+          "blocked_targets": 0
         }
       },
-      "scope_limit": "The initialization and configuration facts passed in the disposable clean runtime. The action-budget load fix has local positive and negative tests but requires a clean frontend rebuild and browser readback before the affected business pages can be called passed."
+      "scope_limit": "The initialization and three affected finance list pages passed on the exact clean code runtime. This does not prove every business entry, record create/edit/approval, import lifecycle, FC-04 overall closure, PR integration, mainline release qualification, deployment or user acceptance."
     },
     "clean_current_configuration_browser_baseline": {
       "status": "route_gap_resolved_by_independent_pr_1029_runtime_rerun_pending",
