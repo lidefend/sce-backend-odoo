@@ -1,0 +1,283 @@
+......................
+----------------------------------------------------------------------
+Ran 22 tests in 0.356s
+
+OK
+[baseline_iteration_execution_policy_guard] PASS policy=BASELINE_ITERATION_EXECUTION_POLICY=v1 documents=4 make_authorities=11
+...............................
+----------------------------------------------------------------------
+Ran 31 tests in 0.008s
+
+OK
+{
+  "status": "resolved",
+  "run": ".agent/runs/VERIFY-SYSTEM-CLOSEOUT-01-R2A/run.json",
+  "check_reuse_summary": {
+    "not_run": 2
+  },
+  "branch": "fix/verify-system-closeout-01-r2a-20261127",
+  "head": "7be328ae0fb987fc3a23c91bf49440ee12b71bbc",
+  "dirty": " M .agent/runs/VERIFY-SYSTEM-CLOSEOUT-01-R2A/run.json\n M docs/audit/verify_system_closeout_01_r2a/actual_execution_facts.json\n M docs/audit/verify_system_closeout_01_r2a/execution_facts_followup.json\n M scripts/ci/main_full_release_dispatch.py\n M scripts/ci/test_main_full_release_dispatch.py\n M scripts/ci/test_main_full_release_evidence.py",
+  "baseline_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+  "run_status": "verification_pending",
+  "record": "docs/ops/iterations/verify_system_closeout_01_r2a.md",
+  "changed_paths": [
+    ".agent/active-runs.json",
+    ".agent/goals/VERIFY-SYSTEM-CLOSEOUT-01-R2A.yaml",
+    ".agent/runs/VERIFY-SYSTEM-CLOSEOUT-01-R2A/run.json",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/audit/verify_system_closeout_01_r2a/actual_execution_facts.json",
+    "docs/audit/verify_system_closeout_01_r2a/audit.verification.lane_coverage.check.txt",
+    "docs/audit/verify_system_closeout_01_r2a/evidence.json",
+    "docs/audit/verify_system_closeout_01_r2a/execution_facts_after.txt",
+    "docs/audit/verify_system_closeout_01_r2a/execution_facts_before.json",
+    "docs/audit/verify_system_closeout_01_r2a/execution_facts_before.txt",
+    "docs/audit/verify_system_closeout_01_r2a/execution_facts_followup.json",
+    "docs/audit/verify_system_closeout_01_r2a/execution_facts_followup/audit.verification.lane_coverage.check.txt",
+    "docs/audit/verify_system_closeout_01_r2a/execution_facts_followup/verify.agent.ledger.unit.txt",
+    "docs/audit/verify_system_closeout_01_r2a/execution_facts_followup/verify.baseline.iteration.execution.policy.txt",
+    "docs/audit/verify_system_closeout_01_r2a/execution_facts_followup/verify.ci.scheduled_gates.txt",
+    "docs/audit/verify_system_closeout_01_r2a/execution_facts_followup/verify.ci.workflow.contract.txt",
+    "docs/audit/verify_system_closeout_01_r2a/execution_facts_followup/verify.frontend.dev.incremental.unit.txt",
+    "docs/audit/verify_system_closeout_01_r2a/execution_facts_followup/verify.test.coverage.registry.txt",
+    "docs/audit/verify_system_closeout_01_r2a/local_incremental_receipt.json",
+    "docs/audit/verify_system_closeout_01_r2a/local_incremental_receipt_followup.json",
+    "docs/audit/verify_system_closeout_01_r2a/replay_old_qualification.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.agent.ledger.unit.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.baseline.iteration.execution.policy.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.ci.scheduled_gates.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.ci.workflow.contract.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.frontend.dev.incremental.unit.txt",
+    "docs/audit/verify_system_closeout_01_r2a/verify.test.coverage.registry.txt",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/iterations/verify_system_closeout_01_r2a.md",
+    "make/ci.mk",
+    "make/frontend.mk",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/ci/main_full_release_dispatch.py",
+    "scripts/ci/main_full_release_evidence.py",
+    "scripts/ci/test_main_full_release_dispatch.py",
+    "scripts/ci/test_main_full_release_evidence.py",
+    "scripts/ops/incremental_execution.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_incremental_environment.py"
+  ],
+  "derived_scope": [],
+  "outside_scope": [],
+  "checks": {
+    "main_full": {
+      "target": "verify.ci.scheduled_gates",
+      "status": "not_run",
+      "reason": "no local receipt"
+    },
+    "executor": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "status": "not_run",
+      "reason": "no local receipt"
+    }
+  },
+  "registered_check_targets": [
+    "verify.ci.scheduled_gates",
+    "verify.frontend.dev.incremental.unit"
+  ],
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "P4 F02/F01/F03 unit and real CLI negative/recovery tests; no business or database changes."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "New exact R2-A PR HEAD required checks; no old SHA substitution."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "R3 separately after repair review and protected merge; no dispatch or deployment in R2-A."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Frontend validation carrying shared contract targets must consume the passed backend channel receipt for the same run and source identity."
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Validate RH018 reversible technical ID encoding and F02-01 local source identity; preserve old failed PR history. Publication requires resolving candidate-history scan vs no-force-push policy.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
+{
+  "status": "ready_for_existing_gates",
+  "head": "7be328ae0fb987fc3a23c91bf49440ee12b71bbc",
+  "base": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+  "blockers": [],
+  "candidate_evidence": false,
+  "limits": [
+    "No runtime readback or credential verification performed",
+    "Affected local validation, independent review and current remote CI remain mandatory; full local Quick is optional"
+  ]
+}
+[validation.delivery.plan] report=/home/lidefend/workspace/sce-backend-odoo-verify-correctness-escape-01-20261125-project-ledger-registry-closure-20261125/.runtime/validation-delivery/plan.json
+[local_quick_evidence] PREFLIGHT PASS targets=53 receipt=none
+[size-advisory] core_extension.py is 2083 lines, 193 over the 1890-line guidance budget (baseline 1830); consider splitting before the next structural change
+[construction_core_extension_intent_handlers_split_guard] PASS
+[frontend_page_contract_boundary_guard] PASS
+[local.incremental] EXECUTE paths=43 layers=frontend,governance targets=audit.verification.lane_coverage.check,verify.agent.ledger.unit,verify.ci.scheduled_gates,verify.test.coverage.registry resumed=3 source=.runtime/frontend-dev-validation/executions/20261127T051250Z-3743155-545416154/receipt.json
+[verification-lane-coverage] PASS surface within the frozen baseline (5 review trigger(s); structural coverage only, not a functional acceptance)
+..................
+----------------------------------------------------------------------
+Ran 18 tests in 1.205s
+
+OK
+[agent_ledger_consistency_guard] PASS goals=439 runs=424 pinned_residuals=2 open_run_allowlist=2
+..................
+----------------------------------------------------------------------
+Ran 18 tests in 0.436s
+
+OK
+[github_actions_security_guard] PASS permissions=read fork_professional=denied actions=pinned
+.....[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 300, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 301, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 302, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 303, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 304, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 305, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "failure", "run_id": 300, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 301, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 302, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 303, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 304, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 305, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+.
+----------------------------------------------------------------------
+Ran 6 tests in 0.011s
+
+OK
+.[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] PASS main=3671b18333287ede4d5a2f84d37541eaecfb9582 kind=operator_full_audit
+[qualification-execution-negative] selection
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: execution does not prove full module selection
+[qualification-execution-negative] source
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: execution test source inventory differs from exact source
+[qualification-execution-negative] runtime
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: execution runtime service identity missing
+[qualification-execution-negative] python
+..[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: execution Python environment differs from runner observation
+[main-full-release] DENY: local HEAD does not match expected main
+[main-full-release] DENY: local HEAD does not match expected main
+[main-full-release] DENY: worktree must be clean
+[main-full-release] DENY: worktree must be clean
+[qualification-negative] latest_failed
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: manifest is not the latest authoritative workflow attempt
+[qualification-negative] cross_head
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: workflow evidence identity/outcome mismatch: head_sha
+[qualification-negative] condition
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: missing or ambiguous artifact: release-condition-106-1-3671b18333287ede4d5a2f84d37541eaecfb9582
+[qualification-negative] tree
+[main-full-release] DENY: manifest tree differs from exact commit tree
+[qualification-negative] job
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: required job missing or not successful: backend_impact_suite / backend_suite (3)
+[qualification-negative] shard
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: missing or ambiguous artifact: backend-execution-102-product-0
+[qualification-negative] auxiliary
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: missing or ambiguous artifact: backend-plan-105-demo
+[qualification-negative] attempt
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: workflow evidence identity/outcome mismatch: run_attempt
+[qualification-negative] pending_coverage
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: required job missing or not successful: demo / verify_coverage
+[qualification-negative] frontend
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: missing or ambiguous artifact: frontend-release-evidence-103-1-3671b18333287ede4d5a2f84d37541eaecfb9582
+[qualification-negative] artifact_digest
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: artifact digest missing or mismatched: release-condition-106-1-3671b18333287ede4d5a2f84d37541eaecfb9582
+[qualification-negative] artifact_identity
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: artifact not attributable to exact attempt job: release-condition-106-1-3671b18333287ede4d5a2f84d37541eaecfb9582
+[qualification-negative] condition_tree
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: release condition does not match manifest identities and qualification facts
+[qualification-negative] condition_run
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: release condition does not match manifest identities and qualification facts
+[qualification-negative] condition_missing_workflow
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: release condition does not match manifest identities and qualification facts
+[qualification-negative] coverage_pending
+...
+----------------------------------------------------------------------
+Ran 6 tests in 140.279s
+
+OK
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: changed-test coverage identity or result mismatch
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "", "run_id": 101, "status": "in_progress", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: origin/main ffffffffffffffffffffffffffffffffffffffff does not match expected main 3671b18333287ede4d5a2f84d37541eaecfb9582
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "failure", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "", "run_id": 102, "status": "in_progress", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] DENY: full-release audit did not succeed: public_guard.yml=failure
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "", "run_id": 101, "status": "in_progress", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] MATRIX [{"attempt": 1, "conclusion": "success", "run_id": 101, "status": "completed", "workflow": "public_guard.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 102, "status": "completed", "workflow": "professional_quality_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 103, "status": "completed", "workflow": "frontend_release_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 104, "status": "completed", "workflow": "merge_policy_gate.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 105, "status": "completed", "workflow": "auxiliary_backend_suite.yml"}, {"attempt": 1, "conclusion": "success", "run_id": 106, "status": "completed", "workflow": "release_candidate_gate.yml"}]
+[main-full-release] PASS main=3671b18333287ede4d5a2f84d37541eaecfb9582 kind=operator_full_audit
+...........
+----------------------------------------------------------------------
+Ran 11 tests in 0.015s
+
+OK
+................
+----------------------------------------------------------------------
+Ran 16 tests in 0.374s
+
+OK
+..............
+----------------------------------------------------------------------
+Ran 14 tests in 2.025s
+
+OK
+..
+----------------------------------------------------------------------
+Ran 2 tests in 0.006s
+
+OK
+...................................
+----------------------------------------------------------------------
+Ran 35 tests in 1.100s
+
+OK
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.001s
+
+OK
+........
+----------------------------------------------------------------------
+Ran 8 tests in 0.045s
+
+OK
+.........
+----------------------------------------------------------------------
+Ran 9 tests in 0.001s
+
+OK
+[ci_artifact_host_write_guard] PASS root=/home/lidefend/workspace/sce-backend-odoo-verify-correctness-escape-01-20261125-project-ledger-registry-closure-20261125/artifacts
+[verify.ci.scheduled_gates] PASS
+.....................
+----------------------------------------------------------------------
+Ran 21 tests in 0.305s
+
+OK
+[test-coverage] odoo tag groups=237 (gated=5, on-demand=98, unwired=134), ci unit scripts=25
+[test-coverage] PASS all declared groups are gated or dispositioned
+[local.incremental] PASSED layers=frontend,governance executed=4 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/20261127T055132Z-4152076-846374042/receipt.json
+[trusted_scan_scope] kind=secrets mode=full base=none reason=scan_authority_changed evidence=none
+[trusted_scan_scope] kind=personal mode=full base=none reason=scan_authority_changed evidence=none
+[trusted_scan_scope] kind=history mode=full base=none reason=scan_authority_changed evidence=none

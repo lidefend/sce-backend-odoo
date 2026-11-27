@@ -1,0 +1,4 @@
+{
+  "raw_sha256": "41f7fd762a7de0bd86f93c0b9ae8549264199a411dfd76d5a52bb535caf661b5",
+  "raw_utf8": ".....................\n----------------------------------------------------------------------\nRan 21 tests in 0.283s\n\nOK\n[test-coverage] odoo tag groups=237 (gated=5, on-demand=98, unwired=134), ci unit scripts=25\n[test-coverage] PASS all declared groups are gated or dispositioned\n"
+}

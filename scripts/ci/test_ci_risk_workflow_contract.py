@@ -302,7 +302,14 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("Scan governed product history", text)
         self.assertIn('case "${GITHUB_EVENT_NAME}" in', text)
         self.assertIn("schedule|workflow_dispatch)", text)
-        self.assertIn("pull_request|push)", text)
+        self.assertIn("pull_request)", text)
+        self.assertIn("push)", text)
+        pr_scan = text.split("            pull_request)", 1)[1].split(";;", 1)[0]
+        self.assertIn('repository_clean_history_guard.py --candidate-head "${CHECKOUT_SHA}"', pr_scan)
+        self.assertNotIn("--trusted-base", pr_scan)
+        public_job = text.split("  public_guard:", 1)[1]
+        self.assertIn("ref: ${{ env.CHECKOUT_SHA }}", public_job)
+        self.assertIn("fetch-depth: 0", public_job)
         self.assertIn('git cat-file -e "${BASE_SHA}^{commit}"', text)
         self.assertIn('git merge-base --is-ancestor "${BASE_SHA}" HEAD', text)
         self.assertIn("trusted_base_unavailable", text)

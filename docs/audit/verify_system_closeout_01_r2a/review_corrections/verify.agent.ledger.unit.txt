@@ -1,0 +1,6 @@
+..................
+----------------------------------------------------------------------
+Ran 18 tests in 1.205s
+
+OK
+[agent_ledger_consistency_guard] PASS goals=439 runs=424 pinned_residuals=2 open_run_allowlist=2

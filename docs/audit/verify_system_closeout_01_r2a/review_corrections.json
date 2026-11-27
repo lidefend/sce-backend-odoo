@@ -1,0 +1,177 @@
+{
+  "old_head": "7be328ae0fb987fc3a23c91bf49440ee12b71bbc",
+  "historical_hits": [
+    {
+      "blob": "1582beb6a28df0d8f550a87ebff8f24c41b4d70f",
+      "path": "docs/audit/verify_system_closeout_01_r2a/actual_execution_facts.json",
+      "rules": [
+        "MOBILE_PHONE_PATTERN"
+      ],
+      "original_sha256": "f6f829833177426f66ec89d72f503c44fd74bb7ef0615cd1d7bafd514aaac5ab"
+    }
+  ],
+  "current_encoded_blob": "PASSED_ALL_UNMODIFIED_PERSONAL_DATA_PATTERNS",
+  "publish_on_same_history": "BLOCKED_BY_REACHABLE_OLD_BLOB",
+  "rules_changed": false,
+  "schema": "verify-system-r2a-review-corrections/v1",
+  "status": "LOCAL_CHECKS_PASSED_PUBLICATION_BLOCKED",
+  "source_state": "owned dirty working tree; input hashes bind tested source",
+  "matching_fields": [
+    {
+      "path": "results[0].artifact_id",
+      "encoded_value": "0x3887d5164"
+    },
+    {
+      "path": "results[1].artifact_id",
+      "encoded_value": "0x3887d5164"
+    },
+    {
+      "path": "results[2].artifact_id",
+      "encoded_value": "0x3887d5164"
+    },
+    {
+      "path": "results[3].artifact_id",
+      "encoded_value": "0x38871ac84"
+    },
+    {
+      "path": "results[4].artifact_id",
+      "encoded_value": "0x38871ac84"
+    },
+    {
+      "path": "results[5].artifact_id",
+      "encoded_value": "0x3887cb7d6"
+    },
+    {
+      "path": "results[6].artifact_id",
+      "encoded_value": "0x3887cb7d6"
+    },
+    {
+      "path": "results[7].artifact_id",
+      "encoded_value": "0x3887cb7d6"
+    },
+    {
+      "path": "results[8].artifact_id",
+      "encoded_value": "0x3887cb7d6"
+    },
+    {
+      "path": "results[9].artifact_id",
+      "encoded_value": "0x3887cb7d6"
+    }
+  ],
+  "encoding": {
+    "fields": [
+      "run_id",
+      "results[].artifact_id"
+    ],
+    "decode": "int(value, 16)",
+    "roundtrip": "Exact original bytes recovered using recorded serialization and SHA-256"
+  },
+  "inputs": {
+    "scripts/ci/main_full_release_dispatch.py": "50e4a3c54c69e457a113176bbd039e2a7fa887c8245eb2845a7b0f0fcdf86dcb",
+    "scripts/ci/test_main_full_release_dispatch.py": "69e4832fdbe7854d5390bb8733734c2cea17cd0eb9c618a32e0575ade59cb3a6",
+    "scripts/ci/test_main_full_release_evidence.py": "6b6565c9e79d10e4ad5786b5767ce40e1a04f6c912062d3af7e387d1f71da3b3",
+    "docs/audit/verify_system_closeout_01_r2a/actual_execution_facts.json": "ab77aaed1bfb834008ee4b2cd26b4055ceb851c38223a805cf1f9cceb0e56ded"
+  },
+  "remote_integration": "NOT_VERIFIED for corrected source",
+  "mainline_qualification": "NOT_VERIFIED",
+  "publication": "Pending owner decision: preserve PR #1022 and failed history; publish clean replacement candidate without rewriting history or scanner exceptions",
+  "local_incremental": {
+    "status": "passed",
+    "executed": 4,
+    "reused": 3,
+    "source_receipt": ".runtime/frontend-dev-validation/executions/20261127T055132Z-4152076-846374042/receipt.json",
+    "qualification": "dirty source bound by input hashes; not a committed candidate receipt"
+  },
+  "logs": [
+    {
+      "target": "audit.verification.lane_coverage.check",
+      "status": "passed",
+      "reused": false,
+      "source_log": ".runtime/frontend-dev-validation/executions/20261127T055132Z-4152076-846374042/audit.verification.lane_coverage.check.log",
+      "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/audit.verification.lane_coverage.check.txt",
+      "sha256": "0b60464e8d5a265edded8e1e45f92bcec5ec20fff47e2679a429c481abea1fdf"
+    },
+    {
+      "target": "verify.agent.ledger.unit",
+      "status": "passed",
+      "reused": false,
+      "source_log": ".runtime/frontend-dev-validation/executions/20261127T055132Z-4152076-846374042/verify.agent.ledger.unit.log",
+      "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/verify.agent.ledger.unit.txt",
+      "sha256": "4b82f2bf3893f7326b25219e905b50e60667e5a54de47874d4a9184f2a57e825"
+    },
+    {
+      "target": "verify.baseline.iteration.execution.policy",
+      "status": "passed",
+      "reused": true,
+      "source_log": ".runtime/frontend-dev-validation/executions/20261127T050834Z-3685537-327352333/verify.baseline.iteration.execution.policy.log",
+      "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/verify.baseline.iteration.execution.policy.txt",
+      "sha256": "c2afa1465450396fbf3f8588a953cdbf6600dc3721a247ec91b8245181e154bd"
+    },
+    {
+      "target": "verify.ci.scheduled_gates",
+      "status": "passed",
+      "reused": false,
+      "source_log": ".runtime/frontend-dev-validation/executions/20261127T055132Z-4152076-846374042/verify.ci.scheduled_gates.log",
+      "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/verify.ci.scheduled_gates.txt",
+      "sha256": "a9300fa8346bf6ac02a98c9a944cf1afa4638df72f1cc36e4c57a72774332b43"
+    },
+    {
+      "target": "verify.ci.workflow.contract",
+      "status": "passed",
+      "reused": true,
+      "source_log": ".runtime/frontend-dev-validation/executions/20261127T050834Z-3685537-327352333/verify.ci.workflow.contract.log",
+      "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/verify.ci.workflow.contract.txt",
+      "sha256": "ac6ca132c2a386fa4250866694d010a4eaacda6b6b3a09bbaebb6c948c200f85"
+    },
+    {
+      "target": "verify.frontend.dev.incremental.unit",
+      "status": "passed",
+      "reused": true,
+      "source_log": ".runtime/frontend-dev-validation/executions/20261127T050834Z-3685537-327352333/verify.frontend.dev.incremental.unit.log",
+      "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/verify.frontend.dev.incremental.unit.txt",
+      "sha256": "6c910e5b7b46ce6ed71d641ad6cb6d538b32b01128dd02b86611dea7f11868e7"
+    },
+    {
+      "target": "verify.test.coverage.registry",
+      "status": "passed",
+      "reused": false,
+      "source_log": ".runtime/frontend-dev-validation/executions/20261127T055132Z-4152076-846374042/verify.test.coverage.registry.log",
+      "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/verify.test.coverage.registry.txt",
+      "sha256": "d068f9b9dfb0b105af906204ce74f5e801971dab44827c50eb78fdf10125e72b"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/environment.txt",
+      "sha256": "fd1a7230942e818e6d57f2b871c75431d43ab18554419d6e50b2f303e94197ee"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/encoding_check.json",
+      "sha256": "9eea4301a1c7ec317293bf2ae2caa819ba8d7b969afac3dafe0e68da8ba9dd68"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/historical_scan.json",
+      "sha256": "b6fd9fc4ffd90034103d061f979883d9aeb5dc27b47167570a86e18bbcd922ea"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/old_public_guard.json",
+      "sha256": "501dd9d6869104c3aa5bbbfa7719178475fc2cea3c98d6026384065148248101",
+      "raw_sha256": "d31eb8a6da1c9493294b3fc878fab9a7ddfb646f293fed11d9ac3bfbccc962cf",
+      "encoding": "Bounded diagnostic excerpt; full raw log retained at source and historical commit",
+      "excerpt_sha256": "6b3847c511df3adb3db789399173484df5848619cc2324e075d406bfeaef8e7f"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/local_iteration.txt",
+      "sha256": "2cdb29669a985fc351416d5962bd708f31a890fd33df2147307c667330399853"
+    },
+    {
+      "path": "docs/audit/verify_system_closeout_01_r2a/review_corrections/local_receipt.json",
+      "sha256": "72c99ccfdb53935d3359206e09b39bd50cf774722f3e2297efa9a49b28ed5eab"
+    }
+  ],
+  "old_head_ci": {
+    "head": "7be328ae0fb987fc3a23c91bf49440ee12b71bbc",
+    "professional_quality_gate": "success",
+    "frontend_release_gate": "success",
+    "public_guard": "failure: RH018 historical blob",
+    "merge_policy_gate": "failure: upstream public_guard"
+  }
+}

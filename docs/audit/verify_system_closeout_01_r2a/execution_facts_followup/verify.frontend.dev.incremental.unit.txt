@@ -1,0 +1,176 @@
+.........................................................................................[local.incremental] BLOCKED reason=backend contract handoff receipt is required for frontend shared targets receipt=.runtime/one/receipt.json
+PASS cases=1
+.PASS cases=1
+...........................................................................................................................Ran 1 test in 0.001s
+
+OK (skipped=1)
+....TAP version 13
+# Subtest: frontend_action_view_route_lease_race.test
+ok 1 - frontend_action_view_route_lease_race.test
+  ---
+  duration_ms: 1.364815
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 80.989294
+...# tests 5
+.Ran 5 tests in 0.001s
+.....PASS
+.Ran 0 tests in 0.001s
+OK
+.
+----------------------------------------------------------------------
+Ran 1 test in 0.007s
+
+OK
+..Ran 2 tests in 0.001s
+
+OK
+..TAP version 13
+# Subtest: not executed
+ok 1 - not executed # SKIP
+  ---
+  duration_ms: 0.627228
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 78.029132
+.TAP version 13
+# Subtest: failure
+not ok 1 - failure
+  ---
+  duration_ms: 0.66046
+  type: 'test'
+  location: '/tmp/tmpxhanotgg/tap.test.mjs:2:1'
+  failureType: 'testCodeFailure'
+  error: 'expected'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/tmpxhanotgg/tap.test.mjs:2:31)
+    Test.runInAsyncScope (node:async_hooks:227:14)
+    Test.run (node:internal/test_runner/test:1306:25)
+    Test.start (node:internal/test_runner/test:1177:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:385:17)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 97.891981
+make[2]: *** [Makefile:2: verify.tap.unit] Error 1
+.TAP version 13
+# Subtest: executed
+ok 1 - executed
+  ---
+  duration_ms: 0.907112
+  type: 'test'
+  ...
+# Subtest: todo
+ok 2 - todo # TODO
+  ---
+  duration_ms: 0.1461
+  type: 'test'
+  ...
+# Subtest: skipped
+ok 3 - skipped # SKIP
+  ---
+  duration_ms: 0.121943
+  type: 'test'
+  ...
+1..3
+# tests 3
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 1
+# duration_ms 90.734944
+....contract assertion passed
+.......Ran 0 tests in 0.001s
+OK
+.[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+.[local.incremental] INTERRUPTED layers=frontend,governance executed=4 reason=operator interrupted the target receipt=.runtime/frontend-dev-validation/executions/first/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+.[local.incremental] INTERRUPTED layers=frontend,governance executed=4 reason=operator interrupted the target receipt=.runtime/frontend-dev-validation/executions/first/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+[local.incremental] INTERRUPTED layers=frontend,governance executed=4 reason=operator interrupted the target receipt=.runtime/frontend-dev-validation/executions/first/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.workspace.branch.sync-main resumed=3 source=.runtime/frontend-dev-validation/executions/first/receipt.json
+.[local.incremental] PASSED layers=frontend,governance executed=1 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/second/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+[local.incremental] PASSED layers=frontend,governance executed=4 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/complete/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.workspace.branch.sync-main resumed=3 source=.runtime/frontend-dev-validation/executions/complete/receipt.json
+.[local.incremental] INTERRUPTED layers=frontend,governance executed=1 reason=operator interrupted the target receipt=.runtime/frontend-dev-validation/executions/interrupted/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+[local.incremental] PASSED layers=frontend,governance executed=4 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/first/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.workspace.branch.sync-main resumed=3 source=.runtime/frontend-dev-validation/executions/first/receipt.json
+.[local.incremental] PASSED layers=frontend,governance executed=1 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/second/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+[local.incremental] INTERRUPTED layers=frontend,governance executed=4 reason=operator interrupted the target receipt=.runtime/frontend-dev-validation/executions/first/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.workspace.branch.sync-main resumed=3 source=.runtime/frontend-dev-validation/executions/first/receipt.json
+.[local.incremental] PASSED layers=frontend,governance executed=1 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/second/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+.[local.incremental] INTERRUPTED layers=frontend,governance executed=4 reason=operator interrupted the target receipt=.runtime/frontend-dev-validation/executions/first/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+[local.incremental] FAILED layers=frontend,governance executed=4 reason=verify.workspace.branch.sync-main exited nonzero receipt=.runtime/frontend-dev-validation/executions/first/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.workspace.branch.sync-main resumed=3 source=.runtime/frontend-dev-validation/executions/first/receipt.json
+.[local.incremental] PASSED layers=frontend,governance executed=1 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/second/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+[local.incremental] INTERRUPTED layers=frontend,governance executed=4 reason=operator interrupted the target receipt=.runtime/frontend-dev-validation/executions/first/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.workspace.branch.sync-main resumed=3 source=.runtime/frontend-dev-validation/executions/first/receipt.json
+.[local.incremental] PASSED layers=frontend,governance executed=1 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/second/receipt.json
+[local.incremental] EXECUTE paths=1 layers=frontend targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict
+[local.incremental] PASSED layers=frontend executed=3 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/first/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.workspace.branch.sync-main resumed=3 source=.runtime/frontend-dev-validation/executions/first/receipt.json
+.[local.incremental] PASSED layers=frontend,governance executed=1 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/second/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+.[local.incremental] INTERRUPTED layers=frontend,governance executed=4 reason=operator interrupted the target receipt=.runtime/frontend-dev-validation/executions/first/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+[local.incremental] PASSED layers=frontend,governance executed=4 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/first/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.workspace.branch.sync-main resumed=3 source=.runtime/frontend-dev-validation/executions/first/receipt.json
+.[local.incremental] PASSED layers=frontend,governance executed=1 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/second/receipt.json
+[local.incremental] EXECUTE paths=3 layers=frontend,governance targets=verify.ci.workflow.contract,verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.test.coverage.registry,verify.workspace.branch.sync-main
+[local.incremental] PASSED layers=frontend,governance executed=6 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/registry-first/receipt.json
+[local.incremental] EXECUTE paths=3 layers=frontend,governance targets=verify.ci.workflow.contract,verify.test.coverage.registry resumed=4 source=.runtime/frontend-dev-validation/executions/registry-first/receipt.json
+.[local.incremental] FAILED layers=frontend,governance executed=2 reason=verify.test.coverage.registry exited nonzero receipt=.runtime/frontend-dev-validation/executions/registry-second/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+.[local.incremental] PASSED layers=frontend,governance executed=4 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/first/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+[local.incremental] INTERRUPTED layers=frontend,governance executed=4 reason=operator interrupted the target receipt=.runtime/frontend-dev-validation/executions/first/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+.[local.incremental] PASSED layers=frontend,governance executed=4 reason=all required targets exited zero receipt=.runtime/frontend-dev-validation/executions/second/receipt.json
+[local.incremental] EXECUTE paths=2 layers=frontend,governance targets=verify.frontend.lint.src,verify.frontend.systemic.convergence.static,verify.frontend.typecheck.strict,verify.workspace.branch.sync-main
+[main 0eccd6c] base
+ Date: Fri Nov 27 13:30:15 2026 +0800
+ 7 files changed, 14 insertions(+)
+ create mode 100644 .gitignore
+ create mode 100644 Makefile
+ create mode 100755 frontend/apps/web/node_modules/.bin/esbuild
+ create mode 100755 frontend/apps/web/node_modules/.bin/eslint
+ create mode 100755 frontend/apps/web/node_modules/.bin/vue-tsc
+ create mode 100644 frontend/apps/web/src/NewSurface.vue
+ create mode 100644 scripts/ops/safe_branch_sync_main.py
+..........................
+----------------------------------------------------------------------
+Ran 286 tests in 12.756s
+
+OK
+[local.incremental] INTERRUPTED layers=frontend,governance executed=4 reason=operator interrupted the target receipt=.runtime/frontend-dev-validation/executions/first/receipt.json

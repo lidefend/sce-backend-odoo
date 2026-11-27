@@ -1,0 +1,4 @@
+{
+  "raw_sha256": "c6c466fbc56846e62c6bddf18d86d37c100c14a59ae1ea861be852ae913cf846",
+  "raw_utf8": "......................\n----------------------------------------------------------------------\nRan 22 tests in 0.220s\n\nOK\n[baseline_iteration_execution_policy_guard] PASS policy=BASELINE_ITERATION_EXECUTION_POLICY=v1 documents=4 make_authorities=11\n"
+}
