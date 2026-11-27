@@ -130,7 +130,7 @@ class ControlledMergeExpectedHeadTests(unittest.TestCase):
             merge_log = root / "merge.log"
             from scripts.ops.test_integration_cycle import GateTests, cycle
             checks_file = root / "checks.json"
-            checks_file.write_text(json.dumps({"state": "OPEN", "headRefOid": actual_head,
+            checks_file.write_text(json.dumps({"state": "OPEN", "baseRefName": "main", "headRefOid": actual_head,
                 "mergeable": "MERGEABLE", "mergeStateStatus": "CLEAN", "statusCheckRollup": [
                     GateTests.check(10, 100, "SUCCESS", workflow=name, name=name)
                     for name in cycle.REQUIRED_MERGE_CHECKS]}))

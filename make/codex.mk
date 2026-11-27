@@ -275,6 +275,7 @@ codex.run: guard.prod.forbid
 .PHONY: pr.publish.preflight pr.create pr.status pr.push pr.update pr.review pr.ready pr.merge pr.merge.local_quick_gate verify.pr.push.unit verify.pr.review.unit
 
 PR_BASE ?= main
+PR_STACK ?= 0
 PR_PUBLISH_MODE ?= merge
 PR_PUBLISH_TARGETED_CHECKS ?=
 PR_TITLE ?=
@@ -535,22 +536,23 @@ DELIVERY_MERGE_PREFLIGHT_REPORT ?= .runtime/validation-delivery/merge-preflight.
 
 .PHONY: pr.merge.preflight
 pr.merge.preflight: guard.prod.forbid
-	@python3 scripts/ops/validation_delivery_plan.py --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" --output "$(DELIVERY_MERGE_PREFLIGHT_REPORT)" --require-ready
-	@python3 scripts/ci/backend_iteration_lanes.py verify-merge --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --receipt "$(BACKEND_ITERATION_RECEIPT)"
+	@case "$(PR_STACK)" in 0|1) ;; *) echo "[DENY] pr.merge.preflight: PR_STACK must be 0 or 1"; exit 2 ;; esac
+	@python3 scripts/ops/validation_delivery_plan.py --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --expected-base "$(PR_BASE)" --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" --output "$(DELIVERY_MERGE_PREFLIGHT_REPORT)" --require-ready
+	@$(if $(filter 1,$(PR_STACK)),echo "[pr.merge.preflight] stack=1 base=$(PR_BASE): backend main closure not applicable",python3 scripts/ci/backend_iteration_lanes.py verify-merge --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --receipt "$(BACKEND_ITERATION_RECEIPT)")
 
 # Read-only preparation: existing affected evidence/identity and live
 # PR readiness checks. Never route this name to pr.merge.prep (remote POST).
 # `make -n pr.merge.prepare ...` displays the entire plan without executing it.
 .PHONY: pr.merge.prepare
 pr.merge.prepare: pr.merge.preflight
-	@python3 scripts/ops/integration_cycle.py merge-readiness --pr "$(PR)"
+	@python3 scripts/ops/integration_cycle.py merge-readiness --pr "$(PR)" $(if $(filter 1,$(PR_STACK)),--stack --expected-base "$(PR_BASE)",)
 
 # Ordinary incremental integration: remote gates own merge eligibility.
 # The explicit legacy Quick diagnostic target is not a merge prerequisite.
 pr.merge: guard.prod.forbid pr.merge.preflight
-	@python3 scripts/ops/integration_cycle.py merge-readiness --pr "$(PR)"
-	@python3 scripts/ops/validation_delivery_plan.py --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" --output "$(DELIVERY_MERGE_PREFLIGHT_REPORT)" --verify-pr-identity
-	@python3 scripts/ci/backend_iteration_lanes.py verify-merge --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --receipt "$(BACKEND_ITERATION_RECEIPT)"
+	@python3 scripts/ops/integration_cycle.py merge-readiness --pr "$(PR)" $(if $(filter 1,$(PR_STACK)),--stack --expected-base "$(PR_BASE)",)
+	@python3 scripts/ops/validation_delivery_plan.py --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --expected-base "$(PR_BASE)" --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" --output "$(DELIVERY_MERGE_PREFLIGHT_REPORT)" --verify-pr-identity
+	@$(if $(filter 1,$(PR_STACK)),echo "[pr.merge] stack=1 base=$(PR_BASE): backend main closure not applicable",python3 scripts/ci/backend_iteration_lanes.py verify-merge --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --receipt "$(BACKEND_ITERATION_RECEIPT)")
 	@bash -c '\
 	set -euo pipefail; \
 	BR="$$(git rev-parse --abbrev-ref HEAD)"; \

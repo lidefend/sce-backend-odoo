@@ -373,7 +373,11 @@ def checks_ready(rows: Iterable[dict], *, required_checks: Iterable[tuple[str, s
 
 
 def merge_readiness(root: Path, pr: int, allow_no_quick: bool = False,
-                    inspect_local_quick: bool = False) -> tuple[int, dict]:
+                    inspect_local_quick: bool = False, *, expected_base: str = 'main',
+                    stack: bool = False) -> tuple[int, dict]:
+    expected_base = str(expected_base or '').strip()
+    if not expected_base:
+        return 2, {"status": "error", "reason": "expected base must be non-empty"}
     result = subprocess.run(
         [
             "gh",
@@ -381,7 +385,7 @@ def merge_readiness(root: Path, pr: int, allow_no_quick: bool = False,
             "view",
             str(pr),
             "--json",
-            "headRefOid,mergeStateStatus,mergeable,state,statusCheckRollup",
+            "baseRefName,headRefOid,mergeStateStatus,mergeable,state,statusCheckRollup",
         ],
         cwd=str(root),
         capture_output=True,
@@ -392,14 +396,24 @@ def merge_readiness(root: Path, pr: int, allow_no_quick: bool = False,
         return 2, {"status": "error", "reason": result.stderr.strip() or "gh pr view failed"}
     payload = json.loads(result.stdout)
     head = git(root, "rev-parse", "HEAD")
-    ready_checks, failed, pending = checks_ready(
-        payload.get("statusCheckRollup") or [], required_checks=REQUIRED_MERGE_IDENTITIES
-    )
+    rows = payload.get("statusCheckRollup") or []
+    if stack:
+        # A stacked PR targets another feature branch. GitHub does not attach the
+        # main-only required workflows to that target, so no-check is the normal
+        # state; any checks that do exist must still finish without failure.
+        ready_checks, failed, pending = (True, [], []) if not rows else checks_ready(
+            rows, required_checks=set()
+        )
+    else:
+        ready_checks, failed, pending = checks_ready(
+            rows, required_checks=REQUIRED_MERGE_IDENTITIES
+        )
     # Optional diagnostic only: ordinary merge eligibility is owned by the
     # affected evidence preflight and current remote checks, not full Quick.
     quick_verified = _receipt_verified(root, head) if inspect_local_quick else None
     ready = (
         payload.get("state") == "OPEN"
+        and payload.get("baseRefName") == expected_base
         and payload.get("headRefOid") == head
         and payload.get("mergeable") == "MERGEABLE"
         and payload.get("mergeStateStatus") in {"CLEAN", "HAS_HOOKS"}
@@ -412,6 +426,10 @@ def merge_readiness(root: Path, pr: int, allow_no_quick: bool = False,
         "pr": pr,
         "local_head": head,
         "pr_head": payload.get("headRefOid"),
+        "pr_base": payload.get("baseRefName"),
+        "expected_base": expected_base,
+        "stack": stack,
+        "check_mode": "stack_local_gate" if stack else "main_required_checks",
         "merge_state": payload.get("mergeStateStatus"),
         "mergeable": payload.get("mergeable"),
         "quick_verified": quick_verified,
@@ -445,6 +463,8 @@ def main(argv: list[str] | None = None) -> int:
     merge.add_argument("--allow-no-quick", action="store_true")
     merge.add_argument("--inspect-local-quick", action="store_true",
                        help="Explicitly inspect optional full Quick evidence; never changes merge eligibility")
+    merge.add_argument("--expected-base", default="main")
+    merge.add_argument("--stack", action="store_true")
 
     args = parser.parse_args(argv)
     root = Path(args.root).resolve()
@@ -479,7 +499,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "merge-readiness":
         code, payload = merge_readiness(root, args.pr, allow_no_quick=args.allow_no_quick,
-                                       inspect_local_quick=args.inspect_local_quick)
+                                       inspect_local_quick=args.inspect_local_quick,
+                                       expected_base=args.expected_base, stack=args.stack)
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return code
 

@@ -1,11 +1,8 @@
-import { fileToBase64 } from '../../api/files';
-import type { ApiDataImportContract } from '../../api/data';
 import {
   contractGapError,
   requireDeclaredBoolean,
   requireDeclaredText,
 } from '../contract/contractGap';
-import { importActionViewRecords } from './actionViewDataRuntime';
 
 /**
  * The list surface publishes one declared action list
@@ -73,7 +70,6 @@ export const CAPABILITY_LABELS: Record<string, [string, string]> = Object.freeze
 function asDict(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
 }
-
 function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
@@ -223,102 +219,4 @@ export function resolveSurfaceCapabilities(
             : text('capability_hint_unavailable', '当前状态下该操作不可用'),
       };
     });
-}
-
-export type CollectionImportSummary = {
-  fileName: string;
-  rowCount: number;
-  mappedFieldCount: number;
-};
-
-/** Open the platform file picker; returns null when the user cancels. */
-export function pickImportFile(accept = '.csv,.xls,.xlsx,.ods'): Promise<File | null> {
-  if (typeof document === 'undefined') return Promise.resolve(null);
-  return new Promise((resolve) => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = accept;
-    input.style.display = 'none';
-    input.addEventListener('change', () => {
-      const file = input.files && input.files[0] ? input.files[0] : null;
-      input.remove();
-      resolve(file);
-    });
-    input.addEventListener('cancel', () => {
-      input.remove();
-      resolve(null);
-    });
-    document.body.appendChild(input);
-    input.click();
-  });
-}
-
-function importMessage(summary: ApiDataImportContract, limit = 3): string {
-  const messages = Array.isArray(summary?.messages) ? summary.messages : [];
-  return messages
-    .slice(0, limit)
-    .map((row) => String(row?.message || '').trim())
-    .filter(Boolean)
-    .join('；');
-}
-
-/**
- * The declared collection-scope import: read the file, let the backend kernel
- * match columns to fields and validate every row without writing, confirm with
- * the user, then execute the same mapping once.
- */
-export async function executeActionViewCollectionImport(options: {
-  model: string;
-  file: File;
-  context: Record<string, unknown>;
-  idempotencyKey: string;
-  text: (key: string, fallback: string) => string;
-  setBusy: (busy: boolean) => void;
-  confirm: (summary: CollectionImportSummary) => Promise<boolean>;
-  onSuccess: (result: ApiDataImportContract) => void | Promise<void>;
-  onFailure: (message: string) => void;
-}): Promise<void> {
-  options.setBusy(true);
-  try {
-    const { data: fileBase64, mimetype } = await fileToBase64(options.file);
-    const request = {
-      model: options.model,
-      fileName: options.file.name,
-      fileBase64,
-      fileType: mimetype,
-      context: options.context,
-      idempotencyKey: options.idempotencyKey,
-    };
-    const preview = await importActionViewRecords({ ...request, dryRun: true });
-    if (Number(preview?.error_count || 0) > 0) {
-      const detail = importMessage(preview);
-      options.onFailure(
-        detail
-          ? options.text('collection_msg_import_invalid', `导入预校验未通过：${detail}`)
-          : options.text('collection_msg_import_invalid_plain', '导入预校验未通过，请检查文件内容'),
-      );
-      return;
-    }
-    const mapping = Array.isArray(preview?.mapping) ? preview.mapping : [];
-    const summary: CollectionImportSummary = {
-      fileName: options.file.name,
-      rowCount: Number(preview?.file_length || 0),
-      mappedFieldCount: mapping.filter(Boolean).length,
-    };
-    if (!await options.confirm(summary)) return;
-    const result = await importActionViewRecords({
-      ...request,
-      fields: mapping,
-      columns: Array.isArray(preview?.headers) ? preview.headers : [],
-      dryRun: false,
-    });
-    await options.onSuccess(result);
-  } catch (err) {
-    const message = err instanceof Error && err.message
-      ? err.message
-      : options.text('collection_msg_import_failed', '导入失败，请稍后重试');
-    options.onFailure(message);
-  } finally {
-    options.setBusy(false);
-  }
 }

@@ -11,6 +11,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import quote
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
@@ -18,27 +19,31 @@ from scripts.ops import agent_run_context as runs
 from scripts.verify import acceptance_evolution_binding_guard as binding
 
 
-def pr_identity(pr: str, expected: str) -> dict:
+def pr_identity(pr: str, expected: str, expected_base: str = 'main') -> dict:
     if not pr.isdigit() or not binding.SHA_RE.fullmatch(expected):
         raise binding.BindingError('PR must be numeric; EXPECTED_HEAD must be a full 40-character SHA')
+    expected_base = str(expected_base or '').strip()
+    if not expected_base:
+        raise binding.BindingError('expected PR base must be non-empty')
     command = ['gh', 'pr', 'view', pr, '--json',
                'number,state,isCrossRepository,headRefOid,baseRefOid,baseRefName,url']
     result = subprocess.run(command, cwd=ROOT, text=True, capture_output=True, check=True)
     data = json.loads(result.stdout)
     if (data.get('state') != 'OPEN' or data.get('isCrossRepository') is not False
-            or data.get('baseRefName') != 'main' or data.get('headRefOid') != expected
+            or data.get('baseRefName') != expected_base or data.get('headRefOid') != expected
             or str(data.get('number')) != pr
             or not binding.SHA_RE.fullmatch(str(data.get('baseRefOid', '')))):
-        raise binding.BindingError('PR identity is not the expected open same-repository main candidate: '
-                                   f'expected_head={expected} actual_head={data.get("headRefOid")}')
+        raise binding.BindingError('PR identity is not the expected open same-repository candidate: '
+                                   f'expected_head={expected} actual_head={data.get("headRefOid")} '
+                                   f'expected_base={expected_base} actual_base={data.get("baseRefName")}')
     # GitHub can still report the PR's previous base while main has advanced.
     # Resolve the target ref independently before accepting its evidence scope.
-    live = subprocess.run(['gh', 'api', 'repos/{owner}/{repo}/git/ref/heads/main',
+    live = subprocess.run(['gh', 'api', f'repos/{{owner}}/{{repo}}/git/ref/heads/{quote(expected_base, safe="")}',
                            '--jq', '.object.sha'], cwd=ROOT, text=True,
                           capture_output=True, check=True).stdout.strip()
     if not binding.SHA_RE.fullmatch(live) or live != data['baseRefOid']:
-        raise binding.BindingError('live main differs from PR base; synchronize and revalidate: '
-                                   f'pr_base={data["baseRefOid"]} live_main={live}')
+        raise binding.BindingError('live target differs from PR base; synchronize and revalidate: '
+                                   f'pr_base={data["baseRefOid"]} live_target={live}')
     if runs.git(ROOT, 'rev-parse', 'HEAD') != expected:
         raise binding.BindingError('local head does not match PR head')
     return data
@@ -109,6 +114,7 @@ def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--pr')
     parser.add_argument('--expected-head')
+    parser.add_argument('--expected-base', default='main')
     parser.add_argument('--base')
     parser.add_argument('--stage', choices=['all', 'merge', 'deployment'], default='all')
     parser.add_argument('--manifest', type=Path, default=ROOT / '.runtime/acceptance-evolution/evidence.v1.json')
@@ -119,7 +125,7 @@ def main(argv=None) -> int:
     try:
         if args.pr and args.stage not in {'all', 'merge'}:
             raise binding.BindingError('PR preflight always evaluates the merge stage')
-        identity = pr_identity(args.pr, args.expected_head or '') if args.pr else None
+        identity = pr_identity(args.pr, args.expected_head or '', args.expected_base) if args.pr else None
         if args.verify_pr_identity:
             previous = json.loads(args.output.read_text())
             if not identity or previous.get('pr_identity') != identity:
