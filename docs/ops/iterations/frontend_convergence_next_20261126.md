@@ -636,6 +636,27 @@ PR #1019 当前更新到 `37b836c96bf2deb3aad20b1d333aac4c86477dec`。远端集�
 PR #1019 已更新到 `298ff9e26146ed11ba62c6d6fa0e1abb004b6095`。远端集成、浏览器
 矩阵、部署和用户验收仍未在本轮宣称完成。
 
+### 2026-11-27 FC-01 收藏 schema 身份收口
+
+继续清除收藏字段的名称推断：
+
+- `buildNativeFieldSchemas` 与 canonical/native schema 装饰只认声明为
+  `boolean_favorite` 的控件；
+- 字段名为 `is_favorite` 但控件声明为普通 checkbox 时，仍按普通布尔字段处理；
+- 声明为 `boolean_favorite` 的字段仍正常从正文提取并装饰到文本标题；
+- 该切片不新增契约绑定，继续使用既有的原生身份与字段描述符绑定。
+
+本地组合门禁执行 27 个目标、复用 21 个，16 个测试目标执行 666 项测试、
+6 项静态检查，`unmapped_paths=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T044806Z-3471019-884606900/receipt.json`
+
+回执 SHA256：
+`fc82d0c9d52e7dc97546736fc9f080f2a55309bdff4169d77a56689269d7fecb`。
+
+PR #1019 当前更新到 `6286e216b868a8fe93af4ae8e750f22aa0315052`。远端集成、
+浏览器矩阵、部署和用户验收仍未在本轮宣称完成。
+
 ### 2026-11-27 FC-01 ActionView 列表列字段语义单一权威
 
 继续核对列表列投影时确认，字段描述符已提供类型、控件、组件身份、币种字段、精度、

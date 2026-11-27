@@ -237,6 +237,18 @@
     "local_receipt_sha256": "5327ff8b553c820198d5232bd782f490942dcbc77b834fc3a19ce67fd3f88e0c",
     "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
   },
+  "fc01_declared_favorite_schema_identity": {
+    "status": "local_targeted_passed",
+    "head": "6286e216b868a8fe93af4ae8e750f22aa0315052",
+    "facts_verified": [
+      "favorite title decoration and native schema extraction require a declared boolean_favorite widget",
+      "the is_favorite field name alone cannot activate favorite behavior",
+      "declared boolean_favorite fields continue to decorate the textual title"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T044806Z-3471019-884606900/receipt.json",
+    "local_receipt_sha256": "fc82d0c9d52e7dc97546736fc9f080f2a55309bdff4169d77a56689269d7fecb",
+    "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
+  },
   "post_slice_iteration_attempt": {
     "status": "failed_validation_tool",
     "head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
@@ -250,7 +262,7 @@
     "pull_request": 1019,
     "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
     "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
-    "current_head": "298ff9e26146ed11ba62c6d6fa0e1abb004b6095",
+    "current_head": "6286e216b868a8fe93af4ae8e750f22aa0315052",
     "coverage_limit": "Publication only. Remote CI and integration qualification are deferred by owner direction."
   },
   "not_a_product_acceptance_receipt": true,

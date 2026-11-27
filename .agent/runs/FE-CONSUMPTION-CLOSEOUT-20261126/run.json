@@ -523,7 +523,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head 298ff9e2, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head 6286e216, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1738,6 +1738,25 @@
       ],
       "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
     },
+    "fc01_declared_favorite_schema_identity": {
+      "status": "passed_local_targeted",
+      "head": "6286e216b868a8fe93af4ae8e750f22aa0315052",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T044806Z-3471019-884606900/receipt.json",
+      "receipt_sha256": "fc82d0c9d52e7dc97546736fc9f080f2a55309bdff4169d77a56689269d7fecb",
+      "executed_targets": 27,
+      "reused_targets": 21,
+      "test_targets": 16,
+      "executed_test_count": 666,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "favorite title decoration and native schema extraction require the declared boolean_favorite widget",
+        "the is_favorite field name no longer activates favorite behavior",
+        "a field named is_favorite but declared as checkbox remains an ordinary field",
+        "declared boolean_favorite fields still decorate the textual title"
+      ],
+      "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
+    },
     "post_slice_iteration_attempt": {
       "status": "failed",
       "classification": "validation_tool_defect",
@@ -1756,7 +1775,7 @@
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "298ff9e26146ed11ba62c6d6fa0e1abb004b6095",
+      "current_head": "6286e216b868a8fe93af4ae8e750f22aa0315052",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",

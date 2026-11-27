@@ -4,7 +4,7 @@ goal:
   title: 基于当前前端事实的契约消费、办理与稳定性收敛
   status: active
   implementation_authorized: true
-  execution_status: fc_00_completed_fc_01_declared_assignee_options_validated_on_pr_1019
+  execution_status: fc_00_completed_fc_01_favorite_schema_identity_validated_on_pr_1019
   planning_analysis: readonly_source_assessment_completed
   plan: docs/ops/iterations/frontend_convergence_next_20261126.md
   reference_candidate: e62a4b5dcdf726b3c15292cddde185925b0d5725
@@ -129,7 +129,7 @@ goal:
   - current_head_integration_and_resulting_main_qualification_are_separate
   current_turn_validation:
     document_structure: passed
-    product_tests: declared_assignee_options_affected_targets_passed
+    product_tests: favorite_schema_identity_affected_targets_passed
     contract_basis: passed_38_bindings_zero_open_defects
     browser: affected_component_runtime_observed_full_journey_not_run
     database: clean_runtime_identity_passed_no_module_or_business_data_mutation
@@ -140,7 +140,7 @@ goal:
   - full_industry_business_acceptance_without_separate_scope
   - changing_existing_ci_candidate_or_merging_it
   - publishing_or_committing_this_plan_in_this_turn
-  next_exact_step: Continue FC-01 from PR number 1019 head 298ff9e2
+  next_exact_step: Continue FC-01 from PR number 1019 head 6286e216
     into the next confirmed frontend-only declaration consumer or stop behavior.
     Do not modify backend code in this topic; report any newly confirmed producer gap separately
     for owner review.
