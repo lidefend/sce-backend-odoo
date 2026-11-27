@@ -1,0 +1,75 @@
+{
+  "schema_version": 2,
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "P4 workflow event routing and real shell regression only; no product/database changes."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "New exact R2-A PR HEAD required checks; no old SHA substitution."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "R3 separately after repair review and protected merge; no dispatch or deployment in R2-A."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Frontend validation carrying shared contract targets must consume the passed backend channel receipt for the same run and source identity."
+    }
+  },
+  "id": "MAIN-PUSH-HISTORY-SCOPE-20261127",
+  "branch": "fix/main-push-history-scope-20261127",
+  "baseline_sha": "9395d93f92badffc87d32c5979cf7c70e374e975",
+  "status": "verification_pending",
+  "goal": ".agent/goals/MAIN-PUSH-HISTORY-SCOPE-20261127.yaml",
+  "record": "docs/ops/iterations/main_push_history_scope_20261127.md",
+  "scope": [
+    ".github/workflows/public_guard.yml",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    ".agent/active-runs.json",
+    ".agent/runs/MAIN-PUSH-HISTORY-SCOPE-20261127/run.json",
+    ".agent/goals/MAIN-PUSH-HISTORY-SCOPE-20261127.yaml",
+    "docs/ops/iterations/main_push_history_scope_20261127.md",
+    "docs/engineering_convergence/complexity_budget_report.md"
+  ],
+  "checks": {
+    "workflow": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/public_guard.yml",
+        "scripts/ci/test_ci_risk_workflow_contract.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run affected local verification against updated main; push new exact candidate, verify required CI, merge and read back post-merge CI.",
+  "authorization": "Owner authorized latest main synchronization, renewed verification and protected merge after new exact-head required CI passes; no deployment.",
+  "local_evidence": {
+    "receipt": ".runtime/frontend-dev-validation/executions/20261127T071432Z-770191-804352837/receipt.json",
+    "status": "passed",
+    "executed": 4,
+    "workflow_tests": 36,
+    "history_tests": 42,
+    "before_regression": "failed: 3 failures, 36 tests",
+    "logs": {
+      ".runtime/main-push-history/workflow.log": "4e61b9c21e04f800ae7f5e8ba7d3add5ce51b2e35e2445a57a4d8e9fec7f8bc4",
+      ".runtime/main-push-history/local.log": "6e054cf1a60e609738f7adfcf63e6a6192927b294ad55563c4da68fdb04c0b5d",
+      ".runtime/main-push-history/before.log": "05a45e41b9cca334f48b36ac4588edb85af2710616f15fbc65e2940b322c62a2",
+      ".runtime/main-push-history/history-unit.log": "f38f8084ff5a200d53bd3e07f664fee463d6402fe054af90e77c838959fdccfc"
+    },
+    "freeze": "passed: .runtime/main-push-history/freeze.log"
+  },
+  "pr": 1027
+}

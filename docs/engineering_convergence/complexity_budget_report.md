@@ -137,9 +137,9 @@ Generated from repository source files. This report is informational during the 
 | 1275 | Python source | `scripts/audit/native_scene_inventory.py` |
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1267 | Python source | `scripts/verify/local_dev_runtime_performance.py` |
+| 1265 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1245 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
-| 1244 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 1236 | Python source | `scripts/ops/test_safe_branch_sync_main.py` |
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |

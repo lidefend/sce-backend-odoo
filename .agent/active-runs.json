@@ -185,6 +185,7 @@
     "feature/auth-02-enterprise-roles-20261126": ".agent/runs/AUTH-02-ENTERPRISE-ROLES-20261126/run.json",
     "fix/main-navigation-batch-projection-20261127": ".agent/runs/MAIN-CI-CLOSEOUT-20261126/run.json",
     "fix/contract-polymorphic-reference-01-20261127": ".agent/runs/CONTRACT-POLYMORPHIC-REFERENCE-01/run.json",
-    "fix/verify-system-closeout-01-r2a-clean-20261127": ".agent/runs/VERIFY-SYSTEM-CLOSEOUT-01-R2A/run.json"
+    "fix/verify-system-closeout-01-r2a-clean-20261127": ".agent/runs/VERIFY-SYSTEM-CLOSEOUT-01-R2A/run.json",
+    "fix/main-push-history-scope-20261127": ".agent/runs/MAIN-PUSH-HISTORY-SCOPE-20261127/run.json"
   }
 }
