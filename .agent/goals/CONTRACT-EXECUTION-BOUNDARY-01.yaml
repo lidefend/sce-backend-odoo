@@ -1,0 +1,9 @@
+schema_version: 1
+goal:
+  id: CONTRACT-EXECUTION-BOUNDARY-01
+  status: planned
+  title: Contract execution boundary architecture decision
+  objective: Audit current execution authority and prepare a decision draft before any offline implementation.
+  formal_product_layer: P0
+  layer_target: standard contract interpretation and execution boundaries
+  module: [smart_core, frontend]
