@@ -4,8 +4,8 @@
   "status": "active",
   "branch": "fix/fe-consumption-closeout-20261126",
   "branch_state": "remote_pr_open_fc01_active_main_synced_relation_contract",
-  "baseline_sha": "9395d93f92badffc87d32c5979cf7c70e374e975",
-  "baseline_state": "latest_main_includes_relation_active_actions_contract_release_qualification_not_run",
+  "baseline_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
+  "baseline_state": "latest_main_includes_relation_active_actions_contract_and_exact_push_history_scan_release_qualification_not_run",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/frontend_convergence_next_20261126.md",
   "current_batch": "FC-00 formal universe plus FC-01 semantic, selection and boundary closure",
@@ -1941,6 +1941,30 @@
         "the merged candidate retains native import lifecycle closure on top of the current mainline"
       ],
       "coverage_limit": "This proves the local merge candidate only. Remote exact-head CI, the 143-entry browser matrix, role/company journeys and FC-06 remain not_run."
+    },
+    "mainline_exact_push_history_scan_sync": {
+      "status": "merged_for_remote_validation",
+      "previous_candidate_head": "c898fa5b9ccad72c76aca51fa17fc107d3b12b8b",
+      "mainline_head": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
+      "merge_candidate_head": "caedddcb5d96d8fd7e523a9a903659c3355176cf",
+      "source_pr": 1027,
+      "recovery_bundle": "/home/lidefend/workspace/sce-backend-odoo/.git/codex/recovery/published-sync-c898fa5b9ccad72c76aca51fa17fc107d3b12b8b-0d17e91e7190e1a293e4e6ac969c39738a87218f.bundle",
+      "bundle_sha256": "3fcf99305ea5f385565e0388af275e4e126d665ff0680c09acd22c477f8f1a4e",
+      "method": "governed published-branch synchronization with no conflicts",
+      "local_validation": {
+        "status": "passed",
+        "command": "make ci.local.iteration",
+        "receipt": ".runtime/frontend-dev-validation/executions/20261127T081119Z-1353706-339419064/receipt.json",
+        "receipt_sha256": "a45df157014793a73058d98ef37b5b4eb43b78df87939c61e962de6cdd88d369",
+        "executed_targets": 61,
+        "test_targets": 43,
+        "executed_test_count": 1512,
+        "static_checks": 11,
+        "unmapped_paths": 0,
+        "not_run_targets": 0,
+        "blocked_targets": 0
+      },
+      "coverage_limit": "This synchronization changes the candidate base and CI scan authority only; remote exact-head checks remain required."
     },
     "mainline_merge_local_iteration": {
       "status": "passed",
