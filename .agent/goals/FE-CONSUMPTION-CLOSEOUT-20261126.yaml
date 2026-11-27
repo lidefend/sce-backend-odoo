@@ -140,7 +140,7 @@ goal:
   - full_industry_business_acceptance_without_separate_scope
   - changing_existing_ci_candidate_or_merging_it
   - publishing_or_committing_this_plan_in_this_turn
-  next_exact_step: Continue FC-01 from PR number 1019 head 37b836c9
+  next_exact_step: Continue FC-01 from PR number 1019 head 37b836c96bf2deb3aad20b1d333aac4c86477dec
     into the next confirmed frontend-only declaration consumer or stop behavior.
     Do not modify backend code in this topic; report any newly confirmed producer gap separately
     for owner review.

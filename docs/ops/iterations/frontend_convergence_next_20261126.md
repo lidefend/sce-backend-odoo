@@ -606,6 +606,12 @@ clean 运行态回读：
 - `.runtime/frontend-dev-validation/executions/20261127T042643Z-3265132-295910211/receipt.json`
   SHA256 `ff676a47115310dc2759295244a01956822b104c074b9d303e3ef8faf0e6a06a`
 
+随后对完整 HEAD `37b836c96bf2deb3aad20b1d333aac4c86477dec` 重新运行
+`make ci.local.iteration`，依赖的 `verify.contract.polymorphic_reference.integration`
+在 Odoo 已报告 `2 tests, 0 failed, 0 errors` 且进程退出 0 的情况下，被本地测试回执记为
+`count=0/status=failed`，因此外层非零并 fail-fast。该项归类为 P4 验证工具缺陷；本次没有
+为它修改产品代码，后续前端目标在该次尝试中为 `not_run`，不冒充通过。
+
 PR #1019 当前更新到 `37b836c96bf2deb3aad20b1d333aac4c86477dec`。远端集成、浏览器
 矩阵、部署和用户验收仍不属于当前本地迭代结论。
 

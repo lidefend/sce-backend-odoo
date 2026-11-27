@@ -222,7 +222,15 @@
     ],
     "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T042643Z-3265132-295910211/receipt.json",
     "local_receipt_sha256": "ff676a47115310dc2759295244a01956822b104c074b9d303e3ef8faf0e6a06a",
-    "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
+    "coverage_limit": "Affected-target validation only; schema-decoration consumers still have an is_favorite name fallback pending the next slice. Remote integration and browser acceptance remain not_run."
+  },
+  "post_slice_iteration_attempt": {
+    "status": "failed_validation_tool",
+    "head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
+    "receipt": ".runtime/frontend-dev-validation/executions/20261127T043326Z-3324183-733744410/receipt.json",
+    "classification": "validation_tool_defect",
+    "observed": "the dependent ORM wrapper exited nonzero with count=0/status=failed while its Odoo log reports 2 tests, 0 failed, 0 errors and process_status=0",
+    "coverage_limit": "Fail-fast stopped the frontend targets in this attempt; not product success evidence."
   },
   "remote_publication": {
     "status": "draft_pr_open_checks_not_awaited",

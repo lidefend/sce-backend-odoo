@@ -106,7 +106,7 @@
     "fixture": false,
     "frontend_build_fingerprint": "8dd6497bf847a5b3486c2c801a3b083cf024755a9fe61b044dbdb7fd6e663f84",
     "health": "passed",
-    "health_note": "The last clean runtime readback is exact candidate e26341a03. Later commits b3cbe05f and 3fbfdaa3 are locally target-validated and published on PR #1019; their clean runtime rerun is deferred to the integration phase per owner direction.",
+    "health_note": "The last clean runtime readback is exact candidate e26341a037f85c338acba2750006f816d41004a4. Later commits b3cbe05f67c8b7c7a829cdd197829cc2405e68e3 and 3fbfdaa3fd3eb3453b5ae0e283181404bbc31399 are locally target-validated and published on PR #1019; their clean runtime rerun is deferred to the integration phase per owner direction.",
     "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-frontend-build.log",
     "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-up.log",
     "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-health.log",
@@ -521,7 +521,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head 37b836c9, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head 37b836c96bf2deb3aad20b1d333aac4c86477dec, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1611,7 +1611,7 @@
     "fc01_native_form_field_semantics": {
       "status": "passed_local_targeted",
       "base_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "product_commit": "b3cbe05f6",
+      "product_commit": "b3cbe05f67c8b7c7a829cdd197829cc2405e68e3",
       "governance_commit": "3b8ee1bc1010a6e25b14808c5de7f31a32d88622",
       "receipt": ".runtime/frontend-dev-validation/executions/20261127T035709Z-3035874-670527603/receipt.json",
       "receipt_sha256": "8f8aca7c3159a7135f819d4a687608b75481dee10a65f48a9feea589339f93e3",
@@ -1636,7 +1636,7 @@
     "fc01_attachment_navigation_semantics": {
       "status": "passed_local_targeted",
       "base_head": "3b8ee1bc1010a6e25b14808c5de7f31a32d88622",
-      "product_commit": "3fbfdaa3f",
+      "product_commit": "3fbfdaa3fd3eb3453b5ae0e283181404bbc31399",
       "governance_commit": "a134da7dde1315e4854e039f2a7593c1d5857df2",
       "receipt": ".runtime/frontend-dev-validation/executions/20261127T040338Z-3087960-992769241/receipt.json",
       "receipt_sha256": "5117921667aa07d728f28b1adf1a88de6c9fa55d71668bde310fd6a7e6316430",
@@ -1662,8 +1662,8 @@
       "status": "passed_local_targeted",
       "base_head": "6f78e4840a8bb2a615e04b0b185daac7cbc7b647",
       "product_commits": [
-        "0e91be9c7",
-        "c2433e386"
+        "0e91be9c740fd1eafb1d3529107cabe75ab43edd",
+        "c2433e38612e43400ea32ac3fece71d12d2e82f8"
       ],
       "governance_heads": [
         "e0edd6fbc19b9dc727476528ccc354015723272a",
@@ -1703,13 +1703,26 @@
       "facts_verified": [
         "favorite-field persistence is selected only by the declared boolean_favorite native widget",
         "Chinese label text cannot turn a checkbox into a favorite field",
-        "componentConfig cannot introduce favorite behavior",
-        "an is_favorite field name alone no longer acts as a frontend semantic fallback"
+        "componentConfig cannot introduce favorite persistence behavior",
+        "an is_favorite field name alone no longer enters the favorite persistence field set"
       ],
       "failure_recovery": [
-        "the first implementation retained the is_favorite field-name fallback; the counterexample showed it was still a second authority, so the fallback was removed before validation"
+        "the first persistence implementation retained the is_favorite field-name fallback; the counterexample showed it was still a second authority, so that persistence fallback was removed before validation",
+        "the follow-up inspection found the same name fallback in two schema-decoration consumers; that is a separate next slice and is not claimed closed here"
       ],
       "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
+    },
+    "post_slice_iteration_attempt": {
+      "status": "failed",
+      "classification": "validation_tool_defect",
+      "head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T043326Z-3324183-733744410/receipt.json",
+      "local_test_receipt": ".runtime/test-baseline/1795754016564147568/receipt.json",
+      "odoo_log": ".runtime/test-baseline/1795754016564147568/odoo.log",
+      "root_cause": "verify.contract.polymorphic_reference.integration exited nonzero because the local-test receipt persisted count=0 and status=failed although odoo.log reports 2 tests, 0 failed, 0 errors and the test process exited 0",
+      "coverage_effect": "Dependent frontend targets were not run in this attempt and the prior exact-head affected-target receipt remains the only product-test evidence for this head",
+      "repair_owner": "P4 local-test evidence parser; no product source change was made for this failure"
     },
     "remote_publication": {
       "status": "draft_open_checks_not_awaited",
