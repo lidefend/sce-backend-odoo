@@ -492,6 +492,20 @@
       "regressionGuard": "verify.frontend.canonical_form_presenter.unit",
       "behaviourTest": "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
       "stopDetail": "The canonical-to-native form bridge projects technical and surfaceRole only from fieldDescriptor. componentConfig cannot hide a non-technical field or revive a technical one. Normalized status remains the authority for effective visibility; the bridge continues to stop with ContractGapError for conflicting feedback ownership."
+    },
+    {
+      "surface": "Record-form schema field widget identity",
+      "declared": "fieldDescriptor.widgetType",
+      "declaredBy": "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+      "declaredMethod": "decodeContractV2FieldDescriptor",
+      "declaredSymbol": "componentKey: SEMANTIC_COMPONENT_REGISTRY[semanticType] || ''",
+      "consumedBy": "frontend/apps/web/src/pages/contractForm/useRecordFormFieldSchemas.ts",
+      "consumedSymbol": "function resolveRecordFormFieldWidget(",
+      "onMissing": "stop",
+      "stopSymbol": "contractGapError",
+      "regressionGuard": "verify.frontend.contract_v2_occurrence_authority.unit",
+      "behaviourTest": "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
+      "stopDetail": "Record-form schema generation consumes widgetType from the normalized field descriptor; a layout node's componentConfig.nativeWidget cannot supply or override that identity. A visible native occurrence without a strict descriptor already stops with ContractGapError."
     }
   ],
   "registeredMechanismExemptions": [
