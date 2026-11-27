@@ -90,6 +90,10 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("monetary precision still falls back to currency-code metadata")
     if "const scale = resolveMonetaryScale(digits);" not in authority:
         failures.append("monetary helpers do not validate declared digits through the shared scale authority")
+    if "if (scale === undefined) return 'any';" not in authority:
+        failures.append("monetary input without a declared precision invents a frontend step")
+    if "if (scale === undefined) {" not in authority:
+        failures.append("monetary value without a declared precision does not preserve the unrounded value")
     if "field.(float).digits" not in field_semantics:
         failures.append("generic float formatting does not require declared digits")
     if "const text = String(row.display_name || row.label || row.name || '').trim();" in authority:

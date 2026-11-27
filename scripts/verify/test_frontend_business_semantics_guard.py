@@ -188,13 +188,25 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         failures = guard.validate(lambda path: source(
             path,
             (
-                "return declaredDigits[1];",
+                "return declaredDigits?.[1];",
                 "return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).resolvedOptions().maximumFractionDigits;",
             )
             if path == guard.AUTHORITY
             else None,
         ))
         self.assertTrue(any("currency-code metadata" in failure for failure in failures))
+
+    def test_missing_current_currency_precision_disables_frontend_step(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "if (scale === undefined) return 'any';",
+                "",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("invents a frontend step" in failure for failure in failures))
 
     def test_declared_unit_consumption_drop_fails(self):
         failures = guard.validate(lambda path: source(

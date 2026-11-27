@@ -346,9 +346,13 @@ assert.match(activityCellText(12.5, {
   key: 'amount', name: 'x_amount', label: 'Amount', widget: 'monetary', nativeLocator: 'activity/field[name=x_amount]',
   occurrenceIndex: 1, attributes: {}, decorations: [], fieldType: 'monetary', currencyField: 'company_currency_id', digits: [16, 2],
 }, { company_currency_id: [1, 'USD'] }), /12\.50/);
-assert.throws(() => activityCellText(12.5, {
+assert.equal(activityCellText(12.5, {
   key: 'amount', name: 'x_amount', label: 'Amount', widget: 'monetary', nativeLocator: 'activity/field[name=x_amount]',
   occurrenceIndex: 1, attributes: {}, decorations: [], fieldType: 'monetary', currencyField: 'company_currency_id',
+}, { company_currency_id: [1, 'USD'] }), '12.5 USD');
+assert.throws(() => activityCellText(12.5, {
+  key: 'amount', name: 'x_amount', label: 'Amount', widget: 'monetary', nativeLocator: 'activity/field[name=x_amount]',
+  occurrenceIndex: 1, attributes: {}, decorations: [], fieldType: 'monetary', currencyField: 'company_currency_id', digits: [16, 25],
 }, { company_currency_id: [1, 'USD'] }), { name: 'ContractGapError' });
 assert.equal(activityCellText('2026-09-09T00:00:00Z', {
   key: 'at', name: 'x_at', label: 'At', widget: 'datetime', nativeLocator: 'activity/field[name=x_at]',

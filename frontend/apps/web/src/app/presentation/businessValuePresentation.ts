@@ -100,20 +100,21 @@ export function resolveCurrencyDisplayLabel(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-export function resolveMonetaryScale(digits?: [number, number]): number {
+export function resolveMonetaryScale(digits?: [number, number]): number | undefined {
   const declaredDigits = normalizeDeclaredDigits(digits);
-  if (!declaredDigits) {
+  if (digits !== undefined && !declaredDigits) {
     throw contractGapError({
       kind: 'contract_defect',
       missing: 'field.(monetary).digits',
-      requiredDeclarationLayer: 'P0:smart_core:field_descriptor_digits_projection',
-    }, '金额字段缺少契约声明精度 digits');
+      requiredDeclarationLayer: 'P0:frontend:business_value_presentation',
+    }, '金额字段声明了非法精度 digits');
   }
-  return declaredDigits[1];
+  return declaredDigits?.[1];
 }
 
 export function monetaryInputStep(digits?: [number, number]): string {
   const scale = resolveMonetaryScale(digits);
+  if (scale === undefined) return 'any';
   return scale === 0 ? '1' : `0.${'0'.repeat(Math.max(0, scale - 1))}1`;
 }
 
@@ -121,10 +122,11 @@ export function formatMonetaryInputValue(
   value: unknown,
   digits?: [number, number],
 ): string | number {
-  const scale = resolveMonetaryScale(digits);
   if (value === null || value === undefined || value === '') return '';
+  const scale = resolveMonetaryScale(digits);
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return String(value);
+  if (scale === undefined) return String(value);
   return numeric.toFixed(scale);
 }
 
@@ -135,10 +137,14 @@ export function formatMonetaryDisplayValue(
   locale = 'zh-CN',
   emptyText = FIELD_VALUE_EMPTY_TEXT,
 ): string {
-  const scale = resolveMonetaryScale(digits);
   if (value === null || value === undefined || value === false || value === '') return emptyText;
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return emptyText;
+  const scale = resolveMonetaryScale(digits);
+  if (scale === undefined) {
+    const text = String(value);
+    return currencyLabel ? `${text} ${currencyLabel}` : text;
+  }
   const options: Intl.NumberFormatOptions = {
     minimumFractionDigits: scale,
     maximumFractionDigits: scale,
@@ -538,9 +544,11 @@ export function presentDeclaredBusinessValue(input: {
   const temporal = kind === 'date' || kind === 'datetime'
     ? resolveDeclaredTemporal(input.field, kind)
     : null;
-  const declaredDigits = (kind === 'money' || kind === 'percentage' || kind === 'duration')
+  const declaredDigits = kind === 'percentage' || kind === 'duration'
     ? requireDeclaredBusinessDigits(input.field, kind)
-    : undefined;
+    : kind === 'money'
+      ? normalizeDeclaredDigits(input.field.digits)
+      : undefined;
   const declaredUnit = kind === 'percentage' || kind === 'duration'
     ? requireDeclaredBusinessUnit(input.field, kind)
     : undefined;

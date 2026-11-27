@@ -151,34 +151,50 @@ assert.throws(
   { name: 'ContractGapError' },
   'declared percentages cannot use a frontend precision fallback',
 );
-assert.throws(
-  () => presentDeclaredBusinessValue({
-    field: {
-      name: 'undeclared_money',
-      type: 'monetary',
-      componentKey: 'sc.value.money',
-      currencyField: 'currency_id',
-    },
-    value: 12.5,
+const moneyWithoutObservedPrecision = {
+  name: 'undeclared_money',
+  type: 'monetary',
+  componentKey: 'sc.value.money',
+  currencyField: 'currency_id',
+};
+assert.deepEqual(presentDeclaredBusinessValue({
+  field: moneyWithoutObservedPrecision,
+  value: 12.5,
+  currencyLabel: 'CNY',
+}), {
+  kind: 'money',
+  text: '12.5 CNY',
+  tone: 'neutral',
+  badgeSemantic: 'default',
+});
+assert.equal(
+  presentDeclaredBusinessValue({
+    field: moneyWithoutObservedPrecision,
+    value: '',
     currencyLabel: 'CNY',
-  }),
-  { name: 'ContractGapError' },
-  'currency code cannot substitute for missing money precision',
+  }).kind,
+  'empty',
+  'an unvalued create field needs no current-record currency precision',
+);
+assert.equal(
+  formatMonetaryDisplayValue(12.5, undefined, 'CNY'),
+  '12.5 CNY',
+  'money without an observed precision is displayed without inventing decimals',
+);
+assert.equal(
+  formatMonetaryInputValue(12.5, undefined),
+  '12.5',
+  'money input without an observed precision preserves the entered value',
+);
+assert.equal(
+  monetaryInputStep(undefined),
+  'any',
+  'money input without an observed precision imposes no frontend step',
 );
 assert.throws(
-  () => formatMonetaryDisplayValue(12.5, undefined, 'CNY'),
+  () => formatMonetaryDisplayValue(12.5, [16, 25] as [number, number], 'CNY'),
   { name: 'ContractGapError' },
-  'direct monetary display consumers cannot infer precision from the currency code',
-);
-assert.throws(
-  () => formatMonetaryInputValue(12.5, undefined),
-  { name: 'ContractGapError' },
-  'monetary input formatting cannot infer precision from the currency code',
-);
-assert.throws(
-  () => monetaryInputStep(undefined),
-  { name: 'ContractGapError' },
-  'monetary input step cannot infer precision from the currency code',
+  'a malformed declared money precision still fails closed',
 );
 assert.equal(presentDeclaredBusinessValue({
   field: { name: 'declared_quantity', type: 'float', componentKey: 'sc.input.number', digits: [16, 6] },
