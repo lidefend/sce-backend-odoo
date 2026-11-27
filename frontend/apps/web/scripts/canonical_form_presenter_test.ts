@@ -618,6 +618,18 @@ function collectFields(nodes: ReturnType<typeof presentContractV2Form>['zones'][
   return nodes.flatMap((node): typeof node.fields => [...node.fields, ...collectFields(node.children)]);
 }
 
+function findNativeFieldNode(
+  nodes: ReturnType<typeof buildCanonicalNativeFormBridge>['primaryNodes'],
+  name: string,
+): ReturnType<typeof buildCanonicalNativeFormBridge>['primaryNodes'][number] | undefined {
+  for (const node of nodes) {
+    if (node.type === 'field' && node.name === name) return node;
+    const nested = findNativeFieldNode(node.children || [], name);
+    if (nested) return nested;
+  }
+  return undefined;
+}
+
 function collectTexts(nodes: ReturnType<typeof presentContractV2Form>['zones']['primary']): string[] {
   return nodes.flatMap((node) => [node.text, ...collectTexts(node.children)]).filter(Boolean);
 }
@@ -2225,6 +2237,66 @@ const compatibilityVisibilityModel = structuredClone(nativeVisibilityModel);
 compatibilityVisibilityModel.identity.bodyStructureAuthority = 'compatibility';
 assert.equal(buildCanonicalNativeFormBridge(compatibilityVisibilityModel).nodeVisible(semanticHiddenNode), false,
   'unmigrated compatibility consumers retain their semantic hiding behavior');
+const descriptorTechnicalModel = structuredClone(compatibilityVisibilityModel);
+const descriptorTechnicalField = collectFields([
+  ...descriptorTechnicalModel.zones.primary,
+  ...descriptorTechnicalModel.zones.subordinate,
+])[0]!;
+descriptorTechnicalField.fieldDescriptor = {
+  ...descriptorTechnicalField.fieldDescriptor,
+  technical: true,
+  surfaceRole: 'fact',
+};
+descriptorTechnicalField.componentConfig = {
+  ...descriptorTechnicalField.componentConfig,
+  technical: false,
+  surfaceRole: 'hidden',
+};
+const descriptorTechnicalBridge = buildCanonicalNativeFormBridge(descriptorTechnicalModel);
+const descriptorTechnicalNode = findNativeFieldNode(
+  descriptorTechnicalBridge.primaryNodes,
+  descriptorTechnicalField.fieldCode,
+);
+assert.ok(descriptorTechnicalNode, 'descriptor technical field must project to a native node');
+assert.deepEqual(
+  {
+    technical: descriptorTechnicalNode.attributes?.technical,
+    surfaceRole: descriptorTechnicalNode.attributes?.surfaceRole,
+    visible: descriptorTechnicalBridge.nodeVisible(descriptorTechnicalNode),
+  },
+  { technical: true, surfaceRole: 'fact', visible: false },
+  'native bridge semantic metadata comes from fieldDescriptor, not componentConfig',
+);
+const descriptorSurfaceModel = structuredClone(compatibilityVisibilityModel);
+const descriptorSurfaceField = collectFields([
+  ...descriptorSurfaceModel.zones.primary,
+  ...descriptorSurfaceModel.zones.subordinate,
+])[0]!;
+descriptorSurfaceField.fieldDescriptor = {
+  ...descriptorSurfaceField.fieldDescriptor,
+  technical: false,
+  surfaceRole: 'hidden',
+};
+descriptorSurfaceField.componentConfig = {
+  ...descriptorSurfaceField.componentConfig,
+  technical: true,
+  surfaceRole: 'fact',
+};
+const descriptorSurfaceBridge = buildCanonicalNativeFormBridge(descriptorSurfaceModel);
+const descriptorSurfaceNode = findNativeFieldNode(
+  descriptorSurfaceBridge.primaryNodes,
+  descriptorSurfaceField.fieldCode,
+);
+assert.ok(descriptorSurfaceNode, 'descriptor surface role must project to a native node');
+assert.deepEqual(
+  {
+    technical: descriptorSurfaceNode.attributes?.technical,
+    surfaceRole: descriptorSurfaceNode.attributes?.surfaceRole,
+    visible: descriptorSurfaceBridge.nodeVisible(descriptorSurfaceNode),
+  },
+  { technical: false, surfaceRole: 'hidden', visible: false },
+  'componentConfig cannot override descriptor technical or surface semantics',
+);
 const nativeClaimedVisibilityBridge = buildCanonicalNativeFormBridge(nativeVisibilityModel, undefined, '', 'field_fixture');
 assert.equal(nativeClaimedVisibilityBridge.nodeVisible(semanticHiddenNode), false,
   'native statusbar ownership still prevents duplicate body rendering');

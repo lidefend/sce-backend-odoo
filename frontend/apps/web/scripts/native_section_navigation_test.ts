@@ -343,6 +343,41 @@ assert.deepEqual(
   [{ label: '采购订单', sourceIdentity: 'purchase.table' }],
   'tag and table occurrences of one field must yield one navigation target owned by the richer visible occurrence',
 );
+const componentSubviewOccurrence = relationshipCollectionNavigationItems([node({
+  fields: [
+    field({
+      widgetId: 'transport.subview', fieldCode: 'purchase_order_ids', fieldType: 'many2many',
+      semanticRole: 'relation', label: '传输子视图', componentConfig: { subview: { tree: { columns: ['name'] } } },
+    }),
+    field({
+      widgetId: 'descriptor.subview', fieldCode: 'purchase_order_ids', fieldType: 'many2many',
+      semanticRole: 'relation', label: '描述符子视图',
+      fieldDescriptor: { subview: { tree: { columns: ['display_name'] } } },
+    }),
+  ],
+})]);
+assert.deepEqual(
+  componentSubviewOccurrence.map(({ label, sourceIdentity }) => ({ label, sourceIdentity })),
+  [{ label: '描述符子视图', sourceIdentity: 'descriptor.subview' }],
+  'a componentConfig subview cannot win relation-occurrence ownership from fieldDescriptor',
+);
+const transportWidgetOccurrence = relationshipCollectionNavigationItems([node({
+  fields: [
+    field({
+      widgetId: 'table.identity', fieldCode: 'purchase_order_ids', fieldType: 'many2many', widgetType: 'table',
+      semanticRole: 'relation', label: '表格身份', componentConfig: { nativeWidget: 'many2many_tags' },
+    }),
+    field({
+      widgetId: 'plain.table', fieldCode: 'purchase_order_ids', fieldType: 'many2many', widgetType: 'table',
+      semanticRole: 'relation', label: '普通表格',
+    }),
+  ],
+})]);
+assert.deepEqual(
+  transportWidgetOccurrence.map(({ sourceIdentity }) => sourceIdentity),
+  ['table.identity'],
+  'duplicate relation ownership uses the canonical field widget identity, not a componentConfig widget',
+);
 const repeatedFieldAcrossBusinessSections = relationshipCollectionNavigationItems([
   node({
     nodeId: 'section.procurement.source', title: '采购来源',
