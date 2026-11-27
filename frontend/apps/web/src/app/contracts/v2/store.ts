@@ -448,7 +448,9 @@ export function resolveContractV2FieldDescriptorMap(
     const fieldType = asText(config.fieldType || descriptor.fieldType);
     const relation = asText(config.relation || descriptor.relation);
     const relationField = asText(config.relationField || descriptor.relationField);
+    const referenceModelField = asText(descriptor.referenceModelField);
     const attachmentRole = asText(descriptor.attachmentRole);
+    const filename = asText(config.filename || descriptor.filename);
     const digits = Array.isArray(descriptor.digits) && descriptor.digits.length === 2
       ? [Number(descriptor.digits[0]), Number(descriptor.digits[1])] as [number, number]
       : undefined;
@@ -485,6 +487,7 @@ export function resolveContractV2FieldDescriptorMap(
       ...(typeof (config.invisible ?? descriptor.invisible) === 'boolean' ? { invisible: Boolean(config.invisible ?? descriptor.invisible) } : {}),
       ...(relation ? { relation } : {}),
       ...(relationField ? { relationField } : {}),
+      ...(referenceModelField ? { referenceModelField } : {}),
       ...(attachmentRole ? { attachmentRole } : {}),
       ...(digits ? { digits } : {}),
       ...(unit ? { unit } : {}),
@@ -500,7 +503,7 @@ export function resolveContractV2FieldDescriptorMap(
       ...(Object.keys(relationEntry).length ? { relationEntry } : {}),
       ...(Object.keys(widgetOptions).length ? { widgetOptions } : {}),
       ...(Object.keys(subview).length ? { subview } : {}),
-      ...(asText(config.filename) ? { filename: asText(config.filename) } : {}),
+      ...(filename ? { filename } : {}),
       ...(asText(descriptor.help) ? { help: asText(descriptor.help) } : {}),
       ...(normalizedUiUsage ? { uiUsage: normalizedUiUsage } : {}),
       ...(typeof descriptor.changeDefault === 'boolean' ? { changeDefault: descriptor.changeDefault } : {}),
@@ -530,17 +533,39 @@ export function toContractV2FormFieldDescriptor(row: ContractV2FieldDescriptor):
     type: row.fieldType,
     ttype: row.fieldType,
     widget: row.widgetType,
+    ...(row.componentKey ? { componentKey: row.componentKey } : {}),
+    ...(row.semanticType ? { semanticType: row.semanticType } : {}),
     ...(typeof row.required === 'boolean' ? { required: row.required } : {}),
     ...(typeof row.readonly === 'boolean' ? { readonly: row.readonly } : {}),
     ...(typeof row.invisible === 'boolean' ? { invisible: row.invisible } : {}),
     ...(row.relation ? { relation: row.relation } : {}),
     ...(row.relationField ? { relation_field: row.relationField } : {}),
+    ...(row.referenceModelField ? { referenceModelField: row.referenceModelField } : {}),
     ...(row.selection ? { selection: row.selection } : {}),
     ...(row.relationEntry ? { relationEntry: row.relationEntry } : {}),
     ...(row.widgetOptions ? { widgetOptions: row.widgetOptions } : {}),
     ...(row.subview ? { subview: row.subview } : {}),
     ...(row.filename ? { filename: row.filename } : {}),
+    ...(row.digits ? { digits: row.digits } : {}),
+    ...(row.unit ? { unit: row.unit } : {}),
+    ...(row.temporal ? { temporal: row.temporal } : {}),
+    ...(row.currencyField ? { currencyField: row.currencyField } : {}),
+    ...(row.attachmentRole ? { attachmentRole: row.attachmentRole } : {}),
     ...(row.help ? { help: row.help } : {}),
+    ...(row.uiUsage ? { uiUsage: row.uiUsage } : {}),
+    ...(typeof row.changeDefault === 'boolean' ? { changeDefault: row.changeDefault } : {}),
+    ...(row.definitionRecord ? { definitionRecord: row.definitionRecord } : {}),
+    ...(row.definitionRecordField ? { definitionRecordField: row.definitionRecordField } : {}),
+    ...(row.groupOperator ? { groupOperator: row.groupOperator } : {}),
+    ...(typeof row.searchable === 'boolean' ? { searchable: row.searchable } : {}),
+    ...(typeof row.sortable === 'boolean' ? { sortable: row.sortable } : {}),
+    ...(typeof row.store === 'boolean' ? { store: row.store } : {}),
+    ...(typeof row.translate === 'boolean' ? { translate: row.translate } : {}),
+    ...(typeof row.trim === 'boolean' ? { trim: row.trim } : {}),
+    ...(row.related ? { related: row.related } : {}),
+    ...(typeof row.size === 'number' ? { size: row.size } : {}),
+    ...(typeof row.technical === 'boolean' ? { technical: row.technical } : {}),
+    ...(row.formStructureRole ? { formStructureRole: row.formStructureRole } : {}),
     ...(row.domain !== undefined ? { domain: row.domain } : {}),
     ...(row.domainExpression !== undefined ? { domain_expression: row.domainExpression } : {}),
     ...(row.context !== undefined ? { context: row.context } : {}),

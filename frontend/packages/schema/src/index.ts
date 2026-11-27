@@ -931,11 +931,19 @@ export interface FieldDescriptor {
   string?: string;
   type?: string;
   ttype?: string;
+  fieldType?: string;
+  widgetType?: string;
+  componentKey?: string;
+  semanticType?: string;
   required?: boolean;
   readonly?: boolean;
+  invisible?: boolean;
   selection?: Array<[string, string]>;
   relation?: string;
   relation_field?: string;
+  relationField?: string;
+  referenceModelField?: string;
+  attachmentRole?: string;
   editable?: boolean;
   filename?: string;
   digits?: [number, number];
@@ -949,6 +957,8 @@ export interface FieldDescriptor {
     timezoneAuthority: 'user' | 'record' | 'not_applicable';
   };
   currency_field?: string;
+  currencyField?: string;
+  help?: string;
 }
 
 export interface FormLayout {

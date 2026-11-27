@@ -24,6 +24,7 @@
     "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
     "frontend/apps/web/src/App.vue",
     "frontend/apps/web/src/app/contracts/v2/store.ts",
+    "frontend/apps/web/src/app/contracts/v2/types.ts",
     "frontend/apps/web/src/app/contracts/actionViewActivityContract.ts",
     "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
     "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",

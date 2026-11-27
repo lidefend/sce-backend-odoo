@@ -23,9 +23,17 @@ import {
   extractListFieldSemanticsFromContract,
   useActionViewContractShapeRuntime,
 } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
+import {
+  resolveContractV2FieldDescriptorMap,
+  resolveContractV2FormFieldMap,
+} from '../src/app/contracts/v2/store';
 import type { ContractV2NormalizedStore } from '../src/app/contracts/v2/types';
-import { presentCollectionKanbanCell } from '../src/app/presentation/collectionKanbanPresentation';
+import {
+  presentCollectionKanbanCell,
+} from '../src/app/presentation/collectionKanbanPresentation';
+import { presentDeclaredBusinessValue } from '../src/app/presentation/businessValuePresentation';
 import { normalizeListRelationValue, presentListCell } from '../src/pages/listPage/listCellPresentation';
+import { hasDeclaredAttachmentIdentity } from '../src/utils/fieldSemantics';
 
 let cases = 0;
 const check = (actual: unknown, expected: unknown, label: string) => {
@@ -333,5 +341,141 @@ const attachmentOption = runtime.resolveListColumnOptions(
 )[0];
 check(attachmentOption?.relation, 'ir.attachment', 'collection projection preserves attachment relation identity');
 check(attachmentOption?.attachmentRole, 'invoice_evidence', 'collection projection preserves attachment role');
+
+// The strict widget descriptor is the final declaration carrier. The form
+// projection must retain every semantic that has a downstream consumer; a
+// second projection cannot silently reduce it back to the Odoo scalar shape.
+const declaredFacetWidgets = [
+  {
+    widgetId: 'source-reference',
+    fieldCode: 'sc_source_res_id',
+    label: 'Source',
+    widgetType: 'many2one_reference',
+    componentConfig: { fieldType: 'many2one_reference' },
+    fieldDescriptor: {
+      fieldCode: 'sc_source_res_id',
+      fieldType: 'many2one_reference',
+      semanticType: 'reference',
+      componentKey: 'sc.display.text',
+      referenceModelField: 'sc_source_model',
+    },
+  },
+  {
+    widgetId: 'binary-content',
+    fieldCode: 'binary_content',
+    label: 'Attachment',
+    widgetType: 'binary',
+    componentConfig: { fieldType: 'binary' },
+    fieldDescriptor: {
+      fieldCode: 'binary_content',
+      fieldType: 'binary',
+      filename: 'attachment_name',
+    },
+  },
+  {
+    widgetId: 'progress',
+    fieldCode: 'progress',
+    label: 'Progress',
+    widgetType: 'percentage',
+    componentConfig: { fieldType: 'float' },
+    fieldDescriptor: {
+      fieldCode: 'progress',
+      fieldType: 'float',
+      semanticType: 'percentage',
+      componentKey: 'sc.value.percentage',
+      digits: [16, 2],
+      unit: { kind: 'percent', code: 'percent', label: '%' },
+    },
+  },
+  {
+    widgetId: 'occurred-at',
+    fieldCode: 'occurred_at',
+    label: 'Occurred at',
+    widgetType: 'datetime',
+    componentConfig: { fieldType: 'datetime' },
+    fieldDescriptor: {
+      fieldCode: 'occurred_at',
+      fieldType: 'datetime',
+      semanticType: 'datetime',
+      temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+    },
+  },
+  {
+    widgetId: 'evidence',
+    fieldCode: 'evidence_ids',
+    label: 'Evidence',
+    widgetType: 'many2many',
+    componentConfig: { fieldType: 'many2many' },
+    fieldDescriptor: {
+      fieldCode: 'evidence_ids',
+      fieldType: 'many2many',
+      relation: 'ir.attachment',
+      attachmentRole: 'evidence',
+    },
+  },
+];
+const declaredFacetStore = {
+  snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
+  widgetsById: new Map(declaredFacetWidgets.map(widget => [widget.widgetId, widget])),
+  widgetsByFieldCode: new Map(declaredFacetWidgets.map(widget => [widget.fieldCode, widget])),
+  widgetsByFieldCodeAll: new Map(declaredFacetWidgets.map(widget => [widget.fieldCode, [widget]])),
+  widgetStatusById: new Map(),
+  primaryDataSource: {},
+} as unknown as ContractV2NormalizedStore;
+const canonicalFacetFields = resolveContractV2FieldDescriptorMap(declaredFacetStore);
+const formFacetFields = resolveContractV2FormFieldMap(declaredFacetStore);
+check(
+  canonicalFacetFields.sc_source_res_id?.referenceModelField,
+  'sc_source_model',
+  'normalized field descriptor preserves the polymorphic model pointer',
+);
+check(
+  formFacetFields.sc_source_res_id?.referenceModelField,
+  'sc_source_model',
+  'form field projection preserves the polymorphic model pointer',
+);
+check(
+  canonicalFacetFields.binary_content?.filename,
+  'attachment_name',
+  'descriptor-only filename survives normalization',
+);
+check(
+  formFacetFields.binary_content?.filename,
+  'attachment_name',
+  'descriptor-only filename survives form projection',
+);
+check(
+  JSON.stringify(formFacetFields.progress?.digits),
+  JSON.stringify([16, 2]),
+  'form field projection preserves declared digits',
+);
+check(
+  formFacetFields.progress?.unit?.label,
+  '%',
+  'form field projection preserves declared unit',
+);
+check(
+  formFacetFields.occurred_at?.temporal?.timezoneAuthority,
+  'user',
+  'form field projection preserves declared temporal authority',
+);
+check(
+  formFacetFields.evidence_ids?.attachmentRole,
+  'evidence',
+  'form field projection preserves declared attachment role',
+);
+check(
+  presentDeclaredBusinessValue({
+    field: formFacetFields.progress!,
+    value: 12.34,
+  }).text,
+  '12.34%',
+  'business-value presentation consumes digits and unit from the form projection',
+);
+check(
+  hasDeclaredAttachmentIdentity(formFacetFields.evidence_ids),
+  true,
+  'attachment behavior consumes the form projection without recovering a second carrier',
+);
 
 console.log(`[frontend.contract.shape.projection] PASS cases=${cases}`);

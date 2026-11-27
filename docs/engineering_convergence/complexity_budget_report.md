@@ -189,6 +189,7 @@ Generated from repository source files. This report is informational during the 
 | 1019 | Python source | `scripts/contract/snapshot_export.py` |
 | 1016 | Python source | `addons/smart_core/tests/test_platform_capability_explorer.py` |
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
+| 1013 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/types.ts` |
 | 1013 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
 | 1010 | TypeScript source | `frontend/apps/web/src/app/pageOrchestration.ts` |
 | 1009 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py` |
@@ -199,7 +200,6 @@ Generated from repository source files. This report is informational during the 
 | 996 | Python source | `scripts/ops/daily_runtime_legacy_stack_retire.py` |
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 991 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
-| 990 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/types.ts` |
 | 981 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 970 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
