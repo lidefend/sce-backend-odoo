@@ -274,6 +274,7 @@ export async function importRecords(params: {
   context?: Record<string, unknown>;
   requestId?: string;
   idempotencyKey?: string;
+  signal?: AbortSignal;
 }) {
   return intentRequest<ApiDataImportContract>({
     intent: 'api.data.import',
@@ -292,7 +293,7 @@ export async function importRecords(params: {
       request_id: params.requestId,
       idempotency_key: params.idempotencyKey,
     },
-  });
+  }, { signal: params.signal });
 }
 
 export async function saveSearchFavorite(params: {
@@ -426,6 +427,7 @@ export async function exportRecordsCsv(params: {
   context?: Record<string, unknown>;
   fieldSemantics?: Array<Record<string, unknown>>;
   columnLabels?: Record<string, string>;
+  signal?: AbortSignal;
 }) {
   return intentRequest<ApiDataExportCsvResult>({
     intent: 'api.data',
@@ -442,7 +444,7 @@ export async function exportRecordsCsv(params: {
       field_semantics: params.fieldSemantics ?? [],
       column_labels: params.columnLabels ?? {},
     },
-  });
+  }, { signal: params.signal });
 }
 
 export async function batchUpdateRecords(params: {
