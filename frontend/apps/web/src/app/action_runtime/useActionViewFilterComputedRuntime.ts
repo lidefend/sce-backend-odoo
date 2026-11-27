@@ -85,7 +85,6 @@ function resolveGroupByField(
   row: Record<string, unknown>,
   context: Dict,
   contextRaw: unknown,
-  options?: { allowKeyFallback?: boolean },
 ): string {
   const direct = String(row.field || row.group_by || row.groupBy || row.group || '').trim();
   if (direct) return direct;
@@ -94,7 +93,6 @@ function resolveGroupByField(
   if (Array.isArray(fromContext)) return String(fromContext[0] || '').trim();
   const fromContextRaw = resolveGroupByFromContextRaw(contextRaw);
   if (fromContextRaw) return fromContextRaw;
-  if (options?.allowKeyFallback) return String(row.key || row.name || '').trim();
   return '';
 }
 
@@ -203,7 +201,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
         const raw = entry.row as Record<string, unknown>;
         const contextRaw = String(raw.context_raw || '').trim();
         const context = options.parseContractContextRaw(contextRaw);
-        const field = resolveGroupByField(raw, context, contextRaw, { allowKeyFallback: entry.source === 'group' });
+        const field = resolveGroupByField(raw, context, contextRaw);
         const label = String(raw.label || raw.string || raw.name || '').trim();
         if (!field || !label) return null;
         if (seen.has(field)) return null;

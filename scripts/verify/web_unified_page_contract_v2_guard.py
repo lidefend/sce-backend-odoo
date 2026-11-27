@@ -236,6 +236,17 @@ def main() -> int:
                 "web load preflight must not derive saved-filter route identity from display text: "
                 f"{forbidden}"
             )
+    for forbidden in (
+        "contractSavedFilterChips.length ? contractSavedFilterChips : options.contractSavedFilterChips",
+        "contractGroupByChips.length ? contractGroupByChips : options.contractGroupByChips",
+    ):
+        if forbidden in preflight_source:
+            errors.append(
+                "web load preflight must use the current contract chip set without stale-option fallback: "
+                f"{forbidden}"
+            )
+    if "row.key || row.name" in filter_source or "raw.key || raw.name" in preflight_source:
+        errors.append("web grouping must not infer field semantics from declaration key or name")
     for forbidden in ("raw.type || 'char'", "operators[0]?.value || '='"):
         if forbidden in filter_source:
             errors.append(

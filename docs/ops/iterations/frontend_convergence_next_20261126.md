@@ -802,6 +802,34 @@ dirty scope 上成立 86 个必需目标，全部本轮执行；65 个测试目�
 本切片提交推送后仍需取得自己的精确 head 远端结果。生产自定义筛选操作、真实浏览器
 查询回读、用户验收、FC-03 整体收口和 FC-06 仍未完成。
 
+### 2026-11-27 FC-03 查询 chip 只认当前契约
+
+继续收口 load preflight 时发现两条第二权威路径：当前契约派生出的保存筛选或分组 chip
+为空时，会回退到调用方旧数组；分组字段缺失时又会把 `key/name` 当作字段语义。这样可能
+恢复已经不在当前契约中的筛选/分组，或从技术身份猜测分组字段。
+
+本切片完成：
+
+- load preflight 直接消费当前契约派生的保存筛选 chip，不再回退旧 options；
+- load preflight 直接消费当前契约派生的分组 chip，不再回退旧 options；
+- runtime 与 preflight 的分组推导都要求显式声明 label 和 field；
+- `key/name` 不再充当分组字段，key-only 声明被明确忽略；
+- 区分性测试覆盖 key-only grouping；
+- web V2 consumer guard 同时阻止旧 chip fallback 和 key/name 字段推断；
+- component-driver inventory 按生产源码输入重新生成。
+
+首次定向测试发现 preflight 仍保留第二份 `key/name` 推导；补齐后 98 cases 通过。完整
+受影响集随后成立 86 个必需目标，全部本轮执行；65 个测试目标执行 2168 项测试、
+11 项静态检查，`unmapped=0`、`not_run=0`、`blocked=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T134518Z-165934-343848777/receipt.json`
+
+回执 SHA256：
+`74cf01d4df4c5ff965d35d913fc87c76034ab4b772ccd30b0621802d6b21f8b6`。
+
+本切片提交推送后仍需取得自己的精确 head 远端结果。生产查询 chip 操作、真实浏览器
+回读、用户验收、FC-03 整体收口和 FC-06 仍未完成。
+
 ### 2026-11-27 FC-02 页面身份声明化与选测补口
 
 本切片属于共享前端呈现消费层，不修改后端契约、权限或数据。页面身份不再把

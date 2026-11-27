@@ -599,7 +599,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Commit and publish the FC-03 custom-filter declaration slice to PR 1019, then continue the next frontend contract-consumption check without inheriting ab42c9c7e remote results. Real browser readback remains blocked until managed port 5175 is released by the other worktree.",
+  "next_exact_step": "Commit and publish the FC-03 query-chip authority slice to PR 1019, then continue the next frontend contract-consumption check without inheriting 457a66708 remote results. Real browser readback remains blocked until managed port 5175 is released by the other worktree.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2519,6 +2519,35 @@
       ],
       "scope_limit": "Local contract consumer, unit fixtures and static checks only. Production custom-filter query-bar behavior, real browser navigation, user acceptance, FC-03 overall closure and FC-06 remain not_run."
     },
+    "fc03_query_chip_current_contract_authority": {
+      "status": "passed_local_targeted",
+      "stage_identity": "457a667080041f479093178daac7c8f0f39cc308 plus the owned query-chip-authority dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T134518Z-165934-343848777/receipt.json",
+      "receipt_sha256": "74cf01d4df4c5ff965d35d913fc87c76034ab4b772ccd30b0621802d6b21f8b6",
+      "required_targets": 86,
+      "executed_targets": 86,
+      "reused_targets": 0,
+      "test_targets": 65,
+      "executed_test_count": 2168,
+      "static_checks": 11,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "load preflight consumes the current contract saved-filter chip array without falling back to stale caller options",
+        "load preflight consumes the current contract grouping chip array without falling back to stale caller options",
+        "runtime grouping uses only an explicit declared field instead of key or name",
+        "preflight grouping also requires explicit field and label declarations",
+        "a key-only grouping declaration is withheld rather than converted into field semantics",
+        "the web consumer guard rejects both stale chip fallbacks and key/name field inference",
+        "the component-driver inventory was regenerated for the changed production source input"
+      ],
+      "failure_recovery": [
+        "the first targeted run showed that preflight had a second group-field derivation retaining key/name; that duplicate path was tightened to the same explicit field and label authority before rerunning"
+      ],
+      "scope_limit": "Local contract consumer, unit fixtures and static checks only. Production query-chip behavior, real browser navigation, user acceptance, FC-03 overall closure and FC-06 remain not_run."
+    },
     "fc03_preset_filter_label_presentation": {
       "status": "passed_local_targeted",
       "candidate_head": "98db6ed386f0bbe096febaf954d188de553eb9ce",
@@ -2612,12 +2641,12 @@
       "scope_limit": "P4 smoke and selector alignment only. The repaired candidate has not yet been pushed; exact-head remote CI, browser address-bar readback, mainline qualification and user acceptance remain not_run."
     },
     "remote_publication": {
-      "status": "remote_ci_passed_for_ab42_saved_filter_identity_slice_next_custom_filter_local",
+      "status": "remote_ci_passed_for_457_custom_filter_slice_next_query_chip_authority_local",
       "pull_request": 1019,
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "ab42c9c7e9d33c1dc6854ff85bd4e38056597f3e",
+      "current_head": "457a667080041f479093178daac7c8f0f39cc308",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",
@@ -2639,9 +2668,11 @@
         "head d83713a2c passed public_guard run 140519689432, merge_policy_gate run 140522865073, professional_quality_gate run 140522444546 and frontend_release_gate run 140519566329",
         "head d83713a2c passed the selected backend impact suite through plan 140519734242, suite 140519946702 and coverage 140522259993",
         "head ab42c9c7e passed public_guard run 140527858460, merge_policy_gate run 140531591888, professional_quality_gate run 140531476055 and frontend_release_gate run 140527742504",
-        "head ab42c9c7e passed the selected backend impact suite through plan 140527918139, suite 140528148575 and coverage 140531286970"
+        "head ab42c9c7e passed the selected backend impact suite through plan 140527918139, suite 140528148575 and coverage 140531286970",
+        "head 457a66708 passed public_guard run 140536744575, merge_policy_gate run 140541081186, professional_quality_gate run 140540852893 and frontend_release_gate run 140536633931",
+        "head 457a66708 passed the selected backend impact suite through plan 140536815502, suite 140537072648 and coverage 140540626108"
       ],
-      "coverage_limit": "The saved-filter identity candidate is green on ab42c9c7e. The next custom-filter declaration slice will require its own exact-head remote checks. Real browser readback, the 143-entry matrix, role/company journeys, FC-03 overall closure and FC-06 remain not_run."
+      "coverage_limit": "The custom-filter declaration candidate is green on 457a66708. The next query-chip authority slice will require its own exact-head remote checks. Real browser readback, the 143-entry matrix, role/company journeys, FC-03 overall closure and FC-06 remain not_run."
     }
   }
 }

@@ -34,7 +34,10 @@ import {
   resolveDeclaredSavedFilterIdentity,
   useActionViewFilterComputedRuntime,
 } from '../src/app/action_runtime/useActionViewFilterComputedRuntime';
-import { deriveSavedFilterChipsFromContract } from '../src/app/action_runtime/useActionViewLoadPreflightRuntime';
+import {
+  deriveGroupByChipsFromContract,
+  deriveSavedFilterChipsFromContract,
+} from '../src/app/action_runtime/useActionViewLoadPreflightRuntime';
 import { resolveDeclaredSurfaceBudget } from '../src/app/runtime/actionViewSurfacePolicyBudget';
 import {
   resolveContractV2FieldDescriptorMap,
@@ -723,7 +726,10 @@ const unlabeledFilterContract = ref({
       searchContract: {
         filters: [{ key: 'missing_label', domain_raw: '[]' }],
         saved_filters: [{ id: 1, name: 'Saved filter', domain: [] }],
-        group_by: [{ field: 'missing_group_label', context_raw: "{'group_by':'missing_group_label'}" }],
+        group_by: [
+          { field: 'missing_group_label', context_raw: "{'group_by':'missing_group_label'}" },
+          { key: 'state', label: '状态' },
+        ],
         fields: [{ field: 'missing_field_label', occurrence_key: 'missing@search', type: 'char' }],
         custom: {
           filters: { enabled: true, fields: [{ field: 'missing_custom_label', type: 'char' }] },
@@ -759,6 +765,11 @@ check(
   'a saved filter without declared id cannot derive identity from its name',
 );
 check(unlabeledFilterRuntime.contractGroupByChips.value.length, 0, 'a grouping without a declared label is withheld');
+check(
+  deriveGroupByChipsFromContract(unlabeledFilterContract.value).length,
+  0,
+  'a grouping key never becomes field semantics when the contract field declaration is absent',
+);
 check(unlabeledFilterRuntime.nativeFilterFields.value.length, 0, 'a filter field without a declared label is withheld');
 check(unlabeledFilterRuntime.customGroupByChips.value.length, 0, 'a custom grouping without a declared label is withheld');
 check(unlabeledFilterRuntime.customFilterFields.value.length, 0, 'a custom filter field without a declared label is withheld');
