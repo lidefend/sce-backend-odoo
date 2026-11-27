@@ -66,6 +66,27 @@ function main() {
     'empty category code',
   );
 
+  assertDeepEqual(
+    runtime.pickContractNavQuery({
+      scene: 'projects.ledger',
+      scene_key: 'projects.ledger',
+      scene_label: '项目台账',
+      menu_id: '12',
+      action_id: '34',
+      domain_raw: '[]',
+      context_raw: '{}',
+      return_url: '/s/projects.ledger',
+    }),
+    {
+      menu_id: '12',
+      action_id: '34',
+      domain_raw: '[]',
+      context_raw: '{}',
+      return_url: '/s/projects.ledger',
+    },
+    'scene identity stays in the route path while execution context is carried',
+  );
+
   console.log('[navigation_context_smoke] PASS');
 }
 

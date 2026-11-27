@@ -570,6 +570,50 @@ PR #1019 的精确 head `2036e8d9ad006078536026a621ea7fc284b214d1` 远端结果�
 修复尚未推送，因此该结果只证明本地 P4 基线已对齐。下一精确动作是提交并推送同一 PR，
 再回读新 head 的四项必需检查；真实浏览器地址栏回读、主线资格、部署和用户验收仍未完成。
 
+### 2026-11-27 FC-02 scene 身份只留在路径
+
+继续检查内部场景跳转时发现一个未被地址栏表层覆盖的残留：`SceneView` 的多条内部
+`router.replace` 候选 query 仍写入 `scene_key/scene_label`，随后才由 `asRouteQuery`
+删除；同一路由状态比较又读取已删除的 `route.query.scene_key`，因此候选状态总被判为
+不同，存在反复 replace 的风险。scene 身份实际已由 `/s/:sceneKey` 唯一表达。
+
+本切片完成：
+
+- SceneView 内部目标不再生成或比较重复 scene query，路径参数是唯一 scene 身份；
+- 检测到旧 URL 中的 `scene/scene_key/scene_label` 时仍执行一次规范化清理；
+- 导航白名单删除 `scene/scene_key`，执行所需的 menu、action、domain、context、
+  return target 等上下文继续保留；
+- activity cache、router activity 和 page identity 改为只从路径参数、路由元数据或
+  已声明 action/scene 契约解析 scene；
+- ActionView 页面标题只消费当前 scene 契约的 `label`，不再把 URL 展示标签当作标题；
+- activity 返回地址不再保留 business-category 展示 label；
+- 页面身份守卫禁止重新引入 scene query 写入、query label 消费和展示 label 回传；
+- 路由归一、activity retention、dev acceptance remediation 和 navigation smoke
+  增加正反向断言。
+
+`make ci.local.iteration` 在 `d3ca52764` 加当前 owned dirty scope 上成立 78 个必需目标，
+其中 65 个本轮执行、13 个复用；46 个测试目标执行 1702 项测试、10 项静态检查，
+`unmapped=0`、`not_run=0`、`blocked=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T111442Z-3063711-205698671/receipt.json`
+
+回执 SHA256：
+`a1d40099ad4bd154aae4a53ae56b27822db4ff24e64a12686154ee9eb1407f17`。
+
+首次迭代因新增 owned 文件未登记在 run scope 而在测试前 fail-closed；补登记后从失败回执
+复用 12 个已完成目标继续。随后 component-driver inventory 的派生摘要按 owning target
+重建，剩余目标全部通过。
+
+真实地址栏回读仍未执行：当前生产构建已由 exact candidate 生成，但受管端口 `5175`
+由另一工作树
+`/home/lidefend/workspace/sce-backend-odoo-ci-recovery-20261120` 的服务占用。
+`frontend.acceptance.down` 按租户隔离规则拒绝停止该进程；未手工 kill，也未写业务数据库。
+阻断证据保存在
+`.runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/deep-browser-blocked.md`。
+
+上一 head `d3ca52764` 的四项必需远端检查已全部通过；本切片仍需推送后重新取得新精确
+head 的远端结果，不能继承上一 head 的绿灯。主线资格、部署和用户验收仍未完成。
+
 ### 2026-11-27 FC-02 页面身份声明化与选测补口
 
 本切片属于共享前端呈现消费层，不修改后端契约、权限或数据。页面身份不再把

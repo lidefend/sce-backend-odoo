@@ -398,7 +398,6 @@ const scenePageHeading = computed(() => resolveSceneActivityTitle({
   sceneKey: currentSceneKey.value,
   runtimeLabel: scene.value?.label,
   registeredLabel: getSceneByKey(currentSceneKey.value)?.label,
-  queryLabel: route.query.scene_label,
 }));
 const renderScenePageHeading = computed(() => shouldRenderScenePageHeading({
   hasSceneIdentity: currentSceneKey.value,
@@ -463,7 +462,6 @@ const sceneResolveSignature = computed(() => JSON.stringify({
   menuId: Number(route.query.menu_id || 0) || 0,
   model: String(route.query.model || '').trim(),
   recordId: String(route.query.record_id || '').trim(),
-  sceneQueryKey: String(route.query.scene_key || '').trim(),
   releaseProduct: String(route.query.release_product || '').trim(),
   preset: String(route.query.preset || '').trim(),
   ctxSource: String(route.query.ctx_source || '').trim(),
@@ -1065,7 +1063,6 @@ async function resolveScene() {
     void trackSceneOpen(sceneKey).catch(() => {});
 
     const target = resolvedScene.target || {};
-    const sceneLabel = String(resolvedScene.label || sceneKey || '').trim();
     const layout = resolveSceneLayout(resolvedScene);
     const workspaceContextQuery = sanitizeWorkspaceContextForLayout(
       layout.kind,
@@ -1075,6 +1072,8 @@ async function resolveScene() {
     const hasForeignSceneQuery = Boolean(
       route.query.menu_id
       || route.query.action_id
+      || route.query.scene
+      || route.query.scene_key
       || route.query.scene_label
     );
     const hasActionRouteContext = Number(route.query.action_id || 0) > 0 || Number(route.query.menu_id || 0) > 0;
@@ -1116,8 +1115,6 @@ async function resolveScene() {
         const nextQuery = {
           menu_id: effectiveMenuId,
           action_id: resolvedAction.actionId,
-          scene_key: sceneKey || undefined,
-          scene_label: sceneLabel || undefined,
           order: defaultOrder || undefined,
           ...workspaceContextQuery,
         };
@@ -1125,8 +1122,7 @@ async function resolveScene() {
         const currentMenuId = Number(route.query.menu_id || 0);
         const sameEmbeddedRouteState =
           currentActionId === resolvedAction.actionId
-          && currentMenuId === Number(effectiveMenuId || 0)
-          && String(route.query.scene_key || '') === sceneKey;
+          && currentMenuId === Number(effectiveMenuId || 0);
         if (!sameEmbeddedRouteState) {
           await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
           return;
@@ -1141,8 +1137,6 @@ async function resolveScene() {
           const nextQuery = {
             menu_id: recordEntry.menuId || undefined,
             action_id: recordEntry.actionId,
-            scene_key: sceneKey || undefined,
-            scene_label: sceneLabel || undefined,
             model: recordEntry.model || undefined,
             record_id: recordEntry.recordId,
             ...workspaceContextQuery,
@@ -1151,8 +1145,7 @@ async function resolveScene() {
             Number(route.query.action_id || 0) === recordEntry.actionId
             && Number(route.query.menu_id || 0) === Number(recordEntry.menuId || 0)
             && Number(route.query.record_id || 0) === recordEntry.recordId
-            && String(route.query.model || '').trim() === String(recordEntry.model || '').trim()
-            && String(route.query.scene_key || '') === sceneKey;
+            && String(route.query.model || '').trim() === String(recordEntry.model || '').trim();
           if (!sameEmbeddedRouteState) {
             await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
             return;
@@ -1172,8 +1165,6 @@ async function resolveScene() {
         const nextQuery = {
           menu_id: effectiveMenuId,
           action_id: resolvedAction.actionId,
-          scene_key: sceneKey || undefined,
-          scene_label: sceneLabel || undefined,
           order: defaultOrder || undefined,
           ...workspaceContextQuery,
         };
@@ -1181,8 +1172,7 @@ async function resolveScene() {
         const currentMenuId = Number(route.query.menu_id || 0);
         const sameEmbeddedRouteState =
           currentActionId === resolvedAction.actionId
-          && currentMenuId === Number(effectiveMenuId || 0)
-          && String(route.query.scene_key || '') === sceneKey;
+          && currentMenuId === Number(effectiveMenuId || 0);
         if (!sameEmbeddedRouteState) {
           await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
           return;
@@ -1197,8 +1187,6 @@ async function resolveScene() {
           const nextQuery = {
             menu_id: recordEntry.menuId || undefined,
             action_id: recordEntry.actionId,
-            scene_key: sceneKey || undefined,
-            scene_label: sceneLabel || undefined,
             model: recordEntry.model,
             record_id: recordEntry.recordId,
             ...workspaceContextQuery,
@@ -1207,8 +1195,7 @@ async function resolveScene() {
             Number(route.query.action_id || 0) === recordEntry.actionId
             && Number(route.query.menu_id || 0) === Number(recordEntry.menuId || 0)
             && Number(route.query.record_id || 0) === recordEntry.recordId
-            && String(route.query.model || '').trim() === recordEntry.model
-            && String(route.query.scene_key || '') === sceneKey;
+            && String(route.query.model || '').trim() === recordEntry.model;
           if (!sameEmbeddedRouteState) {
             await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
             return;
@@ -1232,14 +1219,11 @@ async function resolveScene() {
         const nextQuery = {
           menu_id: target.menu_id || undefined,
           action_id: target.action_id,
-          scene_key: sceneKey || undefined,
-          scene_label: sceneLabel || undefined,
           ...workspaceContextQuery,
         };
         const sameEmbeddedRouteState =
           Number(route.query.action_id || 0) === Number(target.action_id || 0)
-          && Number(route.query.menu_id || 0) === Number(target.menu_id || 0)
-          && String(route.query.scene_key || '') === sceneKey;
+          && Number(route.query.menu_id || 0) === Number(target.menu_id || 0);
         if (!sameEmbeddedRouteState) {
           await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
           return;
@@ -1258,8 +1242,6 @@ async function resolveScene() {
         const nextQuery = {
           menu_id: effectiveMenuId,
           action_id: resolvedAction.actionId,
-          scene_key: sceneKey || undefined,
-          scene_label: sceneLabel || undefined,
           order: defaultOrder || undefined,
           ...workspaceContextQuery,
         };
@@ -1267,8 +1249,7 @@ async function resolveScene() {
         const currentMenuId = Number(route.query.menu_id || 0);
         const sameEmbeddedRouteState =
           currentActionId === resolvedAction.actionId
-          && currentMenuId === Number(effectiveMenuId || 0)
-          && String(route.query.scene_key || '') === sceneKey;
+          && currentMenuId === Number(effectiveMenuId || 0);
         if (!sameEmbeddedRouteState) {
           await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
           return;
@@ -1283,8 +1264,6 @@ async function resolveScene() {
           const nextQuery = {
             menu_id: recordEntry.menuId || undefined,
             action_id: recordEntry.actionId,
-            scene_key: sceneKey || undefined,
-            scene_label: sceneLabel || undefined,
             model: recordEntry.model || undefined,
             record_id: recordEntry.recordId,
             ...workspaceContextQuery,
@@ -1293,8 +1272,7 @@ async function resolveScene() {
             Number(route.query.action_id || 0) === recordEntry.actionId
             && Number(route.query.menu_id || 0) === Number(recordEntry.menuId || 0)
             && Number(route.query.record_id || 0) === recordEntry.recordId
-            && String(route.query.model || '').trim() === String(recordEntry.model || '').trim()
-            && String(route.query.scene_key || '') === sceneKey;
+            && String(route.query.model || '').trim() === String(recordEntry.model || '').trim();
           if (!sameEmbeddedRouteState) {
             await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
             return;

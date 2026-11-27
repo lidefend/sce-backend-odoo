@@ -5,8 +5,6 @@ export const CONTRACT_NAV_QUERY_KEYS = [
   'action_id',
   'hud',
   'surface',
-  'scene',
-  'scene_key',
   'domain_raw',
   'context_raw',
   'preset',

@@ -1354,14 +1354,13 @@ function resolveActionCollectionScopeContext(): Record<string, unknown> {
     : {};
 }
 const businessCategoryCreatePickerVisible = ref(false);
-const routeSceneLabel = computed(() => String(route.query.scene_label || '').trim());
 const menuId = computed(() => instanceRouteMenuId.value);
 const keepSceneRoute = computed(() => String(route.name || '').toLowerCase() === 'scene');
 const sceneKey = computed(() => {
   const metaKey = route.meta?.sceneKey as string | undefined;
   if (metaKey) return metaKey;
-  const queryKey = (route.query.scene_key || route.query.scene) as string | undefined;
-  if (queryKey) return String(queryKey);
+  const paramKey = typeof route.params.sceneKey === 'string' ? route.params.sceneKey : '';
+  if (paramKey) return paramKey;
   const actionSceneKey =
     findActionMeta(session.menuTree, actionId.value)?.scene_key
     || findActionMeta(session.menuTree, actionId.value)?.sceneKey
@@ -1374,6 +1373,7 @@ const scene = computed<Scene | null>(() => {
   if (!sceneKey.value) return null;
   return session.scenes.find((item: Scene) => item.key === sceneKey.value || resolveSceneCode(item) === sceneKey.value) || null;
 });
+const declaredSceneLabel = computed(() => String(scene.value?.label || '').trim());
 const pageMode = computed(() => resolvePageMode(sceneKey.value, String(scene.value?.layout?.kind || '')));
 const hasLedgerOverviewStrip = computed(() => String(scene.value?.layout?.kind || '').trim().toLowerCase() === 'ledger');
 
@@ -1923,7 +1923,7 @@ const {
   showHud,
   errorMessage,
 } = useActionViewPageDisplayStateRuntime({
-  routeSceneLabel,
+  sceneLabel: declaredSceneLabel,
   menuTitle: currentMenuTitle,
   actionContract,
   injectedTitle,

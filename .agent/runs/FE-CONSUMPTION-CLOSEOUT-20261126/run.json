@@ -26,6 +26,10 @@
     "frontend/apps/web/src/app/action_runtime/useActionViewContentDisplayRuntime.ts",
     "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts",
     "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewPageDisplayStateRuntime.ts",
+    "frontend/apps/web/src/app/activityPageCacheIdentity.ts",
+    "frontend/apps/web/src/app/activityPageTitle.ts",
     "frontend/apps/web/src/app/pageIdentity.ts",
     "frontend/apps/web/src/app/pageIdentityAdapters.ts",
     "frontend/apps/web/src/app/pageIdentityRoute.ts",
@@ -89,12 +93,14 @@
     "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
     "frontend/apps/web/scripts/list_surface_component_test.mjs",
     "frontend/apps/web/scripts/action_surface_renderer_registry_test.ts",
+    "frontend/apps/web/scripts/activity_page_retention_test.ts",
     "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
     "frontend/apps/web/scripts/collection_view_semantics_test.ts",
     "frontend/apps/web/scripts/contract_shape_projection_test.ts",
     "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
     "frontend/apps/web/scripts/create_record_user_journey_test.ts",
     "frontend/apps/web/scripts/cross_model_action_navigation_test.ts",
+    "frontend/apps/web/scripts/dev_acceptance_remediation_test.ts",
     "frontend/apps/web/scripts/native_section_navigation_test.ts",
     "frontend/apps/web/scripts/professional_business_value_model_test.ts",
     "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
@@ -585,7 +591,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Bind the URL contamination guard and category-label slice, then run the deep browser target with an explicitly governed acceptance profile for real address-bar readback.",
+  "next_exact_step": "Commit and publish the scene-route single-identity slice to PR 1019, then read back all four required checks on the new exact head; real browser readback remains blocked until managed port 5175 is released by the other worktree.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2355,6 +2361,40 @@
         "reason": "governed Compose acceptance profile was not selected, so preflight rejected before starting containers or writing data"
       }
     },
+    "fc02_scene_route_single_identity": {
+      "status": "passed_local_targeted",
+      "candidate_head": "d3ca527645a68853992dce61dc7b127d3554ea9c",
+      "stage_identity": "d3ca527645a68853992dce61dc7b127d3554ea9c plus the owned scene-route dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T111442Z-3063711-205698671/receipt.json",
+      "receipt_sha256": "a1d40099ad4bd154aae4a53ae56b27822db4ff24e64a12686154ee9eb1407f17",
+      "required_targets": 78,
+      "executed_targets": 65,
+      "reused_targets": 13,
+      "test_targets": 46,
+      "executed_test_count": 1702,
+      "static_checks": 10,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "scene identity is carried by /s/:sceneKey and is no longer written into the route query",
+        "SceneView no longer compares embedded route state against a query scene key that canonicalization removes",
+        "navigation query carrying excludes scene, scene_key and scene_label while preserving execution context",
+        "activity cache identity uses the scene path parameter instead of a duplicate query identity",
+        "action and route page titles consume declared scene labels rather than route-carried display labels",
+        "activity routes no longer retain business-category display labels",
+        "positive and negative tests distinguish path-owned scene identity from query pollution",
+        "page identity, route normalization, activity page identity, title publication and strict typecheck pass"
+      ],
+      "failure_recovery": [
+        "the first affected iteration was blocked before tests because six newly owned files were absent from the run scope",
+        "the scope was corrected and the same candidate resumed with 12 previously completed targets reused",
+        "the next iteration detected the derived component-driver inventory digest as stale after production source changes",
+        "the inventory was regenerated through its owning target and the remaining affected targets passed"
+      ],
+      "scope_limit": "Local source, unit and component checks only. The current candidate has not been pushed; real browser address-bar readback remains blocked by another worktree owning managed acceptance port 5175."
+    },
     "fc02_navigation_context_smoke_baseline_alignment": {
       "status": "passed_local_targeted",
       "candidate_head": "2036e8d9ad006078536026a621ea7fc284b214d1",
@@ -2387,21 +2427,23 @@
       "scope_limit": "P4 smoke and selector alignment only. The repaired candidate has not yet been pushed; exact-head remote CI, browser address-bar readback, mainline qualification and user acceptance remain not_run."
     },
     "remote_publication": {
-      "status": "draft_open_remote_failure_recorded_repair_pending_push",
+      "status": "remote_ci_passed_for_previous_head_new_slice_pending_push",
       "pull_request": 1019,
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "2036e8d9ad006078536026a621ea7fc284b214d1",
+      "current_head": "d3ca527645a68853992dce61dc7b127d3554ea9c",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",
         "later qualified slices were pushed directly to the same PR as requested",
         "at head 2036e8d9a public_guard and professional_quality_gate passed",
         "at head 2036e8d9a frontend_release_gate failed on the stale navigation context smoke",
-        "the merge_policy_gate failure followed the upstream frontend_release_gate result"
+        "the merge_policy_gate failure followed the upstream frontend_release_gate result",
+        "head d3ca52764 passed public_guard, merge_policy_gate, professional_quality_gate and frontend_release_gate",
+        "the scene-route slice requires its own exact-head remote checks and does not inherit d3ca52764 results"
       ],
-      "coverage_limit": "The local P4 repair is validated but not yet published. No remote result is inherited across the pending head change, and integration readiness is not claimed."
+      "coverage_limit": "The prior P4 repair is green on d3ca52764. The new scene-route product slice remains local until committed and pushed, so its integration readiness is not claimed."
     }
   }
 }

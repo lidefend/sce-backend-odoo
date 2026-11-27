@@ -250,7 +250,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        660
+        658
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -543,7 +543,7 @@
       "literal": "error",
       "path": "frontend/apps/web/src/app/activityPageTitle.ts",
       "lines": [
-        82
+        79
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -557,7 +557,7 @@
       "literal": "loading",
       "path": "frontend/apps/web/src/app/activityPageTitle.ts",
       "lines": [
-        82
+        79
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1677,7 +1677,7 @@
       "literal": "disabled_permission",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        1052
+        1050
       ],
       "occurrences": 1,
       "classification": "contract-derived",

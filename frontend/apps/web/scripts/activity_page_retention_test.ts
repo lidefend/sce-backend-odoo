@@ -215,11 +215,21 @@ assert.equal(
   'workspace:my-work',
   'my-work is one workspace identity rather than an arbitrary scene cache key',
 );
+assert.equal(
+  resolveActivityRouteKey({ routeName: 'scene', params: { sceneKey: 'projects.ledger' }, query: {} }),
+  'scene:projects.ledger:all',
+  'the scene path parameter owns the activity identity',
+);
+assert.equal(
+  resolveActivityRouteKey({ routeName: 'scene', params: {}, query: { scene_key: 'projects.ledger' } }),
+  '',
+  'a duplicate query scene identity cannot create an activity',
+);
 const epochs = { [persistedRecordKey]: 0 };
 const advanced = advanceActivityPageCacheEpoch(epochs, persistedRecordKey);
 assert.equal(advanced[persistedRecordKey], 1, 'close advances the exact key App reads');
 assert.equal(epochs[persistedRecordKey], 0, 'epoch advancement does not mutate prior state');
-console.log('[activity_page_cache_identity_test] PASS cases=6');
+console.log('[activity_page_cache_identity_test] PASS cases=8');
 
 const actionOwner = { active: true, routeName: 'action', instanceRouteKey: 'action:809:menu:559', currentRouteKey: 'action:809:menu:559' };
 assert.equal(isActionPageIdentityOwner(actionOwner), true, 'active action can publish its own title');

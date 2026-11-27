@@ -81,9 +81,36 @@ if "delete query.entry_title;" not in route_query:
     fail("entry presentation titles must not enter route queries")
 
 navigation_context = (FRONTEND / "app/navigationContext.ts").read_text(encoding="utf-8")
-for forbidden in ("'entry_title'", "'return_label'"):
+for forbidden in ("'entry_title'", "'return_label'", "'scene'", "'scene_key'", "'scene_label'"):
     if forbidden in navigation_context:
         fail(f"presentation-only navigation query remains allowlisted: {forbidden}")
+
+router_source = (FRONTEND / "router/index.ts").read_text(encoding="utf-8")
+for forbidden in ("current_business_category_label", "default_business_category_label"):
+    if forbidden in router_source:
+        fail(f"activity route still carries a business-category label: {forbidden}")
+
+for forbidden in ("to.query.scene_label", "to.query.scene_key"):
+    if forbidden in router_source:
+        fail(f"router still consumes duplicate scene identity: {forbidden}")
+
+scene_view = (FRONTEND / "views/SceneView.vue").read_text(encoding="utf-8")
+for forbidden in ("scene_key: sceneKey", "scene_label: sceneLabel", "queryLabel:"):
+    if forbidden in scene_view:
+        fail(f"scene route still writes or consumes display identity: {forbidden}")
+
+action_view_source = (FRONTEND / "views/ActionView.vue").read_text(encoding="utf-8")
+for forbidden in ("route.query.scene_label", "route.query.scene_key"):
+    if forbidden in action_view_source:
+        fail(f"action view still consumes duplicate scene identity: {forbidden}")
+
+action_navigation = (FRONTEND / "app/action_runtime/useActionViewNavigationRuntime.ts").read_text(encoding="utf-8")
+if "scene_label:" in action_navigation:
+    fail("action target still propagates a scene display label")
+
+activity_title = (FRONTEND / "app/activityPageTitle.ts").read_text(encoding="utf-8")
+if "queryLabel" in activity_title:
+    fail("activity titles must not consume route-carried labels")
 
 for relative in ("app/businessScenarioNavigation.ts", "app/enterpriseSetupNavigation.ts"):
     source = (FRONTEND / relative).read_text(encoding="utf-8")

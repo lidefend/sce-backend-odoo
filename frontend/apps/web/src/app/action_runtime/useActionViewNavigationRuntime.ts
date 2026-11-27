@@ -179,7 +179,6 @@ export function useActionViewNavigationRuntime(options: UseActionViewNavigationR
             type: 'scene',
             scene_key: target.scene_key || target.sceneKey,
             route: target.route,
-            scene_label: target.scene_label || target.sceneLabel,
           }
         : null);
     if (entryTarget) {

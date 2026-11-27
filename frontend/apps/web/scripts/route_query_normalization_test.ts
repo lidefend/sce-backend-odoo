@@ -4,7 +4,10 @@ import {
   normalizeEmbeddedSceneQuery,
   stripCanonicalSceneIdentityQuery,
 } from '../src/app/routeQuery';
-import { buildBusinessCategoryCreateNavQuery } from '../src/app/navigationContext';
+import {
+  buildBusinessCategoryCreateNavQuery,
+  pickContractNavQuery,
+} from '../src/app/navigationContext';
 
 const malformedActionQuery = normalizeEmbeddedSceneQuery({
   menu_id: '379&action_id=506&view_mode=tree',
@@ -73,6 +76,22 @@ assert.deepEqual(stripCanonicalSceneIdentityQuery({
   scene_label: 'Role home',
   menu_id: '3',
 }), { menu_id: '3' });
+assert.deepEqual(pickContractNavQuery({
+  scene: 'workspace.home',
+  scene_key: 'workspace.home',
+  scene_label: 'Role home',
+  menu_id: '3',
+  action_id: '4',
+  domain_raw: '[]',
+  context_raw: '{}',
+  return_url: '/s/projects.ledger',
+}), {
+  menu_id: '3',
+  action_id: '4',
+  domain_raw: '[]',
+  context_raw: '{}',
+  return_url: '/s/projects.ledger',
+});
 assert.deepEqual(buildBusinessCategoryCreateNavQuery({
   categoryCode: 'finance.payment.apply.pay',
   option: {

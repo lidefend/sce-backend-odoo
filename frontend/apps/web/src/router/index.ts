@@ -96,9 +96,7 @@ function resolveActivityRoute(to: RouteLocationNormalized, actionId: number, men
       'business_entry_contract_version',
       'allowed_business_category_codes',
       'default_business_category_code',
-      'default_business_category_label',
       'current_business_category_code',
-      'current_business_category_label',
     ]);
     return `/a/${actionId}${query}`;
   }
@@ -108,9 +106,7 @@ function resolveActivityRoute(to: RouteLocationNormalized, actionId: number, men
       'action_id',
       'activity_page_id',
       'current_business_category_code',
-      'current_business_category_label',
       'default_business_category_code',
-      'default_business_category_label',
     ]);
     const prefix = to.name === 'record' ? '/r' : '/f';
     return `${prefix}/${encodeURIComponent(model)}/${encodeURIComponent(recordId)}${query}`;
@@ -119,8 +115,6 @@ function resolveActivityRoute(to: RouteLocationNormalized, actionId: number, men
     const query = buildActivityQuery(to, [
       'menu_id',
       'action_id',
-      'scene_key',
-      'scene',
       'entry_intent',
       'project_id',
       'scene_intent',
@@ -187,12 +181,10 @@ function resolveRouteAuthorityEntry(
 }
 
 function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<typeof useSessionStore>): string {
-  const businessLabel = routeQueryText(to.query.current_business_category_label || to.query.default_business_category_label);
-  if (businessLabel) return businessLabel;
   if (to.name === 'home' || to.name === 'scene-home') return '角色首页';
   if (to.name === 'my-work' || to.name === 'scene-my-work') return '我的工作';
   if (to.name === 'scene') {
-    const sceneKey = routeQueryText(to.params.sceneKey || to.query.scene_key || to.query.scene);
+    const sceneKey = routeQueryText(to.params.sceneKey);
     const registeredScene = sceneKey ? getSceneByKey(sceneKey) : null;
     const runtimeScene = sceneKey
       ? session.scenes.find((item) => (
@@ -204,7 +196,6 @@ function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<t
       sceneKey,
       runtimeLabel: runtimeScene?.label,
       registeredLabel: registeredScene?.label,
-      queryLabel: to.query.scene_label,
     });
   }
   if (to.name === 'action') {
@@ -213,7 +204,7 @@ function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<t
     const meta = resolveRouteActivityActionMeta(to, session);
     const menuNode = menuId > 0 ? findMenuNode(session.menuTree, menuId) : null;
     const authority = resolveRouteAuthorityEntry(to, session);
-    const sceneKey = routeQueryText(meta?.scene_key || meta?.sceneKey || to.query.scene_key || to.query.scene);
+    const sceneKey = routeQueryText(meta?.scene_key || meta?.sceneKey);
     const runtimeScene = sceneKey
       ? session.scenes.find((item) => (
         String(item.key || '').trim() === sceneKey
@@ -237,7 +228,6 @@ function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<t
       const authority = resolveRouteAuthorityEntry(to, session);
       return resolveBusinessActivityTitle({
         authorityName: authority?.action_name || authority?.name,
-        businessLabel,
         actionTitle: meta?.ui_title || meta?.scene_title || meta?.name,
         modelLabel: meta?.model_label,
         menuTitle: meta?.menu_title || menuNode?.label,
@@ -289,7 +279,7 @@ function registerRouteActivity(to: RouteLocationNormalized, options: { settling?
       : `record:${model}:${recordId}`);
     kind = 'record_form';
   } else if (to.name === 'scene' || String(to.name || '').startsWith('scene-')) {
-    sceneKey = routeQueryText(to.params.sceneKey || to.meta?.sceneKey || to.query.scene_key || to.query.scene);
+    sceneKey = routeQueryText(to.params.sceneKey || to.meta?.sceneKey);
     key = activityKey || `scene:${sceneKey || String(to.name || 'scene')}`;
     kind = sceneKey === 'workspace.home' || to.name === 'scene-home' ? 'workspace' : 'scene';
   } else if (to.name === 'home' || to.name === 'my-work') {

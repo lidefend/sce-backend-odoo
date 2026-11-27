@@ -21,7 +21,6 @@ type CanonicalSceneRouteOptions = {
   query?: QueryLike;
   menuId?: unknown;
   actionId?: unknown;
-  sceneLabel?: unknown;
   order?: unknown;
 };
 
@@ -248,7 +247,6 @@ export function buildEntryTargetRouteTarget(
       query: normalizedQuery,
       menuId,
       actionId,
-      sceneLabel: entryTarget?.scene_label,
     });
   }
   const query = compactQuery({
