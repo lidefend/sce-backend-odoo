@@ -28,6 +28,7 @@
     "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts",
     "frontend/apps/web/src/app/pageIdentity.ts",
     "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+    "frontend/apps/web/src/app/pageIdentityRoute.ts",
     "frontend/apps/web/src/app/runtime/actionViewAssigneeOptionsContract.ts",
     "frontend/apps/web/src/app/runtime/actionViewKanbanTitleField.ts",
     "frontend/apps/web/src/app/runtime/actionViewSurfacePolicyBudget.ts",
@@ -73,8 +74,10 @@
     "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordFormFieldSchemas.ts",
     "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+    "frontend/apps/web/src/router/index.ts",
     "frontend/apps/web/src/utils/display.ts",
     "frontend/apps/web/src/utils/fieldSemantics.ts",
+    "frontend/apps/web/src/views/ActionView.vue",
     "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
     "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
     "frontend/apps/web/scripts/list_surface_component_test.mjs",
@@ -90,6 +93,7 @@
     "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
     "scripts/verify/frontend_page_identity_lifecycle_smoke.js",
     "scripts/verify/frontend_page_identity_smoke.js",
+    "scripts/verify/frontend_page_identity_guard.py",
     "scripts/verify/frontend_localized_display_contract_test.ts",
     "scripts/verify/frontend_my_work_approval_guard.py",
     "scripts/verify/frontend_dev_incremental.py",
@@ -568,7 +572,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "After binding the page-identity commit build, continue FC-02 gap closure by auditing route title constants, legacy title fallbacks, breadcrumb links and company-switch stale context against the current candidate.",
+  "next_exact_step": "After binding the page-contract title slice build, audit address-bar URL composition and classify canonical route identity versus required context versus transient UI state before changing route query generation.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2155,6 +2159,36 @@
         "the inventory was refreshed through make refresh.frontend.component_driver_takeover.inventory and the resumed affected set passed"
       ],
       "scope_limit": "Local units, contract guards, strict typecheck and component fixtures only; production role/company journeys, the 143-entry browser matrix, remote CI and user acceptance remain not_run."
+    },
+    "fc02_route_identity_contract_titles": {
+      "status": "passed_local_targeted",
+      "stage_identity": "934d685531bc30667ca412cda4b4e7bb1aaa54e4 plus the owned route-title and page-contract consumer scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T092802Z-2084720-627610702/receipt.json",
+      "receipt_sha256": "a2d2e6dccff08a1e5bf238a52b25285ddc9f5cf0afd70d2d5d4cc0a284467cf2",
+      "required_targets": 70,
+      "executed_targets": 57,
+      "reused_targets": 13,
+      "test_targets": 39,
+      "executed_test_count": 1526,
+      "static_checks": 10,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "route page identity consumes page_contracts texts.title or page_orchestration.page.title",
+        "the duplicate router and pageIdentityRoute static business title tables are removed",
+        "missing contract titles stop with ContractGapError instead of using a frontend business label",
+        "the action identity legacyTitle fallback is removed",
+        "generic access-denied, route-error, record and model-form activity labels remain explicit mechanism text",
+        "page identity smoke tests pass 34 and 33 assertions respectively",
+        "navigation shell, page-pattern parity, strict typecheck and the 42-binding contract-basis guard pass"
+      ],
+      "failure_recovery": [
+        "the first unified run stopped because the component-driver inventory digest was stale after the router source adjustment",
+        "the inventory was regenerated through its owning target and the resumed affected set passed"
+      ],
+      "scope_limit": "Local route, unit, contract and type fixtures only; the candidate runtime URL shape, production role/company journeys, remote CI and user acceptance remain not_run."
     },
     "remote_publication": {
       "status": "draft_open_mainline_sync_validation_not_awaited",

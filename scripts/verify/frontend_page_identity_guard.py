@@ -49,6 +49,29 @@ if "`${model || '记录'} #${id || ''}`" in router:
     fail("router still exposes model #id title")
 if "action: '业务动作'" in router:
     fail("route-name generic business action title remains")
+if "resolveRouteContractTitle(name, pageContracts) || ROUTE_STATE_TITLE_FALLBACKS[name]" not in router:
+    fail("route activity title must consume the page contract")
+if "resolveRoutePageIdentity(to, session.menuTree, session.pageContracts)" not in router:
+    fail("route page identity must consume the page contract")
+
+route_identity = (FRONTEND / "app/pageIdentityRoute.ts").read_text(encoding="utf-8")
+for forbidden in (
+    "const configured: Record<string, string>",
+    "'配置工作台'",
+    "'菜单配置'",
+    "'表单字段配置'",
+    "'场景健康'",
+    "'场景发布包'",
+    "'使用分析'",
+    "'产品发布'",
+    "'导航异常'",
+):
+    if forbidden in route_identity:
+        fail(f"hardcoded page title remains: {forbidden}")
+
+identity_adapter = (FRONTEND / "app/pageIdentityAdapters.ts").read_text(encoding="utf-8")
+if "legacyTitle" in identity_adapter:
+    fail("page identity must not retain a legacy title fallback")
 
 form_labels = (FRONTEND / "pages/contractForm/uiLabels.ts").read_text(encoding="utf-8")
 if "`记录 #${params.recordId}`" in form_labels:

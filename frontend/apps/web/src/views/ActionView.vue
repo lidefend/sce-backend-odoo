@@ -1918,7 +1918,6 @@ const {
 const actionMetaName = computed(() => String(actionMeta.value?.name || '').trim());
 const baseErrorMessage = computed(() => (error.value?.code ? `code=${error.value.code} · ${error.value.message}` : error.value?.message || ''));
 const {
-  pageTitle: legacyPageTitle,
   emptyReasonText,
   showHud,
   errorMessage,
@@ -1936,9 +1935,9 @@ const {
   isHudEnabled,
 });
 const actionIdentityInput = computed(() => buildActionPageIdentity({
-    action: actionMeta.value, breadcrumbs: resolveRoutePageIdentity(route, session.menuTree).breadcrumbs,
+    action: actionMeta.value, breadcrumbs: resolveRoutePageIdentity(route, session.menuTree, session.pageContracts).breadcrumbs,
     actionContractTitle: actionContract.value?.snapshot.pageInfo.pageName || actionMetaName.value,
-    legacyTitle: legacyPageTitle.value, menuName: currentMenuTitle.value, sceneLabel: scene.value?.label,
+    menuName: currentMenuTitle.value, sceneLabel: scene.value?.label,
     modelName: resolvedModelRef.value || model.value, status: status.value, subtitle: subtitle.value,
 }));
 const pageIdentity = usePublishedPageIdentity(actionIdentityInput, { routeKey: () => route.fullPath,

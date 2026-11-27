@@ -105,7 +105,6 @@ export function buildActionPageIdentity(input: {
   action: BusinessMetadata;
   actionContractTitle?: unknown;
   breadcrumbs?: PageBreadcrumb[];
-  legacyTitle?: unknown;
   menuName?: unknown;
   modelName?: unknown;
   sceneLabel?: unknown;
@@ -118,7 +117,6 @@ export function buildActionPageIdentity(input: {
       input.actionContractTitle,
       input.sceneLabel,
       actionName(input.action),
-      input.legacyTitle,
     ].map(productIdentityText).find(Boolean) || '',
     menuName: input.menuName,
     modelName: input.modelName,

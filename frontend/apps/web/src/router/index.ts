@@ -9,8 +9,9 @@ import { resolveCreateFormActivityRedirect } from '../app/recordFormActivityRout
 import { findActionMeta, findActionMetaByMenu, findActionNodeByModel, findMenuNode } from '../app/menu';
 import { BUSINESS_CONFIG_MODELS } from '../app/businessConfigBoundaries';
 import { beginPageIdentity } from '../app/pageIdentityRuntime';
-import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
+import { resolveRouteContractTitle, resolveRoutePageIdentity } from '../app/pageIdentityRoute';
 import type { NavMeta } from '@sc/schema';
+import type { PageContract } from '../stores/session';
 import { findRouteAuthority, validateRouteAuthorityContext } from '../app/routeAuthority';
 import { consumeButtonNavigationAuthority } from '../app/buttonNavigationAuthority';
 import { resolveAuthorizedConfigurationRoute } from '../services/actionRoutePolicy';
@@ -27,35 +28,19 @@ import { resolveEntryBasePath } from '../services/entryNamespace';
 import { resolveActivityRouteKey } from '../app/activityPageCacheIdentity';
 import { routeFailureRedirect } from '../app/routeFailure';
 
-function routeTitle(routeName: string | symbol | null | undefined): string {
+const ROUTE_STATE_TITLE_FALLBACKS: Record<string, string> = {
+  'access-denied': '无权访问',
+  'route-error': '请求未完成',
+  record: '记录详情',
+  'model-form': '记录表单',
+};
+
+function routeTitle(
+  routeName: string | symbol | null | undefined,
+  pageContracts: Record<string, PageContract>,
+): string {
   const name = typeof routeName === 'string' ? routeName : '';
-  const map: Record<string, string> = {
-    login: '登录',
-    'account-activation': '激活账号',
-    'password-recovery': '忘记密码',
-    home: '角色首页',
-    'scene-home': '角色首页',
-    'my-work': '我的工作',
-    'scene-my-work': '我的工作',
-    scene: '业务场景',
-    menu: '业务菜单',
-    action: '业务列表',
-    workbench: '诊断页',
-    'scene-health': '场景健康',
-    'scene-packages': '场景发布包',
-    'usage-analytics': '使用分析',
-    'release-operator': '产品发布',
-    'capability-explorer': '平台能力浏览器',
-    'business-config': '配置工作台',
-    'menu-config': '菜单配置',
-    'form-field-config': '表单字段配置',
-    'api-key-management': 'API Key 管理',
-    'model-form': '记录表单',
-    record: '记录详情',
-    'access-denied': '无权访问',
-    'route-error': '请求未完成',
-  };
-  return map[name] || '系统';
+  return resolveRouteContractTitle(name, pageContracts) || ROUTE_STATE_TITLE_FALLBACKS[name] || '系统';
 }
 
 function splitRoutePath(rawPath: string) {
@@ -259,9 +244,9 @@ function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<t
         fallback: '业务表单',
       });
     }
-    return routeTitle(to.name);
+    return routeTitle(to.name, session.pageContracts);
   }
-  return routeTitle(to.name);
+  return routeTitle(to.name, session.pageContracts);
 }
 
 function registerRouteActivity(to: RouteLocationNormalized, options: { settling?: boolean } = {}): string {
@@ -510,7 +495,7 @@ router.beforeEach(async (to) => {
 
 router.afterEach((to) => {
   const session = useSessionStore();
-  const routeIdentity = resolveRoutePageIdentity(to, session.menuTree);
+  const routeIdentity = resolveRoutePageIdentity(to, session.menuTree, session.pageContracts);
   const isCreateForm = (to.name === 'record' || to.name === 'model-form') && routeQueryText(to.params.id) === 'new';
   const authority = isCreateForm ? resolveRouteAuthorityEntry(to, session) : null;
   const deferUntilPageIdentity = shouldDeferActivityPageTitle({

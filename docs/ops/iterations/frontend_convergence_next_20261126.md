@@ -582,6 +582,34 @@ clean 运行态回读：
 生产角色/公司旅程、143 个业务入口浏览器矩阵、远端 PR CI、主线资格、部署和用户验收
 仍未完成。
 
+### 2026-11-27 FC-02 路由标题归一到页面契约
+
+本切片删除 `router` 与 `pageIdentityRoute` 各自维护的静态业务标题表，页面身份和活动标题
+统一消费 `page_contracts.pages.*.texts.title`，工作台允许消费
+`page_orchestration.page.title`。契约未声明标题时直接抛出 `ContractGapError`，不再回退
+“配置工作台 / 场景健康 / 产品发布 / 导航异常”等前端业务文案。
+
+同时删除 ActionView 页面身份的 `legacyTitle` 第四路兜底。动作页身份只消费正式动作契约标题、
+场景声明、动作/菜单投影；无权访问、请求失败、记录详情和记录表单保留明确的通用机制文案。
+
+验证：
+
+- 页面身份 smoke `34` 条、生命周期 smoke `33` 条与身份守卫通过；
+- 导航壳、页面模式、严格类型和契约基座守卫通过，契约基座仍为 `42` 个绑定、`0` 个未闭合缺陷；
+- `make ci.local.iteration`：`70` 个必需目标全部成立，其中 `57` 个本轮执行、`13` 个复用；
+  `39` 个测试目标执行 `1526` 项测试、`10` 项静态检查，`unmapped=0`、`not_run=0`、
+  `blocked=0`，退出零。
+
+回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T092802Z-2084720-627610702/receipt.json`
+
+回执 SHA256：
+`a2d2e6dccff08a1e5bf238a52b25285ddc9f5cf0afd70d2d5d4cc0a284467cf2`。
+
+下一项是地址栏 URL 收敛：区分正式路由身份、后端声明的必需上下文和可重建的瞬时 UI 状态，
+避免 scene/menu/action/return/context 参数重复堆叠。当前候选尚未做运行态 URL 回读。
+
 ### 2026-11-27 主线 relationActiveActions 契约并入
 
 主线 `9395d93f92badffc87d32c5979cf7c70e374e975` 已包含 P0 PR #1026 的

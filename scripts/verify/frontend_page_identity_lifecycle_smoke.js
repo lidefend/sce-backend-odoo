@@ -26,6 +26,16 @@ function loadTs(moduleName, importerDir = APP_DIR) {
     if (request === './pageIdentityRoute') {
       return { resolveRoutePageIdentity: () => { throw new Error('unexpected route resolution'); } };
     }
+    if (sourcePath.endsWith('/pageIdentityRoute.ts')) {
+      if (request === './menu') {
+        return {
+          findActionMeta: () => null,
+          findActionMetaByMenu: () => null,
+          findMenuNode: () => null,
+        };
+      }
+      if (request === './resolvers/sceneRegistry') return { getSceneByKey: () => null };
+    }
     if (request.startsWith('.')) return loadTs(request, path.dirname(sourcePath));
     if (!request.startsWith('@')) return require(request);
     throw new Error(`unsupported lifecycle smoke import: ${request}`);
@@ -41,7 +51,7 @@ function equal(actual, expected, label) {
 }
 
 function main() {
-  const { buildContractFormPageIdentity } = loadTs('pageIdentityAdapters');
+  const { buildActionPageIdentity, buildContractFormPageIdentity } = loadTs('pageIdentityAdapters');
   const { resolveProductPageIdentity } = loadTs('pageIdentity');
   const sourceRecord = { id: 17, name: 'DOC-017', display_name: 'Document / Project / DOC-017' };
   const draft = { amount: 20, display_name: sourceRecord.display_name };
@@ -84,7 +94,39 @@ function main() {
   equal(coordinator.clear().title, '工作台', 'logout clears business identity');
   equal(coordinator.currentKey(), '', 'logout clears active route key');
 
-  console.log('[frontend_page_identity_lifecycle_smoke] PASS assertions=28');
+  const { resolveRoutePageIdentity } = loadTs('pageIdentityRoute');
+  const routeIdentity = (name, pageContracts = {}) => resolveRoutePageIdentity({
+    name,
+    params: {},
+    query: {},
+    meta: {},
+  }, [], pageContracts);
+  const pageContracts = {
+    home: { texts: { title: 'Declared Home' } },
+    business_config: { texts: { title: 'Declared Business Config' } },
+    workbench: { page_orchestration: { page: { title: 'Declared Recovery' } } },
+  };
+  equal(routeIdentity('home', pageContracts).fallbackTitle, 'Declared Home', 'home title comes from the page contract');
+  equal(routeIdentity('business-config', pageContracts).fallbackTitle, 'Declared Business Config', 'admin title comes from the page contract');
+  equal(routeIdentity('workbench', pageContracts).fallbackTitle, 'Declared Recovery', 'workbench falls back to its declared orchestration title');
+  let missingTitle = '';
+  try {
+    routeIdentity('release-operator', pageContracts);
+  } catch (error) {
+    missingTitle = error.name;
+  }
+  equal(missingTitle, 'ContractGapError', 'missing page contract title stops instead of using a frontend title');
+  equal(
+    resolveProductPageIdentity(buildActionPageIdentity({
+      action: {},
+      legacyTitle: 'Legacy frontend title',
+      status: 'ok',
+    })).title,
+    '业务列表',
+    'legacy action title input cannot become page identity',
+  );
+
+  console.log('[frontend_page_identity_lifecycle_smoke] PASS assertions=33');
 }
 
 main();

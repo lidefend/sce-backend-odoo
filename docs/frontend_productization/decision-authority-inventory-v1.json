@@ -850,7 +850,7 @@
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
         100,
-        128
+        126
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",
@@ -866,7 +866,7 @@
       "lines": [
         77,
         100,
-        128
+        126
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",
@@ -909,7 +909,7 @@
       "literal": "ok",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        128
+        126
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1437,7 +1437,7 @@
       "literal": "saved",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        3109
+        3108
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
