@@ -32,6 +32,7 @@ import {
   resolveDeclaredGroupByLabel,
   resolveDeclaredPrimaryFilterBudget,
   resolveDeclaredSavedFilterIdentity,
+  resolveLoadedPrimaryFilterBudget,
   useActionViewFilterComputedRuntime,
 } from '../src/app/action_runtime/useActionViewFilterComputedRuntime';
 import {
@@ -836,6 +837,34 @@ for (const invalid of [{}, { filters_primary_max: -1 }, { filters_primary_max: 1
     'primary filter budget must stop instead of defaulting or clamping',
   );
 }
+check(
+  resolveLoadedPrimaryFilterBudget(null),
+  0,
+  'primary filter budget waits for the contract instead of reporting a missing declaration during load',
+);
+check(
+  resolveLoadedPrimaryFilterBudget({
+    snapshot: {
+      actionContract: {
+        surfacePolicies: { filters_primary_max: 4 },
+      },
+    },
+  } as ContractV2NormalizedStore),
+  4,
+  'loaded primary filter budget consumes the declared contract value',
+);
+assert.throws(
+  () => resolveLoadedPrimaryFilterBudget({
+    snapshot: {
+      actionContract: {
+        surfacePolicies: {},
+      },
+    },
+  } as ContractV2NormalizedStore),
+  (error: unknown) => isContractGapError(error)
+    && error.defect.missing === 'surface_policies.filters_primary_max',
+  'loaded contract with no primary filter budget still fails closed',
+);
 check(
   resolveDeclaredFilterBudget({ filters_max: 0 }, 'filters_max'),
   0,

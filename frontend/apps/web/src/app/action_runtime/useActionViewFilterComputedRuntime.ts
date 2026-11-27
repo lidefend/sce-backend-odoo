@@ -62,6 +62,11 @@ export function resolveDeclaredPrimaryFilterBudget(surfacePolicies: Dict): numbe
   return resolveDeclaredFilterBudget(surfacePolicies, 'filters_primary_max');
 }
 
+export function resolveLoadedPrimaryFilterBudget(store: ContractV2NormalizedStore | null): number {
+  if (!store) return 0;
+  return resolveDeclaredPrimaryFilterBudget(resolveContractV2SurfacePolicies(store));
+}
+
 export function resolveDeclaredGroupByLabel(rows: unknown, field: unknown): string {
   const normalizedField = String(field || '').trim();
   if (!normalizedField || !Array.isArray(rows)) return '';
@@ -143,8 +148,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
   });
 
   const filterPrimaryBudget = computed(() => {
-    const surfacePolicies = resolveContractV2SurfacePolicies(options.actionContract.value);
-    return resolveDeclaredPrimaryFilterBudget(surfacePolicies);
+    return resolveLoadedPrimaryFilterBudget(options.actionContract.value);
   });
 
   const contractPrimaryFilterChips = computed(() =>
