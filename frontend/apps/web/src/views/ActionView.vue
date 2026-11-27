@@ -2358,7 +2358,9 @@ const {
 function applyGroupBy(field: string) {
   const normalized = String(field || '').trim();
   const found = routeGroupByChips.value.find((chip) => String((chip as Record<string, unknown>).field || '') === normalized) as Record<string, unknown> | undefined;
-  activeGroupByDisplayLabel.value = String(found?.label || normalized);
+  const label = String(found?.label || '').trim();
+  if (!label) return;
+  activeGroupByDisplayLabel.value = label;
   applyGroupByRuntime(field);
 }
 

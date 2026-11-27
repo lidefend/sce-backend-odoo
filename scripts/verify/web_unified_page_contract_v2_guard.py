@@ -207,6 +207,10 @@ def main() -> int:
         errors.append("web list shape runtime must honor v2 widget status for default column visibility")
     if "resolveContractV2SelectorStatus" not in filter_source or "isSelectorEnabled" not in filter_source:
         errors.append("web filter runtime must honor v2 selectorStatus for search/filter/group controls")
+    if "found?.label || field" in filter_source:
+        errors.append("web filter runtime must not expose an undeclared technical group field as a label")
+    if "search.sort_options" in shape_source or "sort_options" in shape_source:
+        errors.append("web list shape runtime must not consume the retired search sort_options carrier")
     if "snapshot.pageInfo.model" not in shape_source:
         errors.append("web model resolver must read canonical pageInfo.model")
     if not has_contract_page_info_view_type_access(surface_source) or "resolveContractV2ListProfile" not in surface_source:

@@ -675,6 +675,35 @@ component-driver inventory 随后按 owning target 重建，剩余目标全部�
 `pickImportFile` / `executeActionViewCollectionImport` 流程；覆盖矩阵已更新为本地
 生命周期已验证、真实导入用户旅程仍待运行。
 
+### 2026-11-27 FC-03 分组与排序只消费当前契约载体
+
+查询条继续收口两个前端旁路：
+
+- 活动分组在找不到声明 chip 时原先把技术字段名直接显示给用户；现在只有声明 label
+  才可成为分组展示，未知字段返回空，并由既有查询状态反馈处理；
+- ActionView 仍读取 `search.sort_options`，但当前 strict decoder 明确拒绝该字段，
+  因而不可能存在合法消费者；删除该死分支，只保留契约声明的 default/current order。
+
+补齐区分性测试：
+
+- 声明的分组 label 被消费；
+- 未知分组字段和空 label 均不显示技术字段名；
+- 伪造的 `sort_options` 不产生可执行排序项；
+- web V2 consumer guard 同时阻止技术字段名回退和被 decoder 拒绝的排序载体。
+
+首次完整迭代发现守卫把新增注释中的字段名也当作源码命中；实现本身没有读取该字段。
+注释改为行为描述后，owned guard 与完整受影响集均通过。
+
+`make ci.local.iteration` 成立 85 个必需目标，全部本轮执行、无复用；64 个测试目标执行
+2157 项测试、11 项静态检查，`unmapped=0`、`not_run=0`、`blocked=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T123004Z-3729872-762447544/receipt.json`
+
+回执 SHA256：
+`2ee49437bbe5b4e866f59873a61f257166e0cfe3178a635adb4521d9534f91bf`。
+
+本切片尚未推送；生产查询条和远端 CI 仍待精确 head 验证。
+
 ### 2026-11-27 FC-02 页面身份声明化与选测补口
 
 本切片属于共享前端呈现消费层，不修改后端契约、权限或数据。页面身份不再把

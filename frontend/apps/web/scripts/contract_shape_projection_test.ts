@@ -29,6 +29,7 @@ import { resolveDeclaredAssigneeQuery } from '../src/app/runtime/actionViewAssig
 import { resolveDeclaredKanbanTitleField } from '../src/app/runtime/actionViewKanbanTitleField';
 import {
   resolveDeclaredFilterBudget,
+  resolveDeclaredGroupByLabel,
   resolveDeclaredPrimaryFilterBudget,
 } from '../src/app/action_runtime/useActionViewFilterComputedRuntime';
 import { resolveDeclaredSurfaceBudget } from '../src/app/runtime/actionViewSurfacePolicyBudget';
@@ -690,6 +691,44 @@ check(
   resolveDeclaredPrimaryFilterBudget({ filters_primary_max: 3 }),
   3,
   'primary filter budget consumes the declared value',
+);
+check(
+  resolveDeclaredGroupByLabel([
+    { field: 'manager_id', label: '按项目经理' },
+    { field: 'state', label: '' },
+  ], 'manager_id'),
+  '按项目经理',
+  'active grouping consumes the declared group label',
+);
+check(
+  resolveDeclaredGroupByLabel([{ field: 'manager_id', label: '按项目经理' }], 'unknown_field'),
+  '',
+  'an unknown grouping field never falls back to the technical field name',
+);
+check(
+  resolveDeclaredGroupByLabel([{ field: 'state', label: '' }], 'state'),
+  '',
+  'an undeclared grouping label remains empty',
+);
+const unsupportedSortOptions = runtime.buildListSortOptions({
+  snapshot: {
+    layoutContract: { listProfile: {} },
+    actionContract: { surfacePolicies: {} },
+    searchContract: {
+      default_order: 'name asc',
+      sort_options: [{ value: 'hidden_order', label: 'Undeclared sort' }],
+    },
+  },
+  widgetsById: new Map(),
+  widgetsByFieldCode: new Map(),
+  widgetsByFieldCodeAll: new Map(),
+  widgetStatusById: new Map(),
+  primaryDataSource: {},
+} as unknown as ContractV2NormalizedStore, '', '排序');
+check(
+  unsupportedSortOptions.some((option) => option.value === 'hidden_order'),
+  false,
+  'the frontend ignores a sort carrier rejected by the current contract decoder',
 );
 for (const invalid of [{}, { filters_primary_max: -1 }, { filters_primary_max: 1.5 }, { filters_primary_max: '3' }]) {
   assert.throws(

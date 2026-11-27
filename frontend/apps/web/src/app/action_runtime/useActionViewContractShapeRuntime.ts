@@ -433,14 +433,8 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
       const label = String(labelRaw || value || fallbackLabel).trim() || fallbackLabel;
       rows.push({ label, value });
     };
-    const search = resolveContractV2SearchContract(contract as ContractV2NormalizedStore | null);
-    const sortOptions = search.sort_options;
-    if (Array.isArray(sortOptions)) {
-      sortOptions.forEach((row) => {
-        const raw = row as Dict;
-        add(raw.value || raw.order, raw.label);
-      });
-    }
+    // The current search contract has no ordering-options carrier. Only the
+    // declared default order and current route order are executable identities.
     add(extractListOrderFromContract(contract), fallbackLabel);
     add(currentSort, fallbackLabel);
     return rows;

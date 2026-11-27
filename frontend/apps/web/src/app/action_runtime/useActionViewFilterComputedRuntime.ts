@@ -53,6 +53,16 @@ export function resolveDeclaredPrimaryFilterBudget(surfacePolicies: Dict): numbe
   return resolveDeclaredFilterBudget(surfacePolicies, 'filters_primary_max');
 }
 
+export function resolveDeclaredGroupByLabel(rows: unknown, field: unknown): string {
+  const normalizedField = String(field || '').trim();
+  if (!normalizedField || !Array.isArray(rows)) return '';
+  const found = rows.find((row) => (
+    row && typeof row === 'object' && !Array.isArray(row)
+    && String((row as Dict).field || '').trim() === normalizedField
+  )) as Dict | undefined;
+  return String(found?.label || '').trim();
+}
+
 function resolveGroupByFromContextRaw(value: unknown): string {
   const text = String(value || '').trim();
   if (!text) return '';
@@ -332,8 +342,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
   const activeGroupByLabel = computed(() => {
     const field = options.activeGroupByField.value;
     if (!field) return '';
-    const found = routeGroupByChips.value.find((chip) => String((chip as Dict).field || '') === field) as Dict | undefined;
-    return String(found?.label || field);
+    return resolveDeclaredGroupByLabel(routeGroupByChips.value, field);
   });
 
   return {

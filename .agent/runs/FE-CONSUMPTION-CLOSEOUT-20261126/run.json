@@ -595,7 +595,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Commit and publish the filter-label presentation slice to PR 1019, then read back all four required checks on the new exact head; real browser readback remains blocked until managed port 5175 is released by the other worktree.",
+  "next_exact_step": "Commit and publish the group/sort declaration-consumption slice to PR 1019, then read back all four required checks on the new exact head; real browser readback remains blocked until managed port 5175 is released by the other worktree.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2399,6 +2399,35 @@
       ],
       "scope_limit": "Local source, unit and component checks only. The current candidate has not been pushed; real browser address-bar readback remains blocked by another worktree owning managed acceptance port 5175."
     },
+    "fc03_declared_group_sort_consumption": {
+      "status": "passed_local_targeted",
+      "candidate_head": "a25c98cf76cfeca16fb373bce85a6aba59e3ba57",
+      "stage_identity": "a25c98cf76cfeca16fb373bce85a6aba59e3ba57 plus the owned group-sort-consumption dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T123004Z-3729872-762447544/receipt.json",
+      "receipt_sha256": "2ee49437bbe5b4e866f59873a61f257166e0cfe3178a635adb4521d9534f91bf",
+      "required_targets": 85,
+      "executed_targets": 85,
+      "reused_targets": 0,
+      "test_targets": 64,
+      "executed_test_count": 2157,
+      "static_checks": 11,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "active grouping displays only a label declared by the current group chip",
+        "an unknown grouping field no longer falls back to its technical field name",
+        "the list shape consumer ignores the unsupported search sort-options carrier rejected by the current decoder",
+        "the web consumer guard rejects both the retired sort carrier and technical group-label fallback",
+        "the complete affected target set executed without reuse and passed"
+      ],
+      "failure_recovery": [
+        "the first complete iteration rejected a prohibited token that appeared only in an explanatory source comment",
+        "the comment was rewritten as behavior text and the owning contract guard passed before the resumed full iteration"
+      ],
+      "scope_limit": "Local contract consumer, component fixture and static checks only. Production group/sort query-bar behavior and user acceptance remain not_run."
+    },
     "fc03_preset_filter_label_presentation": {
       "status": "passed_local_targeted",
       "candidate_head": "98db6ed386f0bbe096febaf954d188de553eb9ce",
@@ -2492,12 +2521,12 @@
       "scope_limit": "P4 smoke and selector alignment only. The repaired candidate has not yet been pushed; exact-head remote CI, browser address-bar readback, mainline qualification and user acceptance remain not_run."
     },
     "remote_publication": {
-      "status": "remote_ci_passed_for_98db_filter_slice_pending_push",
+      "status": "remote_ci_passed_for_a25c_group_sort_slice_pending_push",
       "pull_request": 1019,
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "98db6ed386f0bbe096febaf954d188de553eb9ce",
+      "current_head": "a25c98cf76cfeca16fb373bce85a6aba59e3ba57",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",
@@ -2510,9 +2539,11 @@
         "head 125c24234 passed public_guard, merge_policy_gate, professional_quality_gate and frontend_release_gate",
         "the activity company-scope slice requires its own exact-head remote checks and does not inherit 125c24234 results",
         "head 98db6ed38 passed all four required checks and the selected backend impact suite",
-        "the filter-label presentation slice requires its own exact-head remote checks and does not inherit 98db6ed38 results"
+        "the filter-label presentation slice requires its own exact-head remote checks and does not inherit 98db6ed38 results",
+        "head a25c98cf7 passed all four required checks and the selected backend impact suite",
+        "the group/sort declaration-consumption slice requires its own exact-head remote checks and does not inherit a25c98cf7 results"
       ],
-      "coverage_limit": "The activity company-scope candidate is green on 98db6ed38. The filter-label presentation slice remains local until committed and pushed, so its integration readiness is not claimed."
+      "coverage_limit": "The filter-label candidate is green on a25c98cf7. The group/sort declaration-consumption slice remains local until committed and pushed, so its integration readiness is not claimed."
     }
   }
 }
