@@ -82,7 +82,7 @@ function favoriteActive(value: unknown): boolean {
 export function resolveCanonicalNativeFieldSchemas(
   schemas: readonly FormSectionFieldSchema[],
 ): FormSectionFieldSchema[] {
-  const favorite = schemas.find((field) => field.widget === 'boolean_favorite' || field.name === 'is_favorite');
+  const favorite = schemas.find((field) => field.widget === 'boolean_favorite');
   const content = schemas.filter((field) => field !== favorite).map((field) => ({ ...field }));
   if (!favorite || !content.length) return content;
   const targetIndex = content.findIndex((field) => field.name === 'name');

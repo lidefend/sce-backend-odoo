@@ -764,7 +764,7 @@ export function buildNativeFieldSchemas(input: NativeFieldSchemasInput): FormSec
   const mappedNodes = input.nodes
     .map((node, index) => ({ raw: node, field: input.mapNode(node, index) }))
     .filter((item): item is { raw: NativeLayoutLikeNode; field: LayoutNode } => Boolean(item.field));
-  const favoriteNode = mappedNodes.find((item) => item.field.widget === 'boolean_favorite' || item.field.name === 'is_favorite');
+  const favoriteNode = mappedNodes.find((item) => item.field.widget === 'boolean_favorite');
   const fieldNodes = mappedNodes
     .filter((item) => item !== favoriteNode)
     .map((item) => item.field);

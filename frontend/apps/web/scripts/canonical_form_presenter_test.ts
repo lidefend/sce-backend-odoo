@@ -2140,6 +2140,29 @@ assert.deepEqual(
   'canonical native title projection must decorate the textual title with favorite state instead of rendering the boolean as H1',
 );
 assert.deepEqual(
+  resolveCanonicalNativeFieldSchemas([
+    {
+      key: 'field.is_favorite', name: 'is_favorite', label: 'Favorite', type: 'boolean', widget: 'checkbox',
+      required: false, readonly: false, inputValue: false,
+    },
+    {
+      key: 'field.name', name: 'name', label: 'Name', type: 'char', required: true, readonly: true,
+      inputValue: 'Canonical record title',
+    },
+  ]),
+  [
+    {
+      key: 'field.is_favorite', name: 'is_favorite', label: 'Favorite', type: 'boolean', widget: 'checkbox',
+      required: false, readonly: false, inputValue: false,
+    },
+    {
+      key: 'field.name', name: 'name', label: 'Name', type: 'char', required: true, readonly: true,
+      inputValue: 'Canonical record title',
+    },
+  ],
+  'a field name alone cannot become favorite behavior without the declared boolean_favorite widget',
+);
+assert.deepEqual(
   nativeBridge.subordinateNodes.map((node) => node.type),
   ['container'],
   'canonical native bridge must keep the declared attachment structure while collaboration stays in its governed panel',
