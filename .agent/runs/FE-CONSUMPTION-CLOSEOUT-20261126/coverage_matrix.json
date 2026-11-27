@@ -129,6 +129,26 @@
     },
     "coverage_limit": "The 143-entry current-candidate browser matrix, remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
   },
+  "fc_01_effective_field_status_consistency": {
+    "status": "clean_exact_head_passed",
+    "product_source_revision": "b82905bc176d2c5240f77b9a9d5df42d5e3574ba",
+    "head": "0334aeac3a5c5384fef318f588be1c7c031fdffd",
+    "facts_verified": [
+      "effective widget status may tighten but cannot relax fieldDescriptor invisible, readonly or required constraints",
+      "all three forbidden relaxations stop with a property-specific ContractGapError",
+      "one stricter status case is accepted without changing the declared field identity",
+      "the declaration, consumer, stop symbol, regression guard and behavior test are bound in the contract-basis ledger"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T032949Z-2816162-850488001/receipt.json",
+    "local_receipt_sha256": "e3666a8ef195ae35aff68d122b964d0e0a678434efcce2dff0fe9c2d1e1ccf8d",
+    "runtime_identity": {
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "namespace_id": "ns_c6fed472e939",
+      "frontend_build_fingerprint": "d93cb03d87f43345f47337c222fe24d9a3e77491c7c70b846be26cb3d1227ede"
+    },
+    "coverage_limit": "This is presenter/unit and clean-identity evidence; the 143-entry current-candidate browser matrix, remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
+  },
   "not_a_product_acceptance_receipt": true,
   "coverage_boundary": "One formal product-entry universe derived from current declarations plus 11 source-grounded consumer findings. Declared acceptance status is preserved as provenance; current-candidate runtime coverage is not inherited and remains not_run until exercised.",
   "rows": [
@@ -140,7 +160,7 @@
       "sources": [
         {
           "path": "docs/architecture/frontend_contract_basis_ledger.json",
-          "sha256": "ea27f04d45a25b67ba821b080d1f631d1aef60720177d0788bc2560528a4f482"
+          "sha256": "1071764793c731b8092b5309b59cb83981800ed9ee5a395fa0d0c6eb3e40e598"
         }
       ],
       "planned_discriminating_cases": [
@@ -149,7 +169,7 @@
       ],
       "behavior_status": "new_semantic_bindings_verified_full_coverage_extension_pending",
       "evidence": [
-        "verify.frontend.contract_basis.unit test_count=15 bindings=24",
+        "verify.frontend.contract_basis.unit test_count=15 bindings=34",
         "verify.p0_contract_producer.p0a.unit test_count=72"
       ],
       "blocking_for_topic_completion": true

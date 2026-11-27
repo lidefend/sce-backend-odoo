@@ -3,7 +3,7 @@
   "id": "FE-CONSUMPTION-CLOSEOUT-20261126",
   "status": "active",
   "branch": "fix/fe-consumption-closeout-20261126",
-  "branch_state": "bound_clean_at_activation",
+  "branch_state": "clean_exact_head_validated_fc01_active",
   "baseline_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
   "baseline_state": "latest_main_contains_inherited_fix_release_qualification_not_run",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
@@ -91,22 +91,22 @@
     "dbfilter": "^sc_clean$",
     "namespace_alias": "clean",
     "namespace_id": "ns_c6fed472e939",
-    "source_revision": "0b4fdca10ca4721c95c6980ce6b0b0c9c02f7979",
+    "source_revision": "0334aeac3a5c5384fef318f588be1c7c031fdffd",
     "modules": [
       "smart_construction_bundle",
       "sc_norm_engine"
     ],
     "demo_data": false,
     "fixture": false,
-    "frontend_build_fingerprint": "c6a351a580041ed577bde8a839b189e9a4fd0c10064e5a5cf3cd35b5880257bc",
+    "frontend_build_fingerprint": "d93cb03d87f43345f47337c222fe24d9a3e77491c7c70b846be26cb3d1227ede",
     "health": "passed",
-    "health_note": "The clean profile serves the exact contract-only field-semantics candidate on mainline bfc954c0b. Product semantics come from fieldDescriptor; component implementation selection stays in the frontend registry.",
-    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-frontend-build.log",
-    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-up.log",
-    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-health.log",
-    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-entry-identity.log",
-    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-runtime-version.json",
-    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-build-info.json",
+    "health_note": "The clean profile serves exact candidate 0334aeac3, whose frontend product behavior includes b82905bc1 effective field-status consistency and whose contract-basis ledger commit records that authority.",
+    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-frontend-build.log",
+    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-up.log",
+    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-health.log",
+    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-entry-identity.log",
+    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-runtime-version.json",
+    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-build-info.json",
     "authority": "Owner-directed isolated clean development profile; existing dev/sample/acceptance/customer data and volumes are excluded."
   },
   "verification_responsibility": {
@@ -297,7 +297,9 @@
       "target": "verify.frontend.contract_basis.unit",
       "inputs": [
         "docs/architecture/frontend_contract_basis_ledger.json",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
         "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
         "scripts/verify/frontend_contract_basis_guard.py",
         "scripts/verify/test_frontend_contract_basis_guard.py",
         "make/frontend.mk"
@@ -513,7 +515,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from the clean-validated contract-only field semantics candidate, selecting the next confirmed declaration consumer or stop behavior without modifying backend code in this topic.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from clean exact candidate 0334aeac3, selecting the next confirmed declaration consumer or stop behavior without modifying backend code in this topic.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1439,6 +1441,80 @@
         "no outside-scope, blocked, not-run or unmapped targets were reported"
       ],
       "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
+    },
+    "fc01_effective_field_status_consistency": {
+      "status": "passed",
+      "product_source_revision": "b82905bc176d2c5240f77b9a9d5df42d5e3574ba",
+      "governance_candidate": "0334aeac3a5c5384fef318f588be1c7c031fdffd",
+      "facts_verified": [
+        "effective widgetStatus may be stricter than fieldDescriptor",
+        "widgetStatus cannot make an invisible field visible, a readonly field editable, or a required field optional",
+        "each forbidden relaxation stops with ContractGapError under field.<fieldCode>.status_consistency.<property>",
+        "the contract-basis ledger binds the declaration, consumer, stop symbol, regression guard and behavior test and reports 34 bindings with 0 open defects"
+      ],
+      "focused_validation": {
+        "contract_basis_target": "verify.frontend.contract_basis.unit",
+        "contract_basis_tests": 15,
+        "canonical_presenter_target": "verify.frontend.canonical_form_presenter.unit",
+        "canonical_presenter_primary_cases": 177
+      },
+      "scope_limit": "This slice proves presenter behavior and declaration linkage in unit fixtures; it does not exercise a production form page in the browser."
+    },
+    "fc01_effective_field_status_clean_runtime": {
+      "status": "passed",
+      "product_source_revision": "b82905bc176d2c5240f77b9a9d5df42d5e3574ba",
+      "source_revision": "0334aeac3a5c5384fef318f588be1c7c031fdffd",
+      "frontend_build_fingerprint": "d93cb03d87f43345f47337c222fe24d9a3e77491c7c70b846be26cb3d1227ede",
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "dbfilter": "^sc_clean$",
+      "namespace_id": "ns_c6fed472e939",
+      "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-frontend-build.log",
+      "frontend_build_log_sha256": "9eb8ad88b2f8288400f93b13c59a7962efef8ea5ed531b5eb3df7a1aeb083d4a",
+      "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-up.log",
+      "up_log_sha256": "7c688646ceb1c2173fb5757036a0ed6e89977315a280db34ea19a7548c4b3916",
+      "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-health.log",
+      "health_log_sha256": "3edb53ae8eaa7889b0a03472c49ccafd09763cf079679d2ff182f7f669dd4550",
+      "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-entry-identity.log",
+      "entry_identity_log_sha256": "08a8d638a4b2744492f8eb760b91130ef319be7d52b7865598a735375722dc78",
+      "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-runtime-version.json",
+      "runtime_version_log_sha256": "2aa22adfb7697c86d73c4f065794a3da2544cfdb55849a1c0824bc63740cb321",
+      "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-build-info.json",
+      "build_info_log_sha256": "d22b113451c2122c3273093b44d7cc860695894e32a16a1901f8604f894c88e8",
+      "facts_verified": [
+        "the clean frontend was built from exact source 0334aeac3",
+        "the Odoo container was recreated with the matching frontend build fingerprint",
+        "tenant runtime-version returns the exact source revision, build fingerprint, sc_clean database, namespace id and clean alias",
+        "root build-info.json returns the same exact source revision",
+        "local.clean.health and entry identity verification pass under the isolated clean profile"
+      ],
+      "scope_limit": "Environment, build and runtime identity readback only; it is not a business-entry browser journey or product acceptance."
+    },
+    "fc01_effective_field_status_clean_exact_head_validation": {
+      "status": "passed",
+      "head": "0334aeac3a5c5384fef318f588be1c7c031fdffd",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T032949Z-2816162-850488001/receipt.json",
+      "receipt_sha256": "e3666a8ef195ae35aff68d122b964d0e0a678434efcce2dff0fe9c2d1e1ccf8d",
+      "executed_targets": 19,
+      "reused_targets": 29,
+      "test_targets": 9,
+      "executed_test_count": 556,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-ci-local-iteration.log",
+      "log_sha256": "fff5a8196e255dd95ae28fca644196b4e0cfdd72f72b005b3ccbbcdacf9cbefc",
+      "facts_verified": [
+        "the exact clean candidate is bound to a clean worktree and exact tree identity",
+        "all complete affected targets report passed target results",
+        "the canonical presenter behavior and contract-basis guard pass at 34 bindings with 0 open defects",
+        "lint, strict typecheck, stable V2 projection and the real producer/decoder integration pass",
+        "no outside-scope, blocked, not-run or unmapped targets were reported"
+      ],
+      "coverage_limit": [
+        "The receipt still records 9 targets as registration-missing even though each has a passed target result; this is a planner/registry hygiene gap and was not treated as product success evidence.",
+        "Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
+      ]
     }
   }
 }

@@ -538,6 +538,57 @@ clean 运行态回读：
 143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
 `bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
 
+### 2026-11-27 FC-01 effective field-status consistency 消费收口
+
+继续核对 canonical 表单描述符与有效状态时确认：字段描述符声明
+`invisible/readonly/required`，而运行时 `widgetStatus` 会叠加修饰条件。前者是后端静态业务约束，
+后者可以按当前记录收紧呈现，但此前前端没有阻止后者放宽前者。该缺口只在 P0 前端消费路径修复，
+本轮未修改后端代码。
+
+本切片完成：
+
+- `fieldDescriptor.invisible=true` 不得被有效状态改为可见；
+- `fieldDescriptor.readonly=true` 不得被有效状态改为可编辑；
+- `fieldDescriptor.required=true` 不得被有效状态改为可选；
+- 有效状态比描述符更严格仍合法，正常保留；
+- 三种非法放宽分别以
+  `field.<fieldCode>.status_consistency.<invisible|readonly|required>` 抛
+  `ContractGapError`；
+- 台账补上声明站点、消费符号、停机符号、回归目标和行为测试的完整绑定；
+- 台账现为 34 个声明绑定、0 个未闭合缺陷。
+
+聚焦验证：
+
+- `make verify.frontend.contract_basis.unit`：15 项测试通过，台账守卫
+  `bindings=34 open_defects=0`；
+- `make verify.frontend.canonical_form_presenter.unit`：canonical 主行为用例 177 项，
+  连同 typed native comparison、relation projection、workflow/action authority 等附属用例均通过。
+
+治理绑定提交为 `0334aeac3a5c5384fef318f588be1c7c031fdffd`，其中包含产品提交
+`b82905bc176d2c5240f77b9a9d5df42d5e3574ba`。按 `0334aeac3` 重建 clean 前端，构建指纹为
+`d93cb03d87f43345f47337c222fe24d9a3e77491c7c70b846be26cb3d1227ede`。
+
+clean 运行态回读：
+
+- `/t/clean/api/runtime-version` 同时返回 `0334aeac3`、上述构建指纹、`sc_clean`、
+  namespace `ns_c6fed472e939` 与 alias `clean`；
+- 根路径 `/build-info.json` 返回同一源码 SHA；
+- `local.clean.health` 与 `local.clean.entry_identity.verify` 均通过；
+- project/database/dbfilter/namespace 保持 clean 专属身份，未使用 dev/sample/acceptance
+  或客户数据。
+
+在该 clean 精确 HEAD 上执行 `make ci.local.iteration`：19 个目标本轮执行、29 个复用，
+9 个测试目标执行 556 项测试，5 项静态检查通过，`unmapped_paths=0`，全部目标结果为 passed。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T032949Z-2816162-850488001/receipt.json`
+
+回执 SHA256：
+`e3666a8ef195ae35aff68d122b964d0e0a678434efcce2dff0fe9c2d1e1ccf8d`。
+
+回执仍将 9 个已有 passed 结果的目标列为 `registrationMissingTargets`；这是选测注册/台账卫生
+缺口，本轮没有把它当作产品成功证明，也没有改写回执为无缺口。143 个业务入口的当前候选页面、
+角色和办理旅程仍未执行；远端 PR CI、`bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
+
 ### 2026-11-27 关系目标向唯一契约收敛
 
 复核上一轮实现后纠正了方向：前端不应在
