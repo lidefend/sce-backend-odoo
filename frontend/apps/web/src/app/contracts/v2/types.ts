@@ -393,6 +393,8 @@ export interface ContractV2FieldDescriptor extends ContractV2Dictionary {
   invisible?: boolean;
   relation?: string;
   relationField?: string;
+  /** Same-record field containing the target model of a many2one_reference. */
+  referenceModelField?: string;
   selection?: Array<[string, string]>;
   domain?: unknown;
   domainExpression?: unknown;
