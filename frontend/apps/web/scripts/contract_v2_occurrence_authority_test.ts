@@ -23,6 +23,7 @@ import { computed, reactive, ref } from 'vue';
 import { createContractV2Store } from '../src/app/contracts/v2/store';
 import { decodeContractV2ActionRule, decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
 import {
+  resolveRecordFormFieldWidgetSemantics,
   resolveRecordFormFieldWidget,
   useRecordFormFieldSchemas,
 } from '../src/pages/contractForm/useRecordFormFieldSchemas';
@@ -287,6 +288,15 @@ assert.equal(
   } as never),
   'text',
   'a normalized form descriptor may expose its canonical widget alias when widgetType is absent',
+);
+assert.deepEqual(
+  resolveRecordFormFieldWidgetSemantics({
+    fieldType: 'float',
+    widgetType: 'float_time',
+    widgetOptions: { readonly_empty_text: '未登记', kind: 'duration' },
+  } as never),
+  { readonly_empty_text: '未登记', kind: 'duration' },
+  'record-form widget semantics come from the canonical descriptor widgetOptions',
 );
 
 const missingNativeIdentity = structuredClone(strictSnapshot);
