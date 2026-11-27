@@ -508,7 +508,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue FC-01 with the remaining semantic matrix, prioritizing reference/many2one_reference declarations, plain collection fallbacks and their fail-closed negative cases; do not inherit the historical 143-entry browser matrix.",
+  "next_exact_step": "Commit the plain value-shape frontend candidate, rebuild the isolated clean runtime from that exact HEAD, verify health and identity readback, then rerun ci.local.iteration on the clean HEAD before continuing the remaining FC-01 semantic matrix.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1003,6 +1003,27 @@
       "static_checks": 5,
       "unmapped_paths": 0,
       "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
+    },
+    "fc01_plain_value_shape": {
+      "status": "passed",
+      "stage_identity": "94b0e83d78c9827b2fbee04375ec058534f3eab6 plus the owned plain-value-shape dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T004923Z-1610133-35668117/receipt.json",
+      "receipt_sha256": "b72e59f509d8ee22ef2e7e6355d4b406d9a4bc5ac62d3121eab96564fedd168a",
+      "executed_targets": 25,
+      "reused_targets": 22,
+      "test_targets": 16,
+      "executed_test_count": 676,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "plain text consumes explicit locale mappings and selects the requested locale",
+        "plain fields no longer infer business labels from object display_name/label/name shape",
+        "plain fields no longer convert arbitrary arrays into business text",
+        "invalid plain value shapes stop with ContractGapError",
+        "the candidate remains frontend-only and does not modify backend producer code"
+      ],
+      "scope_limit": "Local targeted validation only; clean exact-HEAD runtime, remote PR CI, mainline qualification, the 143-entry browser matrix and user acceptance remain not_run."
     }
   }
 }

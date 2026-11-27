@@ -313,6 +313,56 @@ function relationContractGap(
   }, message);
 }
 
+function presentDeclaredPlainValue(
+  field: DeclaredBusinessField,
+  value: unknown,
+  emptyText: string,
+  locale?: string,
+  fallbackLocales?: string[],
+): DeclaredBusinessValuePresentation {
+  if (Array.isArray(value)) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${field.name || '(unknown)'}.value_shape`,
+      requiredDeclarationLayer: 'P0:smart_core:field_value_projection',
+    }, `普通字段 ${field.name || '(unknown)'} 不能按数组外形推断业务文本`);
+  }
+  if (value && typeof value === 'object') {
+    const entries = Object.keys(value as Record<string, unknown>);
+    const localeMapping = entries.length > 0 && entries.every((key) => (
+      /^[a-z]{2,3}(?:[_-][a-z]{2,4})?$/i.test(key)
+    ));
+    if (!localeMapping) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: `field.${field.name || '(unknown)'}.value_shape`,
+        requiredDeclarationLayer: 'P0:smart_core:field_value_projection',
+      }, `普通字段 ${field.name || '(unknown)'} 不能按对象属性推断业务标签`);
+    }
+  }
+  const normalized = resolveLocalizedDisplayValue(value, {
+    emptyText,
+    locale,
+    fallbackLocales,
+  });
+  if (normalized === null || normalized === undefined || normalized === '') {
+    return Object.freeze({ kind: 'empty', text: emptyText, tone: 'neutral', badgeSemantic: 'default' });
+  }
+  if (typeof normalized !== 'string' && typeof normalized !== 'number') {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${field.name || '(unknown)'}.value_shape`,
+      requiredDeclarationLayer: 'P0:smart_core:field_value_projection',
+    }, `普通字段 ${field.name || '(unknown)'} 的契约值无法解析为文本`);
+  }
+  return Object.freeze({
+    kind: 'plain',
+    text: String(normalized),
+    tone: 'neutral',
+    badgeSemantic: 'default',
+  });
+}
+
 function presentDeclaredRelation(
   field: DeclaredBusinessField,
   value: unknown,
@@ -657,23 +707,14 @@ export function presentDeclaredBusinessValue(input: {
       badgeSemantic: 'default',
     });
   }
-  if (Array.isArray(input.value)) {
-    return Object.freeze({
-      kind: input.value.length ? 'plain' : 'empty',
-      text: input.value.length ? input.value.map((item) => String(item ?? '')).join(', ') : emptyText,
-      tone: 'neutral',
-      badgeSemantic: 'default',
-    });
-  }
-  if (typeof input.value === 'object') {
-    const row = input.value as Record<string, unknown>;
-    const text = String(row.display_name || row.label || row.name || '').trim();
-    return Object.freeze({
-      kind: text ? 'plain' : 'empty',
-      text: text || emptyText,
-      tone: 'neutral',
-      badgeSemantic: 'default',
-    });
+  if (Array.isArray(input.value) || (input.value && typeof input.value === 'object')) {
+    return presentDeclaredPlainValue(
+      input.field,
+      input.value,
+      emptyText,
+      input.locale,
+      input.fallbackLocales,
+    );
   }
   const fieldType = normalizeFieldType(input.field);
   if (fieldType === 'integer' || fieldType === 'float') {

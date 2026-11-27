@@ -282,6 +282,14 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         ) if path == "utils/fieldSemantics.ts" else source(path))
         self.assertTrue(any("generic float formatting" in failure for failure in failures))
 
+    def test_plain_object_label_inference_fails(self):
+        failures = guard.validate(lambda path: (
+            "const text = String(row.display_name || row.label || row.name || '').trim();"
+            if path == guard.AUTHORITY
+            else source(path)
+        ))
+        self.assertTrue(any("object shape" in failure for failure in failures))
+
     def test_temporal_authority_consumption_drop_fails(self):
         failures = guard.validate(lambda path: source(
             path,

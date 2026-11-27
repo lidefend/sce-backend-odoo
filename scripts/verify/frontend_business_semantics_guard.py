@@ -30,10 +30,11 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     for marker in (
         "function formatMonetaryDisplayValue(",
         "function presentDeclaredBusinessValue(",
+        "function presentDeclaredPlainValue(",
         "function presentDeclaredRelation(",
         "function presentDeclaredRelationCollection(",
         "function relationLabel(value: unknown, locale?: LocalizedDisplayOptions)",
-        "resolveLocalizedDisplayValue(",
+        "value = resolveLocalizedDisplayValue(value, locale);",
         "function statusBadgeSemantic(",
         "FIELD_VALUE_EMPTY_TEXT",
     ):
@@ -91,6 +92,8 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("monetary helpers do not validate declared digits through the shared scale authority")
     if "field.(float).digits" not in field_semantics:
         failures.append("generic float formatting does not require declared digits")
+    if "const text = String(row.display_name || row.label || row.name || '').trim();" in authority:
+        failures.append("plain text still infers a business label from object shape")
     if "presentDeclaredBusinessValue" not in kanban_adapter:
         failures.append("Kanban adapter does not consume declared business-value semantics")
     if "unit: option?.unit" not in kanban_adapter:

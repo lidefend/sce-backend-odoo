@@ -59,6 +59,32 @@ const amountNamedText = presentDeclaredBusinessValue({
 });
 assert.equal(amountNamedText.kind, 'plain');
 assert.equal(amountNamedText.text, '1234.5', 'field names never infer monetary identity');
+assert.equal(presentDeclaredBusinessValue({
+  field: { name: 'localized_title', type: 'char' },
+  value: { zh_CN: '合同甲', en_US: 'Contract A' },
+  locale: 'zh_CN',
+}).text, '合同甲', 'plain text consumes declared locale mappings');
+assert.equal(presentDeclaredBusinessValue({
+  field: { name: 'localized_title', type: 'char' },
+  value: { zh_CN: '合同甲', en_US: 'Contract A' },
+  locale: 'en_US',
+}).text, 'Contract A', 'plain text selects the requested locale');
+assert.throws(
+  () => presentDeclaredBusinessValue({
+    field: { name: 'plain_object', type: 'char' },
+    value: { display_name: '伪装成业务名称' },
+  }),
+  { name: 'ContractGapError' },
+  'plain text must not infer a business label from object shape',
+);
+assert.throws(
+  () => presentDeclaredBusinessValue({
+    field: { name: 'plain_array', type: 'char' },
+    value: ['伪装成业务列表'],
+  }),
+  { name: 'ContractGapError' },
+  'plain text must not infer a business list from array shape',
+);
 assert.equal(presentCollectionKanbanCell({
   field: 'amount_total_note',
   value: '1234.5',

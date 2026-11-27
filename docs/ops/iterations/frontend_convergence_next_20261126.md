@@ -424,6 +424,35 @@ clean 运行态权威回读：
 仍未执行 143 个业务入口的当前候选页面、角色或办理旅程，也未完成远端 PR CI、主线资格、
 部署和用户验收。
 
+### 2026-11-27 FC-01 plain value-shape 前端消费收口
+
+继续检查 plain collection 回退时确认，普通 `char/text/html` 字段遇到对象会按
+`display_name/label/name` 推断业务标签，遇到数组会直接拼成业务文本；同时显式 locale
+映射对象反而被当作空值。这是纯前端值外形推断缺陷，本轮未修改后端。
+
+本切片完成：
+
+- plain 字段只接受标量或明确 locale key 的映射，并按当前/回退 locale 选择文本；
+- 对象中的 `display_name/label/name` 不能自动升级为业务标签；
+- 任意数组不能自动拼成业务列表；
+- 无法证明值语义的 plain 形状抛 `ContractGapError`；
+- 静态守卫禁止恢复对象标签推断；
+- `frontend_contract_basis_ledger.json` 新增 plain text value-shape 绑定。
+
+`make ci.local.iteration` 在 `94b0e83d78c9827b2fbee04375ec058534f3eab6`
+加当前 owned dirty scope 上执行 25 个目标、复用 22 个未变目标，其中 16 个测试目标
+共执行 676 项测试、6 项静态检查，`outside_scope=[]`、`unmapped_paths=0`，全部退出零。
+原始回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T004923Z-1610133-35668117/receipt.json`
+
+回执 SHA256：
+`b72e59f509d8ee22ef2e7e6355d4b406d9a4bc5ac62d3121eab96564fedd168a`。
+
+该证据只证明当前前端 dirty 候选的本地精准消费与治理检查。产品提交后仍需按新精确 HEAD
+重建 clean 前端与 Odoo 容器，并在 clean HEAD 重新执行本地增量入口。143 个业务入口的
+当前候选页面、角色或办理旅程仍未执行，远端 PR CI、主线资格、部署和用户验收均未完成。
+
 ### 2026-11-27 FC-01 通用 float 精度消费收口
 
 继续检查 status、boolean、JSON 后，现有 status 选择/类型停机、boolean 类型词表和 JSON
