@@ -166,6 +166,12 @@ assert.equal(buildEntryTargetRouteTarget({
   route: '/r/x.model/7',
   record_entry: { model: 'x.model', record_id: 7, entry_intent: 'handling', model_write_authority: true },
 }, { actionId: 4, menuId: 3 }).path, '/f/x.model/7');
+assert.equal(buildEntryTargetRouteTarget({
+  type: 'compatibility',
+  route: '/f/x.model/new',
+  presentation: { title: 'Presentation-only title' },
+  compatibility_refs: { model: 'x.model', action_id: 4, menu_id: 3 },
+}, { query: { entry_title: 'stale title' } }).query.entry_title, undefined);
 assertGap('entry target missing write authority', () => buildEntryTargetRouteTarget({
   type: 'compatibility',
   route: '/r/x.model/7',

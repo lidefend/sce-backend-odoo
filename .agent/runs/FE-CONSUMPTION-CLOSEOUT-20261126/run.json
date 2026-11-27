@@ -29,6 +29,7 @@
     "frontend/apps/web/src/app/pageIdentity.ts",
     "frontend/apps/web/src/app/pageIdentityAdapters.ts",
     "frontend/apps/web/src/app/pageIdentityRoute.ts",
+    "frontend/apps/web/src/app/navigationContext.ts",
     "frontend/apps/web/src/app/routeQuery.ts",
     "frontend/apps/web/src/app/runtime/actionViewAssigneeOptionsContract.ts",
     "frontend/apps/web/src/app/runtime/actionViewKanbanTitleField.ts",
@@ -89,6 +90,7 @@
     "frontend/apps/web/scripts/contract_shape_projection_test.ts",
     "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
     "frontend/apps/web/scripts/create_record_user_journey_test.ts",
+    "frontend/apps/web/scripts/cross_model_action_navigation_test.ts",
     "frontend/apps/web/scripts/native_section_navigation_test.ts",
     "frontend/apps/web/scripts/professional_business_value_model_test.ts",
     "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
@@ -576,7 +578,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "After binding the canonical scene URL slice build, classify the remaining menu/action/context/label query keys and remove only values that are reconstructable from the current contract or runtime context.",
+  "next_exact_step": "After binding the entry-title URL slice build, audit return labels and business-category labels as the remaining reconstructable presentation query values, then perform a governed browser URL readback.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2239,6 +2241,30 @@
         "the first full iteration found the new route-query target emitted successful assertions without a machine-readable summary; the target was wired through Node TAP and the affected set passed"
       ],
       "scope_limit": "Local canonical URL construction and scene route guards only; actual browser address-bar readback, remaining context-key classification, remote CI and user acceptance remain not_run."
+    },
+    "fc02_entry_title_out_of_url": {
+      "status": "passed_local_targeted",
+      "stage_identity": "ecff7bb834548c2f55ac95661f9e2ddd837fa6ee plus the owned entry-title URL scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T095812Z-2365192-596188390/receipt.json",
+      "receipt_sha256": "0a1980afa597402504eac86250cc6bbcc1767bdc6c891a48332468654a33e8d7",
+      "required_targets": 74,
+      "executed_targets": 73,
+      "reused_targets": 1,
+      "test_targets": 54,
+      "executed_test_count": 1722,
+      "static_checks": 11,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "entry target presentation titles are not written into route queries",
+        "existing or source entry_title values are removed from normalized action targets",
+        "contract form identity uses authoritative action names instead of a URL title",
+        "same-model and cross-model action navigation no longer retain presentation titles",
+        "route-query, cross-model navigation, page identity and strict typecheck pass"
+      ],
+      "scope_limit": "Local URL and identity tests only; browser address-bar readback, remaining return/category presentation labels, remote CI and user acceptance remain not_run."
     },
     "remote_publication": {
       "status": "draft_open_mainline_sync_validation_not_awaited",

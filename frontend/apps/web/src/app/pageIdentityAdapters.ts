@@ -39,7 +39,6 @@ export function buildContractFormPageIdentity(input: {
   authoritativeActionName?: unknown;
   breadcrumbs?: PageBreadcrumb[];
   businessCategoryLabel?: unknown;
-  entryTitle?: unknown;
   contract: BusinessMetadata;
   formData: Record<string, unknown>;
   recordData?: Record<string, unknown>;
@@ -55,9 +54,9 @@ export function buildContractFormPageIdentity(input: {
     ? input.contract.head as Record<string, unknown>
     : {};
   const modelLabel = head.model_label || input.action?.model_label;
-  const businessName = input.entryTitle || input.businessCategoryLabel || head.title || actionName(input.action);
+  const businessName = input.businessCategoryLabel || head.title || actionName(input.action);
   const identityName = input.isCreate
-    ? input.entryTitle || input.authoritativeActionName || input.businessCategoryLabel || modelLabel || businessName
+    ? input.authoritativeActionName || input.businessCategoryLabel || modelLabel || businessName
     : businessName;
   // Identity may be absent from body controls but present in the authorized
   // record snapshot. Keep it out of the writable draft; current edits win.

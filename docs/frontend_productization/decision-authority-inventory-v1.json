@@ -834,8 +834,8 @@
       "literal": "editing",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        91,
-        98
+        90,
+        97
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",
@@ -849,8 +849,8 @@
       "literal": "empty",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        100,
-        126
+        99,
+        125
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",
@@ -864,9 +864,9 @@
       "literal": "error",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        77,
-        100,
-        126
+        76,
+        99,
+        125
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",
@@ -880,7 +880,7 @@
       "literal": "idle",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        100
+        99
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -894,8 +894,8 @@
       "literal": "loading",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        77,
-        100
+        76,
+        99
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",
@@ -909,7 +909,7 @@
       "literal": "ok",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        126
+        125
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -923,7 +923,7 @@
       "literal": "saving",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        91
+        90
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",

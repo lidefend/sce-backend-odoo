@@ -647,6 +647,32 @@ clean 运行态回读：
 
 实际浏览器地址栏回读、剩余 context 参数的分类、远端 CI 和用户验收仍未完成。
 
+### 2026-11-27 FC-02 entry title 退出 URL
+
+入口标题改为正式页面/动作身份契约后，不再需要作为地址栏参数传递。本切片从契约导航
+白名单、入口目标构造和表单身份输入中移除 `entry_title`，同时保留
+`menu_id/action_id/context_raw/domain_raw` 等实际执行或回读上下文。
+
+后端入口 presentation title 仍可参与反馈或其他呈现，但不会写回 URL；创建页标题改由
+`authoritative_action_name`、动作契约或业务分类声明决定。跨模型动作导航增加负例，
+证明同一模型和跨模型跳转都不保留 `entry_title`。
+
+验证：
+
+- 路由归一、跨模型动作导航、页面身份 smoke 和严格类型全部通过；
+- `make ci.local.iteration`：`74` 个必需目标全部成立，其中 `73` 个本轮执行、`1` 个复用；
+  `54` 个测试目标执行 `1722` 项测试、`11` 项静态检查，`unmapped=0`、`not_run=0`、
+  `blocked=0`。
+
+回执：
+`.runtime/frontend-dev-validation/executions/20261127T095812Z-2365192-596188390/receipt.json`
+
+回执 SHA256：
+`0a1980afa597402504eac86250cc6bbcc1767bdc6c891a48332468654a33e8d7`。
+
+剩余可重建展示参数主要是 `return_label` 与 business-category label；随后需要受管浏览器的
+当前地址栏回读，不能只以纯函数结果宣称页面 URL 已优化。
+
 ### 2026-11-27 主线 relationActiveActions 契约并入
 
 主线 `9395d93f92badffc87d32c5979cf7c70e374e975` 已包含 P0 PR #1026 的

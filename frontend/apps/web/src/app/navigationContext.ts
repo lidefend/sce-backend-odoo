@@ -38,7 +38,6 @@ export const CONTRACT_NAV_QUERY_KEYS = [
   'integration_target',
   'entry_target_policy',
   'business_entry_contract_version',
-  'entry_title',
   'current_business_category_code',
   'default_business_category_code',
   'allowed_business_category_codes',

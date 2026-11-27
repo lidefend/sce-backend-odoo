@@ -175,12 +175,6 @@ function entryTargetRecordEntry(entryTarget: Record<string, unknown> | null | un
     : {};
 }
 
-function entryTargetPresentationTitle(entryTarget: Record<string, unknown> | null | undefined): string {
-  const presentation = entryTarget?.presentation;
-  if (!presentation || typeof presentation !== 'object' || Array.isArray(presentation)) return '';
-  return String((presentation as Record<string, unknown>).title || '').trim();
-}
-
 export function entryTargetType(entryTarget: Record<string, unknown> | null | undefined): string {
   return String(entryTarget?.type || '').trim();
 }
@@ -248,7 +242,6 @@ export function buildEntryTargetRouteTarget(
   const viewId = positiveInteger(refs.view_id) ?? positiveInteger(normalizedQuery.view_id);
   const domainRaw = firstQueryValue(normalizedQuery.domain_raw) || firstQueryValue(refs.domain_raw);
   const contextRaw = firstQueryValue(normalizedQuery.context_raw) || firstQueryValue(refs.context_raw);
-  const entryTitle = entryTargetPresentationTitle(entryTarget);
   if (type === 'scene') {
     const sceneKey = entryTargetSceneKey(entryTarget);
     return buildCanonicalSceneRouteTarget(sceneKey, {
@@ -265,8 +258,8 @@ export function buildEntryTargetRouteTarget(
     view_id: viewId,
     domain_raw: domainRaw || undefined,
     context_raw: contextRaw || undefined,
-    entry_title: entryTitle || firstQueryValue(normalizedQuery.entry_title) || undefined,
   });
+  delete query.entry_title;
   const route = String(entryTarget?.route || '').trim();
   if (type === 'admin_surface') {
     const surface = String(entryTarget?.surface || '').trim();
