@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
-import { normalizeEmbeddedSceneQuery } from '../src/app/routeQuery';
+import {
+  buildCanonicalSceneRouteTarget,
+  normalizeEmbeddedSceneQuery,
+  stripCanonicalSceneIdentityQuery,
+} from '../src/app/routeQuery';
 
 const malformedActionQuery = normalizeEmbeddedSceneQuery({
   menu_id: '379&action_id=506&view_mode=tree',
@@ -42,5 +46,31 @@ assert.deepEqual(canonicalQuery.query, {
   action_id: '506',
   view_mode: 'tree',
 });
+
+const canonicalSceneRoute = buildCanonicalSceneRouteTarget('workspace.home', {
+  scene: {
+    label: 'Role home',
+    target: { menu_id: 3, action_id: 4 },
+  },
+  query: {
+    scene: 'workspace.home',
+    scene_key: 'workspace.home',
+    scene_label: 'Role home',
+    search: 'risk',
+  },
+});
+assert.deepEqual(canonicalSceneRoute, {
+  path: '/s/workspace.home',
+  query: {
+    search: 'risk',
+    menu_id: 3,
+    action_id: 4,
+  },
+});
+assert.deepEqual(stripCanonicalSceneIdentityQuery({
+  scene_key: 'workspace.home',
+  scene_label: 'Role home',
+  menu_id: '3',
+}), { menu_id: '3' });
 
 console.log('[route-query-normalization] PASS');

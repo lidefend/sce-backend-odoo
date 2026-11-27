@@ -1209,6 +1209,23 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]),
         )
 
+    def test_route_query_inputs_select_canonical_url_checks(self) -> None:
+        for path in (
+            "frontend/apps/web/src/app/routeQuery.ts",
+            "frontend/apps/web/src/views/SceneView.vue",
+            "frontend/apps/web/scripts/record_entry_contract_test.ts",
+            "frontend/apps/web/scripts/route_query_normalization_test.ts",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.frontend.route_query.unit",
+                    select_targets([path]),
+                )
+        self.assertNotIn(
+            "verify.frontend.route_query.unit",
+            select_targets(["frontend/apps/web/src/app/businessScenarioNavigation.ts"]),
+        )
+
     def test_expression_feedback_and_responsive_inputs_route_to_owning_units(self) -> None:
         self.assertEqual(
             select_targets(["frontend/apps/web/src/app/routeFailure.ts"]),
@@ -2719,6 +2736,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]
             if path.endswith("/SceneView.vue"):
                 expected.insert(2, "verify.frontend.product_page_header.unit")
+                expected.insert(3, "verify.frontend.route_query.unit")
             self.assertEqual(
                 select_targets([path]),
                 expected,

@@ -616,6 +616,31 @@ clean 运行态回读：
 下一项是地址栏 URL 收敛：区分正式路由身份、后端声明的必需上下文和可重建的瞬时 UI 状态，
 避免 scene/menu/action/return/context 参数重复堆叠。当前候选尚未做运行态 URL 回读。
 
+### 2026-11-27 FC-02 canonical scene URL
+
+场景路径 `/s/:sceneKey` 已承载场景身份，因此不再在 query 中重复写入
+`scene/scene_key/sceneKey`，也不再写入仅用于展示的 `scene_label`。SceneView 内部所有
+`router.replace` 共用同一剥离函数，避免这些值在加载和场景切换后重新回流地址栏。
+
+`menu_id/action_id` 暂时保留：嵌入式 ActionView 和路由回读仍实际消费这两个声明引用。
+本次只删除路径已表达的身份和可重建的展示标签，没有删除权限或业务执行所需上下文。
+
+验证：
+
+- `verify.frontend.route_query.unit` 经 Node TAP 执行非零用例并通过；
+- 选测器 `288` 项、严格类型、场景入口、导航壳和契约基座全部通过；
+- `make ci.local.iteration`：`73` 个必需目标全部成立，其中 `72` 个本轮执行、`1` 个复用；
+  `53` 个测试目标执行 `1721` 项测试、`11` 项静态检查，`unmapped=0`、`not_run=0`、
+  `blocked=0`。
+
+回执：
+`.runtime/frontend-dev-validation/executions/20261127T094406Z-2241047-640349705/receipt.json`
+
+回执 SHA256：
+`4f9ac4fcbfa8a09d2686b90097843a0bca78aeacc8a069864b1d45a0810b4ffe`。
+
+实际浏览器地址栏回读、剩余 context 参数的分类、远端 CI 和用户验收仍未完成。
+
 ### 2026-11-27 主线 relationActiveActions 契约并入
 
 主线 `9395d93f92badffc87d32c5979cf7c70e374e975` 已包含 P0 PR #1026 的

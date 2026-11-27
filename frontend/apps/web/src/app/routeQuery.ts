@@ -34,6 +34,7 @@ type EntryTargetRouteOptions = {
 };
 
 const SCENE_QUERY_KEYS = ['scene', 'scene_key', 'sceneKey'] as const;
+const SCENE_PRESENTATION_QUERY_KEYS = ['scene_label'] as const;
 const LEGACY_EMBEDDED_QUERY_KEYS = ['menu_id', 'action_id', 'view_id'] as const;
 const WORKBENCH_PATH = '/workbench';
 
@@ -152,6 +153,14 @@ function compactQuery(query: QueryLike): LocationQueryRaw {
   return next;
 }
 
+export function stripCanonicalSceneIdentityQuery(query: QueryLike): LocationQueryRaw {
+  const next: LocationQueryRaw = { ...query };
+  for (const key of [...SCENE_QUERY_KEYS, ...SCENE_PRESENTATION_QUERY_KEYS]) {
+    delete next[key];
+  }
+  return compactQuery(next);
+}
+
 function entryTargetRefs(entryTarget: Record<string, unknown> | null | undefined): Record<string, unknown> {
   const refs = entryTarget?.compatibility_refs;
   return refs && typeof refs === 'object' && !Array.isArray(refs)
@@ -209,14 +218,10 @@ export function resolveSceneDefaultOrder(sceneKey: string, scene?: SceneRouteSou
 export function buildCanonicalSceneRouteTarget(sceneKey: string, options: CanonicalSceneRouteOptions = {}) {
   const key = String(sceneKey || '').trim();
   const normalizedQuery = normalizeEmbeddedSceneQuery(options.query || {}).query;
-  const query: LocationQueryRaw = { ...normalizedQuery };
-  for (const queryKey of SCENE_QUERY_KEYS) {
-    delete query[queryKey];
-  }
+  const query = stripCanonicalSceneIdentityQuery(normalizedQuery);
   const scene = options.scene || null;
   const menuId = positiveInteger(options.menuId) ?? positiveInteger(scene?.target?.menu_id);
   const actionId = positiveInteger(options.actionId) ?? positiveInteger(scene?.target?.action_id);
-  const sceneLabel = String(options.sceneLabel || scene?.label || '').trim();
   const explicitOrder = firstQueryValue(query.order) || firstQueryValue(query.sort);
   const order = String(options.order || explicitOrder || resolveSceneDefaultOrder(key, scene)).trim();
 
@@ -224,10 +229,8 @@ export function buildCanonicalSceneRouteTarget(sceneKey: string, options: Canoni
     path: resolveCanonicalScenePath(key, scene),
     query: compactQuery({
       ...query,
-      scene_key: key || undefined,
       menu_id: menuId,
       action_id: actionId,
-      scene_label: sceneLabel || undefined,
       order: order || undefined,
     }),
   };

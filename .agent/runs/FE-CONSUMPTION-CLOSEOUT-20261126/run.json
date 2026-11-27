@@ -29,6 +29,7 @@
     "frontend/apps/web/src/app/pageIdentity.ts",
     "frontend/apps/web/src/app/pageIdentityAdapters.ts",
     "frontend/apps/web/src/app/pageIdentityRoute.ts",
+    "frontend/apps/web/src/app/routeQuery.ts",
     "frontend/apps/web/src/app/runtime/actionViewAssigneeOptionsContract.ts",
     "frontend/apps/web/src/app/runtime/actionViewKanbanTitleField.ts",
     "frontend/apps/web/src/app/runtime/actionViewSurfacePolicyBudget.ts",
@@ -78,6 +79,7 @@
     "frontend/apps/web/src/utils/display.ts",
     "frontend/apps/web/src/utils/fieldSemantics.ts",
     "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/src/views/SceneView.vue",
     "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
     "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
     "frontend/apps/web/scripts/list_surface_component_test.mjs",
@@ -90,7 +92,9 @@
     "frontend/apps/web/scripts/native_section_navigation_test.ts",
     "frontend/apps/web/scripts/professional_business_value_model_test.ts",
     "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
+    "frontend/apps/web/scripts/record_entry_contract_test.ts",
     "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
+    "frontend/apps/web/scripts/route_query_normalization_test.ts",
     "scripts/verify/frontend_page_identity_lifecycle_smoke.js",
     "scripts/verify/frontend_page_identity_smoke.js",
     "scripts/verify/frontend_page_identity_guard.py",
@@ -572,7 +576,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "After binding the page-contract title slice build, audit address-bar URL composition and classify canonical route identity versus required context versus transient UI state before changing route query generation.",
+  "next_exact_step": "After binding the canonical scene URL slice build, classify the remaining menu/action/context/label query keys and remove only values that are reconstructable from the current contract or runtime context.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2198,6 +2202,34 @@
         "the inventory was regenerated through its owning target and the resumed affected set passed"
       ],
       "scope_limit": "Local route, unit, contract and type fixtures only; the candidate runtime URL shape, production role/company journeys, remote CI and user acceptance remain not_run."
+    },
+    "fc02_canonical_scene_url_identity": {
+      "status": "passed_local_targeted",
+      "stage_identity": "50394960c7c037b2278514400a13582a3aec9a35 plus the owned canonical scene URL scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T094406Z-2241047-640349705/receipt.json",
+      "receipt_sha256": "4f9ac4fcbfa8a09d2686b90097843a0bca78aeacc8a069864b1d45a0810b4ffe",
+      "required_targets": 73,
+      "executed_targets": 72,
+      "reused_targets": 1,
+      "test_targets": 53,
+      "executed_test_count": 1721,
+      "static_checks": 11,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "scene routes express scene identity once through /s/:sceneKey",
+        "scene, scene_key and sceneKey are removed from canonical scene query values",
+        "scene_label is treated as presentation data and removed from the address bar",
+        "SceneView internal route replacements share the same canonical scene query stripping",
+        "scene target menu_id and action_id remain available while the embedded action runtime still consumes them",
+        "the dedicated route-query target executes through Node TAP so nonzero runner evidence is recorded"
+      ],
+      "failure_recovery": [
+        "the first full iteration found the new route-query target emitted successful assertions without a machine-readable summary; the target was wired through Node TAP and the affected set passed"
+      ],
+      "scope_limit": "Local canonical URL construction and scene route guards only; actual browser address-bar readback, remaining context-key classification, remote CI and user acceptance remain not_run."
     },
     "remote_publication": {
       "status": "draft_open_mainline_sync_validation_not_awaited",

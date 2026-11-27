@@ -211,7 +211,12 @@ import { resolveActivityRouteKey } from '../app/activityPageCacheIdentity';
 import { awaitSceneHydration } from '../app/sceneHydration';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { readWorkspaceContext } from '../app/workspaceContext';
-import { buildCanonicalSceneRouteTarget, normalizeLegacyWorkbenchPath, resolveSceneDefaultOrder } from '../app/routeQuery';
+import {
+  buildCanonicalSceneRouteTarget,
+  normalizeLegacyWorkbenchPath,
+  resolveSceneDefaultOrder,
+  stripCanonicalSceneIdentityQuery,
+} from '../app/routeQuery';
 import { withEnterpriseSetupReturnTarget } from '../app/enterpriseSetupNavigation';
 import { ownsSceneActivity, resolveSceneContractEntryIntent, resolveSceneRuntimeDiagnostic } from '../app/sceneEntryContract';
 import {
@@ -470,7 +475,7 @@ function resolveWorkspaceContextQuery() {
 }
 
 function asRouteQuery(query: Record<string, unknown>): LocationQueryRaw {
-  return query as LocationQueryRaw;
+  return stripCanonicalSceneIdentityQuery(query as LocationQueryRaw);
 }
 
 function resolveTargetRecordEntry(target: SceneTarget) {
@@ -941,10 +946,8 @@ function resolveRoutePathOnly(targetRoute: string) {
 }
 
 function resolveCanonicalSceneOwnerQuery(sceneKey: string, workspaceContextQuery: Record<string, unknown>) {
-  return {
-    scene_key: sceneKey || undefined,
-    ...workspaceContextQuery,
-  };
+  void sceneKey;
+  return stripCanonicalSceneIdentityQuery(workspaceContextQuery as LocationQueryRaw);
 }
 
 function resolveSceneActionOrder(scene: Scene, target: SceneTarget, sceneKey: string) {

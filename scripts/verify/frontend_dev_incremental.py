@@ -509,6 +509,14 @@ RULES = (
         "verify.frontend.record_form_return.unit",
     )),
     Rule((
+        "frontend/apps/web/src/app/routeQuery.ts",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/scripts/record_entry_contract_test.ts",
+        "frontend/apps/web/scripts/route_query_normalization_test.ts",
+    ), (
+        "verify.frontend.route_query.unit",
+    )),
+    Rule((
         "frontend/apps/web/src/app/pageIdentity.ts",
         "frontend/apps/web/src/app/pageIdentityAdapters.ts",
         "frontend/apps/web/src/app/pageIdentityRoute.ts",

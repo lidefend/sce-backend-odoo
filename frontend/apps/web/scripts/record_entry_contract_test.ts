@@ -15,12 +15,45 @@ import {
   normalizeContractAuthLevel,
   requireContractAuthLevel,
 } from '../src/app/contract/contractAuthLevel';
-import { buildEntryTargetRouteTarget } from '../src/app/routeQuery';
+import {
+  buildCanonicalSceneRouteTarget,
+  buildEntryTargetRouteTarget,
+  stripCanonicalSceneIdentityQuery,
+} from '../src/app/routeQuery';
 import { buildActionViewRowClickTarget } from '../src/app/runtime/actionViewInteractionRuntime';
 
 function resolvedPath(entry: Parameters<typeof resolveRecordOpenTarget>[0]) {
   return resolveRecordOpenTarget(entry)?.path;
 }
+
+const canonicalSceneRoute = buildCanonicalSceneRouteTarget('projects.ledger', {
+  scene: {
+    label: 'Project ledger',
+    target: { menu_id: 310, action_id: 506, default_order: 'write_date desc' },
+  },
+  query: {
+    scene: 'projects.ledger',
+    scene_key: 'projects.ledger',
+    scene_label: 'Project ledger',
+    search: 'active',
+    menu_id: '999',
+    action_id: '999',
+  },
+});
+assert.equal(canonicalSceneRoute.path, '/s/projects.ledger');
+assert.deepEqual(canonicalSceneRoute.query, {
+  search: 'active',
+  menu_id: 310,
+  action_id: 506,
+  order: 'write_date desc',
+});
+assert.deepEqual(stripCanonicalSceneIdentityQuery({
+  scene: 'projects.ledger',
+  scene_key: 'projects.ledger',
+  sceneKey: 'projects.ledger',
+  scene_label: 'Project ledger',
+  menu_id: 310,
+}), { menu_id: 310 });
 
 // A declared-but-illegal formal carrier must stop with a contract gap instead
 // of being downgraded (T5).  assertGap proves the negative path is a real stop.
