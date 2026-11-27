@@ -47,3 +47,8 @@ PR #1019 advanced to `e4a4df12cf65137c298863f576390ca3684076c6`. A fresh r4
 branch was created directly from that full head and the import-only patch was
 replayed on top. This avoids rewriting source history and makes the eventual
 stack PR fast-forward-compatible once the import slice is validated.
+
+The direct r4 import commit `0de4566d293796e6589d6e36eccb58e35097ba59` passed
+exact-head local iteration (6 executed, 3 reused, 24 non-zero tests, 5 static
+checks) and production build fingerprint
+`80828eab2f196b83053f1655b19cb18489825a4db2090e6c294f2b9e02ba3219`.

@@ -134,13 +134,38 @@
       "source_revision": "f8fcce8616c30780e07b87a8815fa4a19fd91356"
     },
     "r4_stack": {
-      "status": "applied_pending_validation",
+      "status": "validated",
       "source_head": "a7f60de29d8d634e01cab7b7e637e314ae62eeca",
       "destination_base_head": "e4a4df12cf65137c298863f576390ca3684076c6",
       "method": "new branch directly from the latest PR full head plus import-only patch; no source-history rewrite",
       "conflict": "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    },
+    "r4_exact_head_validation": {
+      "status": "passed",
+      "head": "0de4566d293796e6589d6e36eccb58e35097ba59",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T060703Z-130062-586445514/receipt.json",
+      "receipt_sha256": "0f307f00e1ee93a73f75d1d3f5db48fa61daf9c001e678e9522a03a00b6668ab",
+      "executed_targets": 6,
+      "reused_targets": 3,
+      "executed_test_count": 24,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "worktree_clean": true
+    },
+    "r4_exact_head_frontend_build": {
+      "status": "passed",
+      "head": "0de4566d293796e6589d6e36eccb58e35097ba59",
+      "command": "make verify.frontend.build ENV=dev ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev",
+      "log": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/frontend-build-r4-exact-head.log",
+      "log_sha256": "df3422b7edb57dd5f0c85da610aaa6240ff6ea731ba7eea3f330be3b15efd8b9",
+      "build_info_sha256": "14baaa4b3196ca9b3dacf828a04f28714df6236c0a7bffaa503fc36575b2efce",
+      "frontend_build_fingerprint": "80828eab2f196b83053f1655b19cb18489825a4db2090e6c294f2b9e02ba3219",
+      "source_revision": "0de4566d293796e6589d6e36eccb58e35097ba59"
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the r4 branch and run exact-head import lifecycle validation and build."
+  "next_exact_step": "Commit this r4 evidence, publish the direct stack branch and open its PR against the exact source branch."
 }
