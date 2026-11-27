@@ -38,6 +38,7 @@ import {
   deriveGroupByChipsFromContract,
   deriveSavedFilterChipsFromContract,
 } from '../src/app/action_runtime/useActionViewLoadPreflightRuntime';
+import { resolveLoadedActionPrimaryBudget } from '../src/app/action_runtime/useActionViewActionPresentationRuntime';
 import { resolveDeclaredSurfaceBudget } from '../src/app/runtime/actionViewSurfacePolicyBudget';
 import {
   resolveContractV2FieldDescriptorMap,
@@ -866,5 +867,33 @@ for (const invalid of [{}, { actions_primary_max: -1 }, { actions_primary_max: 2
     'primary action budget must stop instead of defaulting to four',
   );
 }
+check(
+  resolveLoadedActionPrimaryBudget(null),
+  0,
+  'primary action budget waits for the contract instead of reporting a missing declaration during load',
+);
+check(
+  resolveLoadedActionPrimaryBudget({
+    snapshot: {
+      actionContract: {
+        surfacePolicies: { actions_primary_max: 3 },
+      },
+    },
+  } as ContractV2NormalizedStore),
+  3,
+  'loaded primary action budget consumes the declared contract value',
+);
+assert.throws(
+  () => resolveLoadedActionPrimaryBudget({
+    snapshot: {
+      actionContract: {
+        surfacePolicies: {},
+      },
+    },
+  } as ContractV2NormalizedStore),
+  (error: unknown) => isContractGapError(error)
+    && error.defect.missing === 'surface_policies.actions_primary_max',
+  'loaded contract with no primary action budget still fails closed',
+);
 
 console.log(`[frontend.contract.shape.projection] PASS cases=${cases}`);

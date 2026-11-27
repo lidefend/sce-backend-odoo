@@ -125,6 +125,14 @@ export function normalizeV2ActionRows(store: ContractV2NormalizedStore | null): 
   return normalized;
 }
 
+export function resolveLoadedActionPrimaryBudget(store: ContractV2NormalizedStore | null): number {
+  if (!store) return 0;
+  return resolveDeclaredSurfaceBudget(
+    resolveContractV2SurfacePolicies(store),
+    'actions_primary_max',
+  );
+}
+
 export function useActionViewActionPresentationRuntime(options: UseActionViewActionPresentationRuntimeOptions) {
   const contractActionButtons = computed<ContractActionButton[]>(() => {
     const contract = options.actionContract.value;
@@ -136,8 +144,7 @@ export function useActionViewActionPresentationRuntime(options: UseActionViewAct
   });
 
   const actionPrimaryBudget = computed(() => {
-    const surfacePolicies = resolveContractV2SurfacePolicies(options.actionContract.value);
-    return resolveDeclaredSurfaceBudget(surfacePolicies, 'actions_primary_max');
+    return resolveLoadedActionPrimaryBudget(options.actionContract.value);
   });
 
   const contractActionPresentation = computed(() => {
