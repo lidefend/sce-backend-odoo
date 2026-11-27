@@ -89,22 +89,22 @@
     "dbfilter": "^sc_clean$",
     "namespace_alias": "clean",
     "namespace_id": "ns_c6fed472e939",
-    "source_revision": "309158b3b4a40db001cfa54c3493f937022561c1",
+    "source_revision": "743e60a2985490d7d71f5ee2526ac769fc497eab",
     "modules": [
       "smart_construction_bundle",
       "sc_norm_engine"
     ],
     "demo_data": false,
     "fixture": false,
-    "frontend_build_fingerprint": "f31b8461d155af579a678ed9e941fdb974202b03d802431f4342bb91d827f3d8",
+    "frontend_build_fingerprint": "0e02a841e2bdb7083d7fefb7868fde09fe47f59d884886e5ac8091474e9dafa0",
     "health": "passed",
-    "health_note": "The clean profile serves the exact frontend candidate rebased onto mainline bfc954c0b, which contains the inherited polymorphic-reference producer and decoder fix. No backend code was changed in this topic.",
-    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-frontend-build.log",
-    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-up.log",
-    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-health.log",
-    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-entry-identity.log",
-    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-runtime-version.json",
-    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-polymorphic-build-info.json",
+    "health_note": "The clean profile serves the exact frontend field-facet projection candidate on mainline bfc954c0b. No backend code was changed in this topic.",
+    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-facet-clean-frontend-build.log",
+    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-facet-clean-up.log",
+    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-facet-clean-health.log",
+    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-facet-clean-entry-identity.log",
+    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-facet-clean-runtime-version.json",
+    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-facet-clean-build-info.json",
     "authority": "Owner-directed isolated clean development profile; existing dev/sample/acceptance/customer data and volumes are excluded."
   },
   "verification_responsibility": {
@@ -509,7 +509,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from the clean-validated polymorphic-reference candidate, selecting the next confirmed consumer gap from the current declaration bindings without modifying backend code in this topic.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from the clean-validated field-facet projection candidate, selecting the next confirmed declaration consumer or stop behavior without modifying backend code in this topic.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1130,6 +1130,83 @@
         "the frontend contract-basis ledger remains at 31 declaration bindings and 0 open defects",
         "lint, strict typecheck, frontend build-related static checks and affected consumer tests passed",
         "the run resolved no outside-scope or unmapped paths"
+      ],
+      "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
+    },
+    "fc01_declared_field_facet_projection": {
+      "status": "passed",
+      "stage_identity": "c7e6cf64610f433e21f7cd5de1e9eb27dee6000f plus the owned field-facet projection dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T020023Z-2145975-92132550/receipt.json",
+      "receipt_sha256": "e12a3b5712574e0dd9721b554eb1627ed1c2f54f59ec06a7682a99ec46e17087",
+      "executed_targets": 25,
+      "reused_targets": 23,
+      "test_targets": 15,
+      "executed_test_count": 636,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "the strict field descriptor remains the final declaration carrier after normalized-store and form-field projection",
+        "referenceModelField survives both projections and the real polymorphic producer output decodes without a fixed relation",
+        "descriptor-only filename survives normalization and the form projection used by binary field consumers",
+        "digits, unit, temporal, currencyField, attachmentRole and the remaining declared facets are preserved instead of reduced to a scalar Odoo-shaped subset",
+        "business-value presentation consumes digits and unit from the projected form field, and attachment behavior consumes relation plus attachmentRole from the same projection",
+        "the real producer/decoder integration, strict typecheck, lint and stable V2 projection all pass"
+      ],
+      "failure_recovery": [
+        "initial execution failed closed because contracts/v2/types.ts was outside the registered run scope; the owned scope was repaired",
+        "the contract-fidelity baseline failed because remediation_design source hashes were stale; the existing hash baseline was refreshed after the final source stabilized",
+        "stable V2 projection rejected a redundant snake_case currency_field alias; the projection now keeps only canonical currencyField"
+      ],
+      "scope_limit": "Local targeted validation only; clean exact-head runtime, remote PR CI, mainline qualification, the 143-entry browser matrix and user acceptance remain not_run."
+    },
+    "fc01_declared_field_facet_clean_runtime": {
+      "status": "passed",
+      "product_source_revision": "743e60a2985490d7d71f5ee2526ac769fc497eab",
+      "frontend_build_fingerprint": "0e02a841e2bdb7083d7fefb7868fde09fe47f59d884886e5ac8091474e9dafa0",
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "dbfilter": "^sc_clean$",
+      "namespace_id": "ns_c6fed472e939",
+      "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-facet-clean-frontend-build.log",
+      "frontend_build_log_sha256": "d4f53ea3807908744c41ea6b6209d569f11ceef121adf70be3cc159e1b894b92",
+      "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-facet-clean-up.log",
+      "up_log_sha256": "d66a17b98e2b951c3055c03bd40065ed8e9b7b9a0aa24ec9e8202b3e7f53e03d",
+      "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-facet-clean-health.log",
+      "health_log_sha256": "3edb53ae8eaa7889b0a03472c49ccafd09763cf079679d2ff182f7f669dd4550",
+      "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-facet-clean-entry-identity.log",
+      "entry_identity_log_sha256": "08a8d638a4b2744492f8eb760b91130ef319be7d52b7865598a735375722dc78",
+      "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-facet-clean-runtime-version.json",
+      "runtime_version_log_sha256": "6fce62a2e6093057e2dad9f29fa441089d6b09803b2a723f6fcb23d09900683c",
+      "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-facet-clean-build-info.json",
+      "build_info_log_sha256": "81e0489a42e5fe91755e84ad71a457b0073eaef63dfc620851743baecfd037dd",
+      "facts_verified": [
+        "the clean frontend was built from exact candidate 743e60a2985490d7d71f5ee2526ac769fc497eab",
+        "the Odoo container was recreated with the matching frontend build fingerprint",
+        "tenant runtime-version returns the exact source revision, build fingerprint, sc_clean database, namespace id and clean alias",
+        "root build-info.json returns the same exact source revision",
+        "local.clean.health and entry identity verification pass under the isolated clean profile"
+      ],
+      "scope_limit": "Environment, build and runtime identity readback only; it is not a business-entry browser journey or product acceptance."
+    },
+    "fc01_declared_field_facet_clean_exact_head_validation": {
+      "status": "passed",
+      "head": "743e60a2985490d7d71f5ee2526ac769fc497eab",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T020359Z-2175883-645743875/receipt.json",
+      "receipt_sha256": "6ac5b1b8349e811a71ecd7944972f81f4e6dc08d0e2ec048098b58b5f6f81149",
+      "executed_targets": 19,
+      "reused_targets": 29,
+      "test_targets": 9,
+      "executed_test_count": 556,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "the clean exact-head iteration keeps the real producer/decoder integration green",
+        "the contract-shape projection consumer suite and all directly affected consumers pass",
+        "lint, strict typecheck and stable V2 projection pass",
+        "the contract-basis ledger remains at 31 declaration bindings and 0 open defects",
+        "the run resolved no outside-scope, blocked, not-run or unmapped targets"
       ],
       "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
     }

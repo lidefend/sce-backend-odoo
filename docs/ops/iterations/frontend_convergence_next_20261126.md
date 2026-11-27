@@ -471,6 +471,73 @@ clean 运行态回读：
 当前没有待提交审核的后端缺口。143 个业务入口的当前候选页面、角色和办理旅程仍未执行；
 远端 PR CI、`bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
 
+### 2026-11-27 FC-01 字段描述符第二次投影收口
+
+多态引用生产者修复后继续核对前端主链路，确认严格 decoder 虽然已经收到完整
+`fieldDescriptor`，但 V2 normalized store 和表单字段映射仍会做第二次缩减：
+
+- `referenceModelField` 在 `resolveContractV2FieldDescriptorMap` 中被丢弃；
+- `filename` 只从 `componentConfig` 读取，描述符独有声明不会进入表单字段；
+- 表单 DTO 又丢弃 `digits`、`unit`、`temporal`、`currencyField`、
+  `attachmentRole` 以及其余已声明 facet。
+
+这会让刚接入的多态模型指针再次不可见，并使二进制文件名伴生字段、金额/比例/时长、
+时区呈现和附件能力在表单消费路径上依赖第二载体或丢失。归属仍是 P0 前端契约消费与投影，
+没有修改后端。
+
+本切片完成：
+
+- `resolveContractV2FieldDescriptorMap` 保留 `referenceModelField`，并以严格描述符
+  回退消费 `filename`；
+- `toContractV2FormFieldDescriptor` 完整保留组件/语义身份、引用指针、关系、附件角色、
+  精度、单位、时区、货币、帮助、可查询/可排序及结构角色等已声明 facet；
+- 表单字段和前端 schema 类型补齐相同字段，避免只靠未类型化透传；
+- 增加描述符独有 `filename`、`referenceModelField`、`digits + unit + temporal +
+  attachmentRole` 的区分性矩阵，共 39 个断言；
+- 用同一投影验证百分比按声明精度/单位呈现，附件行为只凭声明 `relation + attachmentRole`
+  生效；
+- 刷新 `remediation_design.json` 的源码摘要；该摘要首次失败被分类为
+  `baseline_evidence_defect`。
+
+过程中还处理了两项 fail-closed 门禁：
+
+- run 未登记 `contracts/v2/types.ts` 时按 `outside_scope` 停止，补充 owned scope 后重跑；
+- 稳定 V2 投影拒绝多余的 snake_case `currency_field` 别名，最终只保留规范
+  `currencyField`，没有放宽守卫白名单。
+
+产品改动提交为 `743e60a2985490d7d71f5ee2526ac769fc497eab`。dirty 候选上的
+`make ci.local.iteration` 执行 25 个目标、复用 23 个未变目标，15 个测试目标执行
+636 项测试、5 项静态检查，`unmapped_paths=0`，全部退出零。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T020023Z-2145975-92132550/receipt.json`
+
+回执 SHA256：
+`e12a3b5712574e0dd9721b554eb1627ed1c2f54f59ec06a7682a99ec46e17087`。
+
+按产品提交重建 clean 前端，构建指纹为
+`0e02a841e2bdb7083d7fefb7868fde09fe47f59d884886e5ac8091474e9dafa0`。
+
+clean 运行态回读：
+
+- `/t/clean/api/runtime-version` 同时返回上述源码 SHA、构建指纹、`sc_clean`、
+  namespace `ns_c6fed472e939` 与 alias `clean`；
+- 根路径 `/build-info.json` 返回同一源码 SHA；
+- `local.clean.health` 与 `local.clean.entry_identity.verify` 均通过；
+- project/database/dbfilter/namespace 保持 clean 专属身份。
+
+在该 clean 精确 HEAD 上执行 `make ci.local.iteration`：48 个必需目标全部成立，其中
+19 个本轮执行、29 个复用，9 个测试目标执行 556 项测试，5 项静态检查通过，
+`unmapped_paths=0`，全部退出零。真实多态生产者输出再次由前端 decoder 消费通过。
+回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T020359Z-2175883-645743875/receipt.json`
+
+回执 SHA256：
+`6ac5b1b8349e811a71ecd7944972f81f4e6dc08d0e2ec048098b58b5f6f81149`。
+
+143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
+`bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
+
 ### 2026-11-27 FC-01 plain value-shape 前端消费收口
 
 继续检查 plain collection 回退时确认，普通 `char/text/html` 字段遇到对象会按

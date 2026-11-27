@@ -46,10 +46,31 @@
       "AUTH-02 added 11 released product-configuration pages and the acceptance universe now matches 143",
       "affected-file selection reopens the declaration universe and evidence scope for the current inputs",
       "public activation/recovery transport is a bounded exact-route exception, not a general direct API escape",
-      "money/percentage precision, attachment role and Kanban title now have declaration-consumer-stop-behavior ledger bindings"
+      "money/percentage precision, attachment role and Kanban title now have declaration-consumer-stop-behavior ledger bindings",
+      "the strict field descriptor retains its declared facets through normalized-store and form-field projection"
     ],
     "browser": "not_run",
     "remote_ci": "not_run"
+  },
+  "fc_01_field_facet_projection": {
+    "status": "clean_exact_head_passed",
+    "head": "743e60a2985490d7d71f5ee2526ac769fc497eab",
+    "facts_verified": [
+      "referenceModelField survives normalized-store and form-field projection",
+      "descriptor-only filename survives both projections",
+      "digits, unit, temporal, currencyField and attachmentRole survive the form projection",
+      "business-value and attachment consumers read the preserved facets from the same projection",
+      "the real polymorphic producer/decoder integration remains green"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T020359Z-2175883-645743875/receipt.json",
+    "local_receipt_sha256": "6ac5b1b8349e811a71ecd7944972f81f4e6dc08d0e2ec048098b58b5f6f81149",
+    "runtime_identity": {
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "namespace_id": "ns_c6fed472e939",
+      "frontend_build_fingerprint": "0e02a841e2bdb7083d7fefb7868fde09fe47f59d884886e5ac8091474e9dafa0"
+    },
+    "coverage_limit": "The 143-entry current-candidate browser matrix, remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
   },
   "not_a_product_acceptance_receipt": true,
   "coverage_boundary": "One formal product-entry universe derived from current declarations plus 11 source-grounded consumer findings. Declared acceptance status is preserved as provenance; current-candidate runtime coverage is not inherited and remains not_run until exercised.",
