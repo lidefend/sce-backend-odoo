@@ -288,6 +288,20 @@
     "local_receipt_sha256": "a16930f8a14a9d2cbc1d5f6fe299045a83e2c312135c180d76c1fd7b52a8e39f",
     "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
   },
+  "fc01_total_filter_and_action_budgets": {
+    "status": "local_targeted_passed",
+    "head": "3722406c16b2047fbb0db0d84111c931775590bf",
+    "facts_verified": [
+      "filters_max, filters_primary_max and actions_primary_max use one shared strict budget resolver",
+      "explicit zero remains valid",
+      "missing, negative, fractional and string declarations stop with ContractGapError",
+      "the former total-filter cap of eight and primary-action default of four are removed",
+      "the contract-basis ledger reports 42 bindings with 0 open defects"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T054526Z-4077036-791169283/receipt.json",
+    "local_receipt_sha256": "b7641c95d758483f4ee92d7d54abd3eefea0670594408bfa82b62ee4ca3fbe54",
+    "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
+  },
   "post_slice_iteration_attempt": {
     "status": "failed_validation_tool",
     "head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
@@ -301,7 +315,7 @@
     "pull_request": 1019,
     "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
     "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
-    "current_head": "3bdb21bb17079fe48e0649c247441297092087be",
+    "current_head": "3722406c16b2047fbb0db0d84111c931775590bf",
     "coverage_limit": "Publication only. Remote CI and integration qualification are deferred by owner direction."
   },
   "not_a_product_acceptance_receipt": true,
@@ -315,7 +329,7 @@
       "sources": [
         {
           "path": "docs/architecture/frontend_contract_basis_ledger.json",
-          "sha256": "81921f3703ffaa51ffc8a433b2d2fd064b69da4fbe6baa476b383ceae542f6c3"
+          "sha256": "247d9f4bf4cda76d828432eaf678c8c073fbcdc98b6a2707cf54abe22d392f8a"
         }
       ],
       "planned_discriminating_cases": [
@@ -324,7 +338,7 @@
       ],
       "behavior_status": "new_semantic_bindings_verified_full_coverage_extension_pending",
       "evidence": [
-        "verify.frontend.contract_basis.unit test_count=15 bindings=41",
+        "verify.frontend.contract_basis.unit test_count=15 bindings=42",
         "verify.p0_contract_producer.p0a.unit test_count=72"
       ],
       "blocking_for_topic_completion": true
