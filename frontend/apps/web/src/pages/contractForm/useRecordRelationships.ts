@@ -548,6 +548,7 @@ export function useRecordRelationships(dependencies: RelationshipDependencies) {
     quickCreateRelation,
   } = useRecordRelationshipNavigation({
     actionId,
+    captureRelationRequest: dependencies.captureRelationRequest,
     createContractFormRecord,
     effectiveFieldDescriptor,
     fetchRelationOptions,

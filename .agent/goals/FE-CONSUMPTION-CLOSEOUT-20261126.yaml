@@ -84,10 +84,10 @@ goal:
     - FC-02
     outcome: 已收敛 URL 恢复筛选、分组与筛选字段声明标签呈现，让保存筛选使用契约 id 作为路由身份，要求自定义筛选消费声明的 type/operator/query mode，清除 preflight 的旧 chip 与分组 key/name 回退，并彻底移除自定义筛选的等号默认；查询条生产观察仍待受管浏览器环境
   - id: FC-04
-    status: planned
+    status: active
     depends_on:
     - FC-03
-    outcome: 证明关系明细和异步请求生命周期无旧态覆盖
+    outcome: 已为关系快速创建接入共享 request owner 与 context epoch，迟到查重或创建响应不会回填到新页面；其余关系明细和异步请求生命周期继续验证
   - id: FC-05
     status: planned
     depends_on:
@@ -140,9 +140,9 @@ goal:
   - full_industry_business_acceptance_without_separate_scope
   - changing_existing_ci_candidate_or_merging_it
   - publishing_or_committing_this_plan_in_this_turn
-  next_exact_step: Publish the recorded bd9af577c state through the managed PR push
-    path to obtain a fresh exact-head aggregate retry, then hand off remaining
-    FC-03 browser/user behavior as not_run until the managed acceptance port is available.
+  next_exact_step: Commit and publish the FC-04 relation quick-create stale-response
+    slice to PR number 1019, then continue the next confirmed relation lifecycle
+    consumer check without inheriting prior-head remote results.
     Do not modify backend code in this topic; report any newly confirmed producer gap separately
     for owner review.
   run: .agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/run.json

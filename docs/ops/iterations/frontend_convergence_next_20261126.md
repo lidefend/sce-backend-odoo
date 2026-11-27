@@ -893,6 +893,40 @@ dirty scope 上成立 86 个必需目标，全部本轮执行；65 个测试目�
 将只附带本条事实记录，产生新的精确 HEAD 做一次有依据的受管重试。仍不能声称该 PR
 的聚合门禁已通过。
 
+### 2026-11-27 FC-04 关系快速创建隔离迟到响应
+
+聚合重试 head `a92334000c1a54da500ebfc02fa6a830c16704b3` 已取得完整精确 HEAD 结果：
+`public_guard 140571040391`、`merge_policy_gate 140575240473`、
+`professional_quality_gate 140575056287`、`frontend_release_gate 140570919916`
+全部通过；`wait_for_fact_checks 140571065398` 和 backend impact suite
+（plan `140571078727`、suite `140571324633`、coverage `140574879971`）也通过。
+
+进入 FC-04 后确认关系快速创建存在真实异步生命周期缺口：`quickCreateRelation`
+先查重，再创建，再回填字段；这些 await 之间没有 request owner，也没有 context epoch
+校验。页面离开、记录切换或公司上下文变化后，旧请求仍可能创建记录、回填旧页面或把
+错误写入新页面。
+
+本切片完成：
+
+- 复用 `useRelationRuntime` 的 request owner，不新建异步控制器；
+- 快速创建在查重前取得本字段的 request lease，并绑定当前 context epoch；
+- 查重完成后再次校验 owner、context epoch 和 relation model，失效则不进入创建；
+- 创建完成后再次校验，失效的迟到响应不得回填关系或发布错误；
+- 增加“查重中失效”和“创建中失效”两个区分性用例；
+- component-driver inventory 按生产源码输入重新生成。
+
+`make ci.local.iteration` 在 `a92334000c1a54da500ebfc02fa6a830c16704b3` 加当前 owned
+dirty scope 上成立 86 个必需目标，全部本轮执行；65 个测试目标执行 2168 项测试、
+11 项静态检查，`unmapped=0`、`not_run=0`、`blocked=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T155046Z-1119070-787834552/receipt.json`
+
+回执 SHA256：
+`1df79c98d7b97cf780d2e4bfde074eee8498b35faa1d373f9d696a829884ddd6`。
+
+该切片仍需提交推送后的新精确 HEAD 远端验证。真实浏览器关系创建、跨公司关系创建、
+FC-04 整体收口和用户验收仍未完成。
+
 ### 2026-11-27 FC-02 页面身份声明化与选测补口
 
 本切片属于共享前端呈现消费层，不修改后端契约、权限或数据。页面身份不再把

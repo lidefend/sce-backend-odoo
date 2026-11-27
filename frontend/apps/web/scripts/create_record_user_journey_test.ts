@@ -11,6 +11,8 @@ import { nativeAttachmentRefreshDecision } from '../src/pages/contractForm/useNa
 import { sanitizeUiErrorMessage } from '../src/pages/contractForm/fieldUtils.ts';
 import { useRecordFormState } from '../src/pages/contractForm/useRecordFormState.ts';
 import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormProgress.ts';
+import { useRecordRelationshipNavigation } from '../src/pages/contractForm/useRecordRelationshipNavigation.ts';
+import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime.ts';
 
 // A relation control can emit an unchanged value during hydration. Saving an
 // unrelated field must not clear or rewrite that relation; intentional clears remain writes.
@@ -148,6 +150,131 @@ await stagedState.resolvePendingInlineRelationCreates();
 assert.equal(stagedCreateCalls.length, 1, 'an explicit relation write cancels the staged create');
 assert.deepEqual(stagedPending.value, []);
 console.log('[create-record-user-journey] PASS relation-create-intent-counterexamples=8');
+}
+
+{
+  const descriptor = { fieldType: 'many2one', relation: 'x.related', relationEntry: {
+    can_read: true, can_create: true,
+    inline_create: { enabled: true, create_on_no_match: true, name_field: 'name', match: 'single_contains_or_exact' },
+  } };
+  const relationRuntime = useRelationRuntime();
+  const formData = reactive<Record<string, unknown>>({ owner_id: false });
+  const validationErrors = ref<string[]>([]);
+  const selected: Array<{ id: number; label: string }> = [];
+  let createCalls = 0;
+  let resolveListing!: (rows: Array<{ id: number; label: string }>) => void;
+  const listing = new Promise<Array<{ id: number; label: string }>>((resolve) => { resolveListing = resolve; });
+  const navigation = useRecordRelationshipNavigation({
+    actionId: ref(1),
+    captureRelationRequest: relationRuntime.captureRelationRequest,
+    createContractFormRecord: async () => { createCalls += 1; return { id: 41 }; },
+    effectiveFieldDescriptor: () => descriptor,
+    fetchRelationOptions: () => listing,
+    formData,
+    loadModelContractV2: async () => ({ store: {} }),
+    model: ref('x.main'),
+    normalizeFieldValue: (value: unknown) => value,
+    one2manyRelationModel: () => '',
+    openRelationCreateDialog: () => undefined,
+    pickContractNavQuery: (_query: unknown, next: unknown) => next,
+    queryRelationOptions: async () => [],
+    relationCreateMode: () => 'quick',
+    relationEntry: (row: typeof descriptor | undefined) => row ? {
+      canRead: true,
+      canCreate: true,
+      canOpen: true,
+    } : undefined,
+    relationFieldDescriptors: ref({}),
+    relationIds: (name: string) => [Number(formData[name] || 0)],
+    relationInlineCreate: () => ({
+      enabled: true,
+      createOnNoMatch: true,
+      nameField: 'name',
+    }),
+    relationKeyword: () => '',
+    relationModel: () => 'x.related',
+    relationUiLabel: (_descriptor: unknown, _key: string, fallback: string) => fallback,
+    route: { query: {} },
+    router: {
+      push: async () => undefined,
+      replace: async () => undefined,
+      resolve: () => ({ href: '/x' }),
+    },
+    sanitizeUiErrorMessage: (error: unknown, fallback: string) => String(error || fallback),
+    setMany2oneOption: (name: string, option: { id: number; label: string }) => {
+      selected.push(option);
+      formData[name] = option.id;
+    },
+    validationErrors,
+  });
+
+  const staleListing = navigation.quickCreateRelation('owner_id', descriptor as never, 'Stale listing');
+  relationRuntime.invalidateRelationRequests();
+  resolveListing([]);
+  await staleListing;
+  assert.equal(createCalls, 0, 'a relation create superseded by page or context invalidation must not start');
+  assert.deepEqual(selected, []);
+  assert.deepEqual(validationErrors.value, []);
+
+  let resolveCreate!: (value: { id: number }) => void;
+  const creating = new Promise<{ id: number }>((resolve) => { resolveCreate = resolve; });
+  let markCreateStarted!: () => void;
+  const createStarted = new Promise<void>((resolve) => { markCreateStarted = resolve; });
+  const createRelationRuntime = useRelationRuntime();
+  const navigationWithCreate = useRecordRelationshipNavigation({
+    actionId: ref(1),
+    captureRelationRequest: createRelationRuntime.captureRelationRequest,
+    createContractFormRecord: () => {
+      createCalls += 1;
+      markCreateStarted();
+      return creating;
+    },
+    effectiveFieldDescriptor: () => descriptor,
+    fetchRelationOptions: async () => [],
+    formData,
+    loadModelContractV2: async () => ({ store: {} }),
+    model: ref('x.main'),
+    normalizeFieldValue: (value: unknown) => value,
+    one2manyRelationModel: () => '',
+    openRelationCreateDialog: () => undefined,
+    pickContractNavQuery: (_query: unknown, next: unknown) => next,
+    queryRelationOptions: async () => [],
+    relationCreateMode: () => 'quick',
+    relationEntry: (row: typeof descriptor | undefined) => row ? {
+      canRead: true,
+      canCreate: true,
+      canOpen: true,
+    } : undefined,
+    relationFieldDescriptors: ref({}),
+    relationIds: (name: string) => [Number(formData[name] || 0)],
+    relationInlineCreate: () => ({
+      enabled: true,
+      createOnNoMatch: true,
+      nameField: 'name',
+    }),
+    relationKeyword: () => '',
+    relationModel: () => 'x.related',
+    relationUiLabel: (_descriptor: unknown, _key: string, fallback: string) => fallback,
+    route: { query: {} },
+    router: {
+      push: async () => undefined,
+      replace: async () => undefined,
+      resolve: () => ({ href: '/x' }),
+    },
+    sanitizeUiErrorMessage: (error: unknown, fallback: string) => String(error || fallback),
+    setMany2oneOption: (name: string, option: { id: number; label: string }) => {
+      selected.push(option);
+      formData[name] = option.id;
+    },
+    validationErrors,
+  });
+  const staleCreate = navigationWithCreate.quickCreateRelation('owner_id', descriptor as never, 'Stale create');
+  await createStarted;
+  createRelationRuntime.invalidateRelationRequests();
+  resolveCreate({ id: 42 });
+  await staleCreate;
+  assert.equal(createCalls, 1);
+  assert.deepEqual(selected, [], 'a late create response must not bind to the stale page');
 }
 
 {

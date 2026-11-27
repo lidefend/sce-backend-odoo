@@ -8,7 +8,7 @@
   "baseline_state": "latest_main_includes_relation_active_actions_contract_and_exact_push_history_scan_release_qualification_not_run",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/frontend_convergence_next_20261126.md",
-  "current_batch": "FC-02 navigation, product configuration, context and authorization presentation gap closure",
+  "current_batch": "FC-04 relation field and asynchronous lifecycle gap closure",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
@@ -84,6 +84,7 @@
     "frontend/apps/web/src/pages/contractForm/useRelationRuntime.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordRelationshipNavigation.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordRelationships.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordFormState.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordFormFieldSchemas.ts",
@@ -599,7 +600,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Publish the recorded bd9af577c state through the managed PR push path to obtain a fresh exact-head aggregate retry, then read back all four required checks and hand off remaining FC-03 browser/user behavior as not_run until the managed acceptance port is available.",
+  "next_exact_step": "Commit and publish the FC-04 relation quick-create stale-response slice to PR 1019, then continue the next confirmed relation lifecycle consumer check without inheriting a92334000 remote results.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2596,6 +2597,36 @@
       ],
       "scope_limit": "Local component, contract guard and static checks only. Production custom-filter interaction, real browser navigation, user acceptance, FC-03 overall closure and FC-06 remain not_run."
     },
+    "fc04_relation_quick_create_stale_response_guard": {
+      "status": "passed_local_targeted",
+      "stage_identity": "a92334000c1a54da500ebfc02fa6a830c16704b3 plus the owned relation quick-create lifecycle dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T155046Z-1119070-787834552/receipt.json",
+      "receipt_sha256": "1df79c98d7b97cf780d2e4bfde074eee8498b35faa1d373f9d696a829884ddd6",
+      "required_targets": 86,
+      "executed_targets": 86,
+      "reused_targets": 0,
+      "test_targets": 65,
+      "executed_test_count": 2168,
+      "static_checks": 11,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "quick-create relation resolution now owns a request lease shared with the relation runtime",
+        "page or relation-context invalidation before the exact-match lookup resolves prevents a new relation from being created",
+        "page or relation-context invalidation after the create request starts prevents the late response from binding to the form",
+        "stale failures do not publish validation errors into the replacement page",
+        "relation model identity and context epoch must still match before create-side effects",
+        "existing quick-create intent, dirty-state, create and relation lifecycle tests remain green",
+        "the component-driver inventory was regenerated for the changed production source input"
+      ],
+      "failure_recovery": [
+        "the first targeted test used raw snake_case relation metadata instead of the normalized dependency shape, so the test stopped before entering the lifecycle; the fixture was aligned with the real runtime shape",
+        "the first full iteration rejected useRecordRelationships.ts as outside scope before executing product targets; the owned consumer was registered in the same run"
+      ],
+      "scope_limit": "Local component, relation lifecycle and static checks only. Real browser relation create flows, cross-company relation creation, user acceptance and FC-04 overall closure remain not_run."
+    },
     "fc03_preset_filter_label_presentation": {
       "status": "passed_local_targeted",
       "candidate_head": "98db6ed386f0bbe096febaf954d188de553eb9ce",
@@ -2689,12 +2720,12 @@
       "scope_limit": "P4 smoke and selector alignment only. The repaired candidate has not yet been pushed; exact-head remote CI, browser address-bar readback, mainline qualification and user acceptance remain not_run."
     },
     "remote_publication": {
-      "status": "bd9_fact_workflows_passed_aggregate_wait_transient_retry_required",
+      "status": "remote_ci_passed_for_a923_fc03_operator_options_next_fc04_quick_create_local",
       "pull_request": 1019,
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "bd9af577c85a6aa1c35064bec8b0b8427921f95e",
+      "current_head": "a92334000c1a54da500ebfc02fa6a830c16704b3",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",
@@ -2726,13 +2757,15 @@
         "head bd9af577c passed public_guard run 140563617042, professional_quality_gate run 140567883274 and frontend_release_gate run 140563507077",
         "head bd9af577c passed the selected backend impact suite through plan 140563697948, suite 140563934404 and coverage 140567709405",
         "head bd9af577c aggregate wait_for_fact_checks run 140563645489 failed after 8m2s with unexpected end of JSON input while querying dependency workflows",
-        "head bd9af577c merge_policy_gate run 140567775575 failed only as the dependent aggregate result"
+        "head bd9af577c merge_policy_gate run 140567775575 failed only as the dependent aggregate result",
+        "head a92334000 passed public_guard run 140571040391, merge_policy_gate run 140575240473, professional_quality_gate run 140575056287 and frontend_release_gate run 140570919916",
+        "head a92334000 passed wait_for_fact_checks run 140571065398 and the selected backend impact suite through plan 140571078727, suite 140571324633 and coverage 140574879971"
       ],
       "failure_recovery": [
         "direct exact-head readback confirms public_guard, professional_quality_gate and frontend_release_gate all completed successfully for bd9af577c",
         "the failed aggregate job was not treated as a product failure; a fresh exact-head run will be produced through make pr.push because no managed in-place workflow rerun entry exists"
       ],
-      "coverage_limit": "The three fact workflows and backend impact suite are green on bd9af577c, but the aggregate merge gate is not green and must be retried on a fresh exact head. Real browser readback, the 143-entry matrix, role/company journeys, FC-03 overall closure and FC-06 remain not_run."
+      "coverage_limit": "All required checks are green on the fresh exact head a92334000. Real browser readback, the 143-entry matrix, role/company journeys, FC-03 overall closure, FC-04 overall closure and FC-06 remain not_run."
     }
   }
 }
