@@ -8,6 +8,7 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import yaml
 from jsonschema import Draft202012Validator
@@ -30,6 +31,15 @@ PAGE_BLOCK_DATA_SPEC = importlib.util.spec_from_file_location("page_block_data_c
 assert PAGE_BLOCK_DATA_SPEC and PAGE_BLOCK_DATA_SPEC.loader
 PAGE_BLOCK_DATA_MODULE = importlib.util.module_from_spec(PAGE_BLOCK_DATA_SPEC)
 PAGE_BLOCK_DATA_SPEC.loader.exec_module(PAGE_BLOCK_DATA_MODULE)
+
+EVIDENCE_MODULE_PATH = ROOT / "scripts/verify/p0_contract_producer_descriptor_evidence.py"
+EVIDENCE_SPEC = importlib.util.spec_from_file_location(
+    "p0_contract_producer_descriptor_evidence",
+    EVIDENCE_MODULE_PATH,
+)
+assert EVIDENCE_SPEC and EVIDENCE_SPEC.loader
+EVIDENCE_MODULE = importlib.util.module_from_spec(EVIDENCE_SPEC)
+EVIDENCE_SPEC.loader.exec_module(EVIDENCE_MODULE)
 
 
 class ContractFidelityPlanGuardTest(unittest.TestCase):
@@ -574,6 +584,88 @@ class P0ContractProducerDesignTest(unittest.TestCase):
                 "decodePageOrchestration.block_field_descriptors",
             },
         )
+
+    def test_relation_active_actions_schema_preserves_bool_and_modifier_ast(self) -> None:
+        validator = Draft202012Validator(self.descriptor_schema)
+        base = {
+            "schemaVersion": "1.0.0",
+            "fieldCode": "partner_id",
+            "label": "Partner",
+            "fieldType": "many2one",
+            "widgetType": "many2one",
+            "semanticType": "relation",
+            "relation": "res.partner",
+        }
+        dynamic = {
+            "kind": "all",
+            "exprs": [
+                {
+                    "kind": "field_compare",
+                    "semantics": "python",
+                    "field": "state",
+                    "operator": "==",
+                    "value": "draft",
+                },
+                {
+                    "kind": "not",
+                    "expr": {"kind": "field_truthy", "field": "locked"},
+                },
+            ],
+            "raw": "state == 'draft' and not locked",
+        }
+        validator.validate({
+            **base,
+            "relationActiveActions": {"create": False, "write": dynamic},
+        })
+        validator.validate({
+            **base,
+            "relationActiveActions": {"create": True},
+        })
+        validator.validate({
+            **base,
+            "relationActiveActions": {"write": False},
+        })
+        validator.validate({
+            **base,
+            "relationActiveActions": {
+                "create": {
+                    "kind": "unsupported",
+                    "raw": "context.get('can_create')",
+                    "reason": "unsupported_expression",
+                },
+            },
+        })
+        for invalid in (
+            {"create": "yes"},
+            {"create": {"kind": "static", "value": "true"}},
+            {"create": {"kind": "all", "exprs": []}},
+            {
+                "create": {
+                    "kind": "field_compare",
+                    "field": "state",
+                    "operator": "==",
+                    "value": "draft",
+                    "value_field": "other",
+                },
+            },
+            {
+                "create": {
+                    "kind": "unsupported",
+                    "raw": "x",
+                    "reason": "unknown",
+                },
+            },
+            {"unexpected": True},
+        ):
+            with self.subTest(invalid=invalid):
+                self.assertNotEqual(
+                    list(validator.iter_errors({
+                        **base,
+                        "relationActiveActions": invalid,
+                    })),
+                    [],
+                )
+        schema_contract = self.packages["P0-A"]["schema_contract"]["descriptor_schema"]
         self.assertEqual(schema_contract["unknown_keys"], "reject")
         self.assertIn("FIELD_DESCRIPTOR_UNKNOWN_KEY", schema_contract["error_codes"])
         self.assertEqual(
@@ -626,6 +718,31 @@ class P0ContractProducerDesignTest(unittest.TestCase):
             "const fieldDescriptor = optionalRecord(raw, 'fieldDescriptor'",
             (ROOT / "frontend/apps/web/src/app/contracts/v2/schema.ts").read_text(encoding="utf-8"),
         )
+
+    def test_unwritable_artifact_projection_uses_repository_runtime_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary) / "repository"
+            requested = repository / "artifacts/p0/evidence.json"
+            requested.parent.mkdir(parents=True)
+            requested.write_text("existing", encoding="utf-8")
+            with mock.patch.object(EVIDENCE_MODULE, "ROOT", repository), mock.patch.object(
+                EVIDENCE_MODULE.os, "access", return_value=False,
+            ):
+                actual = EVIDENCE_MODULE.writable_output_path(str(requested))
+            self.assertEqual(
+                actual,
+                repository / ".runtime/p0-contract-producer-evidence/evidence.json",
+            )
+            self.assertTrue(actual.parent.is_dir())
+
+    def test_writable_artifact_projection_remains_unchanged(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary) / "repository"
+            requested = repository / "artifacts/p0/evidence.json"
+            with mock.patch.object(EVIDENCE_MODULE, "ROOT", repository):
+                actual = EVIDENCE_MODULE.writable_output_path(str(requested))
+            self.assertEqual(actual, requested)
+            self.assertFalse((repository / ".runtime").exists())
 
     def test_descriptor_schema_is_strict_and_cases_match(self) -> None:
         Draft202012Validator.check_schema(self.descriptor_schema)

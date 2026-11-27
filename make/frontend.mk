@@ -911,15 +911,15 @@ verify.p0_contract_producer.p0a.backend_unit: guard.prod.forbid
 .PHONY: verify.p0_contract_producer.p0a.money verify.p0_contract_producer.p0a.descriptor_conformance verify.p0_contract_producer.p0a.browser
 verify.p0_contract_producer.p0a.money: guard.prod.forbid
 	@python3 scripts/verify/p0_contract_producer_money_evidence.py \
-		--output artifacts/p0_contract_producer_01/real-money-page-block-contract.json
+		--output .runtime/p0-contract-producer-evidence/real-money-page-block-contract.json
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_contract_producer_real_money_decode_test.ts --bundle --platform=node --format=esm --outfile=/tmp/p0-contract-producer-real-money-decode-test.mjs >/dev/null
-	@P0A_MONEY_CONTRACT_PATH=artifacts/p0_contract_producer_01/real-money-page-block-contract.json node /tmp/p0-contract-producer-real-money-decode-test.mjs
+	@P0A_MONEY_CONTRACT_PATH=.runtime/p0-contract-producer-evidence/real-money-page-block-contract.json node /tmp/p0-contract-producer-real-money-decode-test.mjs
 
 verify.p0_contract_producer.p0a.descriptor_conformance: guard.prod.forbid
 	@python3 scripts/verify/p0_contract_producer_descriptor_evidence.py \
-		--form-output artifacts/p0_contract_producer_01/ui-contract-v2-project-form.json
+		--form-output .runtime/p0-contract-producer-evidence/ui-contract-v2-project-form.json
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts --bundle --platform=node --format=esm --outfile=/tmp/p0-contract-producer-real-contract-decode-test.mjs >/dev/null
-	@node /tmp/p0-contract-producer-real-contract-decode-test.mjs
+	@P0A_FORM_CONTRACT_PATH=.runtime/p0-contract-producer-evidence/ui-contract-v2-project-form.json node /tmp/p0-contract-producer-real-contract-decode-test.mjs
 
 .PHONY: verify.contract.polymorphic_reference.integration verify.contract.polymorphic_reference.decode
 verify.contract.polymorphic_reference.integration: guard.prod.forbid
@@ -931,6 +931,17 @@ verify.contract.polymorphic_reference.integration: guard.prod.forbid
 verify.contract.polymorphic_reference.decode: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/polymorphic_reference_real_contract_test.ts --bundle --platform=node --format=esm --outfile=.runtime/polymorphic-reference/real-decode-test.mjs >/dev/null
 	@node --test --test-reporter=tap .runtime/polymorphic-reference/real-decode-test.mjs
+
+.PHONY: verify.contract.relation_active_actions.integration verify.contract.relation_active_actions.decode
+verify.contract.relation_active_actions.integration: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_acceptance_fixture python3 scripts/verify/p0_contract_producer_descriptor_evidence.py \
+	  --form-output artifacts/p0_contract_producer_01/ui-contract-v2-project-form.json \
+	  --relation-actions-output .runtime/relation-active-actions/real-contract.json
+	@$(MAKE) --no-print-directory verify.contract.relation_active_actions.decode
+
+verify.contract.relation_active_actions.decode: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/relation_active_actions_real_contract_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=.runtime/relation-active-actions/real-decode-test.mjs >/dev/null
+	@node --test --test-reporter=tap .runtime/relation-active-actions/real-decode-test.mjs
 
 verify.p0_contract_producer.p0a.browser: guard.prod.forbid local.dev.ready local.dev.health
 	@$(MAKE) --no-print-directory verify.p0_contract_producer.p0a.money

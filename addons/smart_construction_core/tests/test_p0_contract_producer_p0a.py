@@ -8,6 +8,7 @@ from odoo.addons.smart_core.core.page_block_data_contract import field_descripto
 from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import (
     _strict_field_descriptor,
     _upgrade_contract_v2_field_descriptors,
+    assemble_unified_page_contract_v2,
 )
 from odoo.addons.smart_construction_core.handlers.workspace_home_enter import WorkspaceHomeEnterHandler
 from odoo.addons.smart_construction_core.services.scene_block_schema import build_contract, metric_card
@@ -704,3 +705,130 @@ class TestPolymorphicReferenceContractEvidence(TransactionCase):
         payload = {'notification': contract, 'native_reference': reference, 'native_reference_value': reference_value}
         encoded = base64.b64encode(json.dumps(payload, ensure_ascii=False, default=date_utils.json_default).encode()).decode()
         print('P0_POLYMORPHIC_REFERENCE_EVIDENCE_B64=' + encoded, flush=True)
+
+
+@tagged('post_install', '-at_install', 'p0_relation_active_actions_evidence')
+class TestRelationActiveActionsContractEvidence(TransactionCase):
+    def test_strict_relation_active_actions_ignore_component_config_conflicts(self):
+        descriptor = _strict_field_descriptor({
+            'fieldCode': 'partner_id',
+            'label': 'Partner',
+            'fieldDescriptor': {
+                'schemaVersion': '1.0.0',
+                'name': 'partner_id',
+                'type': 'many2one',
+                'relation': 'res.partner',
+                'relation_active_actions': {'create': False},
+            },
+            'componentConfig': {
+                'fieldType': 'many2one',
+                'relation': 'res.partner',
+                'relationActiveActions': {'create': True, 'write': True},
+                'relation_active_actions': {'create': True, 'write': True},
+            },
+        }, model_name='res.partner')
+        self.assertEqual(descriptor['relationActiveActions'], {'create': False})
+        self.assertNotIn('write', descriptor['relationActiveActions'])
+
+    def test_real_assembler_emits_occurrence_relation_actions_in_field_descriptor(self):
+        dynamic_write = {
+            'kind': 'field_compare',
+            'semantics': 'python',
+            'field': 'state',
+            'operator': '!=',
+            'value': 'done',
+            'raw': "state != 'done'",
+        }
+        source = {
+            'model': 'x.relation_action_probe',
+            'view_type': 'form',
+            'fields': {
+                'partner_id': {
+                    'name': 'partner_id',
+                    'type': 'many2one',
+                    'relation': 'res.partner',
+                    'string': 'Partner',
+                },
+                'reviewer_id': {
+                    'name': 'reviewer_id',
+                    'type': 'many2one',
+                    'relation': 'res.users',
+                    'string': 'Reviewer',
+                },
+                'tag_ids': {
+                    'name': 'tag_ids',
+                    'type': 'many2many',
+                    'relation': 'res.partner.category',
+                    'string': 'Tags',
+                },
+            },
+            'views': {'form': {'layout': [{
+                'type': 'sheet',
+                'span': 12,
+                'children': [
+                    {
+                        'type': 'field',
+                        'span': 6,
+                        'name': 'partner_id',
+                        'source_position': 1,
+                        'relation_active_actions': {'create': False, 'write': True},
+                    },
+                    {
+                        'type': 'field',
+                        'span': 6,
+                        'name': 'reviewer_id',
+                        'source_position': 2,
+                        'relation_active_actions': {'create': dynamic_write},
+                    },
+                    {
+                        'type': 'field',
+                        'span': 6,
+                        'name': 'tag_ids',
+                        'source_position': 3,
+                        'attributes': {'widget': 'many2many_tags'},
+                        'relation_active_actions': {'create': True},
+                    },
+                ],
+            }]}},
+        }
+        contract = assemble_unified_page_contract_v2(
+            source,
+            source_type='ui.contract',
+            request_id='p0.relation.active.actions.evidence',
+        )
+        widgets = []
+
+        def collect(rows):
+            for row in rows:
+                widgets.extend(row.get('widgetList', []))
+                collect(row.get('children', []))
+
+        collect(contract['layoutContract']['containerTree'])
+        by_field = {
+            row['fieldCode']: row
+            for row in widgets
+            if row.get('fieldCode')
+        }
+        first = by_field['partner_id']
+        second = by_field['reviewer_id']
+        tags = by_field['tag_ids']
+        self.assertEqual(
+            first['fieldDescriptor']['relationActiveActions'],
+            {'create': False, 'write': True},
+        )
+        self.assertEqual(
+            second['fieldDescriptor']['relationActiveActions'],
+            {'create': dynamic_write},
+        )
+        self.assertNotIn('write', second['fieldDescriptor']['relationActiveActions'])
+        self.assertEqual(
+            tags['fieldDescriptor']['relationActiveActions'],
+            {'create': True},
+        )
+        for widget in (first, second, tags):
+            self.assertNotIn('relationActiveActions', widget['componentConfig'])
+            self.assertNotIn('relation_active_actions', widget['componentConfig'])
+        encoded = base64.b64encode(
+            json.dumps({'contract': contract}, ensure_ascii=False, sort_keys=True).encode('utf-8')
+        ).decode('ascii')
+        print(f'P0_RELATION_ACTIVE_ACTIONS_EVIDENCE_B64={encoded}', flush=True)

@@ -936,6 +936,10 @@ export interface FieldDescriptor {
   selection?: Array<[string, string]>;
   relation?: string;
   relation_field?: string;
+  relationActiveActions?: {
+    create?: boolean | object;
+    write?: boolean | object;
+  };
   editable?: boolean;
   filename?: string;
   digits?: [number, number];

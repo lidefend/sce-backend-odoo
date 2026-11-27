@@ -195,9 +195,6 @@ export function one2manyColumnsFromSubview(
       const modifiers = row.modifiers && typeof row.modifiers === 'object' && !Array.isArray(row.modifiers)
         ? row.modifiers as Record<string, unknown>
         : {};
-      const relationActions = row.relation_active_actions && typeof row.relation_active_actions === 'object' && !Array.isArray(row.relation_active_actions)
-        ? row.relation_active_actions as Record<string, unknown>
-        : {};
       const locator = String(row.native_locator || '').trim();
       const occurrenceIndex = Number(row.occurrence_index || 0);
       const ttype = String(row.ttype || row.field_type || fieldType(descriptor) || 'char').trim() || 'char';
@@ -239,7 +236,6 @@ export function one2manyColumnsFromSubview(
         nativeLocator: locator || undefined,
         occurrenceIndex: occurrenceIndex > 0 ? occurrenceIndex : undefined,
         modifiers: Object.keys(modifiers).length ? modifiers : undefined,
-        relationActiveActions: Object.keys(relationActions).length ? relationActions : undefined,
         selection: one2manySelectionOptions(row.selection || businessColumn.selection || descriptor?.selection),
       });
     });

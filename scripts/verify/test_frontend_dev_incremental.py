@@ -689,11 +689,13 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "frontend/apps/web/src/app/contracts/v2/types.ts",
             "docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json",
             "frontend/apps/web/scripts/polymorphic_reference_real_contract_test.ts",
+            "frontend/apps/web/scripts/relation_active_actions_real_contract_test.ts",
             "scripts/verify/p0_contract_producer_descriptor_evidence.py",
             "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
         ):
             with self.subTest(path=path):
                 self.assertIn("verify.contract.polymorphic_reference.integration", select_targets([path]))
+                self.assertIn("verify.contract.relation_active_actions.integration", select_targets([path]))
         self.assertNotIn("verify.contract.polymorphic_reference.integration", select_targets([
             "addons/smart_construction_core/models/core/payment_request.py",
         ]))
@@ -2174,6 +2176,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]),
             [
                 "verify.contract.polymorphic_reference.integration",
+                "verify.contract.relation_active_actions.integration",
                 "verify.frontend.canonical_form_presenter.unit",
                 "verify.frontend.contract_fidelity.plan.unit",
                 "verify.frontend.contract_record_action_state.unit",

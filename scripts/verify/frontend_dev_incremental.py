@@ -1123,9 +1123,13 @@ RULES = (
         "frontend/apps/web/src/app/contracts/v2/types.ts",
         "docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json",
         "frontend/apps/web/scripts/polymorphic_reference_real_contract_test.ts",
+        "frontend/apps/web/scripts/relation_active_actions_real_contract_test.ts",
         "scripts/verify/p0_contract_producer_descriptor_evidence.py",
         "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
-    ), ("verify.contract.polymorphic_reference.integration",)),
+    ), (
+        "verify.contract.polymorphic_reference.integration",
+        "verify.contract.relation_active_actions.integration",
+    )),
     Rule((
         "addons/smart_core/core/contract_version_negotiation.py",
         "addons/smart_core/core/page_block_data_contract.py",

@@ -178,6 +178,9 @@
       "type": "object",
       "additionalProperties": true
     },
+    "relationActiveActions": {
+      "$ref": "#/$defs/relationActiveActions"
+    },
     "widgetOptions": {
       "type": "object",
       "additionalProperties": true
@@ -401,6 +404,339 @@
       "type": "string",
       "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
       "description": "Same-record field declaring the runtime target model for many2one_reference."
+    }
+  },
+  "$defs": {
+    "modifierOperator": {
+      "enum": [
+        "=",
+        "==",
+        "!=",
+        "<>",
+        ">",
+        ">=",
+        "<",
+        "<=",
+        "in",
+        "not in",
+        "like",
+        "ilike"
+      ]
+    },
+    "modifierValue": {
+      "oneOf": [
+        {
+          "type": "boolean"
+        },
+        {
+          "$ref": "#/$defs/modifierExpression"
+        }
+      ]
+    },
+    "relationActiveActions": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "create": {
+          "$ref": "#/$defs/modifierValue"
+        },
+        "write": {
+          "$ref": "#/$defs/modifierValue"
+        }
+      }
+    },
+    "contextGetOperand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "key"
+      ],
+      "properties": {
+        "kind": {
+          "const": "context_get"
+        },
+        "key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "default": true
+      }
+    },
+    "fieldValueOperand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "field"
+      ],
+      "properties": {
+        "kind": {
+          "const": "field_value"
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "literalOperand": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "value"
+      ],
+      "properties": {
+        "kind": {
+          "const": "literal"
+        },
+        "value": true
+      }
+    },
+    "modifierOperand": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/contextGetOperand"
+        },
+        {
+          "$ref": "#/$defs/fieldValueOperand"
+        },
+        {
+          "$ref": "#/$defs/literalOperand"
+        }
+      ]
+    },
+    "modifierExpression": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "static"
+            },
+            "value": {
+              "type": "boolean"
+            },
+            "raw": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "field"
+          ],
+          "properties": {
+            "kind": {
+              "const": "field_truthy"
+            },
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "semantics": {
+              "const": "python"
+            },
+            "raw": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "field",
+            "operator"
+          ],
+          "properties": {
+            "kind": {
+              "const": "field_compare"
+            },
+            "field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "operator": {
+              "$ref": "#/$defs/modifierOperator"
+            },
+            "semantics": {
+              "const": "python"
+            },
+            "value": true,
+            "value_field": {
+              "type": "string",
+              "minLength": 1
+            },
+            "raw": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "oneOf": [
+            {
+              "required": [
+                "value"
+              ],
+              "not": {
+                "required": [
+                  "value_field"
+                ]
+              }
+            },
+            {
+              "required": [
+                "value_field"
+              ],
+              "not": {
+                "required": [
+                  "value"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "expr"
+          ],
+          "properties": {
+            "kind": {
+              "const": "not"
+            },
+            "expr": {
+              "$ref": "#/$defs/modifierExpression"
+            },
+            "raw": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "exprs"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "all",
+                "any"
+              ]
+            },
+            "exprs": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/modifierExpression"
+              }
+            },
+            "raw": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "semantics",
+            "value_expr"
+          ],
+          "properties": {
+            "kind": {
+              "const": "value_truthy"
+            },
+            "semantics": {
+              "const": "python"
+            },
+            "value_expr": {
+              "$ref": "#/$defs/contextGetOperand"
+            },
+            "raw": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "semantics",
+            "operator",
+            "left",
+            "right"
+          ],
+          "properties": {
+            "kind": {
+              "const": "value_compare"
+            },
+            "semantics": {
+              "const": "python"
+            },
+            "operator": {
+              "$ref": "#/$defs/modifierOperator"
+            },
+            "left": {
+              "$ref": "#/$defs/modifierOperand"
+            },
+            "right": {
+              "$ref": "#/$defs/modifierOperand"
+            },
+            "raw": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "raw",
+            "reason"
+          ],
+          "properties": {
+            "kind": {
+              "const": "unsupported"
+            },
+            "raw": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "enum": [
+                "unsupported_domain",
+                "unsupported_expression"
+              ]
+            }
+          }
+        }
+      ]
     }
   },
   "allOf": [
@@ -741,6 +1077,42 @@
         "required": [
           "selection"
         ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "relationActiveActions"
+        ]
+      },
+      "then": {
+        "properties": {
+          "fieldType": {
+            "enum": [
+              "many2one",
+              "many2many"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "relationActiveActions"
+        ],
+        "properties": {
+          "fieldType": {
+            "const": "many2many"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "widgetType": {
+            "const": "many2many_tags"
+          }
+        }
       }
     },
     {
