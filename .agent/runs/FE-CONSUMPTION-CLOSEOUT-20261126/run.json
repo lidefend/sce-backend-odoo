@@ -25,8 +25,10 @@
     "frontend/apps/web/src/app/action_runtime/useActionViewAssigneeRuntime.ts",
     "frontend/apps/web/src/app/action_runtime/useActionViewContentDisplayRuntime.ts",
     "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts",
     "frontend/apps/web/src/app/runtime/actionViewAssigneeOptionsContract.ts",
     "frontend/apps/web/src/app/runtime/actionViewKanbanTitleField.ts",
+    "frontend/apps/web/src/app/runtime/actionViewSurfacePolicyBudget.ts",
     "frontend/apps/web/src/App.vue",
     "frontend/apps/web/src/app/contracts/v2/store.ts",
     "frontend/apps/web/src/app/contracts/v2/types.ts",
@@ -530,7 +532,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head 3bdb21bb, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head 3722406c, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1836,6 +1838,46 @@
       ],
       "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
     },
+    "fc01_total_filter_and_action_budgets": {
+      "status": "passed_local_targeted",
+      "base_head": "bd7a2c79435e36f9d752570db170cba8e5ee7cc0",
+      "head": "3722406c16b2047fbb0db0d84111c931775590bf",
+      "receipts": [
+        {
+          "scope": "total filter budget",
+          "path": ".runtime/frontend-dev-validation/executions/20261127T053552Z-3999339-881430147/receipt.json",
+          "sha256": "d7f728d4425b7212ceccaf0d954978fc95d324ed6d6e379b9751c16a397e8d1f",
+          "executed_targets": 33,
+          "reused_targets": 15,
+          "test_targets": 22,
+          "test_count": 802
+        },
+        {
+          "scope": "primary action budget",
+          "path": ".runtime/frontend-dev-validation/executions/20261127T054526Z-4077036-791169283/receipt.json",
+          "sha256": "b7641c95d758483f4ee92d7d54abd3eefea0670594408bfa82b62ee4ca3fbe54",
+          "executed_targets": 38,
+          "reused_targets": 15,
+          "test_targets": 27,
+          "test_count": 900
+        }
+      ],
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "filters_max and filters_primary_max use one shared strict budget resolver",
+        "actions_primary_max uses the same declared budget resolver",
+        "explicit zero stays valid across filter and action budgets",
+        "missing, negative, fractional and string declarations stop with ContractGapError",
+        "the former total-filter cap of eight and primary-action default of four are removed",
+        "the contract-basis ledger reports 42 bindings with 0 open defects"
+      ],
+      "failure_recovery": [
+        "the contract-basis ledger initially still pointed the filter binding at the old wrapper file after extracting the shared resolver; the binding was corrected to the actual consumer",
+        "the generated component-driver inventory was refreshed after the new shared runtime module was added"
+      ],
+      "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
+    },
     "post_slice_iteration_attempt": {
       "status": "failed",
       "classification": "validation_tool_defect",
@@ -1854,7 +1896,7 @@
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "3bdb21bb17079fe48e0649c247441297092087be",
+      "current_head": "3722406c16b2047fbb0db0d84111c931775590bf",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",

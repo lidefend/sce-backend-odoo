@@ -4,7 +4,7 @@
   "status": "verification_pending",
   "branch": "fix/fe-import-lifecycle-closeout-20261127-r3",
   "baseline_sha": "fb45f14a079e4f5373198402727ac25a943c9af0",
-  "stack_parent_head": "fb45f14a079e4f5373198402727ac25a943c9af0",
+  "stack_parent_head": "e4a4df12cf65137c298863f576390ca3684076c6",
   "originally_validated_head": "489f2e4e51b00419d3b7445fdd9730ab71e649c0",
   "accepted_mainline_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
@@ -13,13 +13,22 @@
   "current_batch": "FE-S06/FE-S07 native import lifecycle and old-flow consumer closure",
   "scope": [
     ".agent/active-runs.json",
+    ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
+    ".agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/coverage_matrix.json",
+    ".agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/run.json",
     ".agent/runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/run.json",
     ".agent/runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/independent_evidence.md",
     "frontend/apps/web/src/api/data.ts",
     "frontend/apps/web/src/app/action_runtime/nativeImportLifecycle.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts",
+    "frontend/apps/web/src/app/runtime/actionViewSurfacePolicyBudget.ts",
     "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
     "frontend/apps/web/src/components/business/NativeImportWizard.vue",
     "frontend/apps/web/scripts/native_import_lifecycle_test.ts",
+    "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+    "docs/architecture/frontend_contract_basis_ledger.json",
+    "docs/ops/iterations/frontend_convergence_next_20261126.md",
     "make/frontend.mk"
   ],
   "environment": {
@@ -207,8 +216,16 @@
       "build_info_sha256": "3c771cae181b1523cb24a1c33844fae9e21ebd037734294b976fd3ce47717479",
       "frontend_build_fingerprint": "afac180ee125ec246d9af68ff7eb154dae412c836cfba8d6fbf8d5981771407e",
       "source_revision": "50faa32bb171e7c1e87e2fc5ab39369840a4d4c7"
+    },
+    "source_sync_e4a4": {
+      "status": "applied_pending_validation",
+      "source_head": "76ada1ba65978f8a3dd52d7575718c41bec603af",
+      "destination_base_head": "e4a4df12cf65137c298863f576390ca3684076c6",
+      "method": "exact source delta replay on the existing r3 branch; generated inventory regenerated",
+      "conflict": "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+      "product_overlap": false
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit this r3 evidence, publish the stable-base import stack branch, and hand its full HEAD to the product writer for PR #1019 integration after the public_guard false positive is resolved."
+  "next_exact_step": "Commit the e4a4 source sync, rerun import lifecycle and exact-head checks, then update PR #1023."
 }

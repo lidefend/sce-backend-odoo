@@ -555,13 +555,27 @@
       "declaredBy": "addons/smart_core/utils/contract_governance_user_surface.py",
       "declaredMethod": "apply_user_surface_policies",
       "declaredSymbol": "\"filters_primary_max\": filters_primary_max,",
-      "consumedBy": "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts",
-      "consumedSymbol": "function resolveDeclaredFilterBudget(",
+      "consumedBy": "frontend/apps/web/src/app/runtime/actionViewSurfacePolicyBudget.ts",
+      "consumedSymbol": "function resolveDeclaredSurfaceBudget(",
       "onMissing": "stop",
       "stopSymbol": "contractGapError",
       "regressionGuard": "verify.frontend.contract_shape_projection.unit",
       "behaviourTest": "frontend/apps/web/scripts/contract_shape_projection_test.ts",
       "stopDetail": "Total and primary visible-filter budgets consume declared non-negative integers. Missing, fractional, string or negative values stop with ContractGapError; the former total cap of 8, primary default of 5 and floor behavior are forbidden, while explicit zero remains valid."
+    },
+    {
+      "surface": "ActionView primary action budget",
+      "declared": "surface_policies.actions_primary_max",
+      "declaredBy": "addons/smart_core/utils/contract_governance_user_surface.py",
+      "declaredMethod": "apply_user_surface_policies",
+      "declaredSymbol": "\"actions_primary_max\": actions_primary_max,",
+      "consumedBy": "frontend/apps/web/src/app/runtime/actionViewSurfacePolicyBudget.ts",
+      "consumedSymbol": "function resolveDeclaredSurfaceBudget(",
+      "onMissing": "stop",
+      "stopSymbol": "contractGapError",
+      "regressionGuard": "verify.frontend.contract_shape_projection.unit",
+      "behaviourTest": "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+      "stopDetail": "The visible primary-action budget consumes a declared non-negative integer. Missing, fractional, string or negative values stop with ContractGapError; the former default of 4 and floor behavior are forbidden, while explicit zero remains valid."
     }
   ],
   "registeredMechanismExemptions": [

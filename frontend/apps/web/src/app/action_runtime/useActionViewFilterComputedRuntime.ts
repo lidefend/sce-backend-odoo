@@ -1,6 +1,6 @@
 import { resolveSavedSearchDeleteAction } from '../runtime/savedSearchSubmission';
 import { computed, type Ref } from 'vue';
-import { contractGapError, requireDeclaredNumber } from '../contract/contractGap';
+import { resolveDeclaredSurfaceBudget } from '../runtime/actionViewSurfacePolicyBudget';
 import {
   resolveContractV2SearchContract,
   resolveContractV2SelectorStatus,
@@ -46,18 +46,7 @@ export function resolveDeclaredFilterBudget(
   surfacePolicies: Dict,
   key: 'filters_primary_max' | 'filters_max',
 ): number {
-  const missing = `surface_policies.${key}`;
-  const value = requireDeclaredNumber(surfacePolicies[key], {
-    missing,
-    requiredDeclarationLayer: 'P0:smart_core:contract_governance_user_surface',
-    min: 0,
-  });
-  if (!Number.isInteger(value) || value < 0) throw contractGapError({
-    kind: 'contract_defect',
-    missing,
-    requiredDeclarationLayer: 'P0:smart_core:contract_governance_user_surface',
-  }, `${key} must be a non-negative integer`);
-  return value;
+  return resolveDeclaredSurfaceBudget(surfacePolicies, key);
 }
 
 export function resolveDeclaredPrimaryFilterBudget(surfacePolicies: Dict): number {
