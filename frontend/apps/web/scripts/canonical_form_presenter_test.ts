@@ -1719,6 +1719,47 @@ assert.equal(
   'field auth must reach the professional component adapter and semantic DOM carrier',
 );
 
+const stricterFieldStatusSnapshot = snapshot();
+const stricterNameWidget = stricterFieldStatusSnapshot.layoutContract.containerTree[0].children[0].widgetList[0];
+Object.assign(stricterNameWidget.fieldDescriptor!, { invisible: false, readonly: false, required: false });
+const stricterNameStatus = stricterFieldStatusSnapshot.statusContract.widgetStatus
+  .find((status) => status.widgetId === 'field.name')!;
+Object.assign(stricterNameStatus, { visible: false, readonly: true, required: true });
+const stricterFieldStatus = collectFields(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(stricterFieldStatusSnapshot)),
+  'edit',
+).zones.primary).find((field) => field.fieldCode === 'name')!;
+assert.deepEqual(
+  {
+    visible: stricterFieldStatus.visible,
+    readonly: stricterFieldStatus.readonly,
+    required: stricterFieldStatus.required,
+  },
+  { visible: false, readonly: true, required: true },
+  'effective widget status may be stricter than the static field descriptor',
+);
+
+for (const [key, descriptorValue, statusValue] of [
+  ['invisible', true, true],
+  ['readonly', true, false],
+  ['required', true, false],
+] as const) {
+  const inconsistent = snapshot();
+  const widget = inconsistent.layoutContract.containerTree[0].children[0].widgetList[0];
+  const status = inconsistent.statusContract.widgetStatus.find((row) => row.widgetId === 'field.name')!;
+  Object.assign(widget.fieldDescriptor!, { [key]: descriptorValue });
+  if (key === 'invisible') status.visible = statusValue;
+  else status[key] = statusValue;
+  assert.throws(
+    () => presentContractV2Form(
+      createContractV2Store(decodeContractV2Snapshot(inconsistent)),
+      'edit',
+    ),
+    new RegExp(`field\\.name\\.status_consistency\\.${key}`),
+    `effective widget status cannot relax descriptor ${key}`,
+  );
+}
+
 const widgetIdentitySnapshot = snapshot();
 widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].widgetType = 'radio';
 widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].fieldDescriptor!.widgetType = 'radio';

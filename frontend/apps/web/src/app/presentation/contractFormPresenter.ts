@@ -39,7 +39,7 @@ import { resolveContractSemanticComponent } from './professionalComponentRegistr
 import { NODE_COMPONENT_REGISTRY } from './semantic_registry.generated';
 import { resolveWorkflowActionAvailability } from '../contracts/v2/workflowActionAvailability';
 import { declaredActionAuthorityDenial } from '../contracts/v2/actionRuleAuthority';
-import { requireDeclaredText } from '../contract/contractGap';
+import { contractGapError, requireDeclaredText } from '../contract/contractGap';
 
 function asDict(value: unknown): ContractV2Dictionary {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as ContractV2Dictionary : {};
@@ -200,6 +200,26 @@ function relationModel(widget: ContractV2Widget): string {
   });
 }
 
+function validateDeclaredFieldStatus(
+  widget: ContractV2Widget,
+  status: ContractV2WidgetStatus | undefined,
+) {
+  if (!status) return;
+  const descriptor = widget.fieldDescriptor || {};
+  const conflicts = [
+    descriptor.invisible === true && status.visible !== false ? 'invisible' : '',
+    descriptor.readonly === true && status.readonly !== true ? 'readonly' : '',
+    descriptor.required === true && status.required !== true ? 'required' : '',
+  ].filter(Boolean);
+  if (!conflicts.length) return;
+  const missing = `field.${widget.fieldCode}.status_consistency.${conflicts.join('|')}`;
+  throw contractGapError({
+    kind: 'contract_defect',
+    missing,
+    requiredDeclarationLayer: 'P0:smart_core:field_status_projection',
+  }, `字段 ${widget.fieldCode} 的有效状态放宽了字段描述符约束: ${conflicts.join(', ')} (${missing})`);
+}
+
 function relationParts(value: unknown): { id: string | number; displayName: string } | null {
   if (Array.isArray(value) && value.length) {
     return { id: value[0] as string | number, displayName: text(value[1]) };
@@ -269,6 +289,7 @@ function fieldFromWidget(
   store: ContractV2NormalizedStore,
 ): CanonicalFormField {
   const statusResolved = Boolean(status);
+  validateDeclaredFieldStatus(widget, status);
   const fieldType = text(widget.fieldDescriptor?.fieldType);
   const declaredRelationModel = fieldType.toLowerCase() === 'many2one' ? relationModel(widget) : '';
   const semanticType = text(widget.fieldDescriptor?.semanticType);
