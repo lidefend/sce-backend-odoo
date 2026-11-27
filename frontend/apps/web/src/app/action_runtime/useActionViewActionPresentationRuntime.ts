@@ -4,6 +4,7 @@ import {
   resolveContractV2ActionRules,
   resolveContractV2SurfacePolicies,
 } from '../contracts/v2/store';
+import { resolveDeclaredSurfaceBudget } from '../runtime/actionViewSurfacePolicyBudget';
 import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 import type { ActionPresentation } from './useActionViewActionGroupingRuntime';
 
@@ -136,9 +137,7 @@ export function useActionViewActionPresentationRuntime(options: UseActionViewAct
 
   const actionPrimaryBudget = computed(() => {
     const surfacePolicies = resolveContractV2SurfacePolicies(options.actionContract.value);
-    const raw = Number(surfacePolicies.actions_primary_max ?? 4);
-    if (!Number.isFinite(raw) || raw < 0) return 4;
-    return Math.floor(raw);
+    return resolveDeclaredSurfaceBudget(surfacePolicies, 'actions_primary_max');
   });
 
   const contractActionPresentation = computed(() => {

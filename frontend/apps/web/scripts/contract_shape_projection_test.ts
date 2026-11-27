@@ -30,6 +30,7 @@ import {
   resolveDeclaredFilterBudget,
   resolveDeclaredPrimaryFilterBudget,
 } from '../src/app/action_runtime/useActionViewFilterComputedRuntime';
+import { resolveDeclaredSurfaceBudget } from '../src/app/runtime/actionViewSurfacePolicyBudget';
 import {
   resolveContractV2FieldDescriptorMap,
   resolveContractV2FormFieldMap,
@@ -662,6 +663,19 @@ for (const invalid of [{}, { filters_max: -1 }, { filters_max: 2.5 }, { filters_
     (error: unknown) => isContractGapError(error)
       && error.defect.missing === 'surface_policies.filters_max',
     'total filter budget must stop instead of silently truncating to eight',
+  );
+}
+check(
+  resolveDeclaredSurfaceBudget({ actions_primary_max: 3 }, 'actions_primary_max'),
+  3,
+  'primary action budget consumes the declared value',
+);
+for (const invalid of [{}, { actions_primary_max: -1 }, { actions_primary_max: 2.5 }, { actions_primary_max: '3' }]) {
+  assert.throws(
+    () => resolveDeclaredSurfaceBudget(invalid, 'actions_primary_max'),
+    (error: unknown) => isContractGapError(error)
+      && error.defect.missing === 'surface_policies.actions_primary_max',
+    'primary action budget must stop instead of defaulting to four',
   );
 }
 
