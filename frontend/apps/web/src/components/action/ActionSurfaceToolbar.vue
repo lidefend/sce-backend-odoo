@@ -760,7 +760,7 @@ watch(() => props.favoriteSharedEnabled, (enabled) => {
 });
 
 watch(activeCustomFilterField, (field) => {
-  customFilterOperator.value = field?.operators?.[0]?.value || '=';
+  customFilterOperator.value = String(field?.operators?.[0]?.value || '').trim();
   customFilterValue.value = field?.type === 'boolean' ? 'true' : '';
 });
 

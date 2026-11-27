@@ -82,7 +82,7 @@ goal:
     depends_on:
     - FC-01
     - FC-02
-    outcome: 已收敛 URL 恢复筛选、分组与筛选字段声明标签呈现，让保存筛选使用契约 id 作为路由身份，要求自定义筛选消费声明的 type/operator/query mode，并清除 preflight 的旧 chip 与分组 key/name 回退；查询条生产观察和其余值/状态一致性继续验证
+    outcome: 已收敛 URL 恢复筛选、分组与筛选字段声明标签呈现，让保存筛选使用契约 id 作为路由身份，要求自定义筛选消费声明的 type/operator/query mode，清除 preflight 的旧 chip 与分组 key/name 回退，并移除打开自定义筛选时的等号默认；查询条生产观察和其余值/状态一致性继续验证
   - id: FC-04
     status: planned
     depends_on:
@@ -140,7 +140,7 @@ goal:
   - full_industry_business_acceptance_without_separate_scope
   - changing_existing_ci_candidate_or_merging_it
   - publishing_or_committing_this_plan_in_this_turn
-  next_exact_step: Commit and publish the FC-03 query-chip authority slice to PR
+  next_exact_step: Commit and publish the FC-03 custom-filter operator slice to PR
     number 1019, then continue the next confirmed frontend-only declaration
     consumer check without inheriting prior-head remote results.
     Do not modify backend code in this topic; report any newly confirmed producer gap separately

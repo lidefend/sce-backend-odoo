@@ -261,7 +261,11 @@ def main() -> int:
             )
     if "queryMode: filter.queryMode" not in field_filter_source:
         errors.append("web serialized field filters must retain the declared query mode")
-    for forbidden in ("queryMode: field.queryMode || 'domain'", "found?.label || key"):
+    for forbidden in (
+        "queryMode: field.queryMode || 'domain'",
+        "found?.label || key",
+        "operators?.[0]?.value || '='",
+    ):
         if forbidden in action_toolbar_source:
             errors.append(
                 "web action toolbar must not synthesize query mode or custom group labels: "
