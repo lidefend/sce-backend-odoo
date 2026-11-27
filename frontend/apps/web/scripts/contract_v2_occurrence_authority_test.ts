@@ -551,7 +551,13 @@ console.log('native layout live collection projection: passed');
 // Required validation follows occurrence editability, not a flattened model flag.
 const requiredNode = (name: string, readonly = false) => ({
   type: 'field', name, span: 12, readonly,
-  fieldInfo: { name, type: 'char', required: true, readonly: false },
+  fieldDescriptor: {
+    fieldCode: name,
+    label: name,
+    fieldType: 'char',
+    required: true,
+    readonly: false,
+  },
 });
 const requiredTree = ref<Array<Record<string, unknown>>>([
   requiredNode('shared', true),

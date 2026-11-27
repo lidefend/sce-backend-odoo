@@ -233,11 +233,12 @@ checked += 1;
 // misreported as a missing canonical relationEntry.
 const nativeDescriptor = nativeNodeFieldDescriptor({
   name: 'project_id',
-  fieldInfo: {
-    name: 'project_id',
-    type: 'many2one',
+  fieldDescriptor: {
+    fieldCode: 'project_id',
+    label: 'project_id',
+    fieldType: 'many2one',
     relation: 'project.project',
-    relation_entry: {
+    relationEntry: {
       model: 'project.project',
       can_read: true,
       options_limit: DECLARED_LIMIT,
@@ -246,7 +247,7 @@ const nativeDescriptor = nativeNodeFieldDescriptor({
   },
 } as never, undefined, (name) => name);
 const nativeEntry = relationEntry(nativeDescriptor);
-assert.ok(nativeEntry, 'native adapter: producer evidence must normalize to canonical relationEntry');
+assert.ok(nativeEntry, 'native adapter: fieldDescriptor must normalize to canonical relationEntry');
 assert.equal(
   relationOptionsLimit(nativeEntry as Record<string, unknown>),
   DECLARED_LIMIT,

@@ -1,4 +1,6 @@
 import type { FieldDescriptor } from '@sc/schema';
+import type { ContractV2FieldDescriptor } from '../../app/contracts/v2/types';
+import { toContractV2FormFieldDescriptor } from '../../app/contracts/v2/store';
 import type { FormSectionFieldSchema } from '../../components/template/formSection.types';
 import {
   declaredFieldSizeSpan,
@@ -334,24 +336,15 @@ export function contractV2WidgetToNativeFieldNode(widget: ContractV2WidgetLike):
   const descriptor = widget.fieldDescriptor && typeof widget.fieldDescriptor === 'object'
     ? widget.fieldDescriptor as Record<string, unknown>
     : {};
-  const fieldInfo: Record<string, unknown> = {
-    name: fieldName,
-    label: widget.label || fieldName,
-    string: widget.label || fieldName,
-    type: descriptor.fieldType,
-    ...(descriptor.relation ? { relation: descriptor.relation } : {}),
-    ...(typeof descriptor.required === 'boolean' ? { required: descriptor.required } : {}),
-    ...(typeof descriptor.readonly === 'boolean' ? { readonly: descriptor.readonly } : {}),
-    ...(Array.isArray(descriptor.selection) ? { selection: descriptor.selection } : {}),
-  };
+  if (!Object.keys(descriptor).length) return null;
   return {
     type: 'field',
     name: fieldName,
+    fieldCode: fieldName,
     string: widget.label || fieldName,
     label: widget.label || fieldName,
     widget: widget.widgetType,
-    fieldInfo,
-    field_info: fieldInfo,
+    fieldDescriptor: descriptor,
   };
 }
 
@@ -453,16 +446,6 @@ export function nativeLayoutNodeType(node: NativeLayoutLikeNode) {
 
 export function isNativeFieldLayoutNode(node: NativeLayoutLikeNode) {
   return nativeLayoutNodeType(node) === 'field' && Boolean(String(node?.name || '').trim());
-}
-
-export function nativeNodeFieldInfo(node?: NativeLayoutLikeNode | null): Record<string, unknown> {
-  const fieldInfo = node?.fieldInfo && typeof node.fieldInfo === 'object' && !Array.isArray(node.fieldInfo)
-    ? node.fieldInfo as Record<string, unknown>
-    : {};
-  if (Object.keys(fieldInfo).length) return fieldInfo;
-  return node?.field_info && typeof node.field_info === 'object' && !Array.isArray(node.field_info)
-    ? node.field_info as Record<string, unknown>
-    : {};
 }
 
 export function normalizeNativeLayoutColumns(value: unknown): 1 | 2 | 3 | null {
@@ -637,15 +620,12 @@ export function nativeFieldLabel(
   resolveFieldLabel?: (name: string) => string,
 ) {
   const node = nodeRaw as Record<string, unknown>;
-  const fieldInfo = nativeNodeFieldInfo(node);
   const name = String(nodeRaw.name || '');
   return String(
     node.string
     || node.label
     || resolveFieldLabel?.(name)
     || descriptor?.string
-    || fieldInfo.string
-    || fieldInfo.label
     || nodeRaw.name
     || '',
   );
@@ -983,12 +963,8 @@ export function nativeModifierValue(nodeRaw: NativeLayoutLikeNode, key: 'invisib
   const actionVisibleAttrs = actionVisible.attrs && typeof actionVisible.attrs === 'object' && !Array.isArray(actionVisible.attrs)
     ? actionVisible.attrs as Record<string, unknown>
     : {};
-  const fieldInfo = nativeNodeFieldInfo(node);
   const attributeModifiers = attributes.modifiers && typeof attributes.modifiers === 'object'
     ? attributes.modifiers as Record<string, unknown>
-    : {};
-  const fieldInfoModifiers = fieldInfo.modifiers && typeof fieldInfo.modifiers === 'object'
-    ? fieldInfo.modifiers as Record<string, unknown>
     : {};
   const modifiers = node.modifiers && typeof node.modifiers === 'object'
     ? node.modifiers as Record<string, unknown>
@@ -999,8 +975,6 @@ export function nativeModifierValue(nodeRaw: NativeLayoutLikeNode, key: 'invisib
   // The normalized top-level value is the formal modifier AST. It must win
   // over raw field-info/XML strings such as `state != 'upload'`.
   if (key in node) return node[key];
-  if (key in fieldInfoModifiers) return fieldInfoModifiers[key];
-  if (key in fieldInfo) return fieldInfo[key];
   if (key in attributes) return attributes[key];
   return undefined;
 }
@@ -1048,40 +1022,34 @@ export function resolveNativeRelationActiveActions(
 }
 
 export function nativeNodeWidget(node?: NativeLayoutLikeNode | null) {
-  const fieldInfo = nativeNodeFieldInfo(node);
   const attributes = node?.attributes
     && typeof node.attributes === 'object'
     && !Array.isArray(node.attributes)
     ? node.attributes as Record<string, unknown>
     : {};
-  const componentConfig = node?.componentConfig
-    && typeof node.componentConfig === 'object'
-    && !Array.isArray(node.componentConfig)
-    ? node.componentConfig as Record<string, unknown>
+  const fieldDescriptor = node?.fieldDescriptor
+    && typeof node.fieldDescriptor === 'object'
+    && !Array.isArray(node.fieldDescriptor)
+    ? node.fieldDescriptor as Record<string, unknown>
     : {};
-  return String(componentConfig.nativeWidget || attributes.widget || node?.widget || fieldInfo.widget || '').trim().toLowerCase();
+  return String(fieldDescriptor.widgetType || attributes.widget || node?.widget || '').trim().toLowerCase();
 }
 
 export function nativeNodeWidgetSemantics(
   node?: NativeLayoutLikeNode | null,
   fallbackComponentConfig?: unknown,
 ) {
-  const fieldInfo = nativeNodeFieldInfo(node);
-  const componentConfig = node?.componentConfig
-    && typeof node.componentConfig === 'object'
-    && !Array.isArray(node.componentConfig)
-    ? node.componentConfig as Record<string, unknown>
+  const fieldDescriptor = node?.fieldDescriptor
+    && typeof node.fieldDescriptor === 'object'
+    && !Array.isArray(node.fieldDescriptor)
+    ? node.fieldDescriptor as Record<string, unknown>
     : {};
   const fallbackConfig = fallbackComponentConfig
     && typeof fallbackComponentConfig === 'object'
     && !Array.isArray(fallbackComponentConfig)
     ? fallbackComponentConfig as Record<string, unknown>
     : {};
-  const rawSemantics = componentConfig.widgetSemantics
-    || componentConfig.widget_semantics
-    || fieldInfo.widget_semantics
-    || fallbackConfig.widgetSemantics
-    || fallbackConfig.widget_semantics;
+  const rawSemantics = fieldDescriptor.widgetOptions || fallbackConfig.widgetOptions;
   const semantics = rawSemantics && typeof rawSemantics === 'object' && !Array.isArray(rawSemantics)
     ? rawSemantics as Record<string, unknown>
     : {};
@@ -1094,64 +1062,22 @@ export function nativeNodeFieldDescriptor(
   resolveFieldLabel: (name: string) => string,
 ): FieldDescriptor | undefined {
   const node = nodeRaw as Record<string, unknown>;
-  const fieldInfo = nativeNodeFieldInfo(node);
-  if (!Object.keys(fieldInfo).length && !fallback) return undefined;
-  const name = String(nodeRaw?.name || fieldInfo.name || fallback?.name || '').trim();
-  const label = String(node.string || node.label || resolveFieldLabel(name) || fallback?.string || fieldInfo.string || fieldInfo.label || name || '').trim();
-  const type = String(fieldInfo.type || fieldInfo.ttype || fallback?.type || fallback?.ttype || '').trim();
-  const relation = String(fieldInfo.relation || fallback?.relation || '').trim();
-  const relationField = String(fieldInfo.relation_field || fallback?.relation_field || '').trim();
-  const widget = String(node.widget || fieldInfo.widget || (fallback as Record<string, unknown> | undefined)?.widget || '').trim();
-  const attributes = node.attributes && typeof node.attributes === 'object' && !Array.isArray(node.attributes)
-    ? node.attributes as Record<string, unknown>
-    : {};
-  const selection = Array.isArray(fieldInfo.selection)
-    ? fieldInfo.selection as FieldDescriptor['selection']
-    : fallback?.selection;
-  const domain = attributes.domain !== undefined
-    ? attributes.domain
-    : (fieldInfo.domain !== undefined
-      ? fieldInfo.domain
-      : (fallback as Record<string, unknown> | undefined)?.domain);
-  const context = fieldInfo.context !== undefined
-    ? fieldInfo.context
-    : (fallback as Record<string, unknown> | undefined)?.context;
-  const fallbackRecord = fallback as Record<string, unknown> | undefined;
-  const relationEntry = fieldInfo.relationEntry !== undefined
-    ? fieldInfo.relationEntry
-    : (fieldInfo.relation_entry !== undefined
-      ? fieldInfo.relation_entry
-      : (fallbackRecord?.relationEntry ?? fallbackRecord?.relation_entry));
-  const widgetOptions = fieldInfo.widgetOptions !== undefined
-    ? fieldInfo.widgetOptions
-    : (fieldInfo.widget_options !== undefined
-      ? fieldInfo.widget_options
-      : (fieldInfo.options !== undefined
-        ? fieldInfo.options
-        : (fallbackRecord?.widgetOptions ?? fallbackRecord?.widget_options ?? fallbackRecord?.options)));
-  const normalizedFallback = fallback
-    ? Object.fromEntries(Object.entries(fallback).filter(([key]) => (
-      key !== 'relation_entry' && key !== 'widget_options'
-    )))
-    : {};
-  const filename = String(fieldInfo.filename || node.filename || fallback?.filename || '').trim();
-  return {
-    ...normalizedFallback,
-    ...(name ? { name } : {}),
-    ...(label ? { string: label } : {}),
-    ...(type ? { type, ttype: type } : {}),
-    ...(typeof fieldInfo.required === 'boolean' ? { required: fieldInfo.required } : {}),
-    ...(typeof fieldInfo.readonly === 'boolean' ? { readonly: fieldInfo.readonly } : {}),
-    ...(selection ? { selection } : {}),
-    ...(relation ? { relation } : {}),
-    ...(relationField ? { relation_field: relationField } : {}),
-    ...(widget ? { widget } : {}),
-    ...(domain !== undefined ? { domain } : {}),
-    ...(context !== undefined ? { context } : {}),
-    ...(relationEntry !== undefined ? { relationEntry } : {}),
-    ...(widgetOptions !== undefined ? { widgetOptions } : {}),
-    ...(filename ? { filename } : {}),
-  } as FieldDescriptor;
+  const nodeDescriptor = node.fieldDescriptor
+    && typeof node.fieldDescriptor === 'object'
+    && !Array.isArray(node.fieldDescriptor)
+    ? node.fieldDescriptor as ContractV2FieldDescriptor
+    : undefined;
+  if (nodeDescriptor) {
+    const descriptor = toContractV2FormFieldDescriptor(nodeDescriptor);
+    const name = String(nodeDescriptor.fieldCode || node.name || '').trim();
+    const label = String(nodeDescriptor.label || resolveFieldLabel(name) || name).trim();
+    return {
+      ...descriptor,
+      ...(name ? { name } : {}),
+      ...(label ? { string: label } : {}),
+    };
+  }
+  return fallback;
 }
 
 export function findNativeFieldNode(nodes: NativeLayoutLikeNode[], name: string): NativeLayoutLikeNode | null {
@@ -1172,8 +1098,12 @@ export function findNativeFieldNode(nodes: NativeLayoutLikeNode[], name: string)
 export function nativeFieldSubview(nodes: NativeLayoutLikeNode[], name: string): Record<string, unknown> | null {
   const node = findNativeFieldNode(nodes, name);
   if (!node) return null;
-  const fieldInfo = nativeNodeFieldInfo(node);
-  const subview = fieldInfo?.subview;
+  const fieldDescriptor = node.fieldDescriptor
+    && typeof node.fieldDescriptor === 'object'
+    && !Array.isArray(node.fieldDescriptor)
+    ? node.fieldDescriptor as Record<string, unknown>
+    : {};
+  const subview = fieldDescriptor.subview;
   if (subview && typeof subview === 'object' && !Array.isArray(subview)) {
     return subview as Record<string, unknown>;
   }
@@ -1250,8 +1180,12 @@ export function collectNativeFavoriteFieldNames(nodes: NativeLayoutLikeNode[], o
       && !Array.isArray(node.attributes)
       ? node.attributes as Record<string, unknown>
       : {};
-    const fieldInfo = nativeNodeFieldInfo(node);
-    const widget = String(node?.widget || attributes.widget || fieldInfo.widget || '').trim().toLowerCase();
+    const fieldDescriptor = node?.fieldDescriptor
+      && typeof node.fieldDescriptor === 'object'
+      && !Array.isArray(node.fieldDescriptor)
+      ? node.fieldDescriptor as Record<string, unknown>
+      : {};
+    const widget = String(fieldDescriptor.widgetType || node?.widget || attributes.widget || '').trim().toLowerCase();
     if (
       name
       && widget === 'boolean_favorite'

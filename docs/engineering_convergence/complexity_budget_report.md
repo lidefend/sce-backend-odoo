@@ -132,7 +132,6 @@ Generated from repository source files. This report is informational during the 
 | 1316 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1306 | TypeScript source | `frontend/apps/web/src/app/releaseOperatorActionContract.ts` |
 | 1299 | Python source | `addons/smart_core/tests/test_backend_semantic_copy_supply.py` |
-| 1298 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1284 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
 | 1275 | Python source | `scripts/audit/native_scene_inventory.py` |
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
@@ -141,6 +140,7 @@ Generated from repository source files. This report is informational during the 
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |
 | 1245 | Python source | `addons/smart_construction_core/models/core/payment_execution.py` |
 | 1236 | Python source | `scripts/ops/test_safe_branch_sync_main.py` |
+| 1232 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1222 | Python source | `addons/smart_construction_core/models/support/tender.py` |
 | 1218 | Python source | `scripts/ops/daily_candidate_clone_upgrade_executor.py` |
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
@@ -172,12 +172,12 @@ Generated from repository source files. This report is informational during the 
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 1110 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/types.ts` |
 | 1100 | Python source | `scripts/ci/test_backend_suite_plan.py` |
+| 1096 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1096 | JavaScript source | `scripts/verify/local_dev_project_create_contract_driver_probe.mjs` |
 | 1095 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
 | 1095 | JavaScript source | `scripts/verify/pfl035_payment_request_runtime_acceptance.mjs` |
 | 1094 | JavaScript source | `scripts/verify/list_search_group_usability_audit.js` |
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
-| 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1086 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 1073 | Python source | `scripts/ci/test_backend_test_receipt.py` |

@@ -593,6 +593,26 @@ published-branch 同步并入候选，merge commit 为
 `caedddcb5d96d8fd7e523a9a903659c3355176cf`，无冲突。该新基线本地迭代执行
 61 个目标、43 个测试目标、1512 项测试和 11 项静态检查，全部通过。
 
+### 2026-11-27 FC-01 native layout 只消费 fieldDescriptor
+
+继续扫描发现原生表单适配器仍把 `fieldInfo` 和 `componentConfig` 作为字段类型、
+关系、widget options、subview、modifier 和必填校验的语义来源，并在
+`contractV2WidgetToNativeFieldNode` 中反向生成 `fieldInfo` 副本。这些兼容路径已删除：
+
+- 原生字段节点只从 occurrence `fieldDescriptor` 或同一 canonical store 的 strict
+  descriptor 读取语义；
+- 没有 `fieldDescriptor` 时不再从 `fieldInfo` 猜测，字段 schema 保持缺失并进入显式契约缺口；
+- widget 采集器直接输出 `fieldDescriptor`，不再合成 `fieldInfo`/`field_info`；
+- 相应测试夹具迁移到 strict descriptor，并覆盖 descriptor 与冲突 legacy 数据同时存在时
+  descriptor 唯一生效。
+
+`make ci.local.iteration` 执行 53 个目标、复用 9 个未变目标，36 个测试目标执行
+1385 项测试、10 项静态检查全部通过，`unmapped=0`、`not_run=0`、`blocked=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T083412Z-1580824-776757870/receipt.json`
+
+该切片只是本地单测与组件验证，不代表生产角色/公司页面、143 入口矩阵完成。
+
 ### 2026-11-27 FC-01 原生表单与附件分类语义收口
 
 本轮按“本地一个合格切片即发布、后续直接更新同一 PR”的方式推进。draft PR #1019

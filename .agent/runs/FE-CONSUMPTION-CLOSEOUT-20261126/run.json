@@ -57,6 +57,7 @@
     "frontend/apps/web/src/pages/ListPage.vue",
     "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
     "frontend/apps/web/src/pages/contractForm/fieldUtils.ts",
+    "frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts",
     "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
     "frontend/apps/web/src/pages/contractForm/nativeSectionNavigation.ts",
     "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
@@ -83,6 +84,7 @@
     "frontend/apps/web/scripts/create_record_user_journey_test.ts",
     "frontend/apps/web/scripts/native_section_navigation_test.ts",
     "frontend/apps/web/scripts/professional_business_value_model_test.ts",
+    "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
     "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
     "scripts/verify/frontend_localized_display_contract_test.ts",
     "scripts/verify/frontend_my_work_approval_guard.py",
@@ -204,6 +206,9 @@
         "frontend/apps/web/src/components/template/formSection.mapper.ts",
         "frontend/apps/web/src/components/template/formSection.types.ts",
         "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
+        "frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "frontend/apps/web/src/app/contracts/v2/types.ts",
         "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
         "make/frontend.mk"
       ],
@@ -2040,6 +2045,28 @@
         "the inventory was regenerated through its owning target and the remaining affected set resumed successfully"
       ],
       "scope_limit": "Local units and component-browser fixtures only; production role/company pages and the 143-entry matrix remain not_run."
+    },
+    "fc01_native_layout_descriptor_only": {
+      "status": "passed_local_targeted",
+      "stage_identity": "a183d0de25cc2df7b78c85e43557b79ec325531f plus the owned native-layout descriptor-only scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T083412Z-1580824-776757870/receipt.json",
+      "receipt_sha256": "5fa29f34c7faf1ef5e97db3e75ea64218ff7cc4689ca1cf329796e57e7f83796",
+      "executed_targets": 53,
+      "reused_targets": 9,
+      "test_targets": 36,
+      "executed_test_count": 1385,
+      "static_checks": 10,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "native field and widget semantics are projected from fieldDescriptor",
+        "fieldInfo and componentConfig no longer supply field type, relation, widget options, subview or validation semantics",
+        "native widget synthesis emits fieldDescriptor and never fabricates a fieldInfo carrier",
+        "a missing fieldDescriptor remains an explicit contract gap"
+      ],
+      "scope_limit": "Local units and component fixtures only; production role/company pages and user acceptance remain not_run."
     },
     "remote_publication": {
       "status": "draft_open_mainline_sync_validation_not_awaited",

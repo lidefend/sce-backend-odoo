@@ -96,6 +96,7 @@ import { computed, reactive, ref } from 'vue';
 import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormProgress';
 import {
   collectNativeFavoriteFieldNames,
+  nativeNodeFieldDescriptor,
   nativeNodeWidget,
   nativeNodeWidgetSemantics,
 } from '../src/pages/contractForm/nativeLayoutUtils';
@@ -1105,9 +1106,10 @@ assert.equal(
 );
 const nativeDateRangeNode = {
   type: 'field', name: 'date_start', widget: 'date',
-  componentConfig: {
-    nativeWidget: 'daterange',
-    widgetSemantics: { kind: 'date_range', start_field: 'date_start', end_field: 'date' },
+  fieldDescriptor: {
+    fieldCode: 'date_start',
+    widgetType: 'daterange',
+    widgetOptions: { kind: 'date_range', start_field: 'date_start', end_field: 'date' },
   },
 };
 assert.equal(nativeNodeWidget(nativeDateRangeNode), 'daterange');
@@ -1117,7 +1119,7 @@ assert.deepEqual(nativeNodeWidgetSemantics(nativeDateRangeNode), {
 assert.deepEqual(
   nativeNodeWidgetSemantics(
     { type: 'field', name: 'funding_baseline_id' },
-    { widgetSemantics: { readonly_empty_text: '提交审批时生成' } },
+    { widgetOptions: { readonly_empty_text: '提交审批时生成' } },
   ),
   { readonly_empty_text: '提交审批时生成' },
   'a native field node must inherit missing semantics from its same-identity strict widget',
@@ -1127,17 +1129,24 @@ assert.deepEqual(
     {
       type: 'field',
       name: 'funding_baseline_id',
-      componentConfig: { widgetSemantics: { readonly_empty_text: '节点声明' } },
+      fieldDescriptor: {
+        fieldCode: 'funding_baseline_id',
+        widgetOptions: { readonly_empty_text: '节点声明' },
+      },
     },
-    { widgetSemantics: { readonly_empty_text: '严格组件回退' } },
+    { widgetOptions: { readonly_empty_text: '严格组件回退' } },
   ),
   { readonly_empty_text: '节点声明' },
-  'an occurrence-level node declaration must win over the strict-widget fallback',
+  'an occurrence-level fieldDescriptor declaration must win over the strict-widget fallback',
 );
 assert.equal(nativeNodeWidget({
   type: 'field', name: 'date_start', widget: 'date',
   attributes: { widget: 'daterange' },
-  fieldInfo: { widget: 'date', widget_semantics: { kind: 'date_range', end_field: 'date' } },
+  fieldDescriptor: {
+    fieldCode: 'date_start',
+    widgetType: 'daterange',
+    widgetOptions: { kind: 'date_range', end_field: 'date' },
+  },
 }), 'daterange');
 const declaredFavoriteFields = new Set<string>();
 collectNativeFavoriteFieldNames([
@@ -2335,6 +2344,55 @@ assert.deepEqual(
   },
   { technical: false, surfaceRole: 'hidden', visible: false },
   'componentConfig cannot override descriptor technical or surface semantics',
+);
+const conflictingFieldInfoDescriptor = nativeNodeFieldDescriptor({
+  name: 'partner_id',
+  fieldDescriptor: {
+    fieldCode: 'partner_id',
+    label: 'Declared partner',
+    fieldType: 'many2one',
+    relation: 'res.partner',
+    readonly: false,
+    required: true,
+  },
+  fieldInfo: {
+    name: 'partner_id',
+    type: 'char',
+    relation: 'res.users',
+    readonly: true,
+    required: false,
+  },
+} as never, undefined, (name) => name);
+assert.deepEqual(
+  {
+    name: conflictingFieldInfoDescriptor?.name,
+    label: conflictingFieldInfoDescriptor?.string,
+    type: conflictingFieldInfoDescriptor?.type,
+    relation: conflictingFieldInfoDescriptor?.relation,
+    readonly: conflictingFieldInfoDescriptor?.readonly,
+    required: conflictingFieldInfoDescriptor?.required,
+  },
+  {
+    name: 'partner_id',
+    label: 'Declared partner',
+    type: 'many2one',
+    relation: 'res.partner',
+    readonly: false,
+    required: true,
+  },
+  'native layout field semantics come from fieldDescriptor, not conflicting fieldInfo',
+);
+assert.equal(
+  nativeNodeFieldDescriptor({
+    name: 'legacy_only',
+    fieldInfo: {
+      name: 'legacy_only',
+      type: 'char',
+      relation: 'res.partner',
+    },
+  } as never, undefined, (name) => name),
+  undefined,
+  'fieldInfo without a fieldDescriptor must remain an explicit contract gap',
 );
 const nativeClaimedVisibilityBridge = buildCanonicalNativeFormBridge(nativeVisibilityModel, undefined, '', 'field_fixture');
 assert.equal(nativeClaimedVisibilityBridge.nodeVisible(semanticHiddenNode), false,
