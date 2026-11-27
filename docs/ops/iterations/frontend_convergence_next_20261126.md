@@ -1638,6 +1638,43 @@ clean 运行态回读：
 143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
 `bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
 
+### 2026-11-28 clean 当前配置状态的页面与操作基线
+
+当前 clean 运行态已按产品候选
+`32f3fdc28043b5889976d3e8c2f3acc68c2d03f9`（构建指纹
+`bd2c388290b3a17a2e98a3934a4c1c5d1e47b38c4a98a56a850db90bf028af16`）
+重新绑定。`local.clean.health` 与 `local.clean.entry_identity.verify` 均通过，
+项目、数据库、dbfilter 和 namespace 分别为 `sc-local-clean`、`sc_clean`、
+`^sc_clean$`、`clean`。
+
+以 clean 财务隔离用户实际登录后：
+
+- `login` 与 `system.init` 均返回 200，角色面解析为 `finance`；
+- 当前公司尚未完成企业初始化和业务场景启用，因此导航按配置返回空；
+- 外壳正确呈现“暂无可用业务入口”，没有伪造业务菜单；
+- 未启用场景的入口分别以 `BUSINESS_SCENARIO_CONFIGURATION_MISSING`、
+  `BUSINESS_SCENARIO_NOT_ENABLED`、`PRODUCT_ENTRY_NOT_VISIBLE` 失败关闭；
+- 直接拼接未释放动作也不能绕过当前配置。
+
+因此本阶段页面确认只覆盖登录、namespace、角色识别、空导航和拒入边界；业务页面与操作
+必须在正式的“企业初始化/业务场景启用”流程完成后验证。两个 clean 页面探针此前使用根
+`/login` 并等待浏览器 load 事件，均已修正为 `/t/clean` 和 SPA URL 有界轮询；属于 P4
+取样器修复，不改产品源码。
+
+管理员 `admin` 在 clean 的实际体验进一步暴露出前置初始化入口缺口：
+
+- 登录、`system.init`、工作台和配置请求均为 200；
+- 首页只给出“场景与页面配置 / 表单配置”，进入后页面要求“先选择业务页面”；
+- 左侧“产品配置”展开后也只有“场景与页面配置”，没有“企业初始化”；
+- 管理员路由权威只释放 `action_sc_business_config_workbench` 与菜单配置，
+  没有释放 `smart_construction_core.action_sc_enterprise_initialization`；
+- 场景注册表已声明该动作并标记 `enablement_scope=enterprise_initialization`，
+  说明能力存在，但生产者没有把它投影到 `system.init.route_authority`。
+
+这形成“先配置页面、但初始化入口不可达”的循环，属于 P1/P0 生产者路由缺口。前端按
+当前权威 fail-closed 是正确的；本专题没有直接改后端，登记后交所有者审核，再由独立
+后端修复释放正式初始化入口。
+
 ### 2026-11-27 FC-01 effective field-status consistency 消费收口
 
 继续核对 canonical 表单描述符与有效状态时确认：字段描述符声明

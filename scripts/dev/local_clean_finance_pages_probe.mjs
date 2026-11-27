@@ -6,8 +6,9 @@ import fs from 'node:fs';
 import { launchChromium } from '../verify/playwright_runtime.mjs';
 import { matrixLoginUrl } from '../verify/business_entry_matrix_model.mjs';
 import { captureReleasedNavigation } from '../verify/released_navigation_target.mjs';
+import { fillLoginCredentials } from '../verify/frontend_authenticated_intent.mjs';
 
-const BASE = (process.env.SC_ACCEPTANCE_FRONTEND_URL || 'http://127.0.0.1:18083').replace(/\/$/, '');
+const BASE = (process.env.SC_ACCEPTANCE_FRONTEND_URL || 'http://127.0.0.1:18083/t/clean').replace(/\/$/, '');
 const LOGIN = process.env.ACCEPTANCE_LOGIN || 'fixture_role_finance';
 const PASSWORD = process.env.ACCEPTANCE_PASSWORD;
 if (!PASSWORD) throw new Error('ACCEPTANCE_PASSWORD is required');
@@ -50,11 +51,15 @@ page.on('response', async (response) => {
 const navigation = captureReleasedNavigation(page);
 
 await page.goto(matrixLoginUrl(BASE), { waitUntil: 'networkidle' });
-const inputs = page.locator('input');
-await inputs.nth(0).fill(LOGIN);
-await inputs.nth(1).fill(PASSWORD);
+await fillLoginCredentials(page, LOGIN, PASSWORD);
 await page.getByRole('button', { name: /^登录$/ }).click();
-await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
+const loginDeadline = Date.now() + 45000;
+while (new URL(page.url()).pathname.includes('/login') && Date.now() < loginDeadline) {
+  await page.waitForTimeout(250);
+}
+if (new URL(page.url()).pathname.includes('/login')) {
+  throw new Error(`login incomplete url=${page.url()} body=${(await page.locator('body').innerText()).slice(0, 500)}`);
+}
 await page.waitForTimeout(2500);
 
 const pages = [];

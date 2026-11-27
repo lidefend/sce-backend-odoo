@@ -8,7 +8,7 @@
   "baseline_state": "latest_main_includes_relation_active_actions_contract_and_exact_push_history_scan_release_qualification_not_run",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/frontend_convergence_next_20261126.md",
-  "current_batch": "FC-04 relation field and asynchronous lifecycle gap closure",
+  "current_batch": "FC-04 clean current-configuration page baseline",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
@@ -160,7 +160,9 @@
     "scripts/verify/test_branch_governance_consistency_guard.py",
     "scripts/verify/test_local_quick_evidence.py",
     "scripts/verify/test_validation_delivery_plan.py",
-    "scripts/verify/web_unified_page_contract_v2_guard.py"
+    "scripts/verify/web_unified_page_contract_v2_guard.py",
+    "scripts/dev/local_clean_finance_pages_probe.mjs",
+    "scripts/dev/local_clean_quality_tax_pages_probe.mjs"
   ],
   "environment": {
     "kind": "offline",
@@ -650,8 +652,10 @@
     "Freeze affected files and populated checks for FC-00/FC-01 in this run; set active and run make agent.run.resume.",
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
-  "blockers": [],
-  "next_exact_step": "Commit and publish the qualified FC-04 relation descriptor and attachment lifecycle closure batch to PR 1019, then read one exact-head result set for that batch before deciding whether non-browser FC-04 source work remains.",
+  "blockers": [
+    "P1/P0 producer routing gap: system.init route authority for the clean system administrator does not release smart_construction_core.action_sc_enterprise_initialization, although the scene registry declares it with enablement_scope=enterprise_initialization; owner review is required before an independent backend fix"
+  ],
+  "next_exact_step": "Owner-review the missing enterprise-initialization route authority, then expose and execute the normal initialization/enablement journey before rerunning clean product-page probes.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2888,6 +2892,34 @@
         "public_guard and professional_quality_gate passed on the same exact head"
       ],
       "scope_limit": "P4 smoke and selector alignment only. The repaired candidate has not yet been pushed; exact-head remote CI, browser address-bar readback, mainline qualification and user acceptance remain not_run."
+    },
+    "clean_current_configuration_browser_baseline": {
+      "status": "blocked_owner_review_enterprise_initialization_route_gap",
+      "candidate_head": "32f3fdc28043b5889976d3e8c2f3acc68c2d03f9",
+      "candidate_build_sha256": "bd2c388290b3a17a2e98a3934a4c1c5d1e47b38c4a98a56a850db90bf028af16",
+      "runtime": {
+        "project": "sc-local-clean",
+        "database": "sc_clean",
+        "namespace_alias": "clean",
+        "namespace_id": "ns_c6fed472e939"
+      },
+      "facts_verified": [
+        "local.clean health and entry identity passed on the exact candidate",
+        "the clean finance fixture logged in with HTTP 200 and system.init returned HTTP 200",
+        "the finance role surface resolved to role finance on My Company",
+        "the current clean company has no enabled business scenes, so navigation is empty and the shell presents the declared no-entry empty state",
+        "business entries without enabled scenarios are denied with BUSINESS_SCENARIO_CONFIGURATION_MISSING, BUSINESS_SCENARIO_NOT_ENABLED or PRODUCT_ENTRY_NOT_VISIBLE",
+        "the clean page probes now use the /t/clean namespace and observe SPA login completion without treating empty configured navigation as a browser failure",
+        "verify.local.development_lifecycle.unit passed 72 tests and both clean probe files passed node syntax checking",
+        "the clean system administrator login and system.init both returned HTTP 200",
+        "administrator navigation releases only business-config and menu-config surfaces and provides no enterprise-initialization entry",
+        "the scene registry declares action_sc_enterprise_initialization with enablement_scope=enterprise_initialization, so the missing route is a producer projection gap rather than an absent capability"
+      ],
+      "failure_recovery": [
+        "the probe initially opened the root /login path, which cannot select sc_clean; it now defaults to /t/clean",
+        "the probe initially waited for a browser load event instead of observing SPA history changes; it now polls the live URL with a bounded deadline"
+      ],
+      "scope_limit": "Frontend behavior matches the current route authority and fails closed. The bootstrap journey is blocked before product page selection because the producer does not release enterprise initialization; no backend fix was made pending owner review. Remote CI, mainline qualification, deployment and user acceptance remain not_run."
     },
     "remote_publication": {
       "status": "dcaf_pushed_remote_checks_deferred_because_followup_batch_supersedes_it",
