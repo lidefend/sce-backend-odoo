@@ -521,7 +521,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR #1019 head a134da7d, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head 37b836c9, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1658,13 +1658,66 @@
       ],
       "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
     },
+    "fc01_record_form_widget_authority": {
+      "status": "passed_local_targeted",
+      "base_head": "6f78e4840a8bb2a615e04b0b185daac7cbc7b647",
+      "product_commits": [
+        "0e91be9c7",
+        "c2433e386"
+      ],
+      "governance_heads": [
+        "e0edd6fbc19b9dc727476528ccc354015723272a",
+        "b24042970f89d5eada43a0317e9543b19a761519"
+      ],
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T042121Z-3223848-620740478/receipt.json",
+      "receipt_sha256": "3ce3065e1e75ee4d5d5229a647a1642798086c2f91d660578f48b26bb942bc06",
+      "executed_targets": 27,
+      "reused_targets": 21,
+      "test_targets": 16,
+      "executed_test_count": 666,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "record-form schema widget identity resolves from canonical widgetType",
+        "record-form widgetSemantics resolve from canonical widgetOptions",
+        "layout componentConfig nativeWidget and widgetSemantics cannot supply or override these semantics",
+        "the contract-basis ledger reports 37 bindings with 0 open defects"
+      ],
+      "failure_recovery": [
+        "the active run scope was extended for the record-form schema consumer and behavior test",
+        "the generated component-driver inventory was refreshed twice as production source changed, before the zero-exit runs"
+      ],
+      "scope_limit": "Local affected-target validation only; no clean runtime rebuild or browser journey was added for this later slice."
+    },
+    "fc01_declared_favorite_identity": {
+      "status": "passed_local_targeted",
+      "head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T042643Z-3265132-295910211/receipt.json",
+      "receipt_sha256": "ff676a47115310dc2759295244a01956822b104c074b9d303e3ef8faf0e6a06a",
+      "executed_targets": 27,
+      "reused_targets": 21,
+      "test_targets": 16,
+      "executed_test_count": 666,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "favorite-field persistence is selected only by the declared boolean_favorite native widget",
+        "Chinese label text cannot turn a checkbox into a favorite field",
+        "componentConfig cannot introduce favorite behavior",
+        "an is_favorite field name alone no longer acts as a frontend semantic fallback"
+      ],
+      "failure_recovery": [
+        "the first implementation retained the is_favorite field-name fallback; the counterexample showed it was still a second authority, so the fallback was removed before validation"
+      ],
+      "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
+    },
     "remote_publication": {
       "status": "draft_open_checks_not_awaited",
       "pull_request": 1019,
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "a134da7dde1315e4854e039f2a7593c1d5857df2",
+      "current_head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",

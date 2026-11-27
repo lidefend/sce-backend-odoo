@@ -199,12 +199,37 @@
     "local_receipt_sha256": "5117921667aa07d728f28b1adf1a88de6c9fa55d71668bde310fd6a7e6316430",
     "coverage_limit": "Affected-target validation only; remote integration, browser matrix and user acceptance remain not_run."
   },
+  "fc_01_record_form_widget_authority": {
+    "status": "local_targeted_passed",
+    "head": "b24042970f89d5eada43a0317e9543b19a761519",
+    "facts_verified": [
+      "record-form schema widget identity comes from fieldDescriptor.widgetType",
+      "record-form widgetSemantics come from fieldDescriptor.widgetOptions",
+      "componentConfig cannot supply or override these record-form semantics",
+      "the contract-basis ledger reports 37 bindings with 0 open defects"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T042121Z-3223848-620740478/receipt.json",
+    "local_receipt_sha256": "3ce3065e1e75ee4d5d5229a647a1642798086c2f91d660578f48b26bb942bc06",
+    "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
+  },
+  "fc_01_declared_favorite_identity": {
+    "status": "local_targeted_passed",
+    "head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
+    "facts_verified": [
+      "favorite persistence is selected only by declared boolean_favorite widget identity",
+      "label text, field name and componentConfig cannot create a favorite-field semantic",
+      "ordinary dashboard checkboxes remain ordinary fields"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T042643Z-3265132-295910211/receipt.json",
+    "local_receipt_sha256": "ff676a47115310dc2759295244a01956822b104c074b9d303e3ef8faf0e6a06a",
+    "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
+  },
   "remote_publication": {
     "status": "draft_pr_open_checks_not_awaited",
     "pull_request": 1019,
     "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
     "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
-    "current_head": "a134da7dde1315e4854e039f2a7593c1d5857df2",
+    "current_head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
     "coverage_limit": "Publication only. Remote CI and integration qualification are deferred by owner direction."
   },
   "not_a_product_acceptance_receipt": true,
@@ -218,7 +243,7 @@
       "sources": [
         {
           "path": "docs/architecture/frontend_contract_basis_ledger.json",
-          "sha256": "a2ece830db8542f0a7c0368398237f714e0cd6b5988e4c64929e64920be06783"
+          "sha256": "f3c6cbe0151a0bc584fc1ca6262f0ade45745e52f2a3c4e44f7aba2058a3bc3c"
         }
       ],
       "planned_discriminating_cases": [
@@ -227,7 +252,7 @@
       ],
       "behavior_status": "new_semantic_bindings_verified_full_coverage_extension_pending",
       "evidence": [
-        "verify.frontend.contract_basis.unit test_count=15 bindings=36",
+        "verify.frontend.contract_basis.unit test_count=15 bindings=37",
         "verify.p0_contract_producer.p0a.unit test_count=72"
       ],
       "blocking_for_topic_completion": true

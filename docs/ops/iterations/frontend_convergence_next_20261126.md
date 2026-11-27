@@ -586,6 +586,29 @@ clean 运行态回读：
 提交只完成了本地受影响目标验证并同步到 PR。远端 CI、集成资格、143 个业务入口的
 浏览器矩阵、部署和用户验收均未在本轮宣称完成。
 
+### 2026-11-27 FC-01 record-form widget 与收藏身份收口
+
+继续按同一 PR 增量发布：
+
+- record-form schema 的 `widget` 只从 canonical `widgetType` 解析；
+- record-form `widgetSemantics` 只从 canonical `widgetOptions` 解析；
+- layout `componentConfig.nativeWidget/widgetSemantics` 不再提供或覆盖这些字段语义；
+- 收藏字段持久化只认后端声明的 `boolean_favorite` 原生控件；
+- 中文标签“仪表板”、字段名 `is_favorite` 和 `componentConfig` 均不能再把普通
+  checkbox 提升为收藏字段；
+- 契约台账保持 37 个绑定、0 个未闭合缺陷。
+
+两次受影响目标门禁各执行 27 个目标、复用 21 个，16 个测试目标执行 666 项测试、
+6 项静态检查，`unmapped_paths=0`：
+
+- `.runtime/frontend-dev-validation/executions/20261127T042121Z-3223848-620740478/receipt.json`
+  SHA256 `3ce3065e1e75ee4d5d5229a647a1642798086c2f91d660578f48b26bb942bc06`
+- `.runtime/frontend-dev-validation/executions/20261127T042643Z-3265132-295910211/receipt.json`
+  SHA256 `ff676a47115310dc2759295244a01956822b104c074b9d303e3ef8faf0e6a06a`
+
+PR #1019 当前更新到 `37b836c96bf2deb3aad20b1d333aac4c86477dec`。远端集成、浏览器
+矩阵、部署和用户验收仍不属于当前本地迭代结论。
+
 ### 2026-11-27 FC-01 ActionView 列表列字段语义单一权威
 
 继续核对列表列投影时确认，字段描述符已提供类型、控件、组件身份、币种字段、精度、
