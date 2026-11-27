@@ -52,12 +52,12 @@ function main() {
   equal(resolve({ kind: 'list', actionName: '我的付款申请', menuName: '付款申请', modelLabel: '付款申请单' }).title, '我的付款申请', 'action outranks menu and model');
   equal(resolve({ kind: 'list', menuName: '付款申请', modelLabel: '付款申请单' }).title, '付款申请', 'menu fallback');
   equal(resolve({ kind: 'list', modelLabel: '付款申请单' }).title, '付款申请单', 'model display name fallback');
-  equal(resolve({ kind: 'detail', actionName: '付款申请', record: { display_name: 'FE-A-PR-001' } }).title, 'FE-A-PR-001', 'record display_name outranks action');
+  equal(resolve({ kind: 'detail', actionName: '付款申请', record: { display_name: 'FE-A-PR-001' } }).title, '付款申请详情', 'undeclared display_name cannot invent record identity');
   equal(resolve({ kind: 'detail', actionName: '付款申请', record: { contract_no: 'FE-A-CONTRACT-001' }, primaryFieldNames: ['contract_no'] }).title, 'FE-A-CONTRACT-001', 'business primary field fallback');
   equal(resolve({ kind: 'detail', modelName: 'construction.contract' }).title, '记录详情', 'technical model never reaches detail fallback');
   equal(resolve({ kind: 'detail', actionName: '付款申请' }).title, '付款申请详情', 'detail action fallback');
   equal(resolve({ kind: 'create', actionName: '付款申请' }).title, '新建付款申请', 'create title');
-  equal(resolve({ kind: 'edit', actionName: '付款申请', record: { display_name: 'FE-A-PR-001' } }).title, 'FE-A-PR-001', 'edit keeps stable record identity');
+  equal(resolve({ kind: 'edit', actionName: '付款申请', record: { display_name: 'FE-A-PR-001' } }).title, '编辑付款申请', 'undeclared display_name cannot invent edit identity');
   equal(resolve({ kind: 'list', actionName: '付款申请', state: 'loading' }).title, '付款申请', 'loading keeps stable list title');
   equal(resolve({ kind: 'list', actionName: '付款申请', state: 'empty' }).title, '付款申请', 'empty keeps stable list title');
   equal(resolve({ kind: 'list', actionName: '付款申请', state: 'denied' }).title, '付款申请 · 无权访问', 'denied title');
@@ -73,8 +73,8 @@ function main() {
   ] }).breadcrumbs, [
     { label: '资金管理', to: '/m/1' },
     { label: '付款申请', to: '/a/2' },
-    { label: 'FE-A-PR-001' },
-  ], 'breadcrumb strips technical ids and keeps current record unlinked');
+    { label: '付款申请详情' },
+  ], 'breadcrumb strips technical ids and does not infer an undeclared record title');
   assert(isTechnicalPageIdentity('construction.contract'), 'technical model detection');
   assert(isTechnicalPageIdentity('合同 #12'), 'hash id detection');
   assert(isTechnicalPageIdentity('undefined'), 'undefined detection');

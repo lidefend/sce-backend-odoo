@@ -1184,6 +1184,31 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(select_targets([path]), expected)
 
+    def test_page_identity_sources_and_tests_select_their_own_guard(self) -> None:
+        for path in (
+            "frontend/apps/web/src/app/pageIdentity.ts",
+            "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+            "frontend/apps/web/src/app/pageIdentityRoute.ts",
+            "frontend/apps/web/src/app/pageIdentityCoordinator.ts",
+            "frontend/apps/web/src/app/pageIdentityRuntime.ts",
+            "frontend/apps/web/src/app/usePublishedPageIdentity.ts",
+            "scripts/verify/frontend_page_identity_smoke.js",
+            "scripts/verify/frontend_page_identity_lifecycle_smoke.js",
+            "scripts/verify/frontend_page_identity_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.frontend.page_identity",
+                    select_targets([path]),
+                )
+        self.assertNotIn(
+            "verify.frontend.page_identity",
+            select_targets([
+                "frontend/apps/web/src/app/businessScenarioNavigation.ts",
+                "scripts/verify/frontend_product_page_header_browser.mjs",
+            ]),
+        )
+
     def test_expression_feedback_and_responsive_inputs_route_to_owning_units(self) -> None:
         self.assertEqual(
             select_targets(["frontend/apps/web/src/app/routeFailure.ts"]),

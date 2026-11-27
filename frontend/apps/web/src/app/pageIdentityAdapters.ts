@@ -17,11 +17,7 @@ function formPrimaryFields(contract: BusinessMetadata): unknown[] {
 }
 
 function primaryRecordName(contract: BusinessMetadata, formData: Record<string, unknown>): string {
-  const fieldNames = [
-    ...formPrimaryFields(contract),
-    'display_name',
-    'name',
-  ];
+  const fieldNames = formPrimaryFields(contract);
   for (const fieldName of Array.from(new Set(fieldNames))) {
     const normalizedFieldName = String(fieldName || '').trim();
     if (!normalizedFieldName || normalizedFieldName === 'display_name') continue;
@@ -35,7 +31,7 @@ function primaryRecordName(contract: BusinessMetadata, formData: Record<string, 
     const label = String(value).replace(/\s+/g, ' ').trim();
     if (label) return label;
   }
-  return String(formData.display_name || '').replace(/\s+/g, ' ').trim();
+  return '';
 }
 
 export function buildContractFormPageIdentity(input: {

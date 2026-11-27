@@ -26,6 +26,8 @@
     "frontend/apps/web/src/app/action_runtime/useActionViewContentDisplayRuntime.ts",
     "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts",
     "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts",
+    "frontend/apps/web/src/app/pageIdentity.ts",
+    "frontend/apps/web/src/app/pageIdentityAdapters.ts",
     "frontend/apps/web/src/app/runtime/actionViewAssigneeOptionsContract.ts",
     "frontend/apps/web/src/app/runtime/actionViewKanbanTitleField.ts",
     "frontend/apps/web/src/app/runtime/actionViewSurfacePolicyBudget.ts",
@@ -86,6 +88,8 @@
     "frontend/apps/web/scripts/professional_business_value_model_test.ts",
     "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
     "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
+    "scripts/verify/frontend_page_identity_lifecycle_smoke.js",
+    "scripts/verify/frontend_page_identity_smoke.js",
     "scripts/verify/frontend_localized_display_contract_test.ts",
     "scripts/verify/frontend_my_work_approval_guard.py",
     "scripts/verify/frontend_dev_incremental.py",
@@ -564,7 +568,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue FC-02 gap closure with breadcrumb/deep-link and company/project context presentation, then run a representative page presentation check against the current governed runtime.",
+  "next_exact_step": "After binding the page-identity commit build, continue FC-02 gap closure by auditing route title constants, legacy title fallbacks, breadcrumb links and company-switch stale context against the current candidate.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2112,6 +2116,36 @@
       "gap": "relationCreateMode special-cased the sc.dictionary model name and could expose a create affordance without an explicit create_mode declaration",
       "repair": "removed the model special case and added a negative case proving default values or model identity cannot create authorization",
       "scope_limit": "Navigation source/unit guards and the create-capability projection are locally validated; production role/company pages and the 143-entry browser matrix remain not_run."
+    },
+    "fc02_page_identity_declared_primary_only": {
+      "status": "passed_local_targeted",
+      "stage_identity": "3b3f36e47d7beaa687173426d3d8698253c5ebdd plus the owned page-identity and selector scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T090759Z-1881458-983503464/receipt.json",
+      "receipt_sha256": "bd7f73baf4de7617ab92f2494340501f42323827e211bf58a762a51f9cd400e8",
+      "required_targets": 63,
+      "executed_targets": 54,
+      "reused_targets": 9,
+      "test_targets": 36,
+      "executed_test_count": 1414,
+      "static_checks": 10,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "record page identity no longer falls back to undeclared display_name or name fields",
+        "contract form identity reads only the declared title_field or primary_fields",
+        "declared non-name identities remain authoritative while cleared or absent declarations do not invent a record title",
+        "page-identity production and test inputs select verify.frontend.page_identity, while unrelated frontend paths do not",
+        "page-identity smoke tests pass 34 and 28 assertions respectively, with the identity guard reporting one writer and six integrations",
+        "the incremental selector unit executes 287 tests",
+        "the full affected iteration reports 42 contract bindings and 0 open defects"
+      ],
+      "failure_recovery": [
+        "the first full affected iteration detected the component-driver inventory input digest was stale after the page-identity source change",
+        "the inventory was refreshed through make refresh.frontend.component_driver_takeover.inventory and the resumed affected set passed"
+      ],
+      "scope_limit": "Local units, contract guards, strict typecheck and component fixtures only; production role/company journeys, the 143-entry browser matrix, remote CI and user acceptance remain not_run."
     },
     "remote_publication": {
       "status": "draft_open_mainline_sync_validation_not_awaited",

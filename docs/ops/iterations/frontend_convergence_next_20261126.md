@@ -538,6 +538,39 @@ clean 运行态回读：
 143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
 `bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
 
+### 2026-11-27 FC-02 页面身份声明化与选测补口
+
+本切片属于共享前端呈现消费层，不修改后端契约、权限或数据。页面身份不再把
+`display_name` / `name` 当作未声明的默认业务标识，只消费显式
+`recordDisplayName`，或契约表单 profile 声明的 `title_field` / `primary_fields`。
+
+完成内容：
+
+- 删除通用页面身份和契约表单身份中的 `display_name` / `name` 兜底；
+- 页面身份测试迁移到显式表单 profile 声明，并增加未声明名称不得补写记录标题的负例；
+- 页面身份生产与测试输入显式映射到 `verify.frontend.page_identity`，同时验证无关前端路径
+  不会误选该目标；
+- 页面身份生产源码变化后，通过所属入口刷新组件接管清单输入摘要。
+
+验证：
+
+- `make verify.frontend.page_identity`：页面身份 smoke `34` 条、生命周期 smoke `28` 条、
+  writer/integration 守卫全部通过；
+- `make verify.frontend.dev.incremental.unit`：`287` 项测试通过；
+- `make ci.local.iteration`：`63` 个必需目标全部成立，其中 `54` 个本轮执行、`9` 个复用；
+  `36` 个测试目标执行 `1414` 项测试、`10` 项静态检查，`unmapped=0`、`not_run=0`、
+  `blocked=0`，退出零；契约基座为 `42` 个绑定、`0` 个未闭合缺陷。
+
+回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T090759Z-1881458-983503464/receipt.json`
+
+回执 SHA256：
+`bd7f73baf4de7617ab92f2494340501f42323827e211bf58a762a51f9cd400e8`。
+
+生产角色/公司旅程、143 个业务入口浏览器矩阵、远端 PR CI、主线资格、部署和用户验收
+仍未完成。
+
 ### 2026-11-27 主线 relationActiveActions 契约并入
 
 主线 `9395d93f92badffc87d32c5979cf7c70e374e975` 已包含 P0 PR #1026 的

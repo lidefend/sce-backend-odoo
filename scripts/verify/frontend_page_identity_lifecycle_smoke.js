@@ -46,7 +46,9 @@ function main() {
   const sourceRecord = { id: 17, name: 'DOC-017', display_name: 'Document / Project / DOC-017' };
   const draft = { amount: 20, display_name: sourceRecord.display_name };
   const input = {
-    action: { name: 'Document' }, contract: {}, formData: draft, recordData: sourceRecord,
+    action: { name: 'Document' },
+    contract: { views: { form: { profile: { title_field: 'name' } } } },
+    formData: draft, recordData: sourceRecord,
     isCreate: false, isEdit: false, recordMissing: false, renderError: false, status: 'ok',
   };
   const identity = (overrides = {}) => resolveProductPageIdentity(buildContractFormPageIdentity({ ...input, ...overrides }));
@@ -55,10 +57,10 @@ function main() {
   equal(identity().breadcrumbs.slice(-1)[0].label, 'DOC-017', 'breadcrumb shares contract identity');
   equal(identity({ isEdit: true }).title, 'DOC-017', 'edit keeps body-omitted contract identity');
   equal(identity({ formData: { ...draft, name: 'DRAFT-017' } }).title, 'DRAFT-017', 'current draft identity outranks source snapshot');
-  equal(identity({ formData: { ...draft, name: '' } }).title, sourceRecord.display_name, 'explicitly cleared draft identity is not restored');
-  equal(identity({ recordData: { display_name: sourceRecord.display_name } }).title, sourceRecord.display_name, 'missing authorized identity retains display fallback');
+  equal(identity({ formData: { ...draft, name: '' } }).title, 'Document详情', 'display_name does not backfill a cleared declared title');
+  equal(identity({ recordData: { display_name: sourceRecord.display_name } }).title, 'Document详情', 'display_name alone is not a declared record identity');
   equal(identity({ recordData: { code: 'CODE-017' }, contract: { views: { form: { profile: { title_field: 'code' } } } } }).title, 'CODE-017', 'declared non-name identity remains authoritative');
-  equal(identity({ formData: { name: false, display_name: sourceRecord.display_name } }).title, sourceRecord.display_name, 'false empty name uses authorized display name');
+  equal(identity({ formData: { name: false, display_name: sourceRecord.display_name } }).title, 'Document详情', 'false declared title does not fall back to display_name');
   equal(identity({ formData: { name: false, display_name: false }, recordData: {} }).title, 'Document详情', 'all false names preserve existing declared object identity');
   equal(identity({ formData: { name: 'false' }, recordData: {} }).title, 'false', 'literal business text false is not erased');
   equal(resolveProductPageIdentity({ kind: 'detail', actionName: 'Document', record: { name: false, display_name: false } }).title, 'Document详情', 'standalone false scalar cannot become record title');

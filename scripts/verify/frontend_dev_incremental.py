@@ -509,6 +509,19 @@ RULES = (
         "verify.frontend.record_form_return.unit",
     )),
     Rule((
+        "frontend/apps/web/src/app/pageIdentity.ts",
+        "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+        "frontend/apps/web/src/app/pageIdentityRoute.ts",
+        "frontend/apps/web/src/app/pageIdentityCoordinator.ts",
+        "frontend/apps/web/src/app/pageIdentityRuntime.ts",
+        "frontend/apps/web/src/app/usePublishedPageIdentity.ts",
+        "scripts/verify/frontend_page_identity_smoke.js",
+        "scripts/verify/frontend_page_identity_lifecycle_smoke.js",
+        "scripts/verify/frontend_page_identity_guard.py",
+    ), (
+        "verify.frontend.page_identity",
+    )),
+    Rule((
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
         "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
         "addons/smart_core/tests/test_system_init_scene_runtime_surface_builder.py",
