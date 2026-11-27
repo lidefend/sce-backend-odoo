@@ -506,6 +506,20 @@
       "regressionGuard": "verify.frontend.contract_v2_occurrence_authority.unit",
       "behaviourTest": "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
       "stopDetail": "Record-form schema generation consumes widgetType and widgetOptions from the normalized field descriptor; layout or component configuration cannot supply or override those semantics. A visible native occurrence without a strict descriptor already stops with ContractGapError."
+    },
+    {
+      "surface": "Batch assignee option query",
+      "declared": "listProfile.batch_policy.assignee_options model/fields/domain/order/limit",
+      "declaredBy": "addons/smart_core/utils/contract_governance_list_surface.py",
+      "declaredMethod": "govern_standard_list_for_user",
+      "declaredSymbol": "\"assignee_options\": {",
+      "consumedBy": "frontend/apps/web/src/app/runtime/actionViewAssigneeOptionsContract.ts",
+      "consumedSymbol": "function resolveDeclaredAssigneeQuery(",
+      "onMissing": "stop",
+      "stopSymbol": "contractGapError",
+      "regressionGuard": "verify.frontend.contract_shape_projection.unit",
+      "behaviourTest": "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+      "stopDetail": "Batch assignee options consume the declared model, fields, domain, order and positive integer limit verbatim. The former res.users, id/name, empty-domain, name-asc and 80 defaults are forbidden; missing or invalid declarations stop with ContractGapError."
     }
   ],
   "registeredMechanismExemptions": [
