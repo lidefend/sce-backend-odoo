@@ -639,6 +639,12 @@ clean 运行态回读：
 回执 SHA256：
 `4f9ac4fcbfa8a09d2686b90097843a0bca78aeacc8a069864b1d45a0810b4ffe`。
 
+产品切片提交为 `3466b4dbdd6e231b5b51d583178c02d436060089`。精确 HEAD 构建指纹为
+`f82ec97cae784d9d73eaa92ef398b7eb8feaf792820acc388c82509dff633259`，构建
+`build-info.sha` 与 HEAD 一致；日志
+`.runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/canonical-scene-url-build.log`，
+日志 SHA256 `3a3e502c772da83eab2ff4f1329be9969e57742fb30a8ff60078a270f761ed4b`。
+
 实际浏览器地址栏回读、剩余 context 参数的分类、远端 CI 和用户验收仍未完成。
 
 ### 2026-11-27 主线 relationActiveActions 契约并入

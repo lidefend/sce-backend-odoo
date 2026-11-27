@@ -2205,7 +2205,8 @@
     },
     "fc02_canonical_scene_url_identity": {
       "status": "passed_local_targeted",
-      "stage_identity": "50394960c7c037b2278514400a13582a3aec9a35 plus the owned canonical scene URL scope",
+      "candidate_head": "3466b4dbdd6e231b5b51d583178c02d436060089",
+      "stage_identity": "3466b4dbdd6e231b5b51d583178c02d436060089",
       "command": "make ci.local.iteration",
       "receipt": ".runtime/frontend-dev-validation/executions/20261127T094406Z-2241047-640349705/receipt.json",
       "receipt_sha256": "4f9ac4fcbfa8a09d2686b90097843a0bca78aeacc8a069864b1d45a0810b4ffe",
@@ -2226,6 +2227,14 @@
         "scene target menu_id and action_id remain available while the embedded action runtime still consumes them",
         "the dedicated route-query target executes through Node TAP so nonzero runner evidence is recorded"
       ],
+      "frontend_build": {
+        "status": "passed",
+        "source_revision": "3466b4dbdd6e231b5b51d583178c02d436060089",
+        "log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/canonical-scene-url-build.log",
+        "log_sha256": "3a3e502c772da83eab2ff4f1329be9969e57742fb30a8ff60078a270f761ed4b",
+        "build_info_sha256": "c8712e4d4da70bbb8323c795ae3aee6c740e6b449c069ea2b88b90a6aa81ed6d",
+        "frontend_build_fingerprint": "f82ec97cae784d9d73eaa92ef398b7eb8feaf792820acc388c82509dff633259"
+      },
       "failure_recovery": [
         "the first full iteration found the new route-query target emitted successful assertions without a machine-readable summary; the target was wired through Node TAP and the affected set passed"
       ],
