@@ -478,6 +478,20 @@
       "regressionGuard": "verify.frontend.contract_shape_projection.unit",
       "behaviourTest": "frontend/apps/web/scripts/contract_shape_projection_test.ts",
       "stopDetail": "ActionView list columns may consume declared list transport values such as value_field, sort_field, aggregate and filter_field, but field type, widget, component identity, currency field, digits, unit, temporal kind, selection and visibility come only from the decoded fieldDescriptor. The normalized store must preserve currencyField; an unregistered component identity stops with ContractGapError. A conflicting componentConfig cannot reintroduce or override field semantics."
+    },
+    {
+      "surface": "Native form bridge field semantic metadata",
+      "declared": "fieldDescriptor.technical and fieldDescriptor.surfaceRole",
+      "declaredBy": "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+      "declaredMethod": "decodeContractV2FieldDescriptor",
+      "declaredSymbol": "const technical = decodeOptionalBoolean(raw, 'technical'",
+      "consumedBy": "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+      "consumedSymbol": "const descriptor = field.fieldDescriptor",
+      "onMissing": "stop",
+      "stopSymbol": "contractGapError",
+      "regressionGuard": "verify.frontend.canonical_form_presenter.unit",
+      "behaviourTest": "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+      "stopDetail": "The canonical-to-native form bridge projects technical and surfaceRole only from fieldDescriptor. componentConfig cannot hide a non-technical field or revive a technical one. Normalized status remains the authority for effective visibility; the bridge continues to stop with ContractGapError for conflicting feedback ownership."
     }
   ],
   "registeredMechanismExemptions": [
