@@ -3327,13 +3327,16 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "scripts/ci/personal_data_scan.py",
             "scripts/ci/trusted_scan_scope.py",
             "scripts/ci/test_trusted_scan_scope.py",
-            "scripts/verify/repository_clean_history_guard.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
                     ["verify.trusted_scan.unit"],
                 )
+        self.assertEqual(select_targets(["scripts/verify/repository_clean_history_guard.py"]),
+                         ["verify.repository.clean_history.unit", "verify.trusted_scan.unit"])
+        self.assertEqual(select_targets(["scripts/verify/test_repository_clean_history_guard.py"]),
+                         ["verify.repository.clean_history.unit"])
         for path in (
             "scripts/verify/construction_core_extension_policy_maps_split_guard.py",
             "scripts/verify/test_construction_core_extension_policy_maps_split_guard.py",

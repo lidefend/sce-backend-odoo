@@ -5,6 +5,7 @@ import json
 import subprocess
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 import repository_clean_history_guard as guard
@@ -93,6 +94,61 @@ class RepositoryCleanHistoryGuardTests(unittest.TestCase):
         result = self.run_guard()
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("reachable_scan=public_refs", result.stdout)
+
+    def test_candidate_ignores_unrelated_ref_but_global_scan_still_rejects_it(self):
+        self.git("checkout", "-b", "retained-review")
+        self.write("docs/technical-id.txt", "13800" + "138000")
+        retained = self.commit("retained review failure")
+        self.git("update-ref", "refs/remotes/origin/retained-review", retained)
+        self.git("checkout", "main")
+        result = self.run_guard("--candidate-head", self.base)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("reachable_scan=candidate_full_ancestry", result.stdout)
+        self.assertEqual(self.git("rev-parse", "retained-review").stdout.strip(), retained)
+        global_result = self.run_guard()
+        self.assertNotEqual(global_result.returncode, 0)
+        self.assertIn("RH018", global_result.stderr)
+
+    def test_candidate_rejects_deleted_sensitive_ancestor(self):
+        self.write("docs/technical-id.txt", "13800" + "138000")
+        self.commit("bad ancestor")
+        self.git("rm", "docs/technical-id.txt")
+        head = self.commit("remove current occurrence")
+        result = self.run_guard("--candidate-head", head)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("RH018", result.stderr)
+
+    def test_candidate_rejects_wrong_head_dirty_tree_and_scope_shortcuts(self):
+        self.write("new.txt", "clean")
+        head = self.commit("new candidate")
+        for args in [("--candidate-head", self.base), ("--candidate-head", "short"),
+                     ("--candidate-head", ""),
+                     ("--candidate-head", head, "--trusted-base", self.base),
+                     ("--candidate-head", head, "--auto-trusted-base"),
+                     ("--candidate-head", head, "--local-hygiene")]:
+            with self.subTest(args=args):
+                self.assertEqual(self.run_guard(*args).returncode, 2)
+        self.write("untracked.txt", "dirty")
+        result = self.run_guard("--candidate-head", head)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("must be clean", result.stderr)
+
+    def test_candidate_rejects_shallow_ancestry(self):
+        self.write("new.txt", "clean")
+        head = self.commit("new candidate")
+        (self.root / ".git/shallow").write_text(head + "\n")
+        result = self.run_guard("--candidate-head", head)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn("non-shallow", result.stderr)
+
+    def test_candidate_does_not_issue_global_scan_reuse_receipt(self):
+        with patch.object(guard, "POLICY_PATH", self.policy), patch.object(
+            guard.trusted_scan_scope, "record_scan_success"
+        ) as record:
+            result = guard.main(["--root", str(self.root), "--policy", str(self.policy),
+                                 "--candidate-head", self.base])
+        self.assertEqual(result, 0)
+        record.assert_not_called()
 
     def documentation_exception(self, path, blob):
         policy = json.loads(self.policy.read_text())

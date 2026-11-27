@@ -1,0 +1,4 @@
+{
+  "raw_sha256": "7ff2e63d9c864bb882c03ce2ac753893c9e64cd1967f17ba07927902743cc7b2",
+  "raw_utf8": "..................\n----------------------------------------------------------------------\nRan 18 tests in 0.197s\n\nOK\n..........................................\n----------------------------------------------------------------------\nRan 42 tests in 8.210s\n\nOK\n[repository_clean_history_guard] PASS roots=1 reachable_scan=candidate_full_ancestry candidate_head=b76fd3ac63da15198c058d77db42693e3464df6f local_hygiene=False reflog_only=0 unreachable=0 tags=0 stash_refs=0 stale_remote_refs=0 sensitive_values_recorded=false oversized_exceptions=0 scanned_blobs=2 scan_workers=2\n"
+}

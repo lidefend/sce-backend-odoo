@@ -1961,6 +1961,12 @@ RULES = (
     ), (
         "verify.trusted_scan.unit",
     )),
+    Rule((
+        "scripts/verify/repository_clean_history_guard.py",
+        "scripts/verify/test_repository_clean_history_guard.py",
+    ), (
+        "verify.repository.clean_history.unit",
+    )),
     # The exact-head receipt verifier and both sides of its regression suite
     # are one executable contract. The consistency entry runs the verifier
     # tests and the branch-policy lock together, so this P4 input cannot fall

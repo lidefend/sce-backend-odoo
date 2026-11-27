@@ -1,0 +1,4 @@
+{
+  "raw_sha256": "29a3e7e99018650056d61c69ea3821bb4cce79ab293efc147d711bc64b86a252",
+  "raw_utf8": "..................\n----------------------------------------------------------------------\nRan 18 tests in 0.796s\n\nOK\n[agent_ledger_consistency_guard] PASS goals=439 runs=424 pinned_residuals=2 open_run_allowlist=2\n"
+}

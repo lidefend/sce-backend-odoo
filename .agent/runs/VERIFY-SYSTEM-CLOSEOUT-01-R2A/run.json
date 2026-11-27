@@ -5,6 +5,7 @@
     ".agent/active-runs.json",
     ".agent/goals/VERIFY-SYSTEM-CLOSEOUT-01-R2A.yaml",
     ".agent/runs/VERIFY-SYSTEM-CLOSEOUT-01-R2A/run.json",
+    ".github/workflows/public_guard.yml",
     "config/ci/path_ownership_v1.json",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/audit/verify_system_closeout_01_r2a/actual_execution_facts.json",
@@ -44,6 +45,16 @@
     "docs/audit/verify_system_closeout_01_r2a/review_corrections/verify.ci.workflow.contract.txt",
     "docs/audit/verify_system_closeout_01_r2a/review_corrections/verify.frontend.dev.incremental.unit.txt",
     "docs/audit/verify_system_closeout_01_r2a/review_corrections/verify.test.coverage.registry.txt",
+    "docs/audit/verify_system_closeout_01_r2a/scan_boundary/audit.verification.lane_coverage.check.json",
+    "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.agent.ledger.unit.json",
+    "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.baseline.iteration.execution.policy.json",
+    "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.ci.scheduled_gates.json",
+    "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.ci.workflow.contract.json",
+    "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.frontend.dev.incremental.unit.json",
+    "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.repository.clean_history.unit.json",
+    "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.test.coverage.registry.json",
+    "docs/audit/verify_system_closeout_01_r2a/scan_boundary/verify.trusted_scan.unit.json",
+    "docs/audit/verify_system_closeout_01_r2a/scan_boundary_evidence.json",
     "docs/audit/verify_system_closeout_01_r2a/verify.agent.ledger.unit.txt",
     "docs/audit/verify_system_closeout_01_r2a/verify.baseline.iteration.execution.policy.txt",
     "docs/audit/verify_system_closeout_01_r2a/verify.ci.scheduled_gates.txt",
@@ -60,12 +71,15 @@
     "scripts/ci/backend_impact_plan.py",
     "scripts/ci/main_full_release_dispatch.py",
     "scripts/ci/main_full_release_evidence.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
     "scripts/ci/test_main_full_release_dispatch.py",
     "scripts/ci/test_main_full_release_evidence.py",
     "scripts/ops/incremental_execution.py",
     "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/repository_clean_history_guard.py",
     "scripts/verify/test_frontend_dev_incremental.py",
-    "scripts/verify/test_incremental_environment.py"
+    "scripts/verify/test_incremental_environment.py",
+    "scripts/verify/test_repository_clean_history_guard.py"
   ],
   "environment": {
     "kind": "offline",
@@ -115,10 +129,18 @@
         "scripts/verify/test_incremental_environment.py"
       ],
       "kind": "offline"
+    },
+    "candidate_history": {
+      "target": "verify.repository.clean_history.unit",
+      "inputs": [
+        "scripts/verify/repository_clean_history_guard.py",
+        "scripts/verify/test_repository_clean_history_guard.py"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Freeze clean replacement commit, independently scan entire candidate ancestry, generate exact-head local receipt, publish Draft and observe required remote CI; no merge/deployment/R3.",
+  "next_exact_step": "Freeze revised #1024, run exact-head candidate scan in presence of retained refs, execute final local iteration, push and read four exact-head PR CI; retain Draft, no merge/deployment/R3.",
   "id": "VERIFY-SYSTEM-CLOSEOUT-01-R2A",
   "branch": "fix/verify-system-closeout-01-r2a-clean-20261127",
   "status": "verification_pending",
@@ -130,7 +152,7 @@
     "head": "da210fed05739d9565f5ad1be84ab113cd62cde9",
     "original_head": "83cc97f93bdf17757e744109fbac1e2e3b88db7c"
   },
-  "local_evidence": "docs/audit/verify_system_closeout_01_r2a/clean_replacement_evidence.json",
+  "local_evidence": "docs/audit/verify_system_closeout_01_r2a/scan_boundary_evidence.json",
   "review_corrections": {
     "reviewed_head": "7be328ae0fb987fc3a23c91bf49440ee12b71bbc",
     "scope": [
@@ -148,5 +170,7 @@
     "preserved_head": "7be328ae0fb987fc3a23c91bf49440ee12b71bbc",
     "corrections_stash": "217ed271f1719a1470b33b9c723441b78e07cae9",
     "owner_authorized": true
-  }
+  },
+  "pr": 1024,
+  "scan_boundary_authorization": "Owner explicitly authorized PR exact-candidate full-ancestry scanning; global historical scans retain all public refs. No rule/exception relaxation, ref deletion, merge or deployment."
 }
