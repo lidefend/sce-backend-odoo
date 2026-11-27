@@ -1,0 +1,50 @@
+schema_version: 1
+goal:
+  id: ENTERPRISE-INITIALIZATION-ROUTE-AUTHORITY-20261128
+  title: Preserve the enterprise initialization entry before business-scene enablement
+  status: active
+  execution_status: eir_01_completed_eir_02_remote_checks_running
+  implementation_authorized: true
+  formal_product_layer: P1
+  layer_target: construction scene lifecycle authority at the enterprise-initialization boundary
+  module:
+    - smart_construction_scene
+    - smart_construction_core
+  standard_vs_user_specific: construction_standard
+  objective: >
+    Keep the precise native enterprise-initialization entry reachable for an authorized
+    configuration administrator while business scenarios are still disabled, without
+    broadening ordinary business navigation or introducing a frontend fallback.
+  why_here: >
+    The initialization lifecycle belongs to the construction industry scene layer.
+    The existing P0 producer already publishes the native menu/action through the
+    product-policy projection; P1 incorrectly removes that route as an unselected
+    business scenario.
+  why_not_elsewhere:
+    - The frontend must continue consuming route authority and must not synthesize an initialization entry.
+    - P0 generic delivery must not acquire construction initialization semantics.
+    - P3 runtime configuration must not repair a standard product lifecycle defect.
+  blast_radius: >
+    Only native rows with the declared enterprise-initialization menu/action identity
+    and an authorized producer source may survive business-scene filtering. Ordinary
+    business scenes, role permissions, model ACLs and execution contracts remain unchanged.
+  exclusions:
+    - frontend source changes
+    - demo or seed changes
+    - persistent database migration
+    - business-scene auto-enablement
+    - platform-admin widening
+  tasks:
+    - id: EIR-01
+      status: completed
+      outcome: Reproduce the pre-initialization route loss and preserve only the declared initialization entry.
+    - id: EIR-02
+      status: active
+      outcome: Validate the initialization menu and action through an isolated module test and clean runtime.
+  acceptance:
+    - The exact initialization menu/action survives when no business scenario is enabled.
+    - Ordinary unselected business entries remain denied.
+    - Unauthorized and self-declared initialization routes remain fail-closed.
+    - Frontend consumes the same published authority without special casing.
+  run: .agent/runs/ENTERPRISE-INITIALIZATION-ROUTE-AUTHORITY-20261128/run.json
+  record: docs/ops/iterations/enterprise_initialization_route_authority_20261128.md

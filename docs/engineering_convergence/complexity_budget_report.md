@@ -38,8 +38,8 @@ Generated from repository source files. This report is informational during the 
 | 2928 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2878 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2769 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
+| 2740 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2734 | Python source | `addons/smart_core/handlers/api_data.py` |
-| 2672 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2637 | Python source | `addons/smart_core/delivery/platform_capability_explorer.py` |
 | 2472 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2458 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
@@ -308,8 +308,8 @@ Generated from repository source files. This report is informational during the 
 | 2928 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2878 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2769 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
+| 2740 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2734 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
-| 2672 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2637 | split_plan_required | Python source | `addons/smart_core/delivery/platform_capability_explorer.py` |
 | 2472 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2458 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |

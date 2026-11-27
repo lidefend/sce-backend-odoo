@@ -1,0 +1,150 @@
+{
+  "schema_version": 2,
+  "id": "ENTERPRISE-INITIALIZATION-ROUTE-AUTHORITY-20261128",
+  "status": "active",
+  "branch": "fix/enterprise-initialization-route-authority-20261128",
+  "branch_state": "independent_draft_pr_1029_open_exact_head_checks_in_progress",
+  "baseline_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
+  "baseline_state": "origin_main_at_activation",
+  "goal": ".agent/goals/ENTERPRISE-INITIALIZATION-ROUTE-AUTHORITY-20261128.yaml",
+  "record": "docs/ops/iterations/enterprise_initialization_route_authority_20261128.md",
+  "current_batch": "EIR-01 pre-initialization native entry preservation",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/ENTERPRISE-INITIALIZATION-ROUTE-AUTHORITY-20261128.yaml",
+    ".agent/runs/ENTERPRISE-INITIALIZATION-ROUTE-AUTHORITY-20261128/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/enterprise_initialization_route_authority_20261128.md",
+    "addons/smart_construction_scene/services/business_scene_enablement.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "addons/smart_construction_scene/tests/test_company_route_scope_cache.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing worktree-scoped local.test and clean runtime entries only; no demo, sample, acceptance or production data."
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.backend.iteration",
+      "reason": "Focused non-zero lifecycle tests plus affected scene and authorization checks."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The changed P1 authority must be integrated against the current target base."
+    },
+    "scheduled_release": {
+      "status": "required",
+      "entrypoint": "make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "Resulting mainline qualification remains separate from PR integration and is required for topic closure."
+    }
+  },
+  "checks": {
+    "business_scene_enablement": {
+      "target": "verify.admin_close_01.backend.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "make/guards.mk"
+      ]
+    },
+    "effective_delivery_route": {
+      "target": "verify.scene.company_route_scope_cache.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "make/dev.mk"
+      ],
+      "readback": {
+        "artifact": ".runtime/enterprise-initialization-route-authority/effective-delivery-route.readback.json"
+      }
+    },
+    "enterprise_initialization_journey": {
+      "target": "verify.enterprise.initialization.journey.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_scene/tests/test_enterprise_initialization_journey.py",
+        "make/ci.mk"
+      ],
+      "readback": {
+        "artifact": ".runtime/enterprise-initialization-route-authority/enterprise-initialization-journey.readback.json"
+      }
+    },
+    "module_baseline": {
+      "target": "verify.smart_construction_scene.module_baseline",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_scene/",
+        "make/ci.mk"
+      ]
+    }
+  },
+  "evidence": {
+    "local_pre_init_route": {
+      "status": "passed_local_targeted",
+      "candidate_head": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
+      "stage_identity": "0d17e91e7190e1a293e4e6ac969c39738a87218f plus the owned initialization-lifecycle dirty scope",
+      "facts_verified": [
+        "the exact native enterprise-initialization menu/action survives business-scene filtering when all business scenarios are disabled",
+        "ordinary entries in the same disabled business scenario remain denied",
+        "client-declared initialization scope and mismatched menu/action identities remain fail-closed",
+        "the menu-less internal initialization action exception is unchanged",
+        "an isolated business-configuration administrator receives exactly one enterprise-initialization route and its navigation node",
+        "an ordinary internal user receives no enterprise-initialization route",
+        "no role, group, ACL or record-rule source was changed"
+      ],
+      "commands": [
+        {
+          "command": "make verify.admin_close_01.backend.unit",
+          "status": "passed",
+          "test_count": 170,
+          "log": ".runtime/enterprise-initialization-route-authority/focused-unit-no-permission-change.log"
+        },
+        {
+          "command": "make verify.scene.company_route_scope_cache.orm",
+          "status": "passed",
+          "test_count": 11,
+          "log": ".runtime/enterprise-initialization-route-authority/company-route-scope-no-permission-change.log"
+        },
+        {
+          "command": "make verify.enterprise.initialization.journey.orm",
+          "status": "passed",
+          "test_count": 2,
+          "log": ".runtime/enterprise-initialization-route-authority/enterprise-initialization-journey.log"
+        },
+        {
+          "command": "make ci.local.backend.iteration",
+          "status": "passed",
+          "test_count": 200,
+          "log": ".runtime/enterprise-initialization-route-authority/ci-local-backend-iteration.log",
+          "receipt": ".runtime/frontend-dev-validation/executions/20261127T191218Z-2721254-256468130/receipt.json"
+        }
+      ],
+      "scope_limit": "Isolated ORM and targeted lifecycle evidence only. The full scene module baseline is deferred to exact-head remote CI; the candidate has not yet been committed, pushed or rebuilt in clean runtime."
+    },
+    "remote_publication": {
+      "status": "exact_head_checks_in_progress",
+      "pull_request": 1029,
+      "url": "https://github.com/lidefend/sce-backend-odoo/pull/1029",
+      "base_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
+      "head": "672ac53b54f42c80e214494a23738330a204d289",
+      "draft": true,
+      "mergeable": true,
+      "facts_verified": [
+        "the independent branch was pushed through make pr.push",
+        "remote branch head equals local head 672ac53b54f42c80e214494a23738330a204d289",
+        "draft PR 1029 was created against main without touching frontend PR 1019",
+        "public_guard, merge_policy_gate, professional_quality_gate and frontend_release_gate are running on the exact PR head",
+        "the affected targeted checks passed again during PR preflight"
+      ],
+      "coverage_limit": "No remote check has completed yet. The draft PR is not ready, reviewed, merged or deployed."
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Read the completed exact-head checks for PR 1029, fix only classified failures, then verify enterprise initialization in a governed clean runtime with an already authorized configuration administrator and no permission delta.",
+  "excluded_preexisting_changes": "The independent worktree is clean at the recorded base; no other worktree is modified by this run."
+}
