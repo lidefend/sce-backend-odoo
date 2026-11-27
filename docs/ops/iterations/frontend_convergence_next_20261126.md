@@ -568,6 +568,17 @@ clean 运行态回读：
 回执 SHA256：
 `bd7f73baf4de7617ab92f2494340501f42323827e211bf58a762a51f9cd400e8`。
 
+产品切片提交为 `7e04ed26a2c7d04b6e078b35e3bbc3ec9598ee0c`。在该精确 HEAD 上执行
+`make verify.frontend.build ENV=dev ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev`：
+`build-info.json` 的源码 SHA 与 HEAD 一致，生产构建指纹为
+`c1c73d5e3cba6d2301282a4ee905b5656f123f1ce8c8be0e278466d4ee55f9ef`。
+
+构建日志：
+`.runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/page-identity-build.log`
+
+日志 SHA256：
+`66604153a27d7e9871057e1dd3c3ac8f010a15dbbaae571adfcb2964b819525d`。
+
 生产角色/公司旅程、143 个业务入口浏览器矩阵、远端 PR CI、主线资格、部署和用户验收
 仍未完成。
 
