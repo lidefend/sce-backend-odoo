@@ -125,6 +125,72 @@ class TestCompanyRouteScopeCache(TransactionCase):
             "enterprise_initialization",
         )
 
+    def test_config_admin_receives_initialization_entry_before_scene_enablement(self):
+        from odoo.addons.smart_core.delivery.effective_delivery_service import EffectiveDeliveryService
+        from odoo.addons.smart_core.delivery.native_config_menu_projection import native_config_delivery_groups
+        from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_key
+        from odoo.addons.smart_construction_scene.services.tenant_scene_activation import write_tenant_enablement
+
+        menu_xmlid = "smart_construction_core.menu_sc_enterprise_initialization"
+        action_xmlid = "smart_construction_core.action_sc_enterprise_initialization"
+        actor = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Initialization route admin",
+            "login": "initialization-route-admin",
+            "groups_id": [(6, 0, [
+                self.env.ref("base.group_user").id,
+                self.env.ref("smart_construction_core.group_sc_cap_business_config_admin").id,
+            ])],
+        })
+        for scene in scenario_surface_projection.load_runtime_surface(self.env).get("scenarios") or []:
+            write_tenant_enablement(
+                self.env,
+                self.env.company.id,
+                business_key(scene["key"]),
+                False,
+            )
+        env = actor.with_user(actor).with_context(allowed_company_ids=[self.env.company.id]).env
+        projected = {
+            row.get("menu_xmlid")
+            for group in native_config_delivery_groups(env)
+            for row in group.get("menus") or []
+        }
+        self.assertIn(menu_xmlid, projected)
+
+        admitted = EffectiveDeliveryService(env).resolve()
+        initialize_rows = [
+            row
+            for bucket in ("primary_actions", "contextual_actions", "admin_actions")
+            for row in admitted.route_authority.get(bucket) or []
+            if row.get("menu_xmlid") == menu_xmlid
+            and row.get("action_xmlid") == action_xmlid
+        ]
+        self.assertEqual(len(initialize_rows), 1)
+        nav_rows = []
+        pending = list(admitted.payload["nav"] or [])
+        while pending:
+            node = pending.pop(0)
+            nav_rows.append(node)
+            pending.extend(node.get("children") or [])
+        self.assertTrue(any(
+            (node.get("meta") or {}).get("menu_xmlid") == menu_xmlid
+            for node in nav_rows
+        ))
+
+        ordinary = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Initialization route ordinary user",
+            "login": "initialization-route-ordinary",
+            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])],
+        })
+        ordinary_env = ordinary.with_user(ordinary).with_context(
+            allowed_company_ids=[self.env.company.id],
+        ).env
+        ordinary_authority = EffectiveDeliveryService(ordinary_env).resolve().route_authority
+        self.assertFalse(any(
+            row.get("menu_xmlid") == menu_xmlid
+            for bucket in ("primary_actions", "contextual_actions", "admin_actions")
+            for row in ordinary_authority.get(bucket) or []
+        ))
+
     def test_imported_handling_override_reaches_page_authority_and_direct_gate(self):
         from odoo.addons.smart_core.delivery import effective_delivery_service as delivery
         from odoo.addons.smart_core.delivery.menu_service import MenuService
