@@ -538,6 +538,58 @@ clean 运行态回读：
 143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
 `bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
 
+### 2026-11-27 FC-01 ActionView 列表列字段语义单一权威
+
+继续核对列表列投影时确认，字段描述符已提供类型、控件、组件身份、币种字段、精度、
+单位、时区与选择项，但 ActionView 列表 schema 在描述符之后展开整个
+`componentConfig`，后者仍能覆盖这些业务字段语义；请求字段语义函数也反向优先读取
+`componentConfig`。同时 V2 normalized store 丢失了已声明的 `currencyField`。本轮只在
+P0 前端消费及投影层修复，未修改后端。
+
+本切片完成：
+
+- V2 normalized store 原样保留 `fieldDescriptor.currencyField`；
+- ActionView 列表列的类型、控件、组件身份、币种字段、精度、单位、时区、选择项、
+  可见性和可排序性只从 `fieldDescriptor` 消费；
+- `componentConfig` 只保留列表自身传输声明：`value_field`、`sort_field`、
+  `aggregate`、`filter_field`、`export_field`、`optional` 等；
+- 冲突的 `componentConfig` 不能覆盖描述符语义，不能引入关系目标或选择项；
+- `sortable=true` 原样透传，不再只剩显式的 false；
+- 增加 58 项投影用例，覆盖冲突组件配置、币种依赖、传输字段保留和语义不回流；
+- 台账新增 ActionView 列表列语义绑定，现为 35 个绑定、0 个未闭合缺陷。
+
+恢复事实：
+
+- 第一次选测失败于 `store.ts` 的过期基线哈希，已刷新到真实源码摘要；
+- 第二次选测失败于描述符局部变量被推断为空对象，已补严格
+  `ContractV2FieldDescriptor` 类型；
+- 初始 clean 构建曾误用不存在的截断派生 SHA，已拒绝该身份，并用真实完整 HEAD
+  `e26341a037f85c338acba2750006f816d41004a4` 重建和重跑。
+
+产品提交为 `5d29d70e165c1efdf05984425613e323d55f6bdf`，治理绑定提交为
+`e26341a037f85c338acba2750006f816d41004a4`。clean 前端指纹为
+`8dd6497bf847a5b3486c2c801a3b083cf024755a9fe61b044dbdb7fd6e663f84`。
+
+clean 运行态回读：
+
+- `/t/clean/api/runtime-version` 返回完整源码 `e26341a03`、上述指纹、`sc_clean`、
+  namespace `ns_c6fed472e939` 与 alias `clean`；
+- 根路径 `/build-info.json` 返回同一完整源码 SHA；
+- `local.clean.health` 与 `local.clean.entry_identity.verify` 均通过；
+- project/database/dbfilter/namespace 保持 clean 专属身份。
+
+在该 clean 精确 HEAD 上执行 `make ci.local.iteration`：19 个目标本轮执行、29 个复用，
+9 个测试目标执行 556 项测试，5 项静态检查通过，`unmapped_paths=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T034718Z-2961168-415126651/receipt.json`
+
+回执 SHA256：
+`26db8f32bb3b0633647582dafae0232b54b19068f48582c3b007f335c6974c37`。
+
+回执仍保留 9 个已有 passed 结果的 registration-missing 标记，属于选测/注册卫生缺口。
+143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
+`bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
+
 ### 2026-11-27 FC-01 effective field-status consistency 消费收口
 
 继续核对 canonical 表单描述符与有效状态时确认：字段描述符声明

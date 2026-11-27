@@ -91,22 +91,22 @@
     "dbfilter": "^sc_clean$",
     "namespace_alias": "clean",
     "namespace_id": "ns_c6fed472e939",
-    "source_revision": "0334aeac3a5c5384fef318f588be1c7c031fdffd",
+    "source_revision": "e26341a037f85c338acba2750006f816d41004a4",
     "modules": [
       "smart_construction_bundle",
       "sc_norm_engine"
     ],
     "demo_data": false,
     "fixture": false,
-    "frontend_build_fingerprint": "d93cb03d87f43345f47337c222fe24d9a3e77491c7c70b846be26cb3d1227ede",
+    "frontend_build_fingerprint": "8dd6497bf847a5b3486c2c801a3b083cf024755a9fe61b044dbdb7fd6e663f84",
     "health": "passed",
-    "health_note": "The clean profile serves exact candidate 0334aeac3, whose frontend product behavior includes b82905bc1 effective field-status consistency and whose contract-basis ledger commit records that authority.",
-    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-frontend-build.log",
-    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-up.log",
-    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-health.log",
-    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-entry-identity.log",
-    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-runtime-version.json",
-    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/field-status-clean-build-info.json",
+    "health_note": "The clean profile serves exact candidate e26341a037f85c338acba2750006f816d41004a4 with descriptor-only ActionView list-column field semantics.",
+    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-frontend-build.log",
+    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-up.log",
+    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-health.log",
+    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-entry-identity.log",
+    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-runtime-version.json",
+    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-build-info.json",
     "authority": "Owner-directed isolated clean development profile; existing dev/sample/acceptance/customer data and volumes are excluded."
   },
   "verification_responsibility": {
@@ -515,7 +515,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from clean exact candidate 0334aeac3, selecting the next confirmed declaration consumer or stop behavior without modifying backend code in this topic.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from clean exact candidate e26341a03, selecting the next confirmed declaration consumer or stop behavior without modifying backend code in this topic.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1513,6 +1513,92 @@
       ],
       "coverage_limit": [
         "The receipt still records 9 targets as registration-missing even though each has a passed target result; this is a planner/registry hygiene gap and was not treated as product success evidence.",
+        "Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
+      ]
+    },
+    "fc01_action_view_list_column_semantic_authority": {
+      "status": "passed",
+      "head": "e26341a037f85c338acba2750006f816d41004a4",
+      "product_commits": [
+        "5d29d70e165c1efdf05984425613e323d55f6bdf",
+        "e26341a037f85c338acba2750006f816d41004a4"
+      ],
+      "facts_verified": [
+        "the V2 normalized store preserves fieldDescriptor.currencyField",
+        "ActionView list request semantics use descriptor fieldType, widgetType and currencyField rather than componentConfig",
+        "list-column field type, widget, component identity, currency field, digits, unit, temporal authority, selection, visibility and sortability come only from fieldDescriptor",
+        "list-specific transport declarations such as value_field, sort_field, aggregate, filter_field and export_field remain consumable without becoming a field-semantic fallback",
+        "a conflicting componentConfig cannot introduce relation or selection semantics or override visibility",
+        "the contract-basis ledger binds the authority and reports 35 bindings with 0 open defects"
+      ],
+      "dirty_candidate_validation": {
+        "receipt": ".runtime/frontend-dev-validation/executions/20261127T034106Z-2908437-501399145/receipt.json",
+        "receipt_sha256": "4d57139f8b55a8a9e35b22144532a92ec708e6329860a3f4c6091fe955a24444",
+        "executed_targets": 21,
+        "reused_targets": 27,
+        "test_targets": 11,
+        "executed_test_count": 581,
+        "static_checks": 5,
+        "unmapped_paths": 0
+      },
+      "failure_recovery": [
+        "the first dirty run failed on the stale contracts/v2/store.ts source hash in the contract-fidelity baseline; the recorded source hash was refreshed from 037f1132 to the actual 13bfc4f5 content hash",
+        "the second dirty run exposed an inferred-empty-object TypeScript boundary in the list column descriptor local; an explicit ContractV2FieldDescriptor type repaired static proof",
+        "an initial clean build used an incorrect truncated-derived SHA and therefore did not match the real head; that evidence was rejected, and the runtime was rebuilt with the exact commit e26341a037f85c338acba2750006f816d41004a4"
+      ],
+      "scope_limit": "Unit and local exact-head evidence only. The production ActionView page is not exercised in a browser here; remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
+    },
+    "fc01_action_view_list_column_clean_runtime": {
+      "status": "passed",
+      "source_revision": "e26341a037f85c338acba2750006f816d41004a4",
+      "frontend_build_fingerprint": "8dd6497bf847a5b3486c2c801a3b083cf024755a9fe61b044dbdb7fd6e663f84",
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "dbfilter": "^sc_clean$",
+      "namespace_id": "ns_c6fed472e939",
+      "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-frontend-build.log",
+      "frontend_build_log_sha256": "feec9070aacac7a5f3ca125f1d4d37c6944131855c2e12fdc143e5ff70dc2cfd",
+      "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-up.log",
+      "up_log_sha256": "da4860eba121d3101e3d4e7778c1751f4465f4e038dc46c5bdb0380de8a61ad3",
+      "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-health.log",
+      "health_log_sha256": "3edb53ae8eaa7889b0a03472c49ccafd09763cf079679d2ff182f7f669dd4550",
+      "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-entry-identity.log",
+      "entry_identity_log_sha256": "08a8d638a4b2744492f8eb760b91130ef319be7d52b7865598a735375722dc78",
+      "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-runtime-version.json",
+      "runtime_version_log_sha256": "8d6726b8ad0971ca5394ae11f01c519ac96400a7e321773b30dd62cbf3fca2c0",
+      "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-build-info.json",
+      "build_info_log_sha256": "ce0160387582d8306a6989e1e4adda531f6b9783b29e9ef2c3cf90e1d3f20849",
+      "facts_verified": [
+        "the clean frontend was built from exact source e26341a037f85c338acba2750006f816d41004a4",
+        "tenant runtime-version returns the exact source revision, build fingerprint, sc_clean database, namespace id and clean alias",
+        "root build-info.json returns the same exact source revision",
+        "local.clean.health and entry identity verification pass under the isolated clean profile"
+      ],
+      "scope_limit": "Environment, build and runtime identity readback only; it is not a business-entry browser journey or product acceptance."
+    },
+    "fc01_action_view_list_column_clean_exact_head_validation": {
+      "status": "passed",
+      "head": "e26341a037f85c338acba2750006f816d41004a4",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T034718Z-2961168-415126651/receipt.json",
+      "receipt_sha256": "26db8f32bb3b0633647582dafae0232b54b19068f48582c3b007f335c6974c37",
+      "executed_targets": 19,
+      "reused_targets": 29,
+      "test_targets": 9,
+      "executed_test_count": 556,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-ci-local-iteration.log",
+      "log_sha256": "90c0076478d3f66ce71c673815ae3853b388b7efcd494a1cf22e4e420d03efb9",
+      "facts_verified": [
+        "the exact clean candidate is bound to a clean worktree and exact tree identity",
+        "all complete affected targets report passed target results",
+        "the list-column semantic authority and contract-basis guards pass",
+        "lint, strict typecheck and stable V2 projection pass",
+        "no outside-scope, blocked, not-run or unmapped targets were reported"
+      ],
+      "coverage_limit": [
+        "The receipt still records 9 targets as registration-missing even though each has a passed target result; this remains a planner/registry hygiene gap.",
         "Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
       ]
     }

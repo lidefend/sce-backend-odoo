@@ -149,6 +149,31 @@
     },
     "coverage_limit": "This is presenter/unit and clean-identity evidence; the 143-entry current-candidate browser matrix, remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
   },
+  "fc_01_action_view_list_column_semantic_authority": {
+    "status": "clean_exact_head_passed",
+    "head": "e26341a037f85c338acba2750006f816d41004a4",
+    "facts_verified": [
+      "the normalized store preserves fieldDescriptor.currencyField",
+      "ActionView list-column type, widget, component identity, currency field, digits, unit, temporal authority, selection, visibility and sortability come only from fieldDescriptor",
+      "list transport declarations remain available without becoming a second field-semantic authority",
+      "conflicting componentConfig values cannot override descriptor semantics or introduce relation and selection semantics",
+      "the contract-basis ledger binds the list-column authority at 35 bindings with 0 open defects"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T034718Z-2961168-415126651/receipt.json",
+    "local_receipt_sha256": "26db8f32bb3b0633647582dafae0232b54b19068f48582c3b007f335c6974c37",
+    "runtime_identity": {
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "namespace_id": "ns_c6fed472e939",
+      "frontend_build_fingerprint": "8dd6497bf847a5b3486c2c801a3b083cf024755a9fe61b044dbdb7fd6e663f84"
+    },
+    "failure_recovery": [
+      "the stale store.ts fidelity baseline hash was refreshed after source stabilization",
+      "an explicit descriptor type repaired strict type inference",
+      "an initial clean build with a malformed SHA was rejected and rebuilt with the exact full head"
+    ],
+    "coverage_limit": "This is unit and clean-identity evidence; the 143-entry current-candidate browser matrix, remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
+  },
   "not_a_product_acceptance_receipt": true,
   "coverage_boundary": "One formal product-entry universe derived from current declarations plus 11 source-grounded consumer findings. Declared acceptance status is preserved as provenance; current-candidate runtime coverage is not inherited and remains not_run until exercised.",
   "rows": [
@@ -160,7 +185,7 @@
       "sources": [
         {
           "path": "docs/architecture/frontend_contract_basis_ledger.json",
-          "sha256": "1071764793c731b8092b5309b59cb83981800ed9ee5a395fa0d0c6eb3e40e598"
+          "sha256": "b30116f6e6b2441c56d2be3d551e0089fa3110eb6a97cefe1c4054187604e7c7"
         }
       ],
       "planned_discriminating_cases": [
@@ -169,7 +194,7 @@
       ],
       "behavior_status": "new_semantic_bindings_verified_full_coverage_extension_pending",
       "evidence": [
-        "verify.frontend.contract_basis.unit test_count=15 bindings=34",
+        "verify.frontend.contract_basis.unit test_count=15 bindings=35",
         "verify.p0_contract_producer.p0a.unit test_count=72"
       ],
       "blocking_for_topic_completion": true
