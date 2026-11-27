@@ -88,22 +88,22 @@
     "dbfilter": "^sc_clean$",
     "namespace_alias": "clean",
     "namespace_id": "ns_c6fed472e939",
-    "source_revision": "5116d46aa6a60dfa0b18bada3b47c9e5a3809577",
+    "source_revision": "5f355f6cbe88572f67497a63f2496bcdb619e814",
     "modules": [
       "smart_construction_bundle",
       "sc_norm_engine"
     ],
     "demo_data": false,
     "fixture": false,
-    "frontend_build_fingerprint": "d9a873eff26fdc78a384d8700ad2e5afddb21e3f63ca8c6db76e479a52f291be",
+    "frontend_build_fingerprint": "ce53266d5359d4a2a9c7ace8444e06b87db40abecbc5c863da47230979cfa1e6",
     "health": "passed",
-    "health_note": "The clean profile serves the exact authoritative-relation-label product source and build fingerprint. Documentation and run updates do not change the product surface.",
-    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-frontend-build.log",
-    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-up.log",
-    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-health.log",
-    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-entry-identity.log",
-    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-runtime-version.json",
-    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-build-info.json",
+    "health_note": "The clean profile serves the exact declared-generic-float product source and build fingerprint. Documentation and run updates do not change the product surface.",
+    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-float-frontend-build.log",
+    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-float-up.log",
+    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-float-health.log",
+    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-float-entry-identity.log",
+    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-float-runtime-version.json",
+    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-float-build-info.json",
     "authority": "Owner-directed isolated clean development profile; existing dev/sample/acceptance/customer data and volumes are excluded."
   },
   "verification_responsibility": {
@@ -508,7 +508,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Commit the generic float precision candidate, rebuild the isolated clean runtime from that exact HEAD, verify health and identity readback, then rerun ci.local.iteration on the clean HEAD before continuing the remaining FC-01 semantic coverage matrix.",
+  "next_exact_step": "Continue FC-01 with the remaining semantic matrix, prioritizing reference/many2one_reference declarations, plain collection fallbacks and their fail-closed negative cases; do not inherit the historical 143-entry browser matrix.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -960,6 +960,49 @@
         "status, boolean and JSON existing consumers were inspected without introducing a non-contract fallback"
       ],
       "scope_limit": "Local targeted validation only; clean exact-HEAD runtime, remote PR CI, mainline qualification, the 143-entry browser matrix and user acceptance remain not_run."
+    },
+    "fc01_generic_float_clean_runtime": {
+      "status": "passed",
+      "product_source_revision": "5f355f6cbe88572f67497a63f2496bcdb619e814",
+      "frontend_build_fingerprint": "ce53266d5359d4a2a9c7ace8444e06b87db40abecbc5c863da47230979cfa1e6",
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "dbfilter": "^sc_clean$",
+      "namespace_id": "ns_c6fed472e939",
+      "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-float-frontend-build.log",
+      "frontend_build_log_sha256": "b6ca523e105db17bc2e1f452e480a9b1dabb5c74d9cc90416dea977dd67fb204",
+      "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-float-up.log",
+      "up_log_sha256": "a89e9dff51279d99d0e5422c9291c4fd6939e027ee11048be04288c6589e8a22",
+      "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-float-health.log",
+      "health_log_sha256": "3edb53ae8eaa7889b0a03472c49ccafd09763cf079679d2ff182f7f669dd4550",
+      "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-float-entry-identity.log",
+      "entry_identity_log_sha256": "08a8d638a4b2744492f8eb760b91130ef319be7d52b7865598a735375722dc78",
+      "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-float-runtime-version.json",
+      "runtime_version_log_sha256": "0ff3ce374b50e9afa649b91301b56b857dad5ffdb2b9771ba3ec4fc01ca71efb",
+      "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-float-build-info.json",
+      "build_info_log_sha256": "86c09cf5fc864a9b9614f39ef20e4614dbeca30a656dec2519ead99fd1826c08",
+      "facts_verified": [
+        "the clean frontend was built from the exact product commit 5f355f6cbe88572f67497a63f2496bcdb619e814",
+        "the Odoo container was recreated with the matching frontend build fingerprint",
+        "tenant runtime-version returns the exact source revision, build fingerprint, sc_clean database, namespace id and clean alias",
+        "root build-info.json returns the same exact source revision",
+        "local.clean.health and entry identity verification pass under the isolated clean profile"
+      ],
+      "scope_limit": "Environment, build and runtime identity readback only; it is not a business-entry browser journey or product acceptance."
+    },
+    "fc01_generic_float_clean_exact_head_validation": {
+      "status": "passed",
+      "head": "5f355f6cbe88572f67497a63f2496bcdb619e814",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T002046Z-1400371-287900326/receipt.json",
+      "receipt_sha256": "83b6189569bb99b5fbca0ab4e5978a51c5efd8cde8fc196d6b817cc861a77c04",
+      "executed_targets": 16,
+      "reused_targets": 31,
+      "test_targets": 8,
+      "executed_test_count": 488,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
     }
   }
 }
