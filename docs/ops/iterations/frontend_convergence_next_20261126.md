@@ -1037,3 +1037,58 @@ clean 运行态回读：
 ### 2026-11-27 开工条件回读
 
 主线 `a92114f0efb6733253d827e3a9985af21ab96be6` 已通过六项完整审计，证据为 `.runtime/main-full-release/a92114f0efb6733253d827e3a9985af21ab96be6.json`。此前源码观察保持原身份，不改写为新主线证明；正式启动时仅复核已变化的观察输入。专题仍为 planned，实施未开始，当前只恢复准备文件。
+
+### 2026-11-27 canonical 字段语义只读正式契约
+
+后端 strict component 已完成语义化，因此前端不再从 `componentConfig` 读取业务字段语义。
+这里只有一份业务权威：后端 `fieldDescriptor`。前端实现注册表只负责把这些语义映射到本地组件；
+`componentConfig` 可以继续承载传输和瞬时运行值，但不能提供或覆盖字段类型、语义、关系、
+选择项、精度、单位、时区、domain、context、relationEntry 或 widgetOptions。
+
+本切片完成：
+
+- V2 normalized store 只从 `fieldDescriptor` 构造字段描述符；
+- canonical presenter 只从 `fieldDescriptor` 读取 `fieldType`、`semanticType`、
+  `currencyField`、`size`、`widgetOptions` 和关系目标；
+- canonical renderer 只从 `fieldDescriptor` 读取类型、语义、选择项、精度、单位、
+  时区、关系、widget 与文件名；
+- Contract V2 widget → native bridge 与 ActionView 列投影不再把
+  `componentConfig` 作为字段语义 fallback；
+- 前端 `semantic_registry` 继续是唯一组件实现选择器：后端仅声明
+  `semanticType/fieldType`，前端据此选择组件并校验能力、呈现模式和契约版本；
+- 契约测试夹具全部迁移到正式 `fieldDescriptor`，并增加“组件配置不能覆盖
+  canonical semantics”的负例；
+- `frontend_contract_basis_ledger.json` 新增 canonical 字段语义载体绑定，目前为
+  33 个绑定、0 个未闭合缺陷。
+
+dirty 候选上的 `make ci.local.iteration` 执行 27 个目标、复用 21 个未变目标，
+16 个测试目标执行 655 项测试、6 项静态检查，`unmapped_paths=0`，全部退出零。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T025952Z-2596075-738421512/receipt.json`
+
+回执 SHA256：
+`6d29c6eb8635a2067b6f0a2edbd149e32c19413f27a2049b02416c37f2d641be`。
+
+产品改动提交为 `0b4fdca10ca4721c95c6980ce6b0b0c9c02f7979`。按该 SHA 重建 clean
+前端，构建指纹为
+`c6a351a580041ed577bde8a839b189e9a4fd0c10064e5a5cf3cd35b5880257bc`。
+
+clean 运行态回读：
+
+- `/t/clean/api/runtime-version` 同时返回上述源码 SHA、构建指纹、`sc_clean`、
+  namespace `ns_c6fed472e939` 与 alias `clean`；
+- 根路径 `/build-info.json` 返回同一源码 SHA；
+- `local.clean.health` 与 `local.clean.entry_identity.verify` 均通过；
+- project/database/dbfilter/namespace 保持 clean 专属身份。
+
+在该 clean 精确 HEAD 上执行 `make ci.local.iteration`：48 个必需目标全部成立，其中
+19 个本轮执行、29 个复用，9 个测试目标执行 556 项测试，5 项静态检查通过，
+`unmapped_paths=0`，全部退出零。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T030434Z-2634508-474197078/receipt.json`
+
+回执 SHA256：
+`d8430d3d1b0b0b07cad114933f6a24d483a453cebefdba3275316075fa54b706`。
+
+143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
+`bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。

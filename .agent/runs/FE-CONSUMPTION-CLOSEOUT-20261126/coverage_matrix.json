@@ -110,6 +110,25 @@
     },
     "coverage_limit": "The 143-entry current-candidate browser matrix, remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
   },
+  "fc_01_contract_only_field_semantics": {
+    "status": "clean_exact_head_passed",
+    "head": "0b4fdca10ca4721c95c6980ce6b0b0c9c02f7979",
+    "facts_verified": [
+      "fieldDescriptor is the only field-semantic input in the canonical V2 path",
+      "componentConfig no longer supplies fieldType, semanticType, selection, precision, unit, temporal, relation, domain, context, relationEntry or widgetOptions",
+      "frontend implementation registry selects components from declared semanticType and fieldType",
+      "missing canonical field semantics stop instead of falling back"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T030434Z-2634508-474197078/receipt.json",
+    "local_receipt_sha256": "d8430d3d1b0b0b07cad114933f6a24d483a453cebefdba3275316075fa54b706",
+    "runtime_identity": {
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "namespace_id": "ns_c6fed472e939",
+      "frontend_build_fingerprint": "c6a351a580041ed577bde8a839b189e9a4fd0c10064e5a5cf3cd35b5880257bc"
+    },
+    "coverage_limit": "The 143-entry current-candidate browser matrix, remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
+  },
   "not_a_product_acceptance_receipt": true,
   "coverage_boundary": "One formal product-entry universe derived from current declarations plus 11 source-grounded consumer findings. Declared acceptance status is preserved as provenance; current-candidate runtime coverage is not inherited and remains not_run until exercised.",
   "rows": [

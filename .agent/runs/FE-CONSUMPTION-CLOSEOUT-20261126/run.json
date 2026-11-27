@@ -91,22 +91,22 @@
     "dbfilter": "^sc_clean$",
     "namespace_alias": "clean",
     "namespace_id": "ns_c6fed472e939",
-    "source_revision": "28542de40c3f31e1cb3a45efe1562035f88c7d6c",
+    "source_revision": "0b4fdca10ca4721c95c6980ce6b0b0c9c02f7979",
     "modules": [
       "smart_construction_bundle",
       "sc_norm_engine"
     ],
     "demo_data": false,
     "fixture": false,
-    "frontend_build_fingerprint": "189bdb8c0ab110a6a65767541f55eb7efda66dd550b4c026a7316861a2bc0cca",
+    "frontend_build_fingerprint": "c6a351a580041ed577bde8a839b189e9a4fd0c10064e5a5cf3cd35b5880257bc",
     "health": "passed",
-    "health_note": "The clean profile serves the exact single-source canonical relation candidate on mainline bfc954c0b. No backend code was changed in this topic.",
-    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/single-source-relation-clean-frontend-build.log",
-    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/single-source-relation-clean-up.log",
-    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/single-source-relation-clean-health.log",
-    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/single-source-relation-clean-entry-identity.log",
-    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/single-source-relation-clean-runtime-version.json",
-    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/single-source-relation-clean-build-info.json",
+    "health_note": "The clean profile serves the exact contract-only field-semantics candidate on mainline bfc954c0b. Product semantics come from fieldDescriptor; component implementation selection stays in the frontend registry.",
+    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-frontend-build.log",
+    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-up.log",
+    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-health.log",
+    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-entry-identity.log",
+    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-runtime-version.json",
+    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-build-info.json",
     "authority": "Owner-directed isolated clean development profile; existing dev/sample/acceptance/customer data and volumes are excluded."
   },
   "verification_responsibility": {
@@ -513,7 +513,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from the clean-validated single-source canonical relation candidate, selecting the next confirmed declaration consumer or stop behavior without modifying backend code in this topic.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from the clean-validated contract-only field semantics candidate, selecting the next confirmed declaration consumer or stop behavior without modifying backend code in this topic.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1360,6 +1360,82 @@
         "canonical relation target missingness and componentConfig non-authority cases pass",
         "the single-authority contract binding passes at 32 bindings and 0 open defects",
         "lint, strict typecheck and stable V2 projection pass",
+        "no outside-scope, blocked, not-run or unmapped targets were reported"
+      ],
+      "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
+    },
+    "fc01_contract_only_field_semantics": {
+      "status": "passed",
+      "stage_identity": "658788f9bb16adb00623fc1a5b4fe617c17bf7a7 plus the owned contract-only field-semantics dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T025952Z-2596075-738421512/receipt.json",
+      "receipt_sha256": "6d29c6eb8635a2067b6f0a2edbd149e32c19413f27a2049b02416c37f2d641be",
+      "executed_targets": 27,
+      "reused_targets": 21,
+      "test_targets": 16,
+      "executed_test_count": 655,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "V2 normalized field semantics are read from fieldDescriptor rather than componentConfig",
+        "canonical presenter and renderer read fieldType, semanticType, selection, digits, unit, temporal, domain, context, relationEntry and widgetOptions from the canonical descriptor",
+        "native bridge and list-column projection no longer use componentConfig as a field-semantic fallback",
+        "componentConfig remains available only for transport and transient runtime values",
+        "frontend implementation selection remains entirely in semantic_registry and the local component registry"
+      ],
+      "failure_recovery": [
+        "canonical fixtures that only populated componentConfig were migrated to complete formal fieldDescriptor declarations",
+        "the fidelity baseline hash for contracts/v2/store.ts was refreshed after the implementation stabilized",
+        "the contract-basis binding initially used the wrong declaration literal and was corrected to the producer symbol"
+      ],
+      "scope_limit": "Local targeted validation only; clean exact-head runtime, remote PR CI, mainline qualification, the 143-entry browser matrix and user acceptance remain not_run."
+    },
+    "fc01_contract_only_field_semantics_clean_runtime": {
+      "status": "passed",
+      "product_source_revision": "0b4fdca10ca4721c95c6980ce6b0b0c9c02f7979",
+      "frontend_build_fingerprint": "c6a351a580041ed577bde8a839b189e9a4fd0c10064e5a5cf3cd35b5880257bc",
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "dbfilter": "^sc_clean$",
+      "namespace_id": "ns_c6fed472e939",
+      "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-frontend-build.log",
+      "frontend_build_log_sha256": "a6515366677e828bc9668499f41248c5bf414617fd94fce9059b1f22d9279831",
+      "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-up.log",
+      "up_log_sha256": "8e6eb6f6afb5e1cafc2b0b4ff54a3276b14bcdee665394a3c2c4e2fbbf1000d4",
+      "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-health.log",
+      "health_log_sha256": "3edb53ae8eaa7889b0a03472c49ccafd09763cf079679d2ff182f7f669dd4550",
+      "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-entry-identity.log",
+      "entry_identity_log_sha256": "08a8d638a4b2744492f8eb760b91130ef319be7d52b7865598a735375722dc78",
+      "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-runtime-version.json",
+      "runtime_version_log_sha256": "9873d54f771558dca8674acc65c5a1667003ca25401ce2198e25e9327defe7ec",
+      "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/contract-only-clean-build-info.json",
+      "build_info_log_sha256": "b4591c493bf2654fd4985f89598a0d8fc8e43b0a4742ece5bacd0e52573ea9f2",
+      "facts_verified": [
+        "the clean frontend was built from exact candidate 0b4fdca10ca4721c95c6980ce6b0b0c9c02f7979",
+        "the Odoo container was recreated with the matching frontend build fingerprint",
+        "tenant runtime-version returns the exact source revision, build fingerprint, sc_clean database, namespace id and clean alias",
+        "root build-info.json returns the same exact source revision",
+        "local.clean.health and entry identity verification pass under the isolated clean profile"
+      ],
+      "scope_limit": "Environment, build and runtime identity readback only; it is not a business-entry browser journey or product acceptance."
+    },
+    "fc01_contract_only_field_semantics_clean_exact_head_validation": {
+      "status": "passed",
+      "head": "0b4fdca10ca4721c95c6980ce6b0b0c9c02f7979",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T030434Z-2634508-474197078/receipt.json",
+      "receipt_sha256": "d8430d3d1b0b0b07cad114933f6a24d483a453cebefdba3275316075fa54b706",
+      "executed_targets": 19,
+      "reused_targets": 29,
+      "test_targets": 9,
+      "executed_test_count": 556,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "the clean exact-head iteration keeps the real producer/decoder integration green",
+        "the canonical form field-semantic authority tests pass",
+        "the component implementation registry remains the only component selector",
+        "the contract-basis ledger passes with 33 bindings and 0 open defects",
         "no outside-scope, blocked, not-run or unmapped targets were reported"
       ],
       "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
