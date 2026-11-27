@@ -742,6 +742,8 @@ verify.frontend.collection_action_capability.unit: guard.prod.forbid
 	@node /tmp/collection-action-capability-test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/detail_collection_pagination_test.ts --bundle --platform=node --format=esm --outfile=/tmp/detail-collection-pagination-test.mjs >/dev/null
 	@node /tmp/detail-collection-pagination-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_import_lifecycle_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-import-lifecycle-test.mjs >/dev/null
+	@node /tmp/native-import-lifecycle-test.mjs
 
 # A declared node's authoritative verdict (field widgetStatus / declared action
 # buttonStatus / container containerStatus) must be consumed for that node; a
