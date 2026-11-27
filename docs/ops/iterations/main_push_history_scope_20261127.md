@@ -11,3 +11,5 @@ Owner approved ordinary push and PR exact-commit full-ancestry scanning. Schedul
 Required: workflow shell routing regression, existing scanner negative tests and local incremental checks; new exact-head PR CI. R3, merge and deployment excluded. Local receipts under `.runtime/frontend-dev-validation/executions/`; current result indexed by this run.
 
 Local pre-commit validation: 36 workflow tests and 42 scanner tests passed; workflow shell event routing regression had 3 failures before repair. `make ci.local.iteration` passed all 4 selected targets. Exact-HEAD receipt and remote checks remain required. Rollback: revert this isolated workflow/test change through protected review; no data migration.
+
+Owner authorized synchronization and merge after renewed validation. Updated baseline: `9395d93f92badffc87d32c5979cf7c70e374e975` (#1026); appended by governed sync without conflicts. Local and remote evidence must bind the new candidate; original results remain historical.

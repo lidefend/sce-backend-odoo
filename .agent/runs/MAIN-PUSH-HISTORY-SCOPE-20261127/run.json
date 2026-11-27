@@ -30,7 +30,7 @@
   },
   "id": "MAIN-PUSH-HISTORY-SCOPE-20261127",
   "branch": "fix/main-push-history-scope-20261127",
-  "baseline_sha": "09c95df6b2d0dad6c841d86b0b4a6d1435dcf094",
+  "baseline_sha": "9395d93f92badffc87d32c5979cf7c70e374e975",
   "status": "verification_pending",
   "goal": ".agent/goals/MAIN-PUSH-HISTORY-SCOPE-20261127.yaml",
   "record": "docs/ops/iterations/main_push_history_scope_20261127.md",
@@ -54,8 +54,8 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Execute actual workflow shell event routing regression and local iteration; publish independent Draft PR; no merge or deploy.",
-  "authorization": "Owner explicitly approved ordinary main push exact-commit full ancestry scanning; schedule/manual global scanning unchanged.",
+  "next_exact_step": "Run affected local verification against updated main; push new exact candidate, verify required CI, merge and read back post-merge CI.",
+  "authorization": "Owner authorized latest main synchronization, renewed verification and protected merge after new exact-head required CI passes; no deployment.",
   "local_evidence": {
     "receipt": ".runtime/frontend-dev-validation/executions/20261127T071432Z-770191-804352837/receipt.json",
     "status": "passed",
@@ -70,5 +70,6 @@
       ".runtime/main-push-history/history-unit.log": "f38f8084ff5a200d53bd3e07f664fee463d6402fe054af90e77c838959fdccfc"
     },
     "freeze": "passed: .runtime/main-push-history/freeze.log"
-  }
+  },
+  "pr": 1027
 }
