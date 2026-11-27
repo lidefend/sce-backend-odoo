@@ -12,6 +12,8 @@
     ".agent/active-runs.json",
     ".agent/goals/ENTERPRISE-INITIALIZATION-ROUTE-AUTHORITY-20261128.yaml",
     ".agent/runs/ENTERPRISE-INITIALIZATION-ROUTE-AUTHORITY-20261128/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/enterprise_initialization_route_authority_20261128.md",
     "addons/smart_construction_scene/services/business_scene_enablement.py",
     "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
