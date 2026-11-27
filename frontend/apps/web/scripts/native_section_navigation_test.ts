@@ -314,16 +314,23 @@ const relationSections = workspaceSectionNavigationItems([node({
   fields: [
     field({ widgetId: 'lines.income', fieldCode: 'income_line_ids', fieldType: 'one2many', semanticRole: 'relation', label: '合同明细' }),
     field({ widgetId: 'lines.settlement', fieldCode: 'settlement_line_ids', fieldType: 'many2many', semanticRole: 'relation', label: '结算明细' }),
-    field({ widgetId: 'attachments', fieldCode: 'attachment_ids', fieldType: 'many2many', semanticRole: 'relation', label: '附件', componentConfig: { widget: 'many2many_binary' } }),
-    field({ widgetId: 'resolved.attachments', fieldCode: 'other_attachment_ids', fieldType: 'many2many', semanticRole: 'relation', label: '其他附件', componentResolution: { componentKey: 'ProfessionalAttachmentCollection', renderer: '', contractVersion: '' } }),
+    field({ widgetId: 'transport.attachment_like', fieldCode: 'transport_attachment_ids', fieldType: 'many2many', semanticRole: 'relation', label: '传输形似附件', componentConfig: { widget: 'many2many_binary' } }),
+    field({ widgetId: 'resolved.attachment_like', fieldCode: 'resolved_attachment_ids', fieldType: 'many2many', semanticRole: 'relation', label: '实现形似附件', componentResolution: { componentKey: 'ProfessionalAttachmentCollection', renderer: '', contractVersion: '' } }),
     field({ widgetId: 'descriptor.attachments', fieldCode: 'native_attachment_ids', fieldType: 'many2many', semanticRole: 'relation', label: '原生附件', fieldDescriptor: { relation: 'ir.attachment' } }),
   ],
 })]);
 assert.deepEqual(relationSections.map(({ label, contentKind, sourceIdentity }) => ({ label, contentKind, sourceIdentity })), [
   { label: '合同明细', contentKind: 'relation-collection', sourceIdentity: 'lines.income' },
   { label: '结算明细', contentKind: 'relation-collection', sourceIdentity: 'lines.settlement' },
+  { label: '传输形似附件', contentKind: 'relation-collection', sourceIdentity: 'transport.attachment_like' },
+  { label: '实现形似附件', contentKind: 'relation-collection', sourceIdentity: 'resolved.attachment_like' },
 ]);
-assert.equal(new Set(relationSections.map((item) => item.selector)).size, 2, 'relation targets must remain distinct');
+assert.equal(new Set(relationSections.map((item) => item.selector)).size, 4, 'relation targets must remain distinct');
+assert.equal(
+  relationSections.some((item) => item.sourceIdentity === 'descriptor.attachments'),
+  false,
+  'only descriptor-declared attachment semantics remove a relation from business navigation',
+);
 
 const repeatedRelationOccurrences = workspaceSectionNavigationItems([node({
   nodeId: 'section.repeated.relation',
