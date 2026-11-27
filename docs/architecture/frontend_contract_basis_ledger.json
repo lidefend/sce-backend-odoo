@@ -550,18 +550,18 @@
       "stopDetail": "When a Kanban field set is present, ActionView must use the declared title_field and require it to belong to that field set. Missing or mismatched title declarations stop with ContractGapError instead of falling back to display_name, name, the first column or id. A non-Kanban empty field set returns no title field."
     },
     {
-      "surface": "ActionView primary filter budget",
-      "declared": "surface_policies.filters_primary_max",
+      "surface": "ActionView filter budgets",
+      "declared": "surface_policies.filters_max and filters_primary_max",
       "declaredBy": "addons/smart_core/utils/contract_governance_user_surface.py",
       "declaredMethod": "apply_user_surface_policies",
       "declaredSymbol": "\"filters_primary_max\": filters_primary_max,",
       "consumedBy": "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts",
-      "consumedSymbol": "function resolveDeclaredPrimaryFilterBudget(",
+      "consumedSymbol": "function resolveDeclaredFilterBudget(",
       "onMissing": "stop",
       "stopSymbol": "contractGapError",
       "regressionGuard": "verify.frontend.contract_shape_projection.unit",
       "behaviourTest": "frontend/apps/web/scripts/contract_shape_projection_test.ts",
-      "stopDetail": "The visible primary-filter budget consumes a declared non-negative integer. Missing, fractional, string or negative values stop with ContractGapError; the former default and floor-to-5 behavior are forbidden, while explicit zero remains valid."
+      "stopDetail": "Total and primary visible-filter budgets consume declared non-negative integers. Missing, fractional, string or negative values stop with ContractGapError; the former total cap of 8, primary default of 5 and floor behavior are forbidden, while explicit zero remains valid."
     }
   ],
   "registeredMechanismExemptions": [
