@@ -607,6 +607,12 @@ clean 运行态回读：
 回执 SHA256：
 `a2d2e6dccff08a1e5bf238a52b25285ddc9f5cf0afd70d2d5d4cc0a284467cf2`。
 
+产品切片提交为 `a9dc3b2d987cbc1374ac0f6fa09739dac1f95970`。精确 HEAD 生产构建的
+`build-info.sha` 与 HEAD 一致，构建指纹为
+`42ddc0fdc9649584bd6110eab9a4f0cf4c8eda2ae43941d242f5ed84274e5fce`；日志
+`.runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/route-title-build.log`，
+日志 SHA256 `4b2808ea8d7b8c497dcb5773af2c425df60deb4d803138d71047b4ab3ba606a7`。
+
 下一项是地址栏 URL 收敛：区分正式路由身份、后端声明的必需上下文和可重建的瞬时 UI 状态，
 避免 scene/menu/action/return/context 参数重复堆叠。当前候选尚未做运行态 URL 回读。
 

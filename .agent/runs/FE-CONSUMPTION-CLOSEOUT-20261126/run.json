@@ -2162,7 +2162,8 @@
     },
     "fc02_route_identity_contract_titles": {
       "status": "passed_local_targeted",
-      "stage_identity": "934d685531bc30667ca412cda4b4e7bb1aaa54e4 plus the owned route-title and page-contract consumer scope",
+      "candidate_head": "a9dc3b2d987cbc1374ac0f6fa09739dac1f95970",
+      "stage_identity": "a9dc3b2d987cbc1374ac0f6fa09739dac1f95970",
       "command": "make ci.local.iteration",
       "receipt": ".runtime/frontend-dev-validation/executions/20261127T092802Z-2084720-627610702/receipt.json",
       "receipt_sha256": "a2d2e6dccff08a1e5bf238a52b25285ddc9f5cf0afd70d2d5d4cc0a284467cf2",
@@ -2184,6 +2185,14 @@
         "page identity smoke tests pass 34 and 33 assertions respectively",
         "navigation shell, page-pattern parity, strict typecheck and the 42-binding contract-basis guard pass"
       ],
+      "frontend_build": {
+        "status": "passed",
+        "source_revision": "a9dc3b2d987cbc1374ac0f6fa09739dac1f95970",
+        "log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/route-title-build.log",
+        "log_sha256": "4b2808ea8d7b8c497dcb5773af2c425df60deb4d803138d71047b4ab3ba606a7",
+        "build_info_sha256": "3c9337a1891a384f1895c7543c1ccb9e6c41cf5dc9de40f9c27fd20897889432",
+        "frontend_build_fingerprint": "42ddc0fdc9649584bd6110eab9a4f0cf4c8eda2ae43941d242f5ed84274e5fce"
+      },
       "failure_recovery": [
         "the first unified run stopped because the component-driver inventory digest was stale after the router source adjustment",
         "the inventory was regenerated through its owning target and the resumed affected set passed"
