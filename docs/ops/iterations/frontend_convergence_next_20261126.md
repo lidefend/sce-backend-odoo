@@ -1697,6 +1697,25 @@ clean 运行态回读：
 以正式业务配置管理员确认初始化入口出现并完成初始化/场景启用，再继续业务页面与操作。
 在完成该运行态回读之前，不把后端修复存在等同于前端初始化旅程已通过。
 
+同一个同步候选上，两个 clean 页面探针最初被选测器识别为未登记路径。该问题属于 P4
+验证工具，不属于产品页面或权限逻辑。修正后：
+
+- 两个探针登记为 `browser_probe_tooling`，属于非运行时前端控制面；
+- 改动任一探针会选中 `verify.local.development_lifecycle.unit` 与
+  `verify.frontend.playwright_vendor_coupling.guard`；
+- 无关的 `local_test_runner.py` 不选择 Playwright 耦合守卫；
+- 后端通道 60 个目标、1181 项测试、10 项静态检查通过；
+- 前端通道 87 个目标，复用同候选后端回执 41 项，执行 35 个测试目标、1580 项测试、
+  6 项静态检查并通过；
+- 两个通道均为 `unmapped=0`、`not_run=0`、`blocked=0`。
+
+回执分别为：
+
+- `.runtime/frontend-dev-validation/executions/20261127T194739Z-2993499-53230723/receipt.json`；
+- `.runtime/frontend-dev-validation/executions/20261127T195156Z-3042421-74406467/receipt.json`。
+
+这组证据只证明 P4 路径归属与同 run 交接，不证明 clean 初始化旅程或业务页面已经通过。
+
 ### 2026-11-27 FC-01 effective field-status consistency 消费收口
 
 继续核对 canonical 表单描述符与有效状态时确认：字段描述符声明

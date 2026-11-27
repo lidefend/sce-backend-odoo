@@ -131,7 +131,7 @@ goal:
     document_structure: passed
     product_tests: relation_descriptor_and_attachment_lifecycle_batch_passed_clean_probe_unit_passed
     contract_basis: passed_42_bindings_zero_open_defects
-    local_targeted: passed_86_targets_2168_tests_11_static_checks
+    local_targeted: passed_backend_60_targets_1181_tests_and_frontend_87_targets_1580_tests_with_same_run_handoff
     browser: clean_route_gap_reproduced_and_independently_fixed_full_journey_not_run_on_synchronized_candidate
     database: prior_clean_runtime_identity_passed_synchronized_candidate_refresh_not_run
     ci_dispatch: synchronized_candidate_requires_new_exact_head_checks

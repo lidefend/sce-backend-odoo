@@ -182,6 +182,7 @@
       ],
       "id": "browser_probe_tooling",
       "patterns": [
+        "scripts/dev/local_clean_*_pages_probe.mjs",
         "scripts/verify/*browser*.mjs",
         "scripts/verify/*browser*.js",
         "scripts/verify/*playwright*.mjs",

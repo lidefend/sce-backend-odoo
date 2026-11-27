@@ -12,6 +12,7 @@
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
+    "config/ci/path_ownership_v1.json",
     "docs/ops/iterations/frontend_convergence_next_20261126.md",
     "docs/architecture/p0_contract_producer_01/remediation_design.json",
     "docs/architecture/frontend_contract_basis_ledger.json",
@@ -157,6 +158,7 @@
     "scripts/ops/integration_cycle.py",
     "scripts/ops/test_integration_cycle.py",
     "scripts/ops/validation_delivery_plan.py",
+    "scripts/ci/test_ci_path_ownership.py",
     "scripts/verify/test_branch_governance_consistency_guard.py",
     "scripts/verify/test_local_quick_evidence.py",
     "scripts/verify/test_validation_delivery_plan.py",
@@ -2890,6 +2892,55 @@
         "public_guard and professional_quality_gate passed on the same exact head"
       ],
       "scope_limit": "P4 smoke and selector alignment only. The repaired candidate has not yet been pushed; exact-head remote CI, browser address-bar readback, mainline qualification and user acceptance remain not_run."
+    },
+    "clean_probe_selection_closure": {
+      "status": "passed_local_targeted",
+      "stage_identity": "1ad7e8542743d214a60227fc6281a1da86174e4a plus the owned clean-probe path-ownership and selector dirty scope",
+      "commands": [
+        {
+          "command": "make verify.frontend.dev.incremental.unit",
+          "status": "passed",
+          "test_count": 291
+        },
+        {
+          "command": "make verify.ci.path_ownership.unit",
+          "status": "passed",
+          "test_count": 26
+        },
+        {
+          "command": "make verify.frontend.playwright_vendor_coupling.guard",
+          "status": "passed",
+          "test_count": 7
+        },
+        {
+          "command": "make ci.local.backend.iteration",
+          "status": "passed",
+          "required_targets": 60,
+          "test_count": 1181,
+          "static_checks": 10,
+          "receipt": ".runtime/frontend-dev-validation/executions/20261127T194739Z-2993499-53230723/receipt.json",
+          "receipt_sha256": "e50aaa56d27b56fa7069421dde08ecd4207cbc1cc30573ccff77d070439ba9bf"
+        },
+        {
+          "command": "make ci.local.frontend.iteration",
+          "status": "passed",
+          "required_targets": 87,
+          "reused_targets": 41,
+          "test_count": 1580,
+          "static_checks": 6,
+          "backend_handoff_receipt": ".runtime/frontend-dev-validation/executions/20261127T194739Z-2993499-53230723/receipt.json",
+          "receipt": ".runtime/frontend-dev-validation/executions/20261127T195156Z-3042421-74406467/receipt.json",
+          "receipt_sha256": "e979a92b9cc6c251dac77fabe1cddf2add24d56f9bc0e6dea644441a84ef51cd"
+        }
+      ],
+      "facts_verified": [
+        "the two clean page probes are classified as non-runtime frontend control-plane browser tooling",
+        "both probes select the local development lifecycle unit and Playwright vendor-coupling guard",
+        "the backend channel completes every affected target before any frontend shared-contract consumer runs",
+        "the frontend channel reuses the same-run backend handoff receipt rather than another worktree's evidence",
+        "the full affected sets have zero unmapped, not-run or blocked targets"
+      ],
+      "scope_limit": "P4 ownership and selector closure only. These receipts do not prove the clean enterprise-initialization journey, product-page behavior, remote PR integration, deployment or user acceptance."
     },
     "clean_current_configuration_browser_baseline": {
       "status": "route_gap_resolved_by_independent_pr_1029_runtime_rerun_pending",

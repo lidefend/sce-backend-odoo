@@ -3913,6 +3913,22 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.local.dev.frontend.quick.unit"],
                 )
 
+    def test_clean_page_probes_keep_lifecycle_and_playwright_checks(self) -> None:
+        expected = [
+            "verify.frontend.playwright_vendor_coupling.guard",
+            "verify.local.development_lifecycle.unit",
+        ]
+        for path in (
+            "scripts/dev/local_clean_finance_pages_probe.mjs",
+            "scripts/dev/local_clean_quality_tax_pages_probe.mjs",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), expected)
+        self.assertNotIn(
+            "verify.frontend.playwright_vendor_coupling.guard",
+            select_targets(["scripts/dev/local_test_runner.py"]),
+        )
+
     def test_detail_collection_guard_keeps_its_behavior_target(self) -> None:
         self.assertEqual(
             select_targets([

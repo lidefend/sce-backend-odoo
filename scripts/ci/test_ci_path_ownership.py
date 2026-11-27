@@ -200,6 +200,25 @@ class PathOwnershipRegistryTest(unittest.TestCase):
             ("verify.candidate.profile.unit",),
         )
 
+    def test_clean_page_probe_tooling_is_a_nonruntime_frontend_control_plane(self):
+        paths = {
+            "scripts/dev/local_clean_finance_pages_probe.mjs",
+            "scripts/dev/local_clean_quality_tax_pages_probe.mjs",
+        }
+        result = ownership.classify_paths(paths)
+        self.assertEqual(set(result.assignments.values()), {"browser_probe_tooling"})
+        self.assertTrue(result.frontend_changed)
+        self.assertTrue(result.control_plane_changed)
+        self.assertFalse(result.backend_changed)
+        self.assertFalse(result.backend_runtime_changed)
+        self.assertFalse(result.unknown_paths)
+        for path in paths:
+            with self.subTest(path=path):
+                self.assertEqual(
+                    result.category_for(path).tool_checks,
+                    ("verify.frontend.playwright_vendor_coupling.guard",),
+                )
+
     def test_frontend_acceptance_ci_tooling_is_nonruntime_control_plane(self):
         paths = {
             "scripts/dev/frontend_acceptance_operation_entry.sh",

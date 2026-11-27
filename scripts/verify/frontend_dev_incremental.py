@@ -1459,6 +1459,13 @@ RULES = (
         "verify.local.development_lifecycle.unit",
     )),
     Rule((
+        "scripts/dev/local_clean_finance_pages_probe.mjs",
+        "scripts/dev/local_clean_quality_tax_pages_probe.mjs",
+    ), (
+        "verify.local.development_lifecycle.unit",
+        "verify.frontend.playwright_vendor_coupling.guard",
+    )),
+    Rule((
         "scripts/dev/local_dev_frontend_quick.py",
         "scripts/verify/test_local_dev_frontend_quick.py",
     ), (
