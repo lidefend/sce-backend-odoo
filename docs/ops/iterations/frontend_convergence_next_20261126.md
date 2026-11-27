@@ -881,6 +881,18 @@ dirty scope 上成立 86 个必需目标，全部本轮执行；65 个测试目�
 新的高置信前端专有缺口；剩余 FC-03 需要生产查询条及真实浏览器/用户行为回读，目前因
 受管验收端口被另一工作树占用而保持 `not_run + environment_defect`。
 
+`bd9af577c85a6aa1c35064bec8b0b8427921f95e` 推送后，`public_guard`
+（run `140563617042`）、`professional_quality_gate`（run `140567883274`）和
+`frontend_release_gate`（run `140563507077`）均已成功；selected backend impact suite
+也通过 plan `140563697948`、suite `140563934404`、coverage `140567709405`。
+
+但聚合 Job `wait_for_fact_checks`（run `140563645489`）在等待 8 分钟后以
+`unexpected end of JSON input` 失败，`merge_policy_gate`（run `140567775575`）
+仅因该依赖失败而联动失败。直接精确 HEAD 回读确认三个事实工作流均为 `success`；
+这不是产品测试失败。现有受管入口没有原地 Job 重跑目标，因此下一次标准 `pr.push`
+将只附带本条事实记录，产生新的精确 HEAD 做一次有依据的受管重试。仍不能声称该 PR
+的聚合门禁已通过。
+
 ### 2026-11-27 FC-02 页面身份声明化与选测补口
 
 本切片属于共享前端呈现消费层，不修改后端契约、权限或数据。页面身份不再把

@@ -140,9 +140,9 @@ goal:
   - full_industry_business_acceptance_without_separate_scope
   - changing_existing_ci_candidate_or_merging_it
   - publishing_or_committing_this_plan_in_this_turn
-  next_exact_step: Commit and publish the FC-03 custom-filter operator-options
-    slice to PR number 1019, then hand off remaining FC-03 browser/user behavior
-    as not_run until the managed acceptance port is available.
+  next_exact_step: Publish the recorded bd9af577c state through the managed PR push
+    path to obtain a fresh exact-head aggregate retry, then hand off remaining
+    FC-03 browser/user behavior as not_run until the managed acceptance port is available.
     Do not modify backend code in this topic; report any newly confirmed producer gap separately
     for owner review.
   run: .agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/run.json

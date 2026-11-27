@@ -599,7 +599,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Commit and publish the FC-03 custom-filter operator-options slice to PR 1019, then stop query-surface local convergence and hand off the remaining FC-03 browser/user behavior as not_run until the managed acceptance port is available.",
+  "next_exact_step": "Publish the recorded bd9af577c state through the managed PR push path to obtain a fresh exact-head aggregate retry, then read back all four required checks and hand off remaining FC-03 browser/user behavior as not_run until the managed acceptance port is available.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2689,12 +2689,12 @@
       "scope_limit": "P4 smoke and selector alignment only. The repaired candidate has not yet been pushed; exact-head remote CI, browser address-bar readback, mainline qualification and user acceptance remain not_run."
     },
     "remote_publication": {
-      "status": "remote_ci_passed_for_ca7_custom_filter_operator_slice_next_operator_options_local",
+      "status": "bd9_fact_workflows_passed_aggregate_wait_transient_retry_required",
       "pull_request": 1019,
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "ca7a8a24b5b1be2e6fcf0a0c01cbc1e61c2f6b05",
+      "current_head": "bd9af577c85a6aa1c35064bec8b0b8427921f95e",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",
@@ -2722,9 +2722,17 @@
         "head b1aeaabfd passed public_guard run 140546310672, merge_policy_gate run 140550517371, professional_quality_gate run 140550335143 and frontend_release_gate run 140546202008",
         "head b1aeaabfd passed the selected backend impact suite through plan 140546360621, suite 140546593572 and coverage 140550154730",
         "head ca7a8a24b passed public_guard run 140552957580, merge_policy_gate run 140557030536, professional_quality_gate run 140556210941 and frontend_release_gate run 140552828224",
-        "head ca7a8a24b passed the selected backend impact suite through plan 140553018083, suite 140553245041 and coverage 140556034921"
+        "head ca7a8a24b passed the selected backend impact suite through plan 140553018083, suite 140553245041 and coverage 140556034921",
+        "head bd9af577c passed public_guard run 140563617042, professional_quality_gate run 140567883274 and frontend_release_gate run 140563507077",
+        "head bd9af577c passed the selected backend impact suite through plan 140563697948, suite 140563934404 and coverage 140567709405",
+        "head bd9af577c aggregate wait_for_fact_checks run 140563645489 failed after 8m2s with unexpected end of JSON input while querying dependency workflows",
+        "head bd9af577c merge_policy_gate run 140567775575 failed only as the dependent aggregate result"
       ],
-      "coverage_limit": "The custom-filter operator candidate is green on ca7a8a24b. The next operator-options slice will require its own exact-head remote checks. Real browser readback, the 143-entry matrix, role/company journeys, FC-03 overall closure and FC-06 remain not_run."
+      "failure_recovery": [
+        "direct exact-head readback confirms public_guard, professional_quality_gate and frontend_release_gate all completed successfully for bd9af577c",
+        "the failed aggregate job was not treated as a product failure; a fresh exact-head run will be produced through make pr.push because no managed in-place workflow rerun entry exists"
+      ],
+      "coverage_limit": "The three fact workflows and backend impact suite are green on bd9af577c, but the aggregate merge gate is not green and must be retried on a fresh exact head. Real browser readback, the 143-entry matrix, role/company journeys, FC-03 overall closure and FC-06 remain not_run."
     }
   }
 }
