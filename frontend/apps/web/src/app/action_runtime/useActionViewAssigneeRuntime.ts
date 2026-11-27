@@ -1,6 +1,7 @@
 import type { Ref } from 'vue';
 import { ApiError } from '../../api/client';
 import { listRecords } from '../../api/data';
+import { resolveDeclaredAssigneeQuery } from '../runtime/actionViewAssigneeOptionsContract';
 
 type UseActionViewAssigneeRuntimeOptions = {
   hasAssigneeField: Ref<boolean>;
@@ -54,18 +55,8 @@ export function useActionViewAssigneeRuntime(options: UseActionViewAssigneeRunti
       return;
     }
     try {
-      const assigneeContract = options.assigneeOptionsContract.value || {};
-      const fields = Array.isArray(assigneeContract.fields) && assigneeContract.fields.length
-        ? assigneeContract.fields
-        : ['id', 'name'];
-      const result = await listRecords({
-        model: String(assigneeContract.model || 'res.users').trim() || 'res.users',
-        fields,
-        domain: Array.isArray(assigneeContract.domain) ? assigneeContract.domain : [],
-        order: String(assigneeContract.order || 'name asc').trim() || 'name asc',
-        limit: Number.isFinite(Number(assigneeContract.limit)) ? Math.trunc(Number(assigneeContract.limit)) : 80,
-        silentErrors: true,
-      });
+      const query = resolveDeclaredAssigneeQuery(options.assigneeOptionsContract.value);
+      const result = await listRecords({ ...query, silentErrors: true });
       const rows = Array.isArray(result.records) ? result.records : [];
       const successState = options.resolveAssigneeLoadSuccessState({
         selectedAssigneeId: options.selectedAssigneeId.value,

@@ -15,6 +15,7 @@
  *   - a declared but incomplete batch policy still fails closed.
  */
 import assert from 'node:assert/strict';
+import { isContractGapError } from '../src/app/contract/contractGap';
 import { projectStoredListPreference } from '../src/app/runtime/listPreferenceProjection';
 import { resolveEnabledListColumns, resolveListColumnChoices } from '../src/pages/listPage/listColumnVisibility';
 import { ref } from 'vue';
@@ -23,6 +24,7 @@ import {
   extractListFieldSemanticsFromContract,
   useActionViewContractShapeRuntime,
 } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
+import { resolveDeclaredAssigneeQuery } from '../src/app/runtime/actionViewAssigneeOptionsContract';
 import {
   resolveContractV2FieldDescriptorMap,
   resolveContractV2FormFieldMap,
@@ -575,5 +577,30 @@ check(
   true,
   'attachment behavior consumes the form projection without recovering a second carrier',
 );
+
+const declaredAssigneeQuery = resolveDeclaredAssigneeQuery({
+  model: 'res.users',
+  fields: ['id', 'display_name'],
+  domain: [['active', '=', true]],
+  order: 'display_name asc',
+  limit: 25,
+});
+check(declaredAssigneeQuery.model, 'res.users', 'assignee query consumes the declared model');
+check(declaredAssigneeQuery.fields.join(','), 'id,display_name', 'assignee query consumes declared fields verbatim');
+check(declaredAssigneeQuery.order, 'display_name asc', 'assignee query consumes declared ordering');
+check(declaredAssigneeQuery.limit, 25, 'assignee query consumes declared limit');
+for (const [invalidContract, expected] of [
+  [null, 'assignee_options.fields'],
+  [{ model: 'res.users', fields: [], domain: [], order: 'name asc', limit: 80 }, 'assignee_options.fields'],
+  [{ model: 'res.users', fields: ['id'], domain: 'bad', order: 'name asc', limit: 80 }, 'assignee_options.domain'],
+  [{ model: 'res.users', fields: ['id'], domain: [], order: '', limit: 80 }, 'assignee_options.order'],
+  [{ model: 'res.users', fields: ['id'], domain: [], order: 'name asc', limit: 0 }, 'assignee_options.limit'],
+] as const) {
+  assert.throws(
+    () => resolveDeclaredAssigneeQuery(invalidContract),
+    (error: unknown) => isContractGapError(error) && error.defect.missing.includes(expected),
+    `assignee options must stop when ${expected} is missing or invalid`,
+  );
+}
 
 console.log(`[frontend.contract.shape.projection] PASS cases=${cases}`);
