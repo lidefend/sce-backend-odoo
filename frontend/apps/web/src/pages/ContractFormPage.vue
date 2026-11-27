@@ -956,6 +956,7 @@ const {
   removedRows: removedOne2manyRows,
   ensureRows: ensureOne2manyRows,
   clearRows: clearOne2manyRows,
+  invalidatePendingRequests: invalidateOne2manyRequests,
   addRow: addOne2manyRow,
   setRowField: setOne2manyRowField,
   effectiveColumn: one2manyEffectiveColumn, visibleColumns: one2manyVisibleColumns,
@@ -975,9 +976,11 @@ const {
   parentValues: (fieldName) => bindNativeRowParentContext(
     resolveContractV2ModifierValues(v2ContractStore.value, formData), (effectiveFieldDescriptor(fieldName) as Record<string, unknown> | undefined)?.context,
   ),
-  loadDefaults: (fieldName) => loadOne2manyCreateDefaults(fieldName, one2manyParentDraftRequest()),
-  loadRowChange: (fieldName, row) => loadOne2manyRowChange(fieldName, row, one2manyParentDraftRequest()),
+  loadDefaults: (fieldName, requestIsCurrent) => loadOne2manyCreateDefaults(fieldName, one2manyParentDraftRequest(), requestIsCurrent),
+  loadRowChange: (fieldName, row, requestIsCurrent) => loadOne2manyRowChange(fieldName, row, one2manyParentDraftRequest(), requestIsCurrent),
   markDirty: (fieldName) => dirtyFieldSet.add(fieldName),
+  captureRequest: captureRelationRequest,
+  isActive: () => isComponentActive.value,
   createDraftIdentity: (fieldName) => ({ request: one2manyParentDraftRequest(),
     context: resolveContractFormReadContext(v2ContractStore.value), fieldContext: (effectiveFieldDescriptor(fieldName) as Record<string, unknown> | undefined)?.context }),
   createScope: () => v2ContractStore.value,
@@ -2184,7 +2187,10 @@ const unsavedFormGuard = useUnsavedFormGuard({ dirty: () => hasChanges.value, bu
 // Route/actor/context ownership changes invalidate candidates, selected labels,
 // child hydration and dialog work before any queued response can publish.
 watch(() => [formRouteIdentity(), session.user?.id, session.roleSurface?.role_code,
-  JSON.stringify(session.recordContext), isComponentActive.value], invalidateRelationRequests, { flush: 'sync' });
+  JSON.stringify(session.recordContext), isComponentActive.value], () => {
+    invalidateRelationRequests();
+    invalidateOne2manyRequests();
+  }, { flush: 'sync' });
 watch(() => [hasChanges.value, isComponentActive.value] as const, ([dirty, active]) => { if (active && isFormPageRouteOwner(route.name)) session.updateActiveActivityDirty(dirty); }, { immediate: true, flush: 'sync' });
 const returnToPreviousPage = createRecordFormReturnHandler({
   route, router, model: () => model.value,

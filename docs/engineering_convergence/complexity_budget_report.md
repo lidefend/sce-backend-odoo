@@ -47,7 +47,7 @@ Generated from repository source files. This report is informational during the 
 | 2334 | YAML workflow | `scripts/verify/registry.yaml` |
 | 2258 | Python source | `scripts/audit/build_scenario_product_organization.py` |
 | 2229 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
-| 2219 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 2225 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2217 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2167 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
@@ -317,7 +317,7 @@ Generated from repository source files. This report is informational during the 
 | 2334 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 2258 | split_plan_required | Python source | `scripts/audit/build_scenario_product_organization.py` |
 | 2229 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
-| 2219 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 2225 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2217 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2167 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |

@@ -87,7 +87,7 @@ class FrontendStatePresentationGuardTest(unittest.TestCase):
     def test_dirty_publication_check_does_not_claim_other_watcher_ownership(self):
         # This guard proves dirty publication only. Relation lifecycle tests own
         # the independent invalidation watcher; this is not permission to defer it.
-        relation = "invalidateRelationRequests, { flush: 'sync' });"
+        relation = "invalidateOne2manyRequests();\n  }, { flush: 'sync' });"
         self.assertEqual(self.sources["contract_form"].count(relation), 1)
         sources = self.altered("contract_form", relation, relation.replace("flush: 'sync'", "flush: 'post'"))
         self.assertFalse(any("published synchronously" in error for error in validate(sources)))

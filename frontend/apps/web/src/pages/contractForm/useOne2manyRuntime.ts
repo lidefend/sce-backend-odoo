@@ -2,6 +2,7 @@ import { replayOne2manyOnchange } from './one2manyOnchange';
 import { computed, reactive } from 'vue';
 import { createOne2manyRelationRequestAuthority } from '../../components/template/one2manyRelationQuery';
 import { resolveCurrencyDisplayLabel } from '../../app/presentation/businessValuePresentation';
+import { currentContextEpoch } from '../../app/contextEpoch';
 import type {
   One2ManyColumn,
   One2ManyInlineRow,
@@ -76,9 +77,11 @@ export function useOne2manyRuntime(params: {
   resolveRelationOptions: (fieldName: string) => RelationOption[];
   parentValues: (fieldName: string) => Record<string, unknown>;
   markFieldChanged: (fieldName: string) => void;
-  loadDefaults?: (fieldName: string) => Promise<Record<string, unknown> | One2manyChildInteraction>;
-  loadRowChange?: (fieldName: string, row: { id: number; values: Record<string, unknown>; changed: string[] }) => Promise<Record<string, unknown> | One2manyChildInteraction>;
+  loadDefaults?: (fieldName: string, requestIsCurrent: () => boolean) => Promise<Record<string, unknown> | One2manyChildInteraction>;
+  loadRowChange?: (fieldName: string, row: { id: number; values: Record<string, unknown>; changed: string[] }, requestIsCurrent: () => boolean) => Promise<Record<string, unknown> | One2manyChildInteraction>;
   markDirty?: (fieldName: string) => void;
+  captureRequest?: (key: string) => () => boolean;
+  isActive?: () => boolean;
   createScope?: () => unknown;
   createDraftIdentity?: (fieldName: string) => unknown;
   onCreateError?: (error: unknown) => void;
@@ -129,9 +132,20 @@ export function useOne2manyRuntime(params: {
     return ensureOne2manyRows(rowsByField, name);
   }
 
-  function clearRows() {
+  function invalidatePendingRequests() {
     pendingFields.clear();
-    for (const key of Object.keys(changing)) { requests.invalidate(key); delete changing[key]; }
+    Object.keys(loadingDefaults).forEach((name) => {
+      requests.invalidate(name);
+      delete loadingDefaults[name];
+    });
+    Object.keys(changing).forEach((key) => {
+      requests.invalidate(key);
+      delete changing[key];
+    });
+  }
+
+  function clearRows() {
+    invalidatePendingRequests();
     for (const key of Object.keys(changeErrors)) delete changeErrors[key];
     Object.keys(rowsByField).forEach((key) => {
       requests.invalidate(key);
@@ -147,10 +161,13 @@ export function useOne2manyRuntime(params: {
     const scope = params.createScope?.();
     const model = params.model();
     const recordId = params.recordId();
+    const contextEpoch = currentContextEpoch();
+    const pageOwnsRequest = params.captureRequest?.(`one2many-create:${name}`) ?? (() => true);
     const draftIdentity = () => JSON.stringify(params.createDraftIdentity
       ? params.createDraftIdentity(name) : { parent: params.parentValues(name), rows: rowsByField });
     let parentSnapshot: string | undefined;
-    const ownsRequest = () => requests.isCurrent(name, revision) && params.model() === model
+    const ownsRequest = () => requests.isCurrent(name, revision) && pageOwnsRequest()
+      && currentContextEpoch() === contextEpoch && params.isActive?.() !== false && params.model() === model
       && params.recordId() === recordId && params.createScope?.() === scope
       && (parentSnapshot === undefined || draftIdentity() === parentSnapshot);
     loadingDefaults[name] = true;
@@ -158,7 +175,7 @@ export function useOne2manyRuntime(params: {
       if (!initialized[name]) initRows(name, params.originalValues()[name]);
       parentSnapshot = draftIdentity();
       const interaction = normalizeChildInteraction(
-        params.loadDefaults ? await params.loadDefaults(name) : {},
+        params.loadDefaults ? await params.loadDefaults(name, ownsRequest) : {},
       );
       if (!ownsRequest()) return;
       const rowKey = makeOne2manyKey();
@@ -190,9 +207,13 @@ export function useOne2manyRuntime(params: {
     fields.add(column.name); pendingFields.set(key, fields);
     const revision = requests.begin(key);
     const model = params.model(), recordId = params.recordId(), scope = params.createScope?.();
+    const contextEpoch = currentContextEpoch();
+    const pageOwnsRequest = params.captureRequest?.(`one2many-change:${key}`) ?? (() => true);
     const ownsRow = () => requests.isCurrent(key, revision)
       && fieldRows(fieldName).some(item => item.key === rowKey && !item.removed);
-    const sameSurface = () => ownsRow() && params.model() === model
+    const ownsRequest = () => ownsRow() && pageOwnsRequest()
+      && currentContextEpoch() === contextEpoch && params.isActive?.() !== false;
+    const sameSurface = () => ownsRequest() && params.model() === model
       && params.recordId() === recordId && params.createScope?.() === scope;
     const draft = () => JSON.stringify(params.createDraftIdentity ? params.createDraftIdentity(fieldName)
       : { parent: params.parentValues(fieldName), rows: rowsByField });
@@ -210,16 +231,16 @@ export function useOne2manyRuntime(params: {
           id: row.isNew ? 0 : Number(row.id),
           values: JSON.parse(JSON.stringify(source)),
           changed: [...fields],
-        }),
+        }, ownsRequest),
       );
-      if (!ownsRow()) return;
+      if (!ownsRequest()) return;
       if (!sameSurface() || draft() !== before) throw new Error('明细联动上下文已变化，请重新修改该行');
       prepareOnchangeRows(fieldName, [[1, row.isNew ? row.key : row.id, interaction.values]])();
       applyChildInteraction(ensureRows(fieldName).find(item => item.key === rowKey) || row, interaction);
       pendingFields.delete(key);
       params.markFieldChanged(fieldName);
     } catch (error) {
-      if (ownsRow()) changeErrors[key] = error instanceof Error ? error.message : '明细联动未完成';
+      if (ownsRequest()) changeErrors[key] = error instanceof Error ? error.message : '明细联动未完成';
     } finally {
       if (requests.isCurrent(key, revision)) changing[key] = false;
     }
@@ -358,6 +379,7 @@ export function useOne2manyRuntime(params: {
     removedRows,
     ensureRows,
     clearRows,
+    invalidatePendingRequests,
     addRow,
     setRowField,
     effectiveColumn,

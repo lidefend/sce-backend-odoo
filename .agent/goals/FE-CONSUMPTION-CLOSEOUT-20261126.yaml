@@ -4,7 +4,7 @@ goal:
   title: 基于当前前端事实的契约消费、办理与稳定性收敛
   status: active
   implementation_authorized: true
-  execution_status: fc_00_completed_fc_01_core_consumers_validated_fc_02_local_static_closed_browser_pending_fc_03_active
+  execution_status: fc_00_completed_fc_01_core_consumers_validated_fc_02_local_static_closed_browser_pending_fc_03_fc04_active
   planning_analysis: readonly_source_assessment_completed
   plan: docs/ops/iterations/frontend_convergence_next_20261126.md
   reference_candidate: e62a4b5dcdf726b3c15292cddde185925b0d5725
@@ -87,7 +87,7 @@ goal:
     status: active
     depends_on:
     - FC-03
-    outcome: 已为 many2one 快速创建和 many2many 标签创建接入共享 request owner 与 context epoch，迟到查重、匹配或创建响应不会回填到新页面，并移除 same-keyword 重复查询；其余关系明细和异步请求生命周期继续验证
+    outcome: 已为 many2one 快速创建、many2many 标签创建和 one2many 新增/行联动接入共享 request owner、context epoch 与页面活跃态；迟到查重、匹配、创建、默认值或联动响应不会回填到失活或已切换页面，并保留已稳定草稿；其余关系明细和真实浏览器生命周期继续验证
   - id: FC-05
     status: planned
     depends_on:
@@ -129,20 +129,21 @@ goal:
   - current_head_integration_and_resulting_main_qualification_are_separate
   current_turn_validation:
     document_structure: passed
-    product_tests: total_filter_and_primary_action_budgets_passed
+    product_tests: one2many_request_ownership_deactivation_and_context_epoch_passed
     contract_basis: passed_42_bindings_zero_open_defects
+    local_targeted: passed_86_targets_2168_tests_11_static_checks
     browser: affected_component_runtime_observed_full_journey_not_run
     database: clean_runtime_identity_passed_no_module_or_business_data_mutation
-    ci_dispatch: draft_pr_1019_open_checks_not_awaited_per_owner_direction
+    ci_dispatch: one2many_slice_requires_new_exact_head_checks
   exclusions:
   - implementation_before_explicit_start
   - rebuilding_existing_frontend_foundations
   - full_industry_business_acceptance_without_separate_scope
   - changing_existing_ci_candidate_or_merging_it
   - publishing_or_committing_this_plan_in_this_turn
-  next_exact_step: Commit and publish the FC-04 many2many tag stale-response slice to
-    PR number 1019, then continue the next confirmed relation lifecycle consumer
-    check without inheriting prior-head remote results.
+  next_exact_step: Commit and publish the qualified FC-04 one2many stale-response
+    lifecycle slice to PR number 1019, then read the new exact-head required checks
+    before continuing the remaining relation lifecycle audit.
     Do not modify backend code in this topic; report any newly confirmed producer gap separately
     for owner review.
   run: .agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/run.json

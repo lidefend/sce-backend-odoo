@@ -960,6 +960,46 @@ dirty scope 上成立 86 个必需目标，全部本轮执行；65 个测试目�
 该切片仍需提交推送后的新精确 HEAD 远端验证。真实浏览器 many2many 标签操作、跨公司
 关系创建、FC-04 整体收口和用户验收仍未完成。
 
+### 2026-11-27 FC-04 one2many 迟到响应与失活页面隔离
+
+many2many 标签切片 `4b4a49f08347a07679d4219e3dfcdf3a7995cbd0` 已取得完整远端结果：
+`public_guard 140621560438`、`merge_policy_gate 140625369094`、
+`professional_quality_gate 140625026766`、`frontend_release_gate 140621470605`
+全部通过；`wait_for_fact_checks 140621614333` 和 backend impact suite
+（plan `140621647797`、suite `140621902773`、coverage `140624852332`）也通过。
+该精确候选生产构建源码 SHA 为 `4b4a49f08347a07679d4219e3dfcdf3a7995cbd0`，
+构建指纹为
+`48d42a5d27f60a958bd51cedff19b1a73ac113d826648e8873232d4b59c7e040`。
+
+继续核对 one2many 新增默认值和行联动时确认，内部已有按字段/行排序的请求序号，
+但没有组合共享页面 request owner、`contextEpoch` 与 KeepAlive 失活态。页面离开后，
+旧默认值仍可能向保留草稿追加行；上下文轮换后，旧行联动仍可能覆盖已编辑值或发布陈旧错误。
+
+本切片完成：
+
+- one2many 新增和行联动组合现有内部请求序号、`captureRelationRequest`、
+  `currentContextEpoch` 与当前页面活跃态，不新建第二套异步控制器；
+- 页面失活或路由、用户、角色、公司上下文变化时，同步失效共享关系工作与 one2many
+  在途请求，但保留已稳定的行和草稿；
+- 失活后的默认值迟到响应不得追加行或发布错误，重新进入后新请求可独立发布；
+- 上下文轮换后的行联动迟到响应不得覆盖新输入、清除新请求忙碌态或写入陈旧行错误；
+- 默认值 loader 在子默认读取与子初始化之间再次校验所有权，失效后不继续下一次请求；
+- 增加新增默认值失活、重新进入、行联动 context epoch 轮换的区分性用例；
+- 更新静态状态呈现守卫，要求生命周期 watcher 同时同步失效两类工作；
+- component-driver inventory 按生产源码输入重新生成。
+
+`make ci.local.iteration` 在 `4b4a49f08347a07679d4219e3dfcdf3a7995cbd0` 加当前 owned
+dirty scope 上成立 86 个必需目标，全部本轮执行；65 个测试目标执行 2168 项测试、
+11 项静态检查，`unmapped=0`、`not_run=0`、`blocked=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T164157Z-1540673-327931946/receipt.json`
+
+回执 SHA256：
+`1ef333d64f3e59ca81e44348c35679c69bbe84f190c541245b3d60ccdb81ae66`。
+
+该切片仍需提交推送后的新精确 HEAD 远端验证。真实浏览器 one2many 新增与编辑、跨公司
+关系创建、143 入口矩阵、FC-04 整体收口和用户验收仍未完成。
+
 ### 2026-11-27 FC-02 页面身份声明化与选测补口
 
 本切片属于共享前端呈现消费层，不修改后端契约、权限或数据。页面身份不再把
