@@ -481,8 +481,13 @@
         "响应已返回但后续回调迟到时仍校验归属",
         "不把已有全局取消误判为不存在"
       ],
-      "behavior_status": "not_verified",
-      "evidence": [],
+      "behavior_status": "consumer_lifecycle_verified_browser_not_run",
+      "evidence": [
+        "make verify.frontend.collection_action_capability.unit",
+        "native-import-lifecycle-test PASS lifecycle owner, wizard wiring and old-flow removal",
+        "NativeImportWizard invalidates on context epoch change and unmount, aborts in-flight requests, and settles its open promise",
+        "ActionViewCollectionActionRuntime only reloads after a non-cancelled successful wizard result"
+      ],
       "blocking_for_topic_completion": true
     },
     {
@@ -504,8 +509,12 @@
         "确认静态/动态/外部消费者后才移除旧函数",
         "用户导入回归走 NativeImportWizard 而非旧辅助函数"
       ],
-      "behavior_status": "not_verified",
-      "evidence": [],
+      "behavior_status": "obsolete_flow_removed_static_verified",
+      "evidence": [
+        "make verify.frontend.collection_action_capability.unit",
+        "native-import-lifecycle-test rejects pickImportFile, executeActionViewCollectionImport and CollectionImportSummary",
+        "the production import entry is NativeImportWizard through the collection capability runtime"
+      ],
       "blocking_for_topic_completion": true
     },
     {

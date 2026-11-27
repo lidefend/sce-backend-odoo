@@ -39,6 +39,7 @@
     "frontend/apps/web/src/app/runtime/actionViewAssigneeOptionsContract.ts",
     "frontend/apps/web/src/app/runtime/actionViewKanbanTitleField.ts",
     "frontend/apps/web/src/app/runtime/actionViewSurfacePolicyBudget.ts",
+    "frontend/apps/web/src/app/runtime/actionViewRoutePresetRuntime.ts",
     "frontend/apps/web/src/App.vue",
     "frontend/apps/web/src/app/contracts/v2/store.ts",
     "frontend/apps/web/src/app/contracts/v2/types.ts",
@@ -594,7 +595,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Commit and publish the activity company-scope slice to PR 1019, then read back all four required checks on the new exact head; real browser readback remains blocked until managed port 5175 is released by the other worktree.",
+  "next_exact_step": "Commit and publish the filter-label presentation slice to PR 1019, then read back all four required checks on the new exact head; real browser readback remains blocked until managed port 5175 is released by the other worktree.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2398,6 +2399,36 @@
       ],
       "scope_limit": "Local source, unit and component checks only. The current candidate has not been pushed; real browser address-bar readback remains blocked by another worktree owning managed acceptance port 5175."
     },
+    "fc03_preset_filter_label_presentation": {
+      "status": "passed_local_targeted",
+      "candidate_head": "98db6ed386f0bbe096febaf954d188de553eb9ce",
+      "stage_identity": "98db6ed386f0bbe096febaf954d188de553eb9ce plus the owned preset-label dirty scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T120409Z-3497587-3054121/receipt.json",
+      "receipt_sha256": "cca030ab180d91c42794c4055802b005fe2859be99c4af2ce977f1e0ea23a740",
+      "required_targets": 85,
+      "executed_targets": 72,
+      "reused_targets": 13,
+      "test_targets": 53,
+      "executed_test_count": 1991,
+      "static_checks": 10,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "route-restored contract filters display the declared filter label",
+        "route-restored saved filters display the declared saved-filter label",
+        "unresolved labels show a generic applied state and never expose technical route keys",
+        "ActionView resolves filter identity through the current contract chips",
+        "the incremental selector maps the shared preset runtime to route-query tests"
+      ],
+      "failure_recovery": [
+        "strict typecheck rejected spreading an untyped route input into the required preset-label input",
+        "ActionView now normalizes the required scalar inputs and supplies the declared labels explicitly",
+        "the first full iteration detected the expected derived component-driver inventory digest change and resumed after regeneration"
+      ],
+      "scope_limit": "Local route and display tests only. Production query-bar behavior, browser address-bar readback and user acceptance remain not_run."
+    },
     "fc02_activity_company_scope": {
       "status": "passed_local_targeted",
       "candidate_head": "125c24234a2ff2acf4e611bf77daf2fc6ff0133c",
@@ -2461,12 +2492,12 @@
       "scope_limit": "P4 smoke and selector alignment only. The repaired candidate has not yet been pushed; exact-head remote CI, browser address-bar readback, mainline qualification and user acceptance remain not_run."
     },
     "remote_publication": {
-      "status": "remote_ci_passed_for_125c_company_slice_pending_push",
+      "status": "remote_ci_passed_for_98db_filter_slice_pending_push",
       "pull_request": 1019,
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "0d17e91e7190e1a293e4e6ac969c39738a87218f",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "125c24234a2ff2acf4e611bf77daf2fc6ff0133c",
+      "current_head": "98db6ed386f0bbe096febaf954d188de553eb9ce",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",
@@ -2477,9 +2508,11 @@
         "head d3ca52764 passed public_guard, merge_policy_gate, professional_quality_gate and frontend_release_gate",
         "the scene-route slice requires its own exact-head remote checks and does not inherit d3ca52764 results",
         "head 125c24234 passed public_guard, merge_policy_gate, professional_quality_gate and frontend_release_gate",
-        "the activity company-scope slice requires its own exact-head remote checks and does not inherit 125c24234 results"
+        "the activity company-scope slice requires its own exact-head remote checks and does not inherit 125c24234 results",
+        "head 98db6ed38 passed all four required checks and the selected backend impact suite",
+        "the filter-label presentation slice requires its own exact-head remote checks and does not inherit 98db6ed38 results"
       ],
-      "coverage_limit": "The scene-route candidate is green on 125c24234. The activity company-scope slice remains local until committed and pushed, so its integration readiness is not claimed."
+      "coverage_limit": "The activity company-scope candidate is green on 98db6ed38. The filter-label presentation slice remains local until committed and pushed, so its integration readiness is not claimed."
     }
   }
 }

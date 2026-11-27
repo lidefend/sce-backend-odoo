@@ -8,6 +8,7 @@ import {
   buildBusinessCategoryCreateNavQuery,
   pickContractNavQuery,
 } from '../src/app/navigationContext';
+import { resolveRoutePresetAppliedLabel } from '../src/app/runtime/actionViewRoutePresetRuntime';
 
 const malformedActionQuery = normalizeEmbeddedSceneQuery({
   menu_id: '379&action_id=506&view_mode=tree',
@@ -106,5 +107,49 @@ assert.deepEqual(buildBusinessCategoryCreateNavQuery({
   default_business_category_id: '7',
   default_project_id: '9',
 });
+
+const pageText = (_key: string, fallback: string) => fallback;
+assert.equal(
+  resolveRoutePresetAppliedLabel({
+    preset: '',
+    presetFilter: 'filter_draft',
+    presetFilterLabel: '草稿',
+    savedFilter: '',
+    text: pageText,
+  }),
+  '配置筛选: 草稿',
+  'contract filter identity is presented through its declared label',
+);
+assert.equal(
+  resolveRoutePresetAppliedLabel({
+    preset: '',
+    presetFilter: '',
+    savedFilter: 'saved-a',
+    savedFilterLabel: '本月项目',
+    text: pageText,
+  }),
+  '保存筛选: 本月项目',
+  'saved-filter identity is presented through its declared label',
+);
+assert.equal(
+  resolveRoutePresetAppliedLabel({
+    preset: '',
+    presetFilter: 'technical_filter_key',
+    savedFilter: '',
+    text: pageText,
+  }),
+  '已应用配置筛选',
+  'an unresolved contract label never exposes the technical key',
+);
+assert.equal(
+  resolveRoutePresetAppliedLabel({
+    preset: '',
+    presetFilter: '',
+    savedFilter: 'technical_saved_key',
+    text: pageText,
+  }),
+  '已应用保存筛选',
+  'an unresolved saved-filter label never exposes the technical key',
+);
 
 console.log('[route-query-normalization] PASS');

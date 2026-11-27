@@ -12,14 +12,22 @@ export function resolveRoutePresetSearchTerm(options: {
 export function resolveRoutePresetAppliedLabel(options: {
   preset: string;
   presetFilter: string;
+  presetFilterLabel?: unknown;
   savedFilter: string;
+  savedFilterLabel?: unknown;
   text: (key: string, fallback: string) => string;
 }): string {
   if (!options.preset && options.presetFilter) {
-    return `${options.text('preset_label_contract_filter_prefix', '配置筛选: ')}${options.presetFilter}`;
+    const label = String(options.presetFilterLabel || '').trim();
+    return label
+      ? `${options.text('preset_label_contract_filter_prefix', '配置筛选: ')}${label}`
+      : options.text('preset_label_contract_filter_applied', '已应用配置筛选');
   }
   if (options.savedFilter) {
-    return `${options.text('preset_label_saved_filter_prefix', '保存筛选: ')}${options.savedFilter}`;
+    const label = String(options.savedFilterLabel || '').trim();
+    return label
+      ? `${options.text('preset_label_saved_filter_prefix', '保存筛选: ')}${label}`
+      : options.text('preset_label_saved_filter_applied', '已应用保存筛选');
   }
   return '';
 }

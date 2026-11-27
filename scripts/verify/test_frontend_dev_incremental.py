@@ -1243,6 +1243,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_route_query_inputs_select_canonical_url_checks(self) -> None:
         for path in (
             "frontend/apps/web/src/app/routeQuery.ts",
+            "frontend/apps/web/src/app/runtime/actionViewRoutePresetRuntime.ts",
             "frontend/apps/web/src/views/SceneView.vue",
             "frontend/apps/web/scripts/record_entry_contract_test.ts",
             "frontend/apps/web/scripts/route_query_normalization_test.ts",

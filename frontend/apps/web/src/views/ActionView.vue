@@ -2217,7 +2217,23 @@ const routePresetRuntime = useActionViewRoutePresetRuntime({
   load: requestLoadPage,
   resolveActionViewRouteSnapshot,
   resolveRoutePresetSearchTerm,
-  resolveRoutePresetAppliedLabel,
+  resolveRoutePresetAppliedLabel: (input) => {
+    const preset = String(input.preset || '').trim();
+    const presetFilter = String(input.presetFilter || '').trim();
+    const savedFilter = String(input.savedFilter || '').trim();
+    return resolveRoutePresetAppliedLabel({
+      preset,
+      presetFilter,
+      presetFilterLabel: contractFilterChips.value.find(
+        (chip) => chip.key === presetFilter,
+      )?.label,
+      savedFilter,
+      savedFilterLabel: contractSavedFilterChips.value.find(
+        (chip) => chip.key === savedFilter,
+      )?.label,
+      text: pageText,
+    });
+  },
   resolveRoutePresetActiveFilterValue,
   resolveRoutePresetSavedFilterValue,
   resolveRoutePresetGroupWindowState,

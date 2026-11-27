@@ -645,6 +645,36 @@ component-driver inventory 随后按 owning target 重建，剩余目标全部�
 本切片需提交推送后取得自己的精确 head 远端结果；上一候选 `125c24234` 的四项远端检查
 不能继承到新 head。
 
+### 2026-11-27 FC-03 URL 恢复筛选使用声明标签
+
+从 URL 恢复 `preset_filter` 或 `saved_filter` 时，提示条原先把路由里的技术 key
+直接拼到“配置筛选/保存筛选”前缀后，用户会看到内部标识而不是契约声明的业务标签。
+
+本切片完成：
+
+- ActionView 通过当前 contract filter/saved-filter chips 反查声明 label；
+- 已解析到标签时显示业务标签，未解析到标签时只显示“已应用配置筛选/保存筛选”，
+  不再泄露技术 key；
+- route-query 单测增加配置筛选、保存筛选和两个无标签负例；
+- 增量选测把共享 preset runtime 映射到 `verify.frontend.route_query.unit`。
+
+`make ci.local.iteration` 在 `98db6ed38` 加当前 owned dirty scope 上成立 85 个必需目标，
+其中 72 个本轮执行、13 个复用；53 个测试目标执行 1991 项测试、10 项静态检查，
+`unmapped=0`、`not_run=0`、`blocked=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T120409Z-3497587-3054121/receipt.json`
+
+回执 SHA256：
+`cca030ab180d91c42794c4055802b005fe2859be99c4af2ce977f1e0ea23a740`。
+
+首次完整迭代仍按预期发现组件接管派生摘要变化；owning target 刷新后从失败回执继续，
+剩余目标全部通过。本切片尚未推送，远端 CI 与真实查询条页面观察仍为 `not_run`。
+
+同轮复核了原 FE-S06/FE-S07 导入项：`native-import-lifecycle-test` 已覆盖关闭、
+上下文 epoch 变化、卸载、迟到结果、请求中止和 busy 恢复，并明确拒绝旧
+`pickImportFile` / `executeActionViewCollectionImport` 流程；覆盖矩阵已更新为本地
+生命周期已验证、真实导入用户旅程仍待运行。
+
 ### 2026-11-27 FC-02 页面身份声明化与选测补口
 
 本切片属于共享前端呈现消费层，不修改后端契约、权限或数据。页面身份不再把

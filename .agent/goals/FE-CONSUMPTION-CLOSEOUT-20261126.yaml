@@ -4,7 +4,7 @@ goal:
   title: 基于当前前端事实的契约消费、办理与稳定性收敛
   status: active
   implementation_authorized: true
-  execution_status: fc_00_completed_fc_01_core_consumers_validated_fc_02_scene_route_closure_active
+  execution_status: fc_00_completed_fc_01_core_consumers_validated_fc_02_local_static_closed_browser_pending_fc_03_active
   planning_analysis: readonly_source_assessment_completed
   plan: docs/ops/iterations/frontend_convergence_next_20261126.md
   reference_candidate: e62a4b5dcdf726b3c15292cddde185925b0d5725
@@ -78,11 +78,11 @@ goal:
     - FC-01
     outcome: scene 身份已收敛为 /s/:sceneKey 的路径唯一来源，导航、活动页和标题不再消费 URL 展示标签；产品配置投影、只读入口及公司项目运行态仍待证明
   - id: FC-03
-    status: planned
+    status: active
     depends_on:
     - FC-01
     - FC-02
-    outcome: 收敛查询列表表单的值解释、保存与失败保留输入
+    outcome: 已收敛 URL 恢复筛选的声明标签呈现；查询列表表单的值解释、保存和失败保留输入继续按现有生产契约验证
   - id: FC-04
     status: planned
     depends_on:
