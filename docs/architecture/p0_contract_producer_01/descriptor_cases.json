@@ -18,7 +18,10 @@
         "widgetType": "number",
         "componentKey": "sc.value.money",
         "semanticType": "money",
-        "digits": [16, 2],
+        "digits": [
+          16,
+          2
+        ],
         "currencyField": "currency_id"
       }
     },
@@ -47,7 +50,10 @@
         "widgetType": "number",
         "componentKey": "sc.value.money",
         "semanticType": "money",
-        "digits": [16, 2]
+        "digits": [
+          16,
+          2
+        ]
       }
     },
     {
@@ -60,7 +66,10 @@
         "fieldType": "float",
         "widgetType": "monetary",
         "semanticType": "money",
-        "digits": [16, 2],
+        "digits": [
+          16,
+          2
+        ],
         "currencyField": "currency_id",
         "help": "合同币种金额",
         "uiUsage": "fact"
@@ -77,7 +86,10 @@
         "widgetType": "percentage",
         "componentKey": "sc.value.percentage",
         "semanticType": "percentage",
-        "digits": [16, 2],
+        "digits": [
+          16,
+          2
+        ],
         "unit": {
           "kind": "percent",
           "code": "percent",
@@ -96,7 +108,10 @@
         "widgetType": "percentage",
         "componentKey": "sc.value.percentage",
         "semanticType": "percentage",
-        "digits": [16, 2]
+        "digits": [
+          16,
+          2
+        ]
       }
     },
     {
@@ -110,7 +125,10 @@
         "widgetType": "float_time",
         "componentKey": "sc.value.duration",
         "semanticType": "duration",
-        "digits": [16, 2],
+        "digits": [
+          16,
+          2
+        ],
         "unit": {
           "kind": "duration",
           "code": "hour",
@@ -129,7 +147,10 @@
         "widgetType": "float_time",
         "componentKey": "sc.value.duration",
         "semanticType": "duration",
-        "digits": [16, 2],
+        "digits": [
+          16,
+          2
+        ],
         "unit": {
           "kind": "percent",
           "code": "percent",
@@ -227,7 +248,7 @@
       "id": "DESC-MONEY-INVALID-FIELDTYPE",
       "expect": "invalid",
       "failed_by": [
-    "semantic_registry"
+        "semantic_registry"
       ],
       "descriptor": {
         "schemaVersion": "1.0.0",
@@ -237,7 +258,10 @@
         "widgetType": "number",
         "componentKey": "sc.value.money",
         "semanticType": "money",
-        "digits": [16, 2],
+        "digits": [
+          16,
+          2
+        ],
         "currencyField": "currency_id"
       }
     },
@@ -292,7 +316,10 @@
         "widgetType": "number",
         "componentKey": "sc.value.money",
         "semanticType": "money",
-        "digits": [2, 3],
+        "digits": [
+          2,
+          3
+        ],
         "currencyField": "currency_id"
       }
     },
@@ -310,7 +337,10 @@
         "widgetType": "number",
         "componentKey": "sc.value.percentage",
         "semanticType": "money",
-        "digits": [16, 2],
+        "digits": [
+          16,
+          2
+        ],
         "currencyField": "currency_id"
       }
     },
@@ -325,7 +355,7 @@
         "widgetType": "display",
         "componentKey": "sc.display.text",
         "semanticType": "reference",
-        "relation": "res.partner"
+        "referenceModelField": "partner_model"
       }
     },
     {
@@ -345,7 +375,9 @@
         "translate": true,
         "trim": true,
         "size": 64,
-        "related": ["parent_id.code"]
+        "related": [
+          "parent_id.code"
+        ]
       }
     },
     {

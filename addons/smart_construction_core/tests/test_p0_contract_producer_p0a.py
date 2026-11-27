@@ -642,3 +642,65 @@ class TestP0ContractDescriptorConformanceEvidence(TransactionCase):
             ).encode("utf-8")
         ).decode("ascii")
         print(f"P0_CONTRACT_DESCRIPTOR_EVIDENCE_B64={encoded}", flush=True)
+
+
+@tagged('post_install', '-at_install', 'p0_polymorphic_reference_evidence')
+class TestPolymorphicReferenceContractEvidence(TransactionCase):
+    def test_real_notification_contract_preserves_polymorphic_identity(self):
+        from odoo.tools import date_utils
+        from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
+        from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import _field_widget, _strict_field_descriptor
+        from odoo.addons.smart_core.utils.native_field_descriptor import project_native_field_descriptor
+
+        project = self.env['project.project'].create({
+            'name': 'Isolated polymorphic contract evidence', 'company_id': self.env.company.id,
+        })
+        message = self.env['mail.message'].create({
+            'model': 'project.project', 'res_id': project.id,
+            'body': 'Isolated contract evidence', 'message_type': 'notification',
+        })
+        notification = self.env['mail.notification'].create({
+            'mail_message_id': message.id, 'res_partner_id': self.env.user.partner_id.id,
+            'notification_type': 'inbox',
+        })
+        action = self.env.ref('smart_construction_core.action_sc_product_message_notification_v1')
+        menu = self.env.ref('smart_construction_core.menu_sc_product_message_notification_v1')
+        result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+            'op': 'action_open', 'model': 'mail.notification', 'view_type': 'form',
+            'record_id': notification.id, 'render_profile': 'readonly',
+            'contract_surface': 'user', 'source_mode': 'governance_pipeline',
+            'client_type': 'web_pc', 'accepted_contract_versions': ['2.7.x'],
+            'client_contract_capabilities': ['container_tree.v2', 'data_source.v2', 'action_rule.v2',
+                                             'relation_entry.v2', 'status_contract.v2', 'page_block_data.v1'],
+            'action_id': action.id, 'menu_id': menu.id, 'delivery_profile': 'full',
+        })
+        result = result.to_legacy_dict() if hasattr(result, 'to_legacy_dict') else result
+        self.assertTrue(result.get('ok', True), result.get('error'))
+        contract = result['data']
+        def widgets(rows):
+            for row in rows:
+                yield from row.get('widgetList', [])
+                yield from widgets(row.get('children', []))
+        reference_widgets = [row for row in widgets(contract['layoutContract']['containerTree'])
+                             if row.get('fieldCode') == 'sc_source_res_id']
+        self.assertTrue(reference_widgets)
+        for row in reference_widgets:
+            descriptor = row['fieldDescriptor']
+            self.assertEqual(descriptor['fieldType'], 'many2one_reference')
+            self.assertEqual(descriptor['referenceModelField'], 'sc_source_model')
+            self.assertNotIn('relation', descriptor)
+        main = contract['dataContract']['mainData']
+        self.assertEqual(main['sc_source_model'], 'project.project')
+        self.assertEqual(main['sc_source_res_id'], project.id)
+        # A native Reference value includes its model. Produce its descriptor
+        # from real fields_get metadata, not a handcrafted wire descriptor.
+        metadata = self.env['ir.ui.menu'].fields_get(['action'])['action']
+        native = project_native_field_descriptor('action', metadata)
+        reference = _strict_field_descriptor(_field_widget(native, layout_type='form'))
+        self.assertEqual(reference['fieldType'], 'reference')
+        self.assertNotIn('relation', reference)
+        reference_value = menu.read(['action'])[0]['action']
+        self.assertEqual(reference_value, 'ir.actions.act_window,%s' % action.id)
+        payload = {'notification': contract, 'native_reference': reference, 'native_reference_value': reference_value}
+        encoded = base64.b64encode(json.dumps(payload, ensure_ascii=False, default=date_utils.json_default).encode()).decode()
+        print('P0_POLYMORPHIC_REFERENCE_EVIDENCE_B64=' + encoded, flush=True)

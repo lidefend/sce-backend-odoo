@@ -396,6 +396,11 @@
     "attachmentRole": {
       "type": "string",
       "minLength": 1
+    },
+    "referenceModelField": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+      "description": "Same-record field declaring the runtime target model for many2one_reference."
     }
   },
   "allOf": [
@@ -679,9 +684,7 @@
             "enum": [
               "many2one",
               "one2many",
-              "many2many",
-              "many2one_reference",
-              "reference"
+              "many2many"
             ]
           }
         },
@@ -737,6 +740,23 @@
       "then": {
         "required": [
           "selection"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "fieldType": {
+            "const": "many2one_reference"
+          }
+        },
+        "required": [
+          "fieldType"
+        ]
+      },
+      "then": {
+        "required": [
+          "referenceModelField"
         ]
       }
     }

@@ -355,6 +355,37 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                 self.assertEqual(config["model_field"], "sc_source_model")
                 self.assertEqual(config["referenceModelField"], "sc_source_model")
 
+    def test_strict_polymorphic_descriptor_preserves_native_model_pointer(self):
+        widget = self.assembler._field_widget({
+            "name": "source_id", "string": "Source", "type": "many2one_reference",
+            "model_field": "source_model",
+        }, layout_type="form")
+        strict = self.assembler._strict_field_descriptor(widget)
+        self.assertEqual(strict["referenceModelField"], "source_model")
+        self.assertEqual(strict["fieldType"], "many2one_reference")
+        self.assertNotIn("relation", strict)
+        for invalid in (None, "", " ", 42, "source.model", "source_id"):
+            with self.subTest(invalid=invalid):
+                widget["componentConfig"]["referenceModelField"] = invalid
+                with self.assertRaisesRegex(ValueError, "REFERENCE_MODEL_FIELD_INVALID"):
+                    self.assembler._strict_field_descriptor(widget)
+        # Legacy metadata is not a second authority for the final descriptor.
+        widget["componentConfig"].pop("referenceModelField")
+        with self.assertRaisesRegex(ValueError, "REFERENCE_MODEL_FIELD_INVALID"):
+            self.assembler._strict_field_descriptor(widget)
+
+    def test_strict_reference_and_fixed_relations_keep_distinct_semantics(self):
+        for field_type, relation in (("reference", None), ("many2one", "res.partner"),
+                                     ("one2many", "res.partner"), ("many2many", "res.partner")):
+            widget = self.assembler._field_widget({
+                "name": "target", "string": "Target", "type": field_type,
+                **({"relation": relation} if relation else {}),
+            }, layout_type="form")
+            strict = self.assembler._strict_field_descriptor(widget)
+            self.assertEqual(strict["fieldType"], field_type)
+            self.assertEqual(strict.get("relation"), relation)
+            self.assertNotIn("referenceModelField", strict)
+
     def test_reference_semantic_never_binds_an_editor_component(self):
         for field_type in ("many2one_reference", "reference"):
             for widget_type in ("input", field_type, "select", "number"):

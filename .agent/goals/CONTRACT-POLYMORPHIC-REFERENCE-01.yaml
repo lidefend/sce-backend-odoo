@@ -1,0 +1,9 @@
+schema_version: 1
+goal:
+  id: CONTRACT-POLYMORPHIC-REFERENCE-01
+  status: active
+  title: Strict polymorphic reference contract closure
+  objective: Preserve native polymorphic field semantics from producer through schema and decoder with real contract and cache evidence.
+  formal_product_layer: P0
+  layer_target: unified contract field semantics
+  module: [smart_core, frontend]

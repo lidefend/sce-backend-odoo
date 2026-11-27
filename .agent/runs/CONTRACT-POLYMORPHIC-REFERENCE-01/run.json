@@ -1,0 +1,101 @@
+{
+  "schema_version": 2,
+  "baseline_sha": "a92114f0efb6733253d827e3a9985af21ab96be6",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CONTRACT-POLYMORPHIC-REFERENCE-01.yaml",
+    ".agent/runs/CONTRACT-POLYMORPHIC-REFERENCE-01/run.json",
+    "docs/ops/iterations/contract_polymorphic_reference_01.md",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+    "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
+    "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+    "frontend/apps/web/src/app/contracts/v2/types.ts",
+    "docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json",
+    "frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts",
+    "scripts/verify/p0_contract_producer_descriptor_evidence.py",
+    "make/frontend.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "addons/smart_core/tests/test_load_contract_response_cache.py",
+    "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts"
+  ],
+  "environment": {
+    "kind": "disposable_local_test_and_offline",
+    "authority": "Existing Make entrypoints, standing authorization for isolated synthetic tests; no migration, persistent DB or business data writes."
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "P0 producer, strict descriptor schema, decoder positive/negative regressions, cache invalidation and one real ORM producer output decoded by TypeScript. No full browser or local ORM matrix."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Independent PR exact HEAD checks; no merge before review and required checks. No persistent deployment."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "Release qualification is evaluated after mainline integration by schedule or explicit owner full dispatch on exact main head/tree; it grants candidate-build eligibility only, distinguishes scheduled_mainline from operator_full_audit, and does not substitute for exact-head PR CI or deployment."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Frontend validation carrying shared contract targets must consume the passed backend channel receipt for the same run and source identity."
+    }
+  },
+  "checks": {},
+  "blockers": [],
+  "next_exact_step": "Backend producer and schema verified; commit P0-A then implement strict frontend decoder and decode the same real contract.",
+  "id": "CONTRACT-POLYMORPHIC-REFERENCE-01",
+  "branch": "fix/contract-polymorphic-reference-01-20261127",
+  "status": "active",
+  "goal": ".agent/goals/CONTRACT-POLYMORPHIC-REFERENCE-01.yaml",
+  "record": "docs/ops/iterations/contract_polymorphic_reference_01.md",
+  "architecture": {
+    "formal_product_layer": "P0",
+    "layer_target": "Unified field semantics production, schema and decoding",
+    "module": [
+      "smart_core",
+      "frontend generic ContractV2 decoder"
+    ],
+    "standard_vs_user_specific": "platform mechanism",
+    "why_here": "Polymorphic model identity must survive canonical contract production and strict consumption.",
+    "why_not_elsewhere": "No P1 business changes, ORM changes, renderer name/model guesses or validation relaxation.",
+    "blast_radius": "FieldDescriptor and assembled cache identity; fixed relation validation preserved.",
+    "exclusions": [
+      "database_migration",
+      "business_data",
+      "mail.notification_business_behavior",
+      "native_ORM_field_changes",
+      "general_relation_refactor",
+      "unrelated_browser_matrix",
+      "local_full_module_ORM",
+      "frontend_convergence_topic"
+    ]
+  },
+  "preserved_work": {
+    "stash": "bd716355e57a774ee2eab173256b82d4505b9340",
+    "description": "Completed main CI bookkeeping and frontend planning only, not part of this PR."
+  },
+  "backend_evidence": {
+    "producer_unit": {
+      "passed": 25,
+      "log": ".runtime/polymorphic-producer-unit.log"
+    },
+    "cache_unit": {
+      "passed": 57,
+      "log": ".runtime/polymorphic-cache-unit.log"
+    },
+    "real_contract_receipt": ".runtime/test-baseline/1795741565363974863/receipt.json",
+    "real_contract": ".runtime/polymorphic-reference/real-contract.json",
+    "schema_validated_descriptors": 10
+  }
+}

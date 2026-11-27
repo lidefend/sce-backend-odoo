@@ -1228,6 +1228,15 @@ def _strict_field_descriptor(
             descriptor[key] = config[key]
         elif isinstance(legacy.get(key), bool):
             descriptor[key] = legacy[key]
+    if field_type == "many2one_reference":
+        # The native producer already resolved model_field. The final wire
+        # boundary must preserve that declaration, never reconstruct it.
+        reference_model_field = config.get("referenceModelField")
+        if (not isinstance(reference_model_field, str)
+                or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", reference_model_field)
+                or reference_model_field == descriptor["fieldCode"]):
+            raise ValueError("FIELD_DESCRIPTOR_REFERENCE_MODEL_FIELD_INVALID")
+        descriptor["referenceModelField"] = reference_model_field
     relation = _text(config.get("relation") or legacy.get("relation"))
     relation_field = _text(config.get("relationField") or legacy.get("relation_field"))
     selection = (
