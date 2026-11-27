@@ -738,6 +738,12 @@ label 是否应删除；当前只证明纯构造与组件契约。
 回执 SHA256：
 `8ef19601f63bb1c2ed4fe64ea29c61d65f5252544795b8caa851ed34eff7ddcd`。
 
+产品切片提交为 `b8e8a0c6972462ab25f96380a7112cfdb31101e8`。精确 HEAD 构建指纹为
+`fcd8a00c11f5300c573ddb18f56d50b6b5e74553758615914eca623ea4dc7174`，构建
+`build-info.sha` 与 HEAD 一致；日志
+`.runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/url-presentation-query-build.log`，
+日志 SHA256 `082188015803dd1e9cb6895b8896a955cf489cd2df01a47b0c1213188bd6f9d8`。
+
 深度浏览器目标 `verify.frontend.page_identity.deep.browser` 本次未运行：受管 Compose
 acceptance profile 未显式选择，预检在启动容器和写入数据前拒绝。真实地址栏回读、远端 CI
 和用户验收仍未完成。

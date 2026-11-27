@@ -2318,7 +2318,8 @@
     },
     "fc02_url_presentation_query_guard": {
       "status": "passed_local_targeted",
-      "stage_identity": "bc30a1ae8a873746e400a19f34c8ec104484d008 plus the owned URL query cleanup scope",
+      "candidate_head": "b8e8a0c6972462ab25f96380a7112cfdb31101e8",
+      "stage_identity": "b8e8a0c6972462ab25f96380a7112cfdb31101e8",
       "command": "make ci.local.iteration",
       "receipt": ".runtime/frontend-dev-validation/executions/20261127T102631Z-2646869-746704896/receipt.json",
       "receipt_sha256": "8ef19601f63bb1c2ed4fe64ea29c61d65f5252544795b8caa851ed34eff7ddcd",
@@ -2338,6 +2339,14 @@
         "the page-identity guard rejects reintroduced scene_key, scene_label, entry_title or return_label query sources",
         "route-query, cross-model navigation, canonical form presentation and strict typecheck pass"
       ],
+      "frontend_build": {
+        "status": "passed",
+        "source_revision": "b8e8a0c6972462ab25f96380a7112cfdb31101e8",
+        "log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/url-presentation-query-build.log",
+        "log_sha256": "082188015803dd1e9cb6895b8896a955cf489cd2df01a47b0c1213188bd6f9d8",
+        "build_info_sha256": "3aad4d4770dd2272299fa1ee409a7a9fdd668cfec2420d334f779ee4bfff0db5",
+        "frontend_build_fingerprint": "fcd8a00c11f5300c573ddb18f56d50b6b5e74553758615914eca623ea4dc7174"
+      },
       "scope_limit": "Local route and component contracts only; browser address-bar readback, remote CI and user acceptance remain not_run.",
       "browser_readback": {
         "status": "not_run",
