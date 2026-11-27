@@ -1,4 +1,5 @@
 import { computed, type Ref } from 'vue';
+import { resolveDeclaredKanbanTitleField } from '../runtime/actionViewKanbanTitleField';
 
 type Dict = Record<string, unknown>;
 
@@ -18,14 +19,10 @@ export function useActionViewContentDisplayRuntime(options: UseActionViewContent
     return options.mapProjectionMetricItems(options.strictProjectionContract.value.summary_items, 'summary');
   });
 
-  const kanbanTitleField = computed(() => {
-    if (options.kanbanTitleFieldHint.value && options.kanbanFields.value.includes(options.kanbanTitleFieldHint.value)) {
-      return options.kanbanTitleFieldHint.value;
-    }
-    const candidates = ['display_name', 'name'];
-    const found = candidates.find((field) => options.kanbanFields.value.includes(field));
-    return found || options.kanbanFields.value[0] || 'id';
-  });
+  const kanbanTitleField = computed(() => resolveDeclaredKanbanTitleField(
+    options.kanbanTitleFieldHint.value,
+    options.kanbanFields.value,
+  ));
 
   return {
     ledgerOverviewItems,

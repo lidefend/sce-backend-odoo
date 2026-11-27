@@ -25,6 +25,7 @@ import {
   useActionViewContractShapeRuntime,
 } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
 import { resolveDeclaredAssigneeQuery } from '../src/app/runtime/actionViewAssigneeOptionsContract';
+import { resolveDeclaredKanbanTitleField } from '../src/app/runtime/actionViewKanbanTitleField';
 import {
   resolveContractV2FieldDescriptorMap,
   resolveContractV2FormFieldMap,
@@ -600,6 +601,27 @@ for (const [invalidContract, expected] of [
     () => resolveDeclaredAssigneeQuery(invalidContract),
     (error: unknown) => isContractGapError(error) && error.defect.missing.includes(expected),
     `assignee options must stop when ${expected} is missing or invalid`,
+  );
+}
+check(
+  resolveDeclaredKanbanTitleField('project_title', ['id', 'project_title']),
+  'project_title',
+  'Kanban consumes the declared title field',
+);
+check(
+  resolveDeclaredKanbanTitleField('', []),
+  '',
+  'non-Kanban views do not invent a title field',
+);
+for (const [hint, fields] of [
+  ['', ['name', 'display_name']],
+  ['missing_title', ['name', 'display_name']],
+] as const) {
+  assert.throws(
+    () => resolveDeclaredKanbanTitleField(hint, fields),
+    (error: unknown) => isContractGapError(error)
+      && error.defect.missing === 'list_profile.kanban_profile.title_field',
+    'Kanban must stop instead of falling back to name/display_name/first field/id',
   );
 }
 
