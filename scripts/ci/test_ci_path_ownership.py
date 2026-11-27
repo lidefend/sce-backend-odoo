@@ -219,6 +219,32 @@ class PathOwnershipRegistryTest(unittest.TestCase):
                     ("verify.frontend.playwright_vendor_coupling.guard",),
                 )
 
+    def test_shared_environment_loader_is_nonruntime_control_plane(self):
+        paths = {
+            "scripts/common/env.sh",
+            "scripts/verify/test_common_env_explicit_path.py",
+            "scripts/verify/test_env_external_topology_precedence.sh",
+        }
+        result = ownership.classify_paths(paths)
+        self.assertEqual(
+            set(result.assignments.values()),
+            {"shared_runtime_environment_tooling"},
+        )
+        self.assertTrue(result.frontend_changed)
+        self.assertTrue(result.control_plane_changed)
+        self.assertFalse(result.backend_changed)
+        self.assertFalse(result.backend_runtime_changed)
+        self.assertFalse(result.unknown_paths)
+        for path in paths:
+            with self.subTest(path=path):
+                self.assertEqual(
+                    result.category_for(path).tool_checks,
+                    (
+                        "verify.frontend.runtime_environment.unit",
+                        "verify.local.development_lifecycle.unit",
+                    ),
+                )
+
     def test_frontend_acceptance_ci_tooling_is_nonruntime_control_plane(self):
         paths = {
             "scripts/dev/frontend_acceptance_operation_entry.sh",

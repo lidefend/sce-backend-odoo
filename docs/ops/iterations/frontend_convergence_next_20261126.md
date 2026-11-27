@@ -1716,6 +1716,39 @@ clean 运行态回读：
 
 这组证据只证明 P4 路径归属与同 run 交接，不证明 clean 初始化旅程或业务页面已经通过。
 
+### 2026-11-28 clean 初始化与业务页首轮真实使用
+
+按现有验收夹具模板，在一次性 clean 库中建立业务配置管理员夹具。只使用已经声明的
+`smart_construction_core.group_sc_cap_business_config_admin`，没有修改角色、组、ACL
+或记录规则。真实 `system.init` 返回：
+
+- `action_id=966`、`menu_id=719`；
+- `scene_key=enterprise.setup`；
+- `route=/s/enterprise.setup`。
+
+业务配置管理员打开正式企业初始化页面后，16 个办理入口全部渲染，契约缺口为 0。
+随后用夹具补齐部门、岗位和员工关联，使就绪度从 3 项待处理降为 1 项；点击
+“启用所选业务中心”后，`scenario.activation.centers.set` 返回 200，回读
+`write_committed=true`，启用 6 个业务中心、22 个业务场景。刷新后为 0 项待处理、
+8 项已配置、1 项已验证，页面与导航显示已启用状态。
+
+启用后财务角色收到 51 个已发布导航节点。首轮进入付款申请、实付登记、收款登记时，
+三页均停止在 `surface_policies.actions_primary_max`。但同一次真实
+`ui.contract.v2` 响应已经包含
+`actionContract.surfacePolicies.actions_primary_max=3`。因此当前可确认的是“声明已到、
+页面读取时空窗被误判为缺声明”，而不是后端声明缺失；也不能把页面停机直接归因于配置
+或权限。
+
+对应修正将契约加载期与已加载契约分开：
+
+- store 尚未加载时预算为 0，不投影任何主动作，也不把待载期伪装成契约缺陷；
+- store 已加载但声明缺失或非法时仍抛 `ContractGapError`；
+- 新增加载中、合法已声明、已加载但缺声明三类断言。
+
+前后端受影响车道已通过：后端 60 个目标、1182 项测试、10 项静态检查；前端 88 个目标、
+1402 项测试、4 项静态检查，且前端复用了同候选后端回执。该结论只到本地验证；
+重建 clean 前端后仍需重新进入三条业务页，成功渲染后才能把页面行为记为通过。
+
 ### 2026-11-27 FC-01 effective field-status consistency 消费收口
 
 继续核对 canonical 表单描述符与有效状态时确认：字段描述符声明

@@ -47,6 +47,41 @@ class CommonEnvironmentExplicitPathTest(unittest.TestCase):
             )
             self.assertEqual(result.stdout, str(environment_file))
 
+    def test_external_source_revision_wins_over_environment_file(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            environment_file = Path(temporary_directory) / "acceptance.env"
+            self._write_environment_file(environment_file)
+            with environment_file.open("a", encoding="utf-8") as handle:
+                handle.write("SC_SOURCE_REVISION=" + "a" * 40 + "\n")
+            base_environment = {
+                **os.environ,
+                "ROOT_DIR": str(ROOT),
+                "ENV_FILE": str(environment_file),
+                "COMPOSE_PROJECT_NAME": "common-env-source-revision-test",
+                "PROJECT": "common-env-source-revision-test",
+                "DB_NAME": "common_env_source_revision_test",
+            }
+            external_revision = "b" * 40
+            result = subprocess.run(
+                ["bash", "-c", f'source "{ENV_LOADER}"; printf "%s" "$SC_SOURCE_REVISION"'],
+                cwd=ROOT,
+                env={**base_environment, "SC_SOURCE_REVISION": external_revision},
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(result.stdout, external_revision)
+
+            inherited = subprocess.run(
+                ["bash", "-c", f'source "{ENV_LOADER}"; printf "%s" "$SC_SOURCE_REVISION"'],
+                cwd=ROOT,
+                env={key: value for key, value in base_environment.items() if key != "SC_SOURCE_REVISION"},
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(inherited.stdout, "a" * 40)
+
     def test_make_runner_keeps_explicit_environment_file_absolute(self):
         with tempfile.TemporaryDirectory() as temporary_directory:
             environment_file = Path(temporary_directory) / "acceptance.env"

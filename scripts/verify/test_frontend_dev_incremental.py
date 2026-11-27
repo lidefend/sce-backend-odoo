@@ -3929,6 +3929,19 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets(["scripts/dev/local_test_runner.py"]),
         )
 
+    def test_common_environment_keeps_runtime_identity_checks(self) -> None:
+        expected = [
+            "verify.frontend.runtime_environment.unit",
+            "verify.local.development_lifecycle.unit",
+        ]
+        for path in (
+            "scripts/common/env.sh",
+            "scripts/verify/test_common_env_explicit_path.py",
+            "scripts/verify/test_env_external_topology_precedence.sh",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), expected)
+
     def test_detail_collection_guard_keeps_its_behavior_target(self) -> None:
         self.assertEqual(
             select_targets([

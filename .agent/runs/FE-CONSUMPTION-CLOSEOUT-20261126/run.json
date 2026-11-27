@@ -8,7 +8,7 @@
   "baseline_state": "origin_main_includes_independent_enterprise_initialization_route_authority_fix_from_pr_1029_topic_release_not_run",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/frontend_convergence_next_20261126.md",
-  "current_batch": "FC-04 clean enterprise-initialization unblock and current-configuration journey",
+  "current_batch": "FC-04 initialized clean business pages and contract-load lifecycle",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
@@ -159,7 +159,10 @@
     "scripts/ops/test_integration_cycle.py",
     "scripts/ops/validation_delivery_plan.py",
     "scripts/ci/test_ci_path_ownership.py",
+    "scripts/common/env.sh",
     "scripts/verify/test_branch_governance_consistency_guard.py",
+    "scripts/verify/test_common_env_explicit_path.py",
+    "scripts/verify/test_env_external_topology_precedence.sh",
     "scripts/verify/test_local_quick_evidence.py",
     "scripts/verify/test_validation_delivery_plan.py",
     "scripts/verify/web_unified_page_contract_v2_guard.py",
@@ -2941,6 +2944,55 @@
         "the full affected sets have zero unmapped, not-run or blocked targets"
       ],
       "scope_limit": "P4 ownership and selector closure only. These receipts do not prove the clean enterprise-initialization journey, product-page behavior, remote PR integration, deployment or user acceptance."
+    },
+    "clean_enterprise_initialization_and_business_pages": {
+      "status": "initialization_passed_action_budget_loading_fix_pending_runtime_confirmation",
+      "candidate_head": "51ff89563f9e02a896062336bbbe161d0752b5bc",
+      "source_revision": "51ff89563f9e02a896062336bbbe161d0752b5bc",
+      "frontend_build_sha256": "a6409f67d7fb6450be6fbd6dc0251a71f45c9663ea29697fa8d72599a3bf82a3",
+      "runtime": {
+        "project": "sc-local-clean",
+        "database": "sc_clean",
+        "namespace_alias": "clean",
+        "namespace_id": "ns_c6fed472e939"
+      },
+      "facts_verified": [
+        "the clean system administrator has no business-configuration capability and therefore did not own the declared enterprise-initialization entry",
+        "a disposable business-configuration-admin fixture was created from the existing acceptance-fixture pattern with only base.group_user and the declared group_sc_cap_business_config_admin",
+        "the fixture received action_id=966, menu_id=719, scene_key=enterprise.setup and route=/s/enterprise.setup from the real system.init response",
+        "the enterprise-instance page opened at /s/enterprise.setup with zero contract gaps and all 16 initialization entries rendered",
+        "a fixture department, job and employee profile reduced readiness from 3 pending items to 1 pending item without changing permission definitions",
+        "the user clicked Enable Selected Business Centers; scenario.activation.centers.set returned HTTP 200 and committed write_committed=true for six centers and 22 scenes",
+        "the refreshed page changed from 1 pending item to 0 pending items, showed 8 configured and 1 verified item, and exposed the new center navigation",
+        "the finance role received 51 released navigation nodes after enablement, including payment application, payment execution and receipt registration",
+        "the first three finance page attempts showed a ContractGapError at surface_policies.actions_primary_max",
+        "the corresponding real ui.contract.v2 response already declared actionContract.surfacePolicies.actions_primary_max=3",
+        "loaded-store, missing-store and missing-declaration unit cases now distinguish pending load from a genuinely incomplete loaded contract; targeted and full local channels pass",
+        "the clean runtime has not yet been rebuilt from the loading-lifecycle fix, so the three business pages are not yet claimed as rendered"
+      ],
+      "evidence": [
+        ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-business-config-admin-route-authority-after-1029.json",
+        ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-enterprise-centers-response.json",
+        ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-finance-pages-current-rerun.json",
+        ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/finance-payment-contract-response.json"
+      ],
+      "channel_receipts": {
+        "backend": {
+          "path": ".runtime/frontend-dev-validation/executions/20261127T201436Z-3236189-497457762/receipt.json",
+          "sha256": "4a427952666fd3913b659f0cba0b94e75fa14440b15d16ad370db40e57a6093e",
+          "required_targets": 60,
+          "test_count": 1182,
+          "static_checks": 10
+        },
+        "frontend": {
+          "path": ".runtime/frontend-dev-validation/executions/20261127T202033Z-3305591-737943507/receipt.json",
+          "sha256": "3e348ea7213ae289223f853bc9edd549f4fa107796913deb0089869d0cc1a28c",
+          "required_targets": 88,
+          "test_count": 1402,
+          "static_checks": 4
+        }
+      },
+      "scope_limit": "The initialization and configuration facts passed in the disposable clean runtime. The action-budget load fix has local positive and negative tests but requires a clean frontend rebuild and browser readback before the affected business pages can be called passed."
     },
     "clean_current_configuration_browser_baseline": {
       "status": "route_gap_resolved_by_independent_pr_1029_runtime_rerun_pending",

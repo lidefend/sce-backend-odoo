@@ -1466,6 +1466,14 @@ RULES = (
         "verify.frontend.playwright_vendor_coupling.guard",
     )),
     Rule((
+        "scripts/common/env.sh",
+        "scripts/verify/test_common_env_explicit_path.py",
+        "scripts/verify/test_env_external_topology_precedence.sh",
+    ), (
+        "verify.frontend.runtime_environment.unit",
+        "verify.local.development_lifecycle.unit",
+    )),
+    Rule((
         "scripts/dev/local_dev_frontend_quick.py",
         "scripts/verify/test_local_dev_frontend_quick.py",
     ), (
