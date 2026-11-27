@@ -31,6 +31,7 @@ import {
   resolveDeclaredFilterBudget,
   resolveDeclaredGroupByLabel,
   resolveDeclaredPrimaryFilterBudget,
+  useActionViewFilterComputedRuntime,
 } from '../src/app/action_runtime/useActionViewFilterComputedRuntime';
 import { resolveDeclaredSurfaceBudget } from '../src/app/runtime/actionViewSurfacePolicyBudget';
 import {
@@ -710,6 +711,40 @@ check(
   '',
   'an undeclared grouping label remains empty',
 );
+const unlabeledFilterRuntime = useActionViewFilterComputedRuntime({
+  actionContract: ref({
+    snapshot: {
+      layoutContract: { listProfile: {} },
+      actionContract: {
+        surfacePolicies: { filters_max: 10, filters_primary_max: 3 },
+      },
+      searchContract: {
+        filters: [{ key: 'missing_label', domain_raw: '[]' }],
+        saved_filters: [{ id: 1, name: 'Saved filter', domain: [] }],
+        group_by: [{ field: 'missing_group_label', context_raw: "{'group_by':'missing_group_label'}" }],
+        fields: [{ field: 'missing_field_label', occurrence_key: 'missing@search', type: 'char' }],
+        custom: {
+          filters: { enabled: true, fields: [{ field: 'missing_custom_label', type: 'char' }] },
+          group_by: { enabled: true, fields: [{ field: 'missing_custom_group' }] },
+        },
+      },
+    },
+    widgetsById: new Map(),
+    widgetsByFieldCode: new Map(),
+    widgetsByFieldCodeAll: new Map(),
+    widgetStatusById: new Map(),
+    primaryDataSource: {},
+  } as unknown as ContractV2NormalizedStore),
+  activeGroupByField: ref(''),
+  parseContractContextRaw: () => ({}),
+  isActionViewNumericToken: () => false,
+  hasActionViewNoiseMarker: () => false,
+});
+check(unlabeledFilterRuntime.contractFilterChips.value.length, 0, 'a filter without a declared label is withheld');
+check(unlabeledFilterRuntime.contractGroupByChips.value.length, 0, 'a grouping without a declared label is withheld');
+check(unlabeledFilterRuntime.nativeFilterFields.value.length, 0, 'a filter field without a declared label is withheld');
+check(unlabeledFilterRuntime.customGroupByChips.value.length, 0, 'a custom grouping without a declared label is withheld');
+check(unlabeledFilterRuntime.customFilterFields.value.length, 0, 'a custom filter field without a declared label is withheld');
 const unsupportedSortOptions = runtime.buildListSortOptions({
   snapshot: {
     layoutContract: { listProfile: {} },

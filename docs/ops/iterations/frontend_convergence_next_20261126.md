@@ -704,6 +704,39 @@ component-driver inventory 随后按 owning target 重建，剩余目标全部�
 
 本切片尚未推送；生产查询条和远端 CI 仍待精确 head 验证。
 
+### 2026-11-27 FC-03 未声明筛选标签明确不呈现
+
+继续检查筛选、保存筛选、分组和搜索字段时确认，这些控件仍会把技术 key 或字段名当作
+未声明 label 的显示兜底。该行为违反“契约是唯一产品事实来源”，也会把内部身份泄露到
+用户界面。本切片只修改前端消费和守卫，不涉及后端声明。
+
+本切片完成：
+
+- 契约筛选和保存筛选只在存在声明 label 时呈现；
+- 活动分组、原生搜索字段、自定义筛选字段和自定义分组字段同样不再回退技术身份；
+- 非法 label 对应的控件明确不呈现，不从前缀、key、模型或字段类型猜测替代文案；
+- contract shape 用例覆盖六类缺声明 label 的负例；
+- web V2 consumer guard 阻止技术 key 作为筛选标签回退；
+- component-driver inventory 按生产源码输入重新生成。
+
+`make ci.local.iteration` 在 `60bc0aa292d95dd6b6fa1415189426782cb01b17` 加当前 owned
+dirty scope 上成立 85 个必需目标，全部本轮执行；64 个测试目标执行 2157 项测试、
+11 项静态检查，`unmapped=0`、`not_run=0`、`blocked=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T125029Z-3899543-297688781/receipt.json`
+
+回执 SHA256：
+`8272616274cade7f5ad1b42f48eacd63138b5a7f67bd8aa9c5cd66a46ef3bbbe`。
+
+上一候选 `60bc0aa292d95dd6b6fa1415189426782cb01b17` 的四项必需远端检查全部通过：
+`public_guard 140511002603`、`merge_policy_gate 140514777821`、
+`professional_quality_gate 140514600896`、`frontend_release_gate 140510889874`。
+同一 head 的 selected backend impact suite 也真实通过，plan `140511062550`、
+suite `140511301383`、coverage `140514377453`。
+
+本切片提交推送后仍需取得自己的精确 head 远端结果，不能继承上一 head 的绿灯。生产查询
+条真实观察、完整公司/角色旅程、FC-03 整体收口和 FC-06 仍未完成。
+
 ### 2026-11-27 FC-02 页面身份声明化与选测补口
 
 本切片属于共享前端呈现消费层，不修改后端契约、权限或数据。页面身份不再把

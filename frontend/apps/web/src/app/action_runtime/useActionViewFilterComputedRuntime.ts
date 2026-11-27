@@ -119,7 +119,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
     return rows
       .map((row) => {
         const key = String(row?.key || '').trim();
-        const label = String(row?.label || row?.key || '').trim();
+        const label = String(row?.label || '').trim();
         if (!key || !label) return null;
         if (options.isActionViewNumericToken(key) || options.isActionViewNumericToken(label)) return null;
         if (options.hasActionViewNoiseMarker(key, label, row?.domain_raw, row?.context_raw)) return null;
@@ -155,7 +155,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
       .map((row, idx) => {
         const raw = row as Record<string, unknown>;
         const key = String(raw.key || raw.name || raw.xmlid || raw.xml_id || `saved_${idx + 1}`).trim();
-        const label = String(raw.label || raw.name || key).trim();
+        const label = String(raw.label || raw.name || '').trim();
         if (!key || !label) return null;
         if (options.isActionViewNumericToken(key) || options.isActionViewNumericToken(label)) return null;
         if (options.hasActionViewNoiseMarker(key, label, raw.domain_raw, raw.context_raw)) return null;
@@ -195,7 +195,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
         const contextRaw = String(raw.context_raw || '').trim();
         const context = options.parseContractContextRaw(contextRaw);
         const field = resolveGroupByField(raw, context, contextRaw, { allowKeyFallback: entry.source === 'group' });
-        const label = String(raw.label || raw.string || raw.name || field).trim();
+        const label = String(raw.label || raw.string || raw.name || '').trim();
         if (!field || !label) return null;
         if (seen.has(field)) return null;
         if (options.isActionViewNumericToken(field) || options.isActionViewNumericToken(label)) return null;
@@ -215,7 +215,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
       .map((row) => {
         const raw = row as Dict;
         const field = String(raw.field || raw.name || '').trim();
-        const label = String(raw.label || raw.string || field).trim();
+        const label = String(raw.label || raw.string || '').trim();
         const type = String(raw.type || '').trim();
         const occurrenceKey = String(raw.occurrence_key || raw.occurrenceKey || '').trim();
         if (!field || !label || !type || !occurrenceKey) return null;
@@ -248,7 +248,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
       .map((row) => {
         const raw = row as Dict;
         const field = String(raw.field || '').trim();
-        const label = String(raw.label || field).trim();
+        const label = String(raw.label || '').trim();
         const type = String(raw.type || 'char').trim();
         if (!field || !label || nativeFields.has(field)) return null;
         if (options.isActionViewNumericToken(field) || options.isActionViewNumericToken(label)) return null;
@@ -283,7 +283,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
       .map((row) => {
         const raw = row as Dict;
         const field = String(raw.field || '').trim();
-        const label = String(raw.label || field).trim();
+        const label = String(raw.label || '').trim();
         if (!field || !label || seen.has(field)) return null;
         if (options.isActionViewNumericToken(field) || options.isActionViewNumericToken(label)) return null;
         if (!isSelectorEnabled(selectorTokens(`custom_group.${field}`, `group.${field}`, field))) return null;

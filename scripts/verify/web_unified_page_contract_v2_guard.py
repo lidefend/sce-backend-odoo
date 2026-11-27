@@ -209,6 +209,16 @@ def main() -> int:
         errors.append("web filter runtime must honor v2 selectorStatus for search/filter/group controls")
     if "found?.label || field" in filter_source:
         errors.append("web filter runtime must not expose an undeclared technical group field as a label")
+    for forbidden in (
+        "row?.label || row?.key",
+        "raw.label || raw.string || field",
+        "raw.label || field",
+    ):
+        if forbidden in filter_source:
+            errors.append(
+                "web filter runtime must not use a technical identity as a display label: "
+                f"{forbidden}"
+            )
     if "search.sort_options" in shape_source or "sort_options" in shape_source:
         errors.append("web list shape runtime must not consume the retired search sort_options carrier")
     if "snapshot.pageInfo.model" not in shape_source:
