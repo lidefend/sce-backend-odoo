@@ -88,22 +88,22 @@
     "dbfilter": "^sc_clean$",
     "namespace_alias": "clean",
     "namespace_id": "ns_c6fed472e939",
-    "source_revision": "65a5eee7dbd7398c621e11a13a8162220dc52929",
+    "source_revision": "5116d46aa6a60dfa0b18bada3b47c9e5a3809577",
     "modules": [
       "smart_construction_bundle",
       "sc_norm_engine"
     ],
     "demo_data": false,
     "fixture": false,
-    "frontend_build_fingerprint": "82fcb130f131581bef44578e0c6ed436f829dc56f3790e8bb7652b17a5224431",
+    "frontend_build_fingerprint": "d9a873eff26fdc78a384d8700ad2e5afddb21e3f63ca8c6db76e479a52f291be",
     "health": "passed",
-    "health_note": "The clean profile serves the exact relation-target-consistency product source and build fingerprint. Documentation and run updates do not change the product surface.",
-    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-frontend-build.log",
-    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-up.log",
-    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-health.log",
-    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-entry-identity.log",
-    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-runtime-version.json",
-    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-build-info.json",
+    "health_note": "The clean profile serves the exact authoritative-relation-label product source and build fingerprint. Documentation and run updates do not change the product surface.",
+    "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-frontend-build.log",
+    "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-up.log",
+    "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-health.log",
+    "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-entry-identity.log",
+    "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-runtime-version.json",
+    "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-build-info.json",
     "authority": "Owner-directed isolated clean development profile; existing dev/sample/acceptance/customer data and volumes are excluded."
   },
   "verification_responsibility": {
@@ -508,7 +508,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Commit the relation-label authority candidate, rebuild the isolated clean runtime from that exact HEAD, verify health and identity readback, then rerun ci.local.iteration on the clean HEAD before continuing the remaining FC-01 semantic coverage matrix.",
+  "next_exact_step": "Continue FC-01 with the remaining declared semantic coverage matrix, prioritizing status/boolean/json consumers and their fail-closed negative cases; do not inherit the historical 143-entry browser matrix.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -896,6 +896,49 @@
         "the parameters were removed and the focused relation target plus lint were rerun before the final unified execution"
       ],
       "scope_limit": "Local targeted validation only; clean exact-HEAD runtime, remote PR CI, mainline qualification, the 143-entry browser matrix and user acceptance remain not_run."
+    },
+    "fc01_relation_label_clean_runtime": {
+      "status": "passed",
+      "product_source_revision": "5116d46aa6a60dfa0b18bada3b47c9e5a3809577",
+      "frontend_build_fingerprint": "d9a873eff26fdc78a384d8700ad2e5afddb21e3f63ca8c6db76e479a52f291be",
+      "profile": "local.clean",
+      "database": "sc_clean",
+      "dbfilter": "^sc_clean$",
+      "namespace_id": "ns_c6fed472e939",
+      "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-frontend-build.log",
+      "frontend_build_log_sha256": "19ba473b5eb31a2a81f88426e5369ca47f66409b864ee1b02b17b3e1e7697e08",
+      "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-up.log",
+      "up_log_sha256": "61ad682ddee16ddbf8cb411593b4ddb6ac2a1fb7c563f87c216599768ac7d0a4",
+      "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-health.log",
+      "health_log_sha256": "3edb53ae8eaa7889b0a03472c49ccafd09763cf079679d2ff182f7f669dd4550",
+      "entry_identity_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-entry-identity.log",
+      "entry_identity_log_sha256": "08a8d638a4b2744492f8eb760b91130ef319be7d52b7865598a735375722dc78",
+      "runtime_version_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-runtime-version.json",
+      "runtime_version_log_sha256": "b57d228d7b7b88ef93cef8b56cd9a2b9be3d6327b9bed25aaf3767b4e9f6848e",
+      "build_info_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/clean-relation-label-build-info.json",
+      "build_info_log_sha256": "606535e463e82dcbf8a21cec6cef5790b271183fc8d72e0f9764b035736bb584",
+      "facts_verified": [
+        "the clean frontend was built from the exact product commit 5116d46aa6a60dfa0b18bada3b47c9e5a3809577",
+        "the Odoo container was recreated with the matching frontend build fingerprint",
+        "tenant runtime-version returns the exact source revision, build fingerprint, sc_clean database, namespace id and clean alias",
+        "root build-info.json returns the same exact source revision",
+        "local.clean.health and entry identity verification pass under the isolated clean profile"
+      ],
+      "scope_limit": "Environment, build and runtime identity readback only; it is not a business-entry browser journey or product acceptance."
+    },
+    "fc01_relation_label_clean_exact_head_validation": {
+      "status": "passed",
+      "head": "5116d46aa6a60dfa0b18bada3b47c9e5a3809577",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T000040Z-1260833-860212837/receipt.json",
+      "receipt_sha256": "e036b24fb6ab17aa715d7d9853415847e5c324ae03041c153b7cc8818a53a6ee",
+      "executed_targets": 16,
+      "reused_targets": 31,
+      "test_targets": 8,
+      "executed_test_count": 487,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "scope_limit": "Local exact-head iteration only. Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
     }
   }
 }
