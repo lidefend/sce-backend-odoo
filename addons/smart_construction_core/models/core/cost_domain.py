@@ -380,6 +380,7 @@ class ProjectCostLedger(models.Model):
     _name = "project.cost.ledger"
     _description = "项目成本台账"
     _order = "date desc, id desc"
+    _sc_readonly_navigation_button_methods = {"action_open_source"}
 
     project_id = fields.Many2one(
         "project.project",
