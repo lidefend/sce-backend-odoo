@@ -927,6 +927,39 @@ dirty scope 上成立 86 个必需目标，全部本轮执行；65 个测试目�
 该切片仍需提交推送后的新精确 HEAD 远端验证。真实浏览器关系创建、跨公司关系创建、
 FC-04 整体收口和用户验收仍未完成。
 
+### 2026-11-27 FC-04 many2many 标签创建隔离迟到响应
+
+关系快速创建切片 `0e88897cf71513b36735e26c393d724155065066` 已取得完整远端结果：
+`public_guard 140610780766`、`merge_policy_gate 140614295038`、
+`professional_quality_gate 140614075897`、`frontend_release_gate 140610665164`
+全部通过；`wait_for_fact_checks 140610789901` 和 backend impact suite
+（plan `140610825233`、suite `140611114697`、coverage `140613868485`）也通过。
+
+继续检查 many2many 标签保存时确认相同生命周期缺口：标签匹配和创建在多个 await 后直接
+写入表单；页面或上下文变化后的迟到结果仍可能添加旧匹配或错误。原流程还会对同一关键词
+连续查询两次。
+
+本切片完成：
+
+- many2many 标签解析复用现有 request owner 与 context epoch；
+- 查询完成后校验 record identity、relation model、keyword 和数组值，失效即停止；
+- many2many 快速创建同样在创建返回后校验，迟到结果不插入新表单；
+- 一次查询结果同时用于匹配和歧义判断，同一关键词不再重复请求；
+- 增加 many2many 查询中切换页面的迟到匹配负例；
+- component-driver inventory 按生产源码输入重新生成。
+
+`make ci.local.iteration` 在 `0e88897cf71513b36735e26c393d724155065066` 加当前 owned
+dirty scope 上成立 86 个必需目标，全部本轮执行；65 个测试目标执行 2168 项测试、
+11 项静态检查，`unmapped=0`、`not_run=0`、`blocked=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T160723Z-1258748-128357271/receipt.json`
+
+回执 SHA256：
+`de50eaf87761e896f52946c3f2c6611a14c01252756b36bbb4ece6280179e15d`。
+
+该切片仍需提交推送后的新精确 HEAD 远端验证。真实浏览器 many2many 标签操作、跨公司
+关系创建、FC-04 整体收口和用户验收仍未完成。
+
 ### 2026-11-27 FC-02 页面身份声明化与选测补口
 
 本切片属于共享前端呈现消费层，不修改后端契约、权限或数据。页面身份不再把

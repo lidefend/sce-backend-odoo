@@ -301,6 +301,83 @@ console.log('[create-record-user-journey] PASS relation-create-intent-counterexa
   console.log('[create-record-user-journey] PASS relation-dirty-state=5');
 }
 
+{
+  const descriptor = { name: 'tags', fieldType: 'many2many', relation: 'x.tags', relationEntry: {
+    can_read: true, can_create: true,
+    inline_create: { enabled: true, create_on_no_match: true, name_field: 'name', match: 'single_contains_or_exact' },
+  } };
+  const relationRuntime = useRelationRuntime();
+  const formData = reactive<Record<string, unknown>>({ tags: [1] });
+  const relationKeywords = reactive<Record<string, string>>({ tags: 'New tag' });
+  const validationErrors = ref<string[]>([]);
+  let markQueryStarted!: () => void;
+  const queryStarted = new Promise<void>((resolve) => { markQueryStarted = resolve; });
+  let resolveRows!: (rows: Array<{ id: number; label: string }>) => void;
+  const rows = new Promise<Array<{ id: number; label: string }>>((resolve) => { resolveRows = resolve; });
+  const state = useRecordFormState({
+    pendingInlineCreateFields: ref<string[]>([]),
+    formFields: ref({ tags: descriptor }),
+    model: ref('x.main'),
+    recordId: ref(501),
+    formData,
+    originalValues: ref({ tags: [1] }),
+    submissionFeedback: ref(null),
+    relationKeywords,
+    invalidatedRelationKeywords: {},
+    clearedDynamicRelationFields: {},
+    relationQueryTimers: {},
+    relationOptions: ref({ tags: [{ id: 1, label: 'Existing' }] }),
+    validationErrors,
+    validationFieldErrors: ref({}),
+    onchangeModifiersPatch: ref({}),
+    onchangeWarnings: ref([]),
+    onchangeLinePatches: ref([]),
+    applyingOnchangePatch: ref(false),
+    changedFieldSet: new Set(['tags']),
+    dirtyFieldSet: new Set(['tags']),
+    getOnchangeTimer: () => null,
+    setOnchangeTimer: () => {},
+    contractV2ActionRules: ref([]),
+    layoutNodes: ref([{ kind: 'field', name: 'tags', label: '标签', descriptor, readonly: false }]),
+    nativeStatusbar: ref({}),
+    route: { query: {} },
+    isNativeFavoriteField: () => false,
+    clearDynamicRelationDependents: () => {},
+    openRelationCreateForm: async () => undefined,
+    openRelationSearchDialog: async () => undefined,
+    openRelationRecordForm: async () => undefined,
+    relationOptionsForField: () => [],
+    switchFormByRelationOption: async () => undefined,
+    queryRelationOptions: async () => {
+      markQueryStarted();
+      return rows;
+    },
+    setRelationKeyword: () => {},
+    setMany2oneOption: () => {},
+    relationKeyword: (name: string) => relationKeywords[name] || '',
+    quickCreateRelation: async () => undefined,
+    relationUiLabel: (_descriptor: unknown, _key: string, fallback: string) => fallback,
+    relationModel: () => 'x.tags',
+    relationIds: (name: string) => Array.isArray(formData[name]) ? formData[name] as number[] : [],
+    upsertRelationOption: () => {},
+    buildOne2manyCommandValue: () => undefined,
+    one2manyFieldRows: () => [],
+    initOne2manyRows: () => {},
+    prepareOne2manyOnchange: () => () => {},
+    applyOnchangeLinePatches: () => {},
+    isWritableFieldVisible: () => true,
+    canonicalFieldWritable: () => true,
+    captureRelationRequest: relationRuntime.captureRelationRequest,
+  } as never);
+  const pendingResolution = state.resolvePendingMany2manyTagCreates();
+  await queryStarted;
+  relationRuntime.invalidateRelationRequests();
+  resolveRows([{ id: 2, label: 'New tag' }]);
+  assert.deepEqual(await pendingResolution, []);
+  assert.deepEqual(formData.tags, [1], 'a superseded many2many lookup must not add its late match');
+  assert.deepEqual(validationErrors.value, []);
+}
+
 const fieldDescriptors = {
   amount: { name: 'amount', type: 'float' },
   owner_id: { name: 'owner_id', type: 'many2one' },

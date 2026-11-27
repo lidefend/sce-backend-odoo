@@ -2049,6 +2049,7 @@ recordFormStateRuntime = useRecordFormState({
   formFields: canonicalFormFields, model, recordId, rights, formData, originalValues, submissionFeedback, relationKeywords,
   invalidatedRelationKeywords, clearedDynamicRelationFields, relationQueryTimers, relationOptions,
   validationErrors, validationFieldErrors, onchangeModifiersPatch, onchangeWarnings, onchangeLinePatches, applyingOnchangePatch,
+  captureRelationRequest,
   changedFieldSet, dirtyFieldSet, getOnchangeTimer: () => onchangeTimer,
   setOnchangeTimer: (timer) => { onchangeTimer = timer; }, contractV2ActionRules, layoutNodes,
   nativeStatusbar, route, isNativeFavoriteField, clearDynamicRelationDependents,
