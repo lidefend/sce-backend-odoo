@@ -520,6 +520,20 @@
       "regressionGuard": "verify.frontend.contract_shape_projection.unit",
       "behaviourTest": "frontend/apps/web/scripts/contract_shape_projection_test.ts",
       "stopDetail": "Batch assignee options consume the declared model, fields, domain, order and positive integer limit verbatim. The former res.users, id/name, empty-domain, name-asc and 80 defaults are forbidden; missing or invalid declarations stop with ContractGapError."
+    },
+    {
+      "surface": "Relation inline-create declaration",
+      "declared": "relationEntry.inline_create enabled/create_on_no_match/name_field/match",
+      "declaredBy": "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+      "declaredMethod": "_build_relation_inline_create_contract",
+      "declaredSymbol": "\"name_field\": rec_name,",
+      "consumedBy": "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+      "consumedSymbol": "export function relationInlineCreate(",
+      "onMissing": "stop",
+      "stopSymbol": "contractGapError",
+      "regressionGuard": "verify.frontend.professional_relation_field.unit",
+      "behaviourTest": "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
+      "stopDetail": "An enabled relation inline-create declaration must name both the field receiving the typed keyword and the matching rule. Missing name_field or match stops with ContractGapError; consumers must not fall back to name or exact_label. A disabled declaration may carry empty create-time fields."
     }
   ],
   "registeredMechanismExemptions": [
