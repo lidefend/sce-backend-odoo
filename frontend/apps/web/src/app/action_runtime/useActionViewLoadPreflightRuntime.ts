@@ -4,6 +4,7 @@ import {
   resolveContractV2SearchContract,
 } from '../contracts/v2/store';
 import type { ContractV2NormalizedStore } from '../contracts/v2/types';
+import { resolveDeclaredSavedFilterIdentity } from './useActionViewFilterComputedRuntime';
 
 type Dict = Record<string, unknown>;
 type SavedFilterChip = { key: string; isDefault: boolean };
@@ -200,14 +201,15 @@ function searchContract(contract: ContractV2NormalizedStore): Dict {
   return resolveContractV2SearchContract(contract);
 }
 
-function deriveSavedFilterChipsFromContract(contract: ContractV2NormalizedStore): SavedFilterChip[] {
+export function deriveSavedFilterChipsFromContract(contract: ContractV2NormalizedStore): SavedFilterChip[] {
   const rows = searchContract(contract).saved_filters;
   if (!Array.isArray(rows)) return [];
   return rows
-    .map((row, idx) => {
+    .map((row) => {
       const raw = row && typeof row === 'object' ? row as Dict : {};
-      const key = String(raw.key || raw.name || raw.xmlid || raw.xml_id || `saved_${idx + 1}`).trim();
-      if (!key) return null;
+      const key = resolveDeclaredSavedFilterIdentity(raw);
+      const label = String(raw.label || raw.name || '').trim();
+      if (!key || !label) return null;
       return {
         key,
         isDefault: raw.default === true || raw.is_default === true,

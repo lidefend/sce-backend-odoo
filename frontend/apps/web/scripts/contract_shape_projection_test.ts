@@ -31,8 +31,10 @@ import {
   resolveDeclaredFilterBudget,
   resolveDeclaredGroupByLabel,
   resolveDeclaredPrimaryFilterBudget,
+  resolveDeclaredSavedFilterIdentity,
   useActionViewFilterComputedRuntime,
 } from '../src/app/action_runtime/useActionViewFilterComputedRuntime';
+import { deriveSavedFilterChipsFromContract } from '../src/app/action_runtime/useActionViewLoadPreflightRuntime';
 import { resolveDeclaredSurfaceBudget } from '../src/app/runtime/actionViewSurfacePolicyBudget';
 import {
   resolveContractV2FieldDescriptorMap,
@@ -711,13 +713,13 @@ check(
   '',
   'an undeclared grouping label remains empty',
 );
-const unlabeledFilterRuntime = useActionViewFilterComputedRuntime({
-  actionContract: ref({
+const unlabeledFilterContract = ref({
     snapshot: {
       layoutContract: { listProfile: {} },
       actionContract: {
         surfacePolicies: { filters_max: 10, filters_primary_max: 3 },
       },
+      statusContract: { selectorStatus: [] },
       searchContract: {
         filters: [{ key: 'missing_label', domain_raw: '[]' }],
         saved_filters: [{ id: 1, name: 'Saved filter', domain: [] }],
@@ -734,13 +736,28 @@ const unlabeledFilterRuntime = useActionViewFilterComputedRuntime({
     widgetsByFieldCodeAll: new Map(),
     widgetStatusById: new Map(),
     primaryDataSource: {},
-  } as unknown as ContractV2NormalizedStore),
+  } as unknown as ContractV2NormalizedStore);
+const unlabeledFilterRuntime = useActionViewFilterComputedRuntime({
+  actionContract: unlabeledFilterContract,
   activeGroupByField: ref(''),
   parseContractContextRaw: () => ({}),
   isActionViewNumericToken: () => false,
   hasActionViewNoiseMarker: () => false,
 });
 check(unlabeledFilterRuntime.contractFilterChips.value.length, 0, 'a filter without a declared label is withheld');
+check(unlabeledFilterRuntime.contractSavedFilterChips.value.length, 1, 'a saved filter with declared identity and label is available');
+check(unlabeledFilterRuntime.contractSavedFilterChips.value[0]?.key, '1', 'the saved filter route identity comes from the declared id');
+check(unlabeledFilterRuntime.contractSavedFilterChips.value[0]?.label, 'Saved filter', 'the saved filter name remains presentation text');
+check(
+  deriveSavedFilterChipsFromContract(unlabeledFilterContract.value)[0]?.key,
+  '1',
+  'load preflight uses the same declared saved-filter identity',
+);
+check(
+  resolveDeclaredSavedFilterIdentity({ name: 'Name must not become route identity' }),
+  '',
+  'a saved filter without declared id cannot derive identity from its name',
+);
 check(unlabeledFilterRuntime.contractGroupByChips.value.length, 0, 'a grouping without a declared label is withheld');
 check(unlabeledFilterRuntime.nativeFilterFields.value.length, 0, 'a filter field without a declared label is withheld');
 check(unlabeledFilterRuntime.customGroupByChips.value.length, 0, 'a custom grouping without a declared label is withheld');

@@ -10,6 +10,15 @@ import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 
 type Dict = Record<string, unknown>;
 
+export function resolveDeclaredSavedFilterIdentity(value: unknown): string {
+  const row = value && typeof value === 'object' && !Array.isArray(value) ? value as Dict : {};
+  const id = row.id;
+  if (typeof id === 'number') {
+    return Number.isInteger(id) && id > 0 ? String(id) : '';
+  }
+  return typeof id === 'string' ? id.trim() : '';
+}
+
 /** Consume explicit saved-search authority; an absent grant is never a grant. */
 export function resolveSavedSearchMutationCapability(value: unknown) {
   const favorites = value && typeof value === 'object' && !Array.isArray(value) ? value as Dict : {};
@@ -152,9 +161,9 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
     const rows = resolveContractV2SearchContract(options.actionContract.value).saved_filters;
     if (!Array.isArray(rows)) return [];
     return rows
-      .map((row, idx) => {
+      .map((row) => {
         const raw = row as Record<string, unknown>;
-        const key = String(raw.key || raw.name || raw.xmlid || raw.xml_id || `saved_${idx + 1}`).trim();
+        const key = resolveDeclaredSavedFilterIdentity(raw);
         const label = String(raw.label || raw.name || '').trim();
         if (!key || !label) return null;
         if (options.isActionViewNumericToken(key) || options.isActionViewNumericToken(label)) return null;

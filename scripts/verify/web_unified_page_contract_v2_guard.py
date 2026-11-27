@@ -213,10 +213,23 @@ def main() -> int:
         "row?.label || row?.key",
         "raw.label || raw.string || field",
         "raw.label || field",
+        "raw.key || raw.name || raw.xmlid",
+        "saved_${idx + 1}",
     ):
         if forbidden in filter_source:
             errors.append(
-                "web filter runtime must not use a technical identity as a display label: "
+                "web filter runtime must not derive display or saved-filter identity from undeclared text: "
+                f"{forbidden}"
+            )
+    if (
+        "resolveDeclaredSavedFilterIdentity" not in filter_source
+        or "resolveDeclaredSavedFilterIdentity" not in preflight_source
+    ):
+        errors.append("web filter and load preflight runtimes must share the declared saved-filter id consumer")
+    for forbidden in ("raw.key || raw.name || raw.xmlid", "saved_${idx + 1}"):
+        if forbidden in preflight_source:
+            errors.append(
+                "web load preflight must not derive saved-filter route identity from display text: "
                 f"{forbidden}"
             )
     if "search.sort_options" in shape_source or "sort_options" in shape_source:

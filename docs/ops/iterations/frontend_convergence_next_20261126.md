@@ -737,6 +737,38 @@ suite `140511301383`、coverage `140514377453`。
 本切片提交推送后仍需取得自己的精确 head 远端结果，不能继承上一 head 的绿灯。生产查询
 条真实观察、完整公司/角色旅程、FC-03 整体收口和 FC-06 仍未完成。
 
+### 2026-11-27 FC-03 保存筛选使用契约 id 身份
+
+继续核对保存筛选时确认，`ir.filters` 契约投影提供 `id` 和 `name`，但前端此前把
+`name` 同时当作路由 key 和展示 label；缺这些字段时还会生成 `saved_<序号>`。这会让
+展示文本进入 URL，也无法区分同名筛选。该缺口属于前端消费者，契约已足够，不修改后端。
+
+本切片完成：
+
+- 保存筛选路由身份只消费契约 `id`；
+- `name/label` 只作为用户可见的保存筛选标签，不再生成路由身份；
+- runtime chip 投影与 load preflight 共用同一身份解析函数；
+- 缺 `id` 或无 label 的保存筛选明确不呈现，不再生成序号身份；
+- 区分性测试锁定 `id=1` 对应路由身份 `"1"`，名称仅保留为 label；
+- web V2 consumer guard 阻止重新引入 name/xmlid/序号路由兜底；
+- component-driver inventory 按生产源码输入重新生成。
+
+首次定向测试暴露夹具缺少 `statusContract.selectorStatus`，按真实契约形状补齐后通过；
+首次完整入口在准备阶段拒绝未登记的 preflight 消费者，登记该 owned 文件后同一候选
+完整执行通过。
+
+`make ci.local.iteration` 在 `d83713a2c362531982b2cc38081219d137adfe4e` 加当前 owned
+dirty scope 上成立 85 个必需目标，全部本轮执行；64 个测试目标执行 2157 项测试、
+11 项静态检查，`unmapped=0`、`not_run=0`、`blocked=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T130755Z-4046365-176262996/receipt.json`
+
+回执 SHA256：
+`2fe6377053c6839318e4c03cde6e86b15c5e5d23db1761d9ea5b268fc9c250db`。
+
+本切片提交推送后仍需取得自己的精确 head 远端结果。生产保存筛选的地址栏回读、真实
+浏览器切换、用户验收、FC-03 整体收口和 FC-06 仍未完成。
+
 ### 2026-11-27 FC-02 页面身份声明化与选测补口
 
 本切片属于共享前端呈现消费层，不修改后端契约、权限或数据。页面身份不再把
