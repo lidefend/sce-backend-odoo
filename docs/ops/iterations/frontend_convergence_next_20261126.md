@@ -538,6 +538,54 @@ clean 运行态回读：
 143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
 `bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
 
+### 2026-11-27 FC-01 原生表单与附件分类语义收口
+
+本轮按“本地一个合格切片即发布、后续直接更新同一 PR”的方式推进。draft PR #1019
+（`https://github.com/lidefend/sce-backend-odoo/pull/1019`）从
+`13b59532d` 开始，先后更新到 `3b8ee1bc1` 和 `a134da7dd`。远端检查不作为本轮
+继续实施的等待条件，也没有据此宣称集成通过。
+
+#### 原生表单字段语义
+
+- canonical → native form bridge 的 `technical` 与 `surfaceRole` 只从
+  `fieldDescriptor` 投影；
+- `componentConfig` 不能隐藏一个未声明 technical 的字段，也不能复活 technical 字段；
+- 重复关系字段的导航归属只使用 `fieldDescriptor.subview` 与 canonical
+  `fieldType/widgetType`；
+- `componentConfig` 的 subview/nativeWidget 不能再改变重复关系出现位置的所有权；
+- 台账增加到 36 个声明绑定、0 个未闭合缺陷。
+
+该切片本地组合门禁执行 26 个目标、复用 22 个，15 个测试目标执行 648 项测试、
+6 项静态检查，`unmapped_paths=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T035709Z-3035874-670527603/receipt.json`
+
+回执 SHA256：
+`8f8aca7c3159a7135f819d4a687608b75481dee10a65f48a9feea589339f93e3`。
+
+#### 附件关系业务分类
+
+- 附件能力只由 `fieldDescriptor.relation === ir.attachment`、描述符附件
+  `widgetType` 或契约 activity 角色决定；
+- `componentConfig.widget=many2many_binary` 不再把普通业务关系排除出导航；
+- 前端 `componentKey=ProfessionalAttachmentCollection` 只表示实现选择，不再成为
+  附件业务语义；
+- 新增“传输形似附件”“实现形似附件”仍进入关系导航，而描述符声明附件被排除的
+  区分性用例；
+- 生产源码变化后通过受管入口刷新 component-driver inventory。
+
+该切片本地组合门禁执行 27 个目标、复用 21 个，16 个测试目标执行 666 项测试、
+6 项静态检查，`unmapped_paths=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T040338Z-3087960-992769241/receipt.json`
+
+回执 SHA256：
+`5117921667aa07d728f28b1adf1a88de6c9fa55d71668bde310fd6a7e6316430`。
+
+本轮最后 clean 运行态仍绑定 `e26341a03`；`b3cbe05f` 和 `3fbfdaa3` 两个后续产品
+提交只完成了本地受影响目标验证并同步到 PR。远端 CI、集成资格、143 个业务入口的
+浏览器矩阵、部署和用户验收均未在本轮宣称完成。
+
 ### 2026-11-27 FC-01 ActionView 列表列字段语义单一权威
 
 继续核对列表列投影时确认，字段描述符已提供类型、控件、组件身份、币种字段、精度、

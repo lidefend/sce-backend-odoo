@@ -174,6 +174,39 @@
     ],
     "coverage_limit": "This is unit and clean-identity evidence; the 143-entry current-candidate browser matrix, remote PR CI, mainline release qualification, deployment and user acceptance remain not_run."
   },
+  "fc_01_native_form_field_semantics": {
+    "status": "local_targeted_passed",
+    "head": "3b8ee1bc1010a6e25b14808c5de7f31a32d88622",
+    "facts_verified": [
+      "technical and surfaceRole in the native form bridge come from fieldDescriptor",
+      "componentConfig cannot override native form technical or surface semantics",
+      "duplicate relation navigation ownership uses descriptor subview and canonical widget identity",
+      "the contract-basis ledger reports 36 bindings with 0 open defects"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T035709Z-3035874-670527603/receipt.json",
+    "local_receipt_sha256": "8f8aca7c3159a7135f819d4a687608b75481dee10a65f48a9feea589339f93e3",
+    "coverage_limit": "Affected-target validation only; no clean rebuild, browser matrix, remote integration or acceptance is claimed."
+  },
+  "fc_01_attachment_navigation_semantics": {
+    "status": "local_targeted_passed",
+    "head": "a134da7dde1315e4854e039f2a7593c1d5857df2",
+    "facts_verified": [
+      "attachment classification uses fieldDescriptor relation/widgetType and declared semantic role",
+      "componentConfig widgets and frontend component identities cannot exclude a business relation",
+      "descriptor-declared attachment relations remain outside business relation navigation"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T040338Z-3087960-992769241/receipt.json",
+    "local_receipt_sha256": "5117921667aa07d728f28b1adf1a88de6c9fa55d71668bde310fd6a7e6316430",
+    "coverage_limit": "Affected-target validation only; remote integration, browser matrix and user acceptance remain not_run."
+  },
+  "remote_publication": {
+    "status": "draft_pr_open_checks_not_awaited",
+    "pull_request": 1019,
+    "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
+    "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+    "current_head": "a134da7dde1315e4854e039f2a7593c1d5857df2",
+    "coverage_limit": "Publication only. Remote CI and integration qualification are deferred by owner direction."
+  },
   "not_a_product_acceptance_receipt": true,
   "coverage_boundary": "One formal product-entry universe derived from current declarations plus 11 source-grounded consumer findings. Declared acceptance status is preserved as provenance; current-candidate runtime coverage is not inherited and remains not_run until exercised.",
   "rows": [
@@ -185,7 +218,7 @@
       "sources": [
         {
           "path": "docs/architecture/frontend_contract_basis_ledger.json",
-          "sha256": "b30116f6e6b2441c56d2be3d551e0089fa3110eb6a97cefe1c4054187604e7c7"
+          "sha256": "a2ece830db8542f0a7c0368398237f714e0cd6b5988e4c64929e64920be06783"
         }
       ],
       "planned_discriminating_cases": [
@@ -194,7 +227,7 @@
       ],
       "behavior_status": "new_semantic_bindings_verified_full_coverage_extension_pending",
       "evidence": [
-        "verify.frontend.contract_basis.unit test_count=15 bindings=35",
+        "verify.frontend.contract_basis.unit test_count=15 bindings=36",
         "verify.p0_contract_producer.p0a.unit test_count=72"
       ],
       "blocking_for_topic_completion": true

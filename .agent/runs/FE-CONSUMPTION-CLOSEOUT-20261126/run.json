@@ -3,7 +3,7 @@
   "id": "FE-CONSUMPTION-CLOSEOUT-20261126",
   "status": "active",
   "branch": "fix/fe-consumption-closeout-20261126",
-  "branch_state": "clean_exact_head_validated_fc01_active",
+  "branch_state": "remote_pr_open_fc01_active",
   "baseline_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
   "baseline_state": "latest_main_contains_inherited_fix_release_qualification_not_run",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
@@ -104,7 +104,7 @@
     "fixture": false,
     "frontend_build_fingerprint": "8dd6497bf847a5b3486c2c801a3b083cf024755a9fe61b044dbdb7fd6e663f84",
     "health": "passed",
-    "health_note": "The clean profile serves exact candidate e26341a037f85c338acba2750006f816d41004a4 with descriptor-only ActionView list-column field semantics.",
+    "health_note": "The last clean runtime readback is exact candidate e26341a03. Later commits b3cbe05f and 3fbfdaa3 are locally target-validated and published on PR #1019; their clean runtime rerun is deferred to the integration phase per owner direction.",
     "frontend_build_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-frontend-build.log",
     "up_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-up.log",
     "health_log": ".runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/list-column-clean2-health.log",
@@ -519,7 +519,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from clean exact candidate e26341a03, selecting the next confirmed declaration consumer or stop behavior without modifying backend code in this topic.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR #1019 head a134da7d, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1605,6 +1605,70 @@
         "The receipt still records 9 targets as registration-missing even though each has a passed target result; this remains a planner/registry hygiene gap.",
         "Remote PR CI, mainline release qualification, the 143-entry browser matrix, deployment and user acceptance remain not_run."
       ]
+    },
+    "fc01_native_form_field_semantics": {
+      "status": "passed_local_targeted",
+      "base_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
+      "product_commit": "b3cbe05f6",
+      "governance_commit": "3b8ee1bc1010a6e25b14808c5de7f31a32d88622",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T035709Z-3035874-670527603/receipt.json",
+      "receipt_sha256": "8f8aca7c3159a7135f819d4a687608b75481dee10a65f48a9feea589339f93e3",
+      "executed_targets": 26,
+      "reused_targets": 22,
+      "test_targets": 15,
+      "executed_test_count": 648,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "canonical native form bridge technical and surfaceRole metadata come only from fieldDescriptor",
+        "componentConfig cannot hide a non-technical field or revive a technical one",
+        "duplicate relation navigation ownership uses descriptor subview and canonical widget identity",
+        "componentConfig subview and nativeWidget cannot change relation occurrence ownership",
+        "the contract-basis ledger records 36 bindings with 0 open defects"
+      ],
+      "failure_recovery": [
+        "the first governed run rejected the three new paths because the active run scope was incomplete; the scope was extended before rerun"
+      ],
+      "scope_limit": "Local affected-target validation only; no clean rebuild or browser journey was rerun for this later slice."
+    },
+    "fc01_attachment_navigation_semantics": {
+      "status": "passed_local_targeted",
+      "base_head": "3b8ee1bc1010a6e25b14808c5de7f31a32d88622",
+      "product_commit": "3fbfdaa3f",
+      "governance_commit": "a134da7dde1315e4854e039f2a7593c1d5857df2",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T040338Z-3087960-992769241/receipt.json",
+      "receipt_sha256": "5117921667aa07d728f28b1adf1a88de6c9fa55d71668bde310fd6a7e6316430",
+      "executed_targets": 27,
+      "reused_targets": 21,
+      "test_targets": 16,
+      "executed_test_count": 666,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "attachment business classification consumes only fieldDescriptor relation/widgetType and declared semantic role",
+        "componentConfig widget and frontend componentKey cannot remove an ordinary business relation from navigation",
+        "descriptor-declared attachment relations remain excluded from business relation navigation",
+        "the generated component-driver inventory was refreshed from the changed production source"
+      ],
+      "failure_recovery": [
+        "the first run rejected canonicalFormFloorplan outside the active run scope; the owned path was added",
+        "the next run failed on a stale generated component-driver inventory; the governed refresh target regenerated it before a zero-exit rerun"
+      ],
+      "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
+    },
+    "remote_publication": {
+      "status": "draft_open_checks_not_awaited",
+      "pull_request": 1019,
+      "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
+      "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+      "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
+      "current_head": "a134da7dde1315e4854e039f2a7593c1d5857df2",
+      "facts_verified": [
+        "the branch was pushed through make pr.push with exact-head preflight",
+        "draft PR #1019 was created for the named branch against main",
+        "later qualified slices were pushed directly to the same PR as requested"
+      ],
+      "coverage_limit": "The owner explicitly directed continuation without waiting for remote checks. Remote CI, integration readiness and merge qualification are not claimed in this iteration."
     }
   }
 }
