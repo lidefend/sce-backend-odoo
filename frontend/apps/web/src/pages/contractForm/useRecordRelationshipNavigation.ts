@@ -201,7 +201,7 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
         setMany2oneOption(fieldName, exact);
         return;
       }
-      const nameField = inline.nameField || 'name';
+      const nameField = inline.nameField;
       const vals: Record<string, unknown> = { ...(entry?.defaultVals || {}), [nameField]: label };
       const created = await createContractFormRecord({ model: relation, vals });
       const id = Number(created?.id || 0);

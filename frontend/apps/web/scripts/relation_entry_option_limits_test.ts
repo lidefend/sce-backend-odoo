@@ -152,6 +152,34 @@ assert.equal(relationOptionsLimit(storeEntry as Record<string, unknown>), DECLAR
 assert.equal(relationOptionsSearchLimit(storeEntry as Record<string, unknown>), DECLARED_SEARCH_LIMIT);
 assert.equal(relationCreateMode(storeField), 'quick', 'store projection: quick create must remain available');
 assert.equal(relationInlineCreate(storeField).enabled, true, 'store projection: inline create must remain available');
+for (const [inlineCreate, missing] of [
+  [{ enabled: true, create_on_no_match: true, name_field: '', match: 'single_contains_or_exact' }, 'inlineCreate.nameField'],
+  [{ enabled: true, create_on_no_match: true, name_field: 'name', match: '' }, 'inlineCreate.match'],
+] as const) {
+  assert.throws(
+    () => relationEntry(descriptorWith({
+      model: 'project.project',
+      can_read: true,
+      can_create: true,
+      create_mode: 'quick',
+      options_limit: DECLARED_LIMIT,
+      options_search_limit: DECLARED_SEARCH_LIMIT,
+      inline_create: inlineCreate,
+    })),
+    (error: unknown) => isContractGapError(error) && error.defect.missing.includes(missing),
+    `enabled inline create must stop when ${missing} is not declared`,
+  );
+}
+assert.doesNotThrow(
+  () => relationEntry(descriptorWith({
+    model: 'project.project',
+    can_read: true,
+    can_create: false,
+    create_mode: 'disabled',
+    inline_create: { enabled: false, create_on_no_match: false, name_field: '', match: '' },
+  })),
+  'a disabled inline-create declaration may omit create-time fields without being treated as a gap',
+);
 assert.deepEqual(
   relationOptionsWithSelectedFallback([]),
   [],

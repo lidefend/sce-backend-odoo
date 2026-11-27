@@ -33,7 +33,8 @@ console.log('[create_record_user_journey] unchanged relation payload: 4 cases PA
 // a deferred create request, even when the contract permits inline creation.
 {
 const relationDescriptor = { fieldType: 'many2one', relation: 'x.related', relationEntry: {
-  can_read: true, can_create: true, inline_create: { enabled: true, create_on_no_match: true },
+  can_read: true, can_create: true,
+  inline_create: { enabled: true, create_on_no_match: true, name_field: 'name', match: 'single_contains_or_exact' },
 } };
 const relationDraft: Record<string, unknown> = { owner_id: 17 };
 const relationKeywords: Record<string, string> = {};
@@ -103,7 +104,8 @@ console.log('[create-record-user-journey] PASS relation-intent-counterexamples=9
 // and it must be invalidated by an explicit relation write instead.
 {
 const relationDescriptor = { fieldType: 'many2one', relation: 'x.related', relationEntry: {
-  can_read: true, can_create: true, inline_create: { enabled: true, create_on_no_match: true },
+  can_read: true, can_create: true,
+  inline_create: { enabled: true, create_on_no_match: true, name_field: 'name', match: 'single_contains_or_exact' },
 } };
 const stagedDraft: Record<string, unknown> = { owner_id: 17 };
 const stagedKeywords: Record<string, string> = {};

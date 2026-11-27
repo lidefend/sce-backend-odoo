@@ -295,7 +295,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
           setRelationKeyword(fieldName, '');
           return;
         }
-        const nameField = inline.nameField || 'name';
+        const nameField = inline.nameField;
         const created = await createContractFormRecord({
           model: relation,
           vals: { ...(entry.defaultVals || {}), [nameField]: keyword },

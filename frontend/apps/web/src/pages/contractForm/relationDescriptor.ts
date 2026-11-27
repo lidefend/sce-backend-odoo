@@ -24,6 +24,24 @@ export function relationEntry(descriptor?: FieldDescriptor) {
   const inlineRaw = row.inline_create && typeof row.inline_create === 'object' && !Array.isArray(row.inline_create)
     ? row.inline_create as Record<string, unknown>
     : {};
+  const inlineEnabled = inlineRaw.enabled === true;
+  const inlineNameField = String(inlineRaw.name_field || '').trim();
+  const inlineMatch = String(inlineRaw.match || '').trim();
+  const fieldName = String((descriptor as Record<string, unknown> | undefined)?.name || '(unknown)').trim() || '(unknown)';
+  if (inlineEnabled && !inlineNameField) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${fieldName}.relationEntry.inlineCreate.nameField`,
+      requiredDeclarationLayer: 'P0:smart_core:page_assembler._build_relation_inline_create_contract',
+    }, `关系字段 ${fieldName} 的内联创建缺少 name_field 声明`);
+  }
+  if (inlineEnabled && !inlineMatch) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${fieldName}.relationEntry.inlineCreate.match`,
+      requiredDeclarationLayer: 'P0:smart_core:page_assembler._build_relation_inline_create_contract',
+    }, `关系字段 ${fieldName} 的内联创建缺少 match 声明`);
+  }
   const switchRaw = row.switch_context && typeof row.switch_context === 'object' && !Array.isArray(row.switch_context)
     ? row.switch_context as Record<string, unknown>
     : {};
@@ -62,10 +80,10 @@ export function relationEntry(descriptor?: FieldDescriptor) {
     // 消费点经 requireDeclaredNumber 缺失或非法即停机；此处不得补前端默认值。
     pageSize: row.page_size,
     inlineCreate: {
-      enabled: inlineRaw.enabled === true,
+      enabled: inlineEnabled,
       createOnNoMatch: inlineRaw.create_on_no_match === true,
-      nameField: String(inlineRaw.name_field || 'name').trim() || 'name',
-      match: String(inlineRaw.match || '').trim() || 'exact_label',
+      nameField: inlineNameField,
+      match: inlineMatch,
     },
   };
 }
@@ -279,7 +297,7 @@ export function relationInlineCreate(descriptor?: FieldDescriptor) {
     enabled: false,
     createOnNoMatch: false,
     nameField: '',
-    match: entry?.inlineCreate?.match || 'exact_label',
+    match: '',
   };
 }
 
