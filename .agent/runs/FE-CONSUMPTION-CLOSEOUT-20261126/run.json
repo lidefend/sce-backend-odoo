@@ -39,6 +39,8 @@
     "frontend/apps/web/src/app/contracts/v2/types.ts",
     "frontend/apps/web/src/app/contracts/unifiedPageContractV2.ts",
     "frontend/apps/web/src/app/contracts/actionViewActivityContract.ts",
+    "frontend/apps/web/src/app/businessScenarioNavigation.ts",
+    "frontend/apps/web/src/app/enterpriseSetupNavigation.ts",
     "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
     "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
     "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
@@ -94,9 +96,11 @@
     "frontend/apps/web/scripts/native_section_navigation_test.ts",
     "frontend/apps/web/scripts/professional_business_value_model_test.ts",
     "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
+    "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
     "frontend/apps/web/scripts/record_entry_contract_test.ts",
     "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
     "frontend/apps/web/scripts/route_query_normalization_test.ts",
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
     "scripts/verify/frontend_page_identity_lifecycle_smoke.js",
     "scripts/verify/frontend_page_identity_smoke.js",
     "scripts/verify/frontend_page_identity_guard.py",
@@ -578,7 +582,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "After binding the entry-title URL slice build, audit return labels and business-category labels as the remaining reconstructable presentation query values, then perform a governed browser URL readback.",
+  "next_exact_step": "After binding the return-label URL slice build, perform a governed browser URL readback on a scene and cross-model return flow, then decide whether business-category labels can be derived from the active contract.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -2274,6 +2278,32 @@
         "frontend_build_fingerprint": "9e4d558654ebe480a570ae94ad6897351b0ec02bc6022f8ac41dc28fc6ff596e"
       },
       "scope_limit": "Local URL and identity tests only; browser address-bar readback, remaining return/category presentation labels, remote CI and user acceptance remain not_run."
+    },
+    "fc02_return_label_derived_from_contract": {
+      "status": "passed_local_targeted",
+      "stage_identity": "5b01369624c9b0a3fecc8bc3ad5a25be114fc616 plus the owned return-label URL scope",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T101416Z-2532766-453572306/receipt.json",
+      "receipt_sha256": "7fb022c0402ab323b7f6fc3b464ad24e9c8f05a72f2e460e2475c0b746d538ea",
+      "required_targets": 76,
+      "executed_targets": 35,
+      "reused_targets": 41,
+      "test_targets": 21,
+      "executed_test_count": 865,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "release maintenance and enterprise setup return targets keep return_url and return_product_key",
+        "return_label is no longer written into or propagated through route queries",
+        "ActionView derives the return label by resolving return_url and consuming route page identity",
+        "platform capability, workspace scenario lifecycle, page-action guard and strict typecheck pass"
+      ],
+      "failure_recovery": [
+        "the first affected iteration rejected a computed object that hid the guarded router.resolve(target).href call; the implementation was split into explicit href and label computations"
+      ],
+      "scope_limit": "Local route construction and component contracts only; browser address-bar readback, business-category label derivation, remote CI and user acceptance remain not_run."
     },
     "remote_publication": {
       "status": "draft_open_mainline_sync_validation_not_awaited",

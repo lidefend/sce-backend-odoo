@@ -44,7 +44,6 @@ export const CONTRACT_NAV_QUERY_KEYS = [
   'current_business_category_label',
   'default_business_category_label',
   'return_url',
-  'return_label',
   'return_product_key',
 ] as const;
 

@@ -683,6 +683,28 @@ clean 运行态回读：
 剩余可重建展示参数主要是 `return_label` 与 business-category label；随后需要受管浏览器的
 当前地址栏回读，不能只以纯函数结果宣称页面 URL 已优化。
 
+### 2026-11-27 FC-02 return label 从契约重建
+
+返回目的地 `return_url` 和产品归属继续保留；可重建的 `return_label` 从地址栏中移除。
+ActionView 通过 `return_url` 解析目标路由，再消费其页面契约身份生成“返回 + 目标标题”，
+发布控制台与企业初始化不再各自把展示文案写入 URL。
+
+验证：
+
+- 平台能力浏览器、场景生命周期、页面动作守卫和严格类型检查通过；
+- `make ci.local.iteration`：`76` 个必需目标全部成立，其中 `35` 个本轮执行、`41` 个复用；
+  `21` 个测试目标执行 `865` 项测试、`6` 项静态检查，`unmapped=0`、`not_run=0`、
+  `blocked=0`。
+
+回执：
+`.runtime/frontend-dev-validation/executions/20261127T101416Z-2532766-453572306/receipt.json`
+
+回执 SHA256：
+`7fb022c0402ab323b7f6fc3b464ad24e9c8f05a72f2e460e2475c0b746d538ea`。
+
+下一步需要在受管浏览器中回读场景入口和跨模型返回链路的实际地址栏，再判断业务分类
+label 是否应删除；当前只证明纯构造与组件契约。
+
 ### 2026-11-27 主线 relationActiveActions 契约并入
 
 主线 `9395d93f92badffc87d32c5979cf7c70e374e975` 已包含 P0 PR #1026 的

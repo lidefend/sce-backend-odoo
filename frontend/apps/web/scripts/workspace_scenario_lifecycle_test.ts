@@ -1202,7 +1202,6 @@ assert.deepEqual(setupReturnQuery, {
   scene_key: 'enterprise.setup',
   ctx: 'company-1',
   return_url: '/s/enterprise.setup?company_id=1&scene_key=enterprise.setup',
-  return_label: '返回企业初始化',
 });
 assert.deepEqual(setupSourceQuery, { scene_key: 'enterprise.setup', ctx: 'company-1' });
 assert.equal(
@@ -1226,7 +1225,7 @@ for (const entryKey of [
     sourceLabel: '企业初始化',
   });
   assert.equal(query.return_url, `/s/enterprise.setup?entry_key=${entryKey}`);
-  assert.equal(query.return_label, '返回企业初始化');
+  assert.equal(query.return_label, undefined);
 }
 
 const {

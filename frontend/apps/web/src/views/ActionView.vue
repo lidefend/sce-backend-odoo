@@ -920,6 +920,7 @@ import { useActionViewTemplateUiStateRuntime } from '../app/action_runtime/useAc
 import { useActionViewFilterUiStateRuntime } from '../app/action_runtime/useActionViewFilterUiStateRuntime';
 import { useActionViewPageDisplayStateRuntime } from '../app/action_runtime/useActionViewPageDisplayStateRuntime';
 import { buildActionPageIdentity, resolveRoutePageIdentity } from '../app/pageIdentityAdapters';
+import { resolveProductPageIdentity } from '../app/pageIdentity';
 import { usePublishedPageIdentity } from '../app/usePublishedPageIdentity';
 import { useActionViewHudEntriesRuntime } from '../app/action_runtime/useActionViewHudEntriesRuntime';
 import { useActionViewHudEntriesInputRuntime } from '../app/action_runtime/useActionViewHudEntriesInputRuntime';
@@ -2025,14 +2026,19 @@ const toolbarUiLabels = computed<Record<string, string>>(() => {
 
 function toolbarUiLabel(key: string, fallback: string) { return toolbarUiLabels.value[key] || fallback; }
 
+const contextReturnTarget = computed(() => resolveContextReturnHref(route.query as Record<string, unknown>));
 const contextReturnHref = computed(() => {
-  const target = resolveContextReturnHref(route.query as Record<string, unknown>);
+  const target = contextReturnTarget.value;
   return target ? router.resolve(target).href : '';
 });
-
 const contextReturnLabel = computed(() => {
-  const raw = Array.isArray(route.query.return_label) ? route.query.return_label[0] : route.query.return_label;
-  return String(raw || '').trim() || '返回';
+  const target = contextReturnTarget.value;
+  if (!target) return '返回';
+  const resolved = router.resolve(target);
+  const identity = resolveProductPageIdentity(
+    resolveRoutePageIdentity(resolved, session.menuTree, session.pageContracts),
+  );
+  return `返回${identity.title}`;
 });
 
 const {
