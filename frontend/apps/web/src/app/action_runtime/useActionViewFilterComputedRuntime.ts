@@ -1,5 +1,6 @@
 import { resolveSavedSearchDeleteAction } from '../runtime/savedSearchSubmission';
 import { computed, type Ref } from 'vue';
+import { contractGapError, requireDeclaredNumber } from '../contract/contractGap';
 import {
   resolveContractV2SearchContract,
   resolveContractV2SelectorStatus,
@@ -40,6 +41,20 @@ type UseActionViewFilterComputedRuntimeOptions = {
   isActionViewNumericToken: (value: unknown) => boolean;
   hasActionViewNoiseMarker: (key: unknown, label: unknown, domainRaw: unknown, contextRaw: unknown) => boolean;
 };
+
+export function resolveDeclaredPrimaryFilterBudget(surfacePolicies: Dict): number {
+  const value = requireDeclaredNumber(surfacePolicies.filters_primary_max, {
+    missing: 'surface_policies.filters_primary_max',
+    requiredDeclarationLayer: 'P0:smart_core:contract_governance_user_surface',
+    min: 0,
+  });
+  if (!Number.isInteger(value) || value < 0) throw contractGapError({
+    kind: 'contract_defect',
+    missing: 'surface_policies.filters_primary_max',
+    requiredDeclarationLayer: 'P0:smart_core:contract_governance_user_surface',
+  }, 'Primary filter budget must be a non-negative integer');
+  return value;
+}
 
 function resolveGroupByFromContextRaw(value: unknown): string {
   const text = String(value || '').trim();
@@ -111,9 +126,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
 
   const filterPrimaryBudget = computed(() => {
     const surfacePolicies = resolveContractV2SurfacePolicies(options.actionContract.value);
-    const raw = Number(surfacePolicies.filters_primary_max ?? 5);
-    if (!Number.isFinite(raw) || raw < 0) return 5;
-    return Math.floor(raw);
+    return resolveDeclaredPrimaryFilterBudget(surfacePolicies);
   });
 
   const contractPrimaryFilterChips = computed(() =>

@@ -26,6 +26,7 @@ import {
 } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
 import { resolveDeclaredAssigneeQuery } from '../src/app/runtime/actionViewAssigneeOptionsContract';
 import { resolveDeclaredKanbanTitleField } from '../src/app/runtime/actionViewKanbanTitleField';
+import { resolveDeclaredPrimaryFilterBudget } from '../src/app/action_runtime/useActionViewFilterComputedRuntime';
 import {
   resolveContractV2FieldDescriptorMap,
   resolveContractV2FormFieldMap,
@@ -622,6 +623,24 @@ for (const [hint, fields] of [
     (error: unknown) => isContractGapError(error)
       && error.defect.missing === 'list_profile.kanban_profile.title_field',
     'Kanban must stop instead of falling back to name/display_name/first field/id',
+  );
+}
+check(
+  resolveDeclaredPrimaryFilterBudget({ filters_primary_max: 0 }),
+  0,
+  'primary filter budget preserves an explicit zero',
+);
+check(
+  resolveDeclaredPrimaryFilterBudget({ filters_primary_max: 3 }),
+  3,
+  'primary filter budget consumes the declared value',
+);
+for (const invalid of [{}, { filters_primary_max: -1 }, { filters_primary_max: 1.5 }, { filters_primary_max: '3' }]) {
+  assert.throws(
+    () => resolveDeclaredPrimaryFilterBudget(invalid),
+    (error: unknown) => isContractGapError(error)
+      && error.defect.missing === 'surface_policies.filters_primary_max',
+    'primary filter budget must stop instead of defaulting or clamping',
   );
 }
 
