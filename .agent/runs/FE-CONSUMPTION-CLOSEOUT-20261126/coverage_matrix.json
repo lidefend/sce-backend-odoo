@@ -249,6 +249,19 @@
     "local_receipt_sha256": "fc82d0c9d52e7dc97546736fc9f080f2a55309bdff4169d77a56689269d7fecb",
     "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
   },
+  "fc01_relation_inline_create_declaration": {
+    "status": "local_targeted_passed",
+    "head": "8c8f1fc7935522eb385971d9e01e5d648be1032b",
+    "facts_verified": [
+      "enabled relation inline create consumes declared name_field and match",
+      "missing name_field or match stops with ContractGapError",
+      "record-form and action consumers no longer fall back to name",
+      "disabled inline-create declarations may contain empty create-time fields"
+    ],
+    "local_receipt": ".runtime/frontend-dev-validation/executions/20261127T050053Z-3589222-127628259/receipt.json",
+    "local_receipt_sha256": "ba05929b83941a2c7f521a8a6c8c728862bba9ebeb7de3d55c33a4b022d355d9",
+    "coverage_limit": "Affected-target validation only; remote integration and browser acceptance remain not_run."
+  },
   "post_slice_iteration_attempt": {
     "status": "failed_validation_tool",
     "head": "37b836c96bf2deb3aad20b1d333aac4c86477dec",
@@ -262,7 +275,7 @@
     "pull_request": 1019,
     "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
     "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
-    "current_head": "6286e216b868a8fe93af4ae8e750f22aa0315052",
+    "current_head": "8c8f1fc7935522eb385971d9e01e5d648be1032b",
     "coverage_limit": "Publication only. Remote CI and integration qualification are deferred by owner direction."
   },
   "not_a_product_acceptance_receipt": true,
@@ -276,7 +289,7 @@
       "sources": [
         {
           "path": "docs/architecture/frontend_contract_basis_ledger.json",
-          "sha256": "1a42c71d22f520a67aca3d9ac1a66fc9ecfd094776b831b0027ef757d091c33f"
+          "sha256": "062a885e53fdc81901dadf98a8b2a2b167f93ad8d6763c14ee9fd984bcce661e"
         }
       ],
       "planned_discriminating_cases": [
@@ -285,7 +298,7 @@
       ],
       "behavior_status": "new_semantic_bindings_verified_full_coverage_extension_pending",
       "evidence": [
-        "verify.frontend.contract_basis.unit test_count=15 bindings=38",
+        "verify.frontend.contract_basis.unit test_count=15 bindings=39",
         "verify.p0_contract_producer.p0a.unit test_count=72"
       ],
       "blocking_for_topic_completion": true

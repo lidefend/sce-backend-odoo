@@ -657,6 +657,28 @@ PR #1019 已更新到 `298ff9e26146ed11ba62c6d6fa0e1abb004b6095`。远端集成�
 PR #1019 当前更新到 `6286e216b868a8fe93af4ae8e750f22aa0315052`。远端集成、
 浏览器矩阵、部署和用户验收仍未在本轮宣称完成。
 
+### 2026-11-27 FC-01 关系内联创建声明收口
+
+后端已声明 `inline_create.name_field/match`，前端却在投影和三个创建消费点回退
+`name/exact_label`。本切片移除这些第二权威：
+
+- enabled 内联创建缺少 `name_field` 或 `match` 时抛 `ContractGapError`；
+- record-form、关系导航和动作创建都使用声明的 `name_field`；
+- disabled 声明仍允许空创建字段；
+- 两个旧创建旅程夹具补齐正式声明，未通过放宽生产规则迁就测试；
+- 契约台账达到 39 个绑定、0 个未闭合缺陷。
+
+本地组合门禁执行 33 个目标、复用 15 个，22 个测试目标执行 802 项测试、
+6 项静态检查，`unmapped_paths=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261127T050053Z-3589222-127628259/receipt.json`
+
+回执 SHA256：
+`ba05929b83941a2c7f521a8a6c8c728862bba9ebeb7de3d55c33a4b022d355d9`。
+
+PR #1019 当前更新到 `8c8f1fc7935522eb385971d9e01e5d648be1032b`。远端集成、
+浏览器矩阵、部署和用户验收仍未在本轮宣称完成。
+
 ### 2026-11-27 FC-01 ActionView 列表列字段语义单一权威
 
 继续核对列表列投影时确认，字段描述符已提供类型、控件、组件身份、币种字段、精度、

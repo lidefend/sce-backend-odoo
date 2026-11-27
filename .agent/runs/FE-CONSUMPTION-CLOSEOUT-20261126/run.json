@@ -527,7 +527,7 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [],
-  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head 6286e216, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
+  "next_exact_step": "Continue the frontend-only FC-01 semantic matrix from PR number 1019 head 8c8f1fc7, selecting the next confirmed declaration consumer or stop behavior. Remote/integration qualification belongs to the next phase and is not a local iteration blocker.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",
@@ -1761,6 +1761,30 @@
       ],
       "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
     },
+    "fc01_relation_inline_create_declaration": {
+      "status": "passed_local_targeted",
+      "base_head": "844ea1403d7a409e58d426dc445895ed175efd36",
+      "head": "8c8f1fc7935522eb385971d9e01e5d648be1032b",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T050053Z-3589222-127628259/receipt.json",
+      "receipt_sha256": "ba05929b83941a2c7f521a8a6c8c728862bba9ebeb7de3d55c33a4b022d355d9",
+      "executed_targets": 33,
+      "reused_targets": 15,
+      "test_targets": 22,
+      "executed_test_count": 802,
+      "static_checks": 6,
+      "unmapped_paths": 0,
+      "facts_verified": [
+        "enabled relation inline create consumes declared name_field and match",
+        "missing name_field or match stops with ContractGapError",
+        "all three create consumers no longer fall back to the name field",
+        "disabled inline-create declarations may retain empty create-time fields",
+        "the contract-basis ledger reports 39 bindings with 0 open defects"
+      ],
+      "failure_recovery": [
+        "the first combined run failed because two create-journey fixtures still used the retired incomplete inline-create declaration; both fixtures were migrated to declared name_field and match values before rerun"
+      ],
+      "scope_limit": "Local affected-target validation only; remote integration and browser acceptance are not claimed."
+    },
     "post_slice_iteration_attempt": {
       "status": "failed",
       "classification": "validation_tool_defect",
@@ -1779,7 +1803,7 @@
       "url": "https://github.com/lidefend/sce-backend-odoo/pull/1019",
       "base_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
       "created_head": "13b59532df1ec6e7f2d18f002660a8222282cdb0",
-      "current_head": "6286e216b868a8fe93af4ae8e750f22aa0315052",
+      "current_head": "8c8f1fc7935522eb385971d9e01e5d648be1032b",
       "facts_verified": [
         "the branch was pushed through make pr.push with exact-head preflight",
         "draft PR #1019 was created for the named branch against main",
