@@ -522,6 +522,22 @@ class MenuConfigurationLoadHandler(BaseIntentHandler):
             configured = ""
         return _to_text(configured) or "default"
 
+    def _menu_config_recovery_menu_ids(self) -> set[int]:
+        """Resolve the product-owned recovery catalog independent of release state."""
+        xmlids = call_extension_hook_first(
+            self.env,
+            "smart_core_menu_config_recovery_menu_xmlids",
+            self.env,
+        )
+        candidates = xmlids if isinstance(xmlids, (list, tuple, set)) else []
+        menu_ids: set[int] = set()
+        for xmlid in candidates:
+            menu = _xmlid_record(self.env, _to_text(xmlid))
+            if menu and getattr(menu, "_name", "") == "ir.ui.menu":
+                menu_ids.add(int(menu.id or 0))
+        menu_ids.discard(0)
+        return menu_ids
+
     def _formal_product_menu_scope_ids(self, root_menu_id: int) -> set[int]:
         root_menu_id = _to_int(root_menu_id)
         cache = getattr(self, "_formal_product_menu_scope_ids_cache", None)
@@ -531,8 +547,9 @@ class MenuConfigurationLoadHandler(BaseIntentHandler):
         if root_menu_id in cache:
             return set(cache[root_menu_id])
 
+        recovery_ids = self._menu_config_recovery_menu_ids()
         if "sc.product.policy" not in self.env:
-            result = self._native_config_menu_scope_ids(root_menu_id)
+            result = self._native_config_menu_scope_ids(root_menu_id) | recovery_ids
             cache[root_menu_id] = set(result)
             return result
         product_key = self._current_product_key()
@@ -541,7 +558,7 @@ class MenuConfigurationLoadHandler(BaseIntentHandler):
             ("active", "=", True),
         ], limit=1)
         if not policy:
-            result = self._native_config_menu_scope_ids(root_menu_id)
+            result = self._native_config_menu_scope_ids(root_menu_id) | recovery_ids
             cache[root_menu_id] = set(result)
             return result
         Menu = self.env["ir.ui.menu"].sudo().with_context(active_test=False)
@@ -598,6 +615,7 @@ class MenuConfigurationLoadHandler(BaseIntentHandler):
         if root_menu_id:
             scoped_ids.add(root_menu_id)
         scoped_ids.update(self._native_config_menu_scope_ids(root_menu_id))
+        scoped_ids.update(recovery_ids)
         cache[root_menu_id] = set(scoped_ids)
         return scoped_ids
 

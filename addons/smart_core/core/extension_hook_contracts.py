@@ -64,6 +64,7 @@ SINGLE_OWNER_HOOKS = frozenset({
     "smart_core_list_capabilities_for_user_with_timings",
     "smart_core_load_scene_configs",
     "smart_core_lowcode_config_recovery_parent_menu_xmlids",
+    "smart_core_menu_config_recovery_menu_xmlids",
     "smart_core_lowcode_system_config_menu_xmlids",
     "smart_core_menu_config_only_exempt_group_xmlids",
     "smart_core_menu_delivery_token_policy",

@@ -1747,6 +1747,7 @@ RULES = (
     )),
     Rule((
         "addons/smart_construction_core/migrations/17.0.0.183/post-migrate.py",
+        "addons/smart_construction_core/migrations/17.0.0.189/post-migrate.py",
         "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
     ), (
         "verify.smart_construction_core.close_03.preview_promotion.orm",
@@ -2046,6 +2047,20 @@ RULES = (
         "verify.role_capability_group_authority.unit",
         "verify.frontend.navigation_shell.unit",
         "verify.role_surface.landing.contract.unit",
+    )),
+    Rule((
+        "addons/smart_construction_core/core_extension_hook_facts.py",
+    ), (
+        "verify.business_config.unit",
+        "verify.frontend.navigation_shell.unit",
+        "verify.role_surface.landing.contract.unit",
+    )),
+    Rule((
+        "addons/smart_core/handlers/menu_configuration.py",
+        "addons/smart_core/tests/test_menu_configuration_audit.py",
+    ), (
+        "verify.business_config.unit",
+        "verify.frontend.navigation_shell.unit",
     )),
     Rule((
         "addons/smart_construction_core/data/menu_entry_group_rebinding.json",

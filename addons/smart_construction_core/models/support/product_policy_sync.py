@@ -237,6 +237,29 @@ class ScProductPolicy(models.Model):
         return "%s-%s" % (_text(version), digest)
 
     @api.model
+    def reconcile_locked_formal_menu_surface(self, product_key, *, version):
+        """Converge every shipped formal menu row into one policy release delta."""
+        product_key = _text(product_key)
+        contract = load_locked_menu_policy_contract()
+        product = contract["products"].get(product_key)
+        if not isinstance(product, dict):
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_BASELINE_PRODUCT_MISMATCH", product_key
+            )
+        menu_xmlids = [
+            _text(menu.get("menu_xmlid") or menu.get("menu_key") or menu.get("page_key"))
+            for group in product.get("menu_groups") or []
+            for menu in group.get("menus") or []
+            if isinstance(menu, dict)
+            and _text(menu.get("menu_xmlid") or menu.get("menu_key") or menu.get("page_key"))
+        ]
+        return self._reconcile_locked_menu_releases(
+            product_key,
+            menu_xmlids=menu_xmlids,
+            version=version,
+        )
+
+    @api.model
     def _reconcile_locked_menu_release(
         self,
         product_key,
@@ -260,10 +283,41 @@ class ScProductPolicy(models.Model):
             raise LockedMenuPolicyContractError(
                 "LOCKED_MENU_RELEASE_RECONCILIATION_INVALID", product_key
             )
-        merge = self._merge_locked_formal_menu_additions(
+        return self._reconcile_locked_menu_releases(
             product_key,
             menu_xmlids=[menu_xmlid],
+            version=version,
         )
+
+    @api.model
+    def _reconcile_locked_menu_releases(
+        self,
+        product_key,
+        *,
+        menu_xmlids,
+        version,
+    ):
+        """Publish all newly shipped formal rows in one release snapshot."""
+        product_key = _text(product_key)
+        version = _text(version)
+        menu_xmlids = list(dict.fromkeys(
+            _text(menu_xmlid)
+            for menu_xmlid in menu_xmlids or []
+            if _text(menu_xmlid)
+        ))
+        if not product_key or not menu_xmlids or not version:
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_RELEASE_RECONCILIATION_INVALID", product_key
+            )
+        merge = self._merge_locked_formal_menu_additions(
+            product_key,
+            menu_xmlids=menu_xmlids,
+        )
+        rec = merge["policy"]
+        if not rec:
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_RELEASE_RECONCILIATION_INVALID", product_key
+            )
         snapshot_model = self.env["sc.edition.release.snapshot"].sudo()
         active = snapshot_model.search([
             ("product_key", "=", product_key),
@@ -276,7 +330,12 @@ class ScProductPolicy(models.Model):
             if active and isinstance(active.snapshot_json, dict)
             else {}
         )
-        if self._policy_menu_row(active_policy, menu_xmlid)[1]:
+        missing_xmlids = [
+            menu_xmlid
+            for menu_xmlid in menu_xmlids
+            if not self._policy_menu_row(active_policy, menu_xmlid)[1]
+        ]
+        if not missing_xmlids:
             return {
                 "policy": rec,
                 "added": merge["added"],
@@ -285,29 +344,43 @@ class ScProductPolicy(models.Model):
                 "release_present": True,
             }
         target_policy = deepcopy(active_policy) if active_policy else rec.to_runtime_dict()
-        group, row = self._policy_menu_row(rec.to_runtime_dict(), menu_xmlid)
-        if not group or not row:
-            raise LockedMenuPolicyContractError(
-                "LOCKED_MENU_RELEASE_MENU_MISSING", f"{product_key} {menu_xmlid}"
-            )
+        source_policy = rec.to_runtime_dict()
         groups = [deepcopy(item) for item in target_policy.get("menu_groups") or []]
-        group_key = _text(group.get("group_key"))
-        target_group = next(
-            (item for item in groups if _text(item.get("group_key")) == group_key),
-            None,
-        )
-        if target_group is None:
-            target_group = {**deepcopy(group), "menus": []}
-            groups.append(target_group)
-        if not self._policy_menu_row(target_policy, menu_xmlid)[1]:
-            target_group.setdefault("menus", []).append(deepcopy(row))
         target_policy["menu_groups"] = groups
         capabilities = [
             deepcopy(item)
             for item in target_policy.get("capabilities") or []
             if isinstance(item, dict)
         ]
-        if not any(_text(item.get("menu_xmlid")) == menu_xmlid for item in capabilities):
+        for menu_xmlid in missing_xmlids:
+            if self._policy_menu_row(target_policy, menu_xmlid)[1]:
+                continue
+            group, row = self._policy_menu_row(source_policy, menu_xmlid)
+            if not group or not row:
+                raise LockedMenuPolicyContractError(
+                    "LOCKED_MENU_RELEASE_MENU_MISSING",
+                    f"{product_key} {menu_xmlid}",
+                )
+            group_key = _text(group.get("group_key"))
+            target_group = next(
+                (
+                    item
+                    for item in groups
+                    if _text(item.get("group_key")) == group_key
+                    or (
+                        _text(item.get("group_label") or item.get("label"))
+                        == _text(group.get("group_label") or group.get("label"))
+                    )
+                ),
+                None,
+            )
+            if target_group is None:
+                target_group = {**deepcopy(group), "menus": []}
+                groups.append(target_group)
+            target_group.setdefault("menus", []).append(deepcopy(row))
+        for menu_xmlid in missing_xmlids:
+            if any(_text(item.get("menu_xmlid")) == menu_xmlid for item in capabilities):
+                continue
             declared = next(
                 (
                     item for item in rec.capabilities or []
@@ -355,7 +428,7 @@ class ScProductPolicy(models.Model):
             product_key=product_key,
             version=release_version,
             replace_active=True,
-            note="reconcile formal menu %s" % menu_xmlid,
+            note="reconcile formal menu surface %s" % version,
             policy_override=target_policy,
         )
         return {

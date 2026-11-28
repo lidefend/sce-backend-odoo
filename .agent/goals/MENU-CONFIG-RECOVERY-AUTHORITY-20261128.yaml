@@ -1,0 +1,51 @@
+schema_version: 1
+goal:
+  id: MENU-CONFIG-RECOVERY-AUTHORITY-20261128
+  status: active
+  title: Reconcile shipped product menus into existing policy and recovery surfaces
+  objective: >-
+    Make newly shipped formal product menu rows converge into an existing
+    maintained product policy and one active release snapshot, and expose every
+    formal product-configuration entry to the business configuration admin.
+  formal_product_layers:
+    - P0
+    - P1
+    - P4
+  layer_target: >-
+    generic menu-configuration recovery catalog consumption plus construction
+    product menu policy synchronization, role surface defaults and the bounded
+    incremental-validation routing that executes their affected checks
+  module:
+    - smart_core
+    - smart_construction_core
+  standard_vs_user_specific: construction industry standard product defaults
+  why_here: >-
+    smart_core owns the generic menu-configuration panel and recovery catalog
+    hook. smart_construction_core owns the locked formal menu policy, persisted
+    product policy, release snapshot, recovery catalog facts, and
+    business-config-admin role surface. P4 owns only the executable mapping from
+    those changed paths to their existing affected verification targets.
+  why_not_elsewhere: >-
+    The frontend and menu-configuration renderer must not invent hidden product
+    menu identities. Operators must not be required to recreate shipped product
+    facts through tenant low-code configuration.
+  blast_radius:
+    - persisted construction.standard and construction.preview menu policies
+    - active product release snapshots
+    - business configuration admin navigation
+    - product configuration menu parent facts
+    - menu-configuration recovery candidate catalog
+    - incremental validation path-to-target registration
+  exclusions:
+    - role capability grants unrelated to product configuration
+    - report data, project data or permission record rules
+    - frontend renderer logic
+    - direct migration of persistent databases without owner approval
+  acceptance:
+    - Existing maintained policy rows remain unchanged while newly shipped formal rows are added once.
+    - All formal menu additions are published in one release snapshot rather than one snapshot per menu.
+    - Replaying the migration is idempotent.
+    - business_config_admin exposes every formal product-configuration menu.
+    - The menu-configuration panel exposes the product recovery catalog even when a
+      policy row or released navigation entry is missing.
+    - Existing databases can recover without direct ir.ui.menu or res.groups writes by the business user.

@@ -3170,6 +3170,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_construction_core/migrations/17.0.0.183/post-migrate.py": [
                 "verify.smart_construction_core.close_03.preview_promotion.orm",
             ],
+            "addons/smart_construction_core/migrations/17.0.0.189/post-migrate.py": [
+                "verify.smart_construction_core.close_03.preview_promotion.orm",
+            ],
+            "addons/smart_construction_core/core_extension_hook_facts.py": [
+                "verify.business_config.unit",
+                "verify.frontend.navigation_shell.unit",
+                "verify.role_surface.landing.contract.unit",
+            ],
+            "addons/smart_core/handlers/menu_configuration.py": [
+                "verify.business_config.unit",
+                "verify.frontend.navigation_shell.unit",
+            ],
             "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py": [
                 "verify.capability.identity_boundary.orm",
                 "verify.product_center.policy.orm",
