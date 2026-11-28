@@ -1,0 +1,30 @@
+schema_version: 1
+goal:
+  id: P0-RELATION-FIELD-NATIVE-SEMANTICS-20261128
+  status: active
+  title: Normalize native relation-field access semantics
+  objective: Project Odoo get_view relation create and write access on every form relation occurrence into the strict relationActiveActions field contract, remove those operational attributes from the generic field attributes carrier, and preserve the native meaning that they describe target-relation actions rather than host-field readonly state.
+  formal_product_layer: P0
+  layer_target: unified page contract V2 native occurrence and field descriptor projection
+  module: [smart_core]
+  standard_vs_user_specific: platform mechanism
+  why_here: Odoo get_view postprocessing and the custom parser are platform mechanisms; relationActiveActions is the existing strict field-level carrier for native relation create and write declarations.
+  why_not_elsewhere: P1/P2 modules do not own Odoo get_view semantics, the frontend must not reinterpret generic attributes as field readonly or guess relation authority, and low-code configuration does not own ACL-derived relation capabilities.
+  blast_radius:
+    - form many2one and many2many_tags field occurrences
+    - tree occurrence parsing reused inside form x2many subviews
+    - raw attributes and relationActiveActions output for relational fields
+    - strict frontend descriptor compatibility for many2many_tags write
+  exclusions:
+    - ACL, groups, record rules and business authorization changes
+    - host-field readonly semantics
+    - relation executors and business writes
+    - P1 view or low-code configuration changes
+    - database migration
+    - PR 1019 source branch mutation
+  acceptance:
+    - Odoo get_view can_create and can_write are represented only by relationActiveActions for relational field occurrences
+    - generic attributes no longer retain relational can_create or can_write
+    - many2many_tags preserves both create and write declarations when supplied
+    - non-relational attributes remain unchanged
+    - strict schema, decoder, assembler and parser tests pass with non-zero execution
