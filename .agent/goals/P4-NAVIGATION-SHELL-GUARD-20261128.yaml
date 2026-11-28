@@ -1,0 +1,29 @@
+schema_version: 1
+goal:
+  id: P4-NAVIGATION-SHELL-GUARD-20261128
+  status: active
+  title: Repair stale navigation compilation delegation guard
+  objective: Align the frontend navigation shell guard with the existing single-authority delegation chain from system.init through EffectiveDeliveryService and PublishedSceneSurfaceService to NavigationContractCompiler, while continuing to prohibit system.init from assembling navigation itself.
+  formal_product_layer: P4
+  layer_target: verification tooling for navigation delivery
+  module: [scripts_verify]
+  standard_vs_user_specific: platform delivery verification
+  why_here: The product correctly delegates navigation compilation; only the repository guard still asserts the pre-refactor call location.
+  why_not_elsewhere: No platform, industry, customer, low-code or frontend runtime behavior needs to change.
+  blast_radius:
+    - frontend navigation shell guard
+    - navigation shell guard negative tests
+    - CI frontend_release_gate interpretation
+  exclusions:
+    - system.init behavior
+    - EffectiveDeliveryService behavior
+    - PublishedSceneSurfaceService behavior
+    - NavigationContractCompiler behavior
+    - frontend navigation rendering
+    - PR 1034 source mutation
+  acceptance:
+    - guard verifies compiler construction and compile invocation in PublishedSceneSurfaceService
+    - guard verifies system.init consumes delivery_payload.navigation
+    - guard rejects system.init importing or constructing NavigationContractCompiler
+    - guard rejects system.init assembling a local navigation payload
+    - navigation shell and backend delivery tests pass non-zero

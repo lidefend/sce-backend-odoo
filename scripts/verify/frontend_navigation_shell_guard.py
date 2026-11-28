@@ -43,6 +43,7 @@ def validate(root: Path = ROOT) -> list[str]:
     menu_service = read(root, "addons/smart_core/delivery/menu_service.py")
     system_init = read(root, "addons/smart_core/handlers/system_init.py")
     navigation_compiler = read(root, "addons/smart_core/delivery/navigation_contract_compiler.py")
+    published_scene_surface = read(root, "addons/smart_core/delivery/published_scene_surface_service.py")
     component_root = root / "frontend/apps/web/src/components/product-shell"
 
     for component in COMPONENTS:
@@ -207,12 +208,24 @@ def validate(root: Path = ROOT) -> list[str]:
     if "def project_canonical_navigation(" not in menu_service:
         errors.append("backend canonical navigation projection is missing")
     if (
-        "NavigationContractCompiler(" not in system_init
-        or ").compile(" not in system_init
-        or 'data["nav"] = _compiled_navigation.nav' not in system_init
-        or 'data["navigation"] = _compiled_navigation.navigation' not in system_init
+        "NavigationContractCompiler" in system_init
+        or 'delivery_payload.get("navigation")' not in system_init
+        or 'data["nav"] = _compiled_nav' not in system_init
+        or 'data["navigation"] = _compiled_navigation' not in system_init
     ):
-        errors.append("system.init must delegate navigation compilation and consume its sealed result")
+        errors.append(
+            "system.init must consume the sealed delivery navigation without "
+            "constructing a second compiler"
+        )
+    if (
+        "from .navigation_contract_compiler import NavigationContractCompiler" not in published_scene_surface
+        or "NavigationContractCompiler(" not in published_scene_surface
+        or ").compile(" not in published_scene_surface
+        or '"navigation": compilation.navigation' not in published_scene_surface
+    ):
+        errors.append(
+            "published scene surface must delegate to the single navigation compiler"
+        )
     filter_index = navigation_compiler.find("filter_nav_by_route_authority(")
     project_index = navigation_compiler.find("project_canonical_navigation(")
     payload_index = navigation_compiler.find("navigation = {")

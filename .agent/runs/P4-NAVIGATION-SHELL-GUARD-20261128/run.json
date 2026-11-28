@@ -1,0 +1,84 @@
+{
+  "schema_version": 2,
+  "id": "P4-NAVIGATION-SHELL-GUARD-20261128",
+  "branch": "fix/p4-navigation-shell-guard-20261128",
+  "baseline_sha": "d8783563830dcd9fa80220b2769340be66acf79d",
+  "status": "verification_pending",
+  "goal": ".agent/goals/P4-NAVIGATION-SHELL-GUARD-20261128.yaml",
+  "record": "docs/ops/iterations/p4_navigation_shell_guard_20261128.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P4-NAVIGATION-SHELL-GUARD-20261128.yaml",
+    ".agent/runs/P4-NAVIGATION-SHELL-GUARD-20261128/run.json",
+    "docs/ops/iterations/p4_navigation_shell_guard_20261128.md",
+    "scripts/verify/frontend_navigation_shell_guard.py",
+    "scripts/verify/test_frontend_navigation_shell_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing local Make and Python verification tooling; no database, service deployment or business-data write."
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Changed verification tooling must run its owning guard, negative tests and affected navigation delivery checks."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The independent P4 repair must validate the exact candidate against the current main base."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "This guard repair is not a release qualification or deployment."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "This change only repairs verification tooling and does not alter shared product contract output."
+    }
+  },
+  "checks": {
+    "navigation_shell": {
+      "target": "verify.frontend.navigation_shell.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_navigation_shell_guard.py",
+        "scripts/verify/test_frontend_navigation_shell_guard.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/delivery/published_scene_surface_service.py",
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "addons/smart_core/delivery/effective_delivery_service.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "evidence": {
+    "navigation_shell": {
+      "status": "passed",
+      "command": "make verify.frontend.navigation_shell.unit",
+      "test_count": 31,
+      "guard_result": "PASS components=6",
+      "negative_checks": [
+        "system.init cannot construct a second compiler",
+        "system.init cannot reintroduce local navigation assembly",
+        "PublishedSceneSurfaceService must own the single compiler call"
+      ]
+    },
+    "incremental_iteration": {
+      "status": "passed",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261128T075355Z-706962-68211060/receipt.json",
+      "executed_targets": 2
+    },
+    "exact_head": {
+      "status": "not_run",
+      "reason": "The candidate is not committed or frozen yet."
+    }
+  },
+  "next_exact_step": "Commit the P4 guard candidate, publish the independent PR, and verify exact-head required CI."
+}
