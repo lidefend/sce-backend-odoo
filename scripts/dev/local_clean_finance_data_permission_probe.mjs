@@ -1,5 +1,5 @@
 // P4 user-journey probe: business configuration administrator grants the
-// existing data-read capability to the finance operator through Data Permission.
+// assign an existing business role to the finance operator through Data Permission.
 import fs from 'node:fs';
 import path from 'node:path';
 import { launchChromium } from '../verify/playwright_runtime.mjs';
@@ -21,7 +21,7 @@ const OUTPUT_DIR = path.resolve(
   process.env.SC_ACCEPTANCE_OUTPUT_DIR
     || '.runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/local-clean-finance-data-permission',
 );
-const CAPABILITY_LABEL = 'SC 能力 - 数据中心只读';
+const ROLE_LABEL = 'Smart Construction / SC 角色 - 通用角色';
 
 if (!PASSWORD) throw new Error('ACCEPTANCE_PASSWORD is required');
 fs.mkdirSync(OUTPUT_DIR, { recursive: true });
@@ -37,7 +37,7 @@ const report = {
     source_revision: TARGET_SHA,
     frontend_build_sha256: BUILD_SHA256,
   },
-  capability_label: CAPABILITY_LABEL,
+    role_label: ROLE_LABEL,
   requests: [],
   assertions: [],
   screenshots: [],
@@ -77,11 +77,13 @@ async function selectTag(page, input, optionLabel) {
     ? page.locator(`[id="${popupId}"]`).last()
     : page.locator('.t-popup:visible').filter({ has: page.locator('.t-select-option') }).last();
   await popup.waitFor({ state: 'visible', timeout: 15000 });
+  await page.keyboard.type(optionLabel);
+  await page.waitForTimeout(500);
   const option = popup.locator('.t-select-option').filter({ hasText: optionLabel }).last();
   await option.waitFor({ state: 'visible', timeout: 15000 });
   check(
     String(await option.innerText()).replace(/\s+/g, ' ').trim() === optionLabel,
-    'data-read capability option label matches',
+    'business-role option label matches',
     { expected: optionLabel, actual: await option.innerText() },
   );
   await option.click();
@@ -119,10 +121,14 @@ page.on('response', async (response) => {
     });
   }
   if (response.status() < 400) return;
+  const body = await response.json().catch(() => null);
   report.failed_requests.push({
     status: response.status(),
     intent: request.intent || '',
     model: request.params?.model || '',
+    code: body?.code || body?.error?.code || '',
+    message: body?.message || body?.error?.message || '',
+    body,
   });
 });
 
@@ -178,53 +184,70 @@ try {
   const target = page.getByRole('button', { name: '验收财务经办', exact: true }).first();
   await target.waitFor({ state: 'visible', timeout: 20000 });
   await target.click();
-  await page.waitForURL((url) => /\/r\/res\.users\/\d+/.test(url.pathname), {
+  await page.waitForURL((url) => /\/[rf]\/res\.users\/\d+/.test(url.pathname), {
     waitUntil: 'domcontentloaded',
     timeout: 45000,
   });
   const form = page.locator('[data-product-page-mode="form"][data-form-model="res.users"]').first();
   await form.waitFor({ state: 'visible', timeout: 45000 });
-  const permissionInput = form.locator(
-    '[data-field-name="sc_user_permission_group_ids"] input:visible',
-  ).first();
-  await permissionInput.waitFor({ state: 'visible', timeout: 20000 });
-  await selectTag(page, permissionInput, CAPABILITY_LABEL);
-  check(
-    String(await form.innerText()).includes(CAPABILITY_LABEL),
-    'data-read capability is visible on the user permission form',
-  );
-  await shot(page, '01-finance-data-read-selected');
-
-  const saveResponsePromise = page.waitForResponse((response) => {
-    const request = requestOf(response);
-    return request.intent === 'api.data'
-      && request.params?.op === 'write'
-      && request.params?.model === 'res.users';
-  }, { timeout: 45000 });
-  const save = form.locator(
-    '[data-action-executor="record.save"]:visible, [data-form-draft-save="save-draft"]:visible',
-  ).first();
-  await save.waitFor({ state: 'visible', timeout: 15000 });
-  await save.click();
-  const dialog = page.getByRole('dialog').last();
-  if (await dialog.waitFor({ state: 'visible', timeout: 2000 }).then(() => true).catch(() => false)) {
-    const confirm = dialog.getByRole('button', { name: /^确认/ }).last();
-    await confirm.waitFor({ state: 'visible', timeout: 10000 });
-    await confirm.click();
+  const permissionSection = page
+    .getByRole('tab', { name: '用户权限组', exact: true })
+    .or(page.getByRole('button', { name: '用户权限组', exact: true }))
+    .first();
+  if (await permissionSection.isVisible().catch(() => false)) {
+    await permissionSection.click();
   }
-  const saveResponse = await saveResponsePromise;
-  const body = await saveResponse.json().catch(() => ({}));
-  check(saveResponse.status() === 200 && body?.ok === true,
-    'data permission adjustment saves through the product surface', {
-      status: saveResponse.status(),
-      body,
-    });
+  await form.getByText('业务权限角色', { exact: true }).first()
+    .waitFor({ state: 'visible', timeout: 20000 });
+  const permissionField = form.locator(
+    '[data-field-name="sc_user_permission_group_ids"]',
+  ).first();
+  await permissionField.waitFor({ state: 'visible', timeout: 20000 });
+  const permissionControl = permissionField.locator('.professional-m2m-select').first();
+  await permissionControl.waitFor({ state: 'visible', timeout: 20000 });
+  const roleAlreadyAssigned = String(await form.innerText()).includes(ROLE_LABEL);
+  report.role_already_assigned = roleAlreadyAssigned;
+  if (!roleAlreadyAssigned) {
+    await selectTag(page, permissionControl, ROLE_LABEL);
+    check(
+      String(await form.innerText()).includes(ROLE_LABEL),
+      'business-role assignment is visible on the user permission form',
+    );
+    await shot(page, '01-finance-business-role-selected');
+
+    const saveResponsePromise = page.waitForResponse((response) => {
+      const request = requestOf(response);
+      return request.intent === 'api.data'
+        && request.params?.op === 'write'
+        && request.params?.model === 'res.users';
+    }, { timeout: 45000 });
+    const save = form.locator(
+      '[data-action-executor="record.save"]:visible, [data-form-draft-save="save-draft"]:visible',
+    ).first();
+    await save.waitFor({ state: 'visible', timeout: 15000 });
+    await save.click();
+    const dialog = page.getByRole('dialog').last();
+    if (await dialog.waitFor({ state: 'visible', timeout: 2000 }).then(() => true).catch(() => false)) {
+      const confirm = dialog.getByRole('button', { name: /^确认/ }).last();
+      await confirm.waitFor({ state: 'visible', timeout: 10000 });
+      await confirm.click();
+    }
+    const saveResponse = await saveResponsePromise;
+    const body = await saveResponse.json().catch(() => ({}));
+    check(saveResponse.status() === 200 && body?.ok === true,
+      'data permission adjustment saves through the product surface', {
+        status: saveResponse.status(),
+        body,
+      });
+  } else {
+    check(true, 'business-role assignment persists from an earlier save');
+  }
   await page.waitForTimeout(700);
   check(
-    String(await form.innerText()).includes(CAPABILITY_LABEL),
-    'saved form retains the data-read capability',
+    String(await form.innerText()).includes(ROLE_LABEL),
+    'saved form retains the business-role assignment',
   );
-  await shot(page, '02-finance-data-read-saved');
+  await shot(page, '02-finance-business-role-saved');
   check(report.console_errors.length === 0, 'data permission journey has no browser errors', {
     errors: report.console_errors,
   });

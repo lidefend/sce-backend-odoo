@@ -38,6 +38,9 @@ const report = {
   intent_responses: [],
   contract_observations: [],
   failed_requests: [],
+  scenario_activation_responses: [],
+  scenario_catalog_payload: null,
+  scenario_activation: null,
   navigations: [],
   readback: null,
   screenshots: [],
@@ -155,6 +158,16 @@ page.on('response', async (response) => {
     });
     return;
   }
+  if (intent === 'scenario.activation.catalog.get' && body?.ok) {
+    report.scenario_catalog_payload = data;
+  }
+  if (intent === 'scenario.activation.set') {
+    report.scenario_activation_responses.push({
+      status: response.status(),
+      ok: body?.ok,
+      payload: data,
+    });
+  }
   report.observations ||= [];
   report.observations.push({
     intent: request.intent,
@@ -211,6 +224,66 @@ page.on('response', async (response) => {
     ...(process.env.SC_ACCEPTANCE_CAPTURE_RAW_CONTRACTS === '1' ? { raw_body: body } : {}),
   });
 });
+
+async function activateEnterpriseScenarios(page) {
+  const enterpriseUrl = page.url();
+  await page.goto(`${BASE}/s/enterprise.setup`, { waitUntil: 'networkidle' });
+  const panel = page.locator('#enterprise-scenario-activation[data-state="ready"]');
+  await panel.waitFor({ state: 'visible', timeout: 45000 });
+  let catalog = report.scenario_catalog_payload;
+  check(Boolean(catalog && Array.isArray(catalog.business_scenarios)),
+    'enterprise scenario catalog is available', { catalog });
+  const targets = catalog.business_scenarios
+    .filter((row) => row?.tenant_enabled !== true
+      && Array.isArray(row.actions)
+      && row.actions.some((action) => action.enabled === true));
+  const activated = [];
+  for (const initialRow of targets) {
+    const current = catalog.business_scenarios.find((row) => row.scene_key === initialRow.scene_key);
+    const action = current?.actions?.find((item) => item.enabled === true);
+    if (!action) continue;
+    const index = catalog.business_scenarios.findIndex((row) => row.scene_key === initialRow.scene_key);
+    const setResponsePromise = page.waitForResponse((response) => (
+      requestOf(response).intent === 'scenario.activation.set'
+    ), { timeout: 45000 });
+    const refreshResponsePromise = page.waitForResponse((response) => (
+      requestOf(response).intent === 'scenario.activation.catalog.get'
+    ), { timeout: 45000 });
+    await panel.locator('li').nth(index).getByRole('button', {
+      name: action.label,
+      exact: true,
+    }).click();
+    const setResponse = await setResponsePromise;
+    const setBody = await setResponse.json().catch(() => ({}));
+    check(setResponse.status() === 200 && setBody?.ok === true,
+      `enterprise scenario ${initialRow.scene_key} activates`, {
+        scene_key: initialRow.scene_key,
+        status: setResponse.status(),
+        body: setBody,
+      });
+    const refreshResponse = await refreshResponsePromise;
+    const refreshBody = await refreshResponse.json().catch(() => ({}));
+    catalog = refreshBody?.data?.data ?? refreshBody?.data;
+    report.scenario_catalog_payload = catalog;
+    const readback = (catalog?.business_scenarios || []).find(
+      (row) => row.scene_key === initialRow.scene_key,
+    );
+    check(readback?.tenant_enabled === true,
+      `enterprise scenario ${initialRow.scene_key} readback stays enabled`, {
+        scene_key: initialRow.scene_key,
+        readback,
+      });
+    activated.push(initialRow.scene_key);
+  }
+  report.scenario_activation = {
+    activated_count: activated.length,
+    activated,
+  };
+  await shot(page, '01a-enterprise-scenarios');
+  await page.goto(enterpriseUrl, { waitUntil: 'networkidle' });
+  await page.getByRole('heading', { name: /^企业初始化/ }).first()
+    .waitFor({ state: 'visible', timeout: 45000 });
+}
 
 try {
   await page.goto(matrixLoginUrl(BASE), { waitUntil: 'networkidle' });
@@ -303,6 +376,8 @@ try {
     readonly_record_id: page.url().includes('record_id=1') ? 1 : null,
   };
   await shot(page, '01-enterprise-setup-ready');
+  await activateEnterpriseScenarios(page);
+  await shot(page, '01b-enterprise-scenarios-enabled');
 
   await page.getByRole('button', { name: '企业信息', exact: true }).click();
   await page.waitForURL((url) => !url.pathname.includes('/s/entry.smart_construction_core.menu_sc_enterprise_initialization'), {
