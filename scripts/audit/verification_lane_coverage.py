@@ -61,7 +61,7 @@ RULE_RE = re.compile(r"^((?:" + NAME + r")(?:\s+" + NAME + r")*)\s*:(?!=)\s*(.*)
 # ``scripts/foo_test.ts`` - a path that does not exist. That turned 138 live
 # frontend tests into "absent recipe paths" and inflated the lane-divergence
 # metric. A script path only counts where a path can start.
-SCRIPT_RE = re.compile(r"(?<![A-Za-z0-9_./\-])(scripts/[A-Za-z0-9_./\-]+\.(?:py|sh|js|mjs|cjs|ts))")
+SCRIPT_RE = re.compile(r"(?<![A-Za-z0-9_./\-])(scripts/[A-Za-z0-9_./\-]+\.(?:py|sh|js|mjs|cjs|ts))(?![A-Za-z0-9_.\-])")
 # A module consumed without its extension (``require('./x')``,
 # ``from x import y``) is invisible to both SCRIPT_RE and the basename index,
 # so a live guard was reported as dead surface.  Capture the specifier and
@@ -230,6 +230,16 @@ def join_continuations(lines: list[str]) -> list[str]:
     return joined
 
 
+def recipe_script_paths(line: str) -> set[str]:
+    """Resolve literal `cd dir && ...` recipes without inventing dynamic paths."""
+    directory = re.match(r"^\s*@?cd\s+([A-Za-z0-9_./-]+)\s*&&", line)
+    prefix = Path(directory.group(1)) if directory else Path()
+    if prefix.is_absolute() or ".." in prefix.parts:
+        # Unknown/out-of-tree shells are not proved by this static recognizer.
+        prefix = Path()
+    return {str(prefix / script) for script in SCRIPT_RE.findall(line)}
+
+
 def parse_make(root: Path):
     targets: dict[str, str] = {}
     recipes: dict[str, list[str]] = defaultdict(list)
@@ -294,7 +304,7 @@ def build_graph(targets, recipes, prereqs):
                 for callee in call.group(1).split():
                     edges[target].add(callee)
                     make_ref[callee].add(f"recursive:{target}")
-            for script in SCRIPT_RE.findall(line):
+            for script in recipe_script_paths(line):
                 script_ref[script].add(f"make:{target}")
     return edges, make_ref, script_ref
 
@@ -717,7 +727,7 @@ def measure(root: Path, exemptions_path: Path = DEFAULT_EXEMPTIONS, dispositions
         scripts: set[str] = set()
         for target in reached:
             for line in recipes.get(target, ()):
-                scripts |= set(SCRIPT_RE.findall(line))
+                scripts |= recipe_script_paths(line)
         lane_scripts[lane] = sorted(scripts)
 
     every_script = sorted(
@@ -872,7 +882,7 @@ def measure(root: Path, exemptions_path: Path = DEFAULT_EXEMPTIONS, dispositions
             {
                 script
                 for line in recipes[target]
-                for script in SCRIPT_RE.findall(line)
+                for script in recipe_script_paths(line)
                 if not (root / script).exists()
             }
         )
@@ -961,6 +971,7 @@ BASELINE_REVIEW_TRIGGERS = [
 # entry records an *observed* count right after a measurement defect was fixed;
 # it is evidence, not an allowance, so the recorded maximum may still shrink.
 BASELINE_METRIC_CORRECTIONS = [
+    {'metric': 'recorded_targets_missing_asset', 'previous_reading': 22, 'observed_after_correction': 0, 'batch': 'VERIFY-SYSTEM-CLOSEOUT-01-R2C', 'defect': '19 targets were false missing-path readings: literal recipe cwd was ignored or data/archive suffixes were truncated into executable suffixes. Three genuinely absent historical implementations are explicitly retired and always DENY; they are outside all declared lane closures. Zero missing runnable assets is not proof of product acceptance.'},
     {
         "metric": "max_scripts_unreferenced_anywhere",
         "previous_reading": 1,

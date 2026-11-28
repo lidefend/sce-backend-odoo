@@ -63,8 +63,10 @@ def main() -> int:
             errors.append(f"ActionView missing token: {token}")
 
     action_presentation_tokens = [
-        "resolveContractV2SurfacePolicies(options.actionContract.value)",
-        "surfacePolicies.actions_primary_max",
+        "resolveLoadedActionPrimaryBudget(options.actionContract.value)",
+        "resolveContractV2SurfacePolicies(store)",
+        "resolveDeclaredSurfaceBudget(",
+        "'actions_primary_max'",
         "contractActionGroupsRaw",
         "resolveContractActionPresentation",
         "contractOverflowActionGroups",
@@ -74,8 +76,10 @@ def main() -> int:
             errors.append(f"useActionViewActionPresentationRuntime missing token: {token}")
 
     filter_runtime_tokens = [
-        "resolveContractV2SurfacePolicies(options.actionContract.value)",
-        "surfacePolicies.filters_primary_max",
+        "resolveLoadedPrimaryFilterBudget(options.actionContract.value)",
+        "resolveDeclaredPrimaryFilterBudget(resolveContractV2SurfacePolicies(store))",
+        "resolveDeclaredSurfaceBudget(surfacePolicies, key)",
+        "resolveDeclaredFilterBudget(surfacePolicies, 'filters_primary_max')",
         "contractFilterChips",
         "filterPrimaryBudget",
     ]

@@ -884,10 +884,19 @@ class TestBusinessRole(BusinessTransactionCase):
         scene = {'code': 'enterprise.setup', 'extensions': {'native_handling_entry_source': {
             'view_xmlid': 'smart_construction_core.view_sc_enterprise_initialization_form'}}}
         catalog = project_native_handling_catalog(self.Roles.env, scene)
-        self.assertEqual(catalog['item_count'], 16)
-        self.assertEqual([g['key'] for g in catalog['groups']], [
-            'enterprise_bootstrap', 'enterprise_business_foundation', 'enterprise_role_authority',
-            'enterprise_approval_configuration', 'enterprise_scenario_configuration'])
+        view = self.Roles.env.ref(scene['extensions']['native_handling_entry_source']['view_xmlid'])
+        declared_groups = [node for node in view._get_combined_arch().iter('group')
+                           if node.findall('button')]
+        expected = [(node.get('name'), [int(button.get('name'))
+                     for button in node.findall('button')]) for node in declared_groups]
+        self.assertTrue(expected, 'the initialization source must declare actual handling entries')
+        self.assertEqual(catalog['item_count'], sum(len(ids) for _, ids in expected))
+        self.assertEqual(catalog['group_count'], len(expected))
+        actual = [(group['key'], [self.env.ref(item['action_xmlid']).id
+                   for item in group['items']]) for group in catalog['groups']]
+        self.assertEqual(actual, expected, 'projection must preserve every declared action and its order')
+        flat_ids = [action_id for _, ids in actual for action_id in ids]
+        self.assertEqual(len(flat_ids), len(set(flat_ids)), 'duplicate handling entries are invalid')
         for group in catalog['groups']:
             for item in group['items']:
                 self.assertEqual(item['target']['action_xmlid'], item['action_xmlid'])

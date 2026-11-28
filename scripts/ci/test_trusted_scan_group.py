@@ -117,8 +117,16 @@ class WorkerBudgetTests(unittest.TestCase):
         self.assertEqual(group.resolve_jobs(None, 8, cpu=16, memory=3 * 1024**3), 1)
 
     def test_unknown_memory_keeps_only_the_cpu_bound(self) -> None:
-        self.assertEqual(group.resolve_jobs(None, 8, cpu=4, memory=None), 2)
-        self.assertEqual(group.resolve_jobs(None, 8, cpu=1, memory=None), 1)
+        # None requests live detection; model an unavailable probe explicitly.
+        with mock.patch.object(group, "available_bytes", return_value=None) as probe:
+            self.assertEqual(group.resolve_jobs(None, 8, cpu=4), 2)
+            self.assertEqual(group.resolve_jobs(None, 8, cpu=1), 1)
+            self.assertEqual(probe.call_count, 2)
+
+    def test_default_memory_uses_detected_budget(self) -> None:
+        with mock.patch.object(group, "available_bytes", return_value=3 * 1024**3) as probe:
+            self.assertEqual(group.resolve_jobs(None, 8, cpu=4), 1)
+            probe.assert_called_once_with()
 
     def test_zero_negative_or_empty_is_refused(self) -> None:
         with self.assertRaisesRegex(ValueError, "positive integer"):

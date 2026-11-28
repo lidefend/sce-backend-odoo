@@ -1,0 +1,72 @@
+{
+  "schema_version": 2,
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database or service access"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Executor real Make/Node failure propagation, selection and receipt regression only."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "New exact R2-B PR HEAD required checks; no old SHA substitution."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "R3 after repaired verifier and required integration; known all-ref RH018 blocker requires separate owner decision."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Frontend validation carrying shared contract targets must consume the passed backend channel receipt for the same run and source identity."
+    }
+  },
+  "id": "VERIFY-SYSTEM-CLOSEOUT-01-R2B",
+  "branch": "fix/verify-system-closeout-01-r2b-20261128",
+  "baseline_sha": "d79dd2caa58f7e2aa7ab17a88fa80df2fc3e266c",
+  "status": "verification_pending",
+  "goal": ".agent/goals/VERIFY-SYSTEM-CLOSEOUT-01-R2B.yaml",
+  "record": "docs/ops/iterations/verify_system_closeout_01_r2b.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/runs/VERIFY-SYSTEM-CLOSEOUT-01-R2B/run.json",
+    ".agent/goals/VERIFY-SYSTEM-CLOSEOUT-01-R2B.yaml",
+    "docs/ops/iterations/verify_system_closeout_01_r2b.md",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_incremental_environment.py",
+    "make/frontend.mk",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "scripts/ci/test_lane_telemetry.py",
+    "scripts/verify/list_surface_clean_guard.py",
+    "scripts/verify/test_page_contract_gate_wiring.py",
+    "scripts/audit/verification_lane_dispositions.json",
+    "make/runtime_ops.mk"
+  ],
+  "checks": {
+    "executor": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/verify/test_incremental_environment.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Transfer this R2-B commit into existing Draft #1037 under owner latest instruction, then validate combined candidate; preserve failed owner logs.",
+  "authorization": "Owner resumed CI closeout after business-line completion on 2026-11-28. R2-B repairs separate from R2-C and R3; no deployment. Owner explicitly authorized archival retirement of superseded #1022; separate R2-C operation, no scanner weakening.",
+  "executor_validation": {
+    "status": "passed",
+    "tests": 298,
+    "log": ".runtime/verify-system-closeout-resume-20261128/r2b-final-unit.log"
+  }
+}

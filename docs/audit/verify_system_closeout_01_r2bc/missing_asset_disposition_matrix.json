@@ -1,0 +1,284 @@
+{
+  "previous_target_count": 22,
+  "false_positives": 19,
+  "retired_deny": 3,
+  "rows": [
+    {
+      "target": "daily.candidate.continuity.remote_install",
+      "previous_missing": [
+        "scripts/ops/daily_candidate_clone_upgrade_contract_v1.js",
+        "scripts/ops/daily_candidate_data_continuity_contract_v1.js",
+        "scripts/ops/daily_candidate_data_sentinel_contract_v1.js",
+        "scripts/ops/daily_runtime_tenant_recovery_contract_v1.js",
+        "scripts/ops/production_acceptance_contract_v1.js",
+        "scripts/ops/production_acceptance_package_v1.sh",
+        "scripts/ops/r10_performance_ab_continuity_contract_v1.js"
+      ],
+      "resolved_paths": [
+        "scripts/ops/daily_candidate_clone_upgrade_executor.py",
+        "scripts/ops/daily_candidate_clone_upgrade_rehearsal.py",
+        "scripts/ops/daily_candidate_data_continuity.py",
+        "scripts/ops/daily_candidate_data_sentinel.py",
+        "scripts/ops/daily_runtime_duty_database_registration.py",
+        "scripts/ops/daily_runtime_duty_edition_release.py",
+        "scripts/ops/daily_runtime_duty_identity.py",
+        "scripts/ops/daily_runtime_duty_operator_grant.py",
+        "scripts/ops/daily_runtime_duty_payload.py",
+        "scripts/ops/daily_runtime_platform_security_admin_bootstrap.py",
+        "scripts/ops/daily_runtime_platform_security_admin_credential.py",
+        "scripts/ops/platform_database_receipt.py",
+        "scripts/ops/platform_database_register.py",
+        "scripts/ops/platform_security_admin_bootstrap.py",
+        "scripts/ops/platform_security_admin_credential.py",
+        "scripts/ops/production_acceptance_harness.py",
+        "scripts/ops/release_candidate_eligibility.py",
+        "scripts/release/configure_colocated_platform_core.py",
+        "scripts/release/initialize_colocated_platform_snapshot.py",
+        "scripts/tenant_payload/odoo_action.py",
+        "scripts/tenant_payload/provision_operator.py"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "online.capture.preflight",
+      "previous_missing": [
+        "scripts/verify/online_capture_security.py"
+      ],
+      "resolved_paths": [
+        "scripts/verify/online_capture_security.py"
+      ],
+      "actual_missing": [
+        "scripts/verify/online_capture_security.py"
+      ],
+      "disposition": "RETIRED_DENY"
+    },
+    {
+      "target": "verify.business_config.change_set_acceptance",
+      "previous_missing": [
+        "scripts/low_code_change_set_acceptance.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/low_code_change_set_acceptance.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.business_config.config_workbench_operation_acceptance",
+      "previous_missing": [
+        "scripts/config_workbench_operation_acceptance.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/config_workbench_operation_acceptance.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.business_config.low_code_acceptance",
+      "previous_missing": [
+        "scripts/low_code_business_config_acceptance.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/low_code_business_config_acceptance.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.business_config.low_code_global_stability",
+      "previous_missing": [
+        "scripts/low_code_global_stability_acceptance.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/low_code_global_stability_acceptance.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.business_config.low_code_group_matrix",
+      "previous_missing": [
+        "scripts/low_code_form_group_matrix_acceptance.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/low_code_form_group_matrix_acceptance.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.business_config.low_code_layout_runtime",
+      "previous_missing": [
+        "scripts/low_code_form_layout_runtime_acceptance.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/low_code_form_layout_runtime_acceptance.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.business_config.low_code_menu_navigation_alignment",
+      "previous_missing": [
+        "scripts/low_code_menu_navigation_alignment_acceptance.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/low_code_menu_navigation_alignment_acceptance.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.business_config.low_code_runtime_consistency",
+      "previous_missing": [
+        "scripts/low_code_form_runtime_consistency_acceptance.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/low_code_form_runtime_consistency_acceptance.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.business_config.safe_open_acceptance",
+      "previous_missing": [
+        "scripts/low_code_safe_open_acceptance.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/low_code_safe_open_acceptance.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.business_config.workbench_fault_acceptance",
+      "previous_missing": [
+        "scripts/low_code_workbench_fault_acceptance.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/low_code_workbench_fault_acceptance.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.business_config.workbench_product_acceptance",
+      "previous_missing": [
+        "scripts/low_code_workbench_product_acceptance.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/low_code_workbench_product_acceptance.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.frontend.list_selection_contract_smoke",
+      "previous_missing": [
+        "scripts/list_selection_contract_smoke.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/list_selection_contract_smoke.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.output_invoice.source_gap_audit",
+      "previous_missing": [
+        "scripts/verify/output_invoice_source_gap_audit.py"
+      ],
+      "resolved_paths": [
+        "scripts/verify/output_invoice_source_gap_audit.py"
+      ],
+      "actual_missing": [
+        "scripts/verify/output_invoice_source_gap_audit.py"
+      ],
+      "disposition": "RETIRED_DENY"
+    },
+    {
+      "target": "verify.product.page_structure",
+      "previous_missing": [
+        "scripts/product_page_structure_guard.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/product_page_structure_guard.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.productization.system_closure.topic_guard",
+      "previous_missing": [
+        "scripts/verify/productization_system_closure_topic_guard.py",
+        "scripts/verify/test_productization_system_closure_topic_guard.py"
+      ],
+      "resolved_paths": [
+        "scripts/verify/productization_system_closure_topic_guard.py",
+        "scripts/verify/test_productization_system_closure_topic_guard.py"
+      ],
+      "actual_missing": [
+        "scripts/verify/productization_system_closure_topic_guard.py",
+        "scripts/verify/test_productization_system_closure_topic_guard.py"
+      ],
+      "disposition": "RETIRED_DENY"
+    },
+    {
+      "target": "verify.system_user_experience.business_form_user_perspective",
+      "previous_missing": [
+        "scripts/business_form_user_perspective_summary_guard.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/business_form_user_perspective_summary_guard.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.system_user_experience.full_browser",
+      "previous_missing": [
+        "scripts/system_user_experience_full_browser_summary_guard.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/system_user_experience_full_browser_summary_guard.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.system_user_experience.shell_acceptance",
+      "previous_missing": [
+        "scripts/system_user_experience_shell_acceptance.mjs",
+        "scripts/system_user_experience_shell_summary_guard.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/system_user_experience_shell_acceptance.mjs",
+        "frontend/apps/web/scripts/system_user_experience_shell_summary_guard.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "verify.system_user_experience.visible_surface_visual_coverage",
+      "previous_missing": [
+        "scripts/user_visible_surface_visual_coverage_summary_guard.mjs"
+      ],
+      "resolved_paths": [
+        "frontend/apps/web/scripts/user_visible_surface_visual_coverage_summary_guard.mjs"
+      ],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    },
+    {
+      "target": "daily.demo.write.recovery_gate",
+      "previous_missing": [
+        "scripts/ops/daily_candidate_data_continuity_contract_v1.js"
+      ],
+      "resolved_paths": [],
+      "actual_missing": [],
+      "disposition": "PARSER_FALSE_POSITIVE_CORRECTED"
+    }
+  ]
+}

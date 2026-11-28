@@ -51,6 +51,39 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_audited_producers_keep_live_make_owners_without_business_suites(self):
+        from scripts.audit.verification_lane_coverage import parse_make
+        from scripts.verify.frontend_dev_incremental import AUDITED_TEST_PRODUCER_OWNERS
+        root = Path(__file__).resolve().parents[2]
+        targets, recipes, _prerequisites, _phony = parse_make(root)
+        for target, producers in AUDITED_TEST_PRODUCER_OWNERS.items():
+            for producer in producers:
+                with self.subTest(producer=producer, target=target):
+                    self.assertTrue((root / producer).is_file())
+                    self.assertIn(target, targets)
+                    commands = "\n".join(recipes[target])
+                    module = producer.removesuffix(".py").replace("/", ".")
+                    self.assertTrue(producer in commands or module in commands)
+                    selected = set(select_iteration_targets([producer]))
+                    self.assertIn(target, selected)
+                    self.assertIn(target, implicitly_registered_offline_targets(selected))
+                    self.assertFalse(any(t.endswith((".orm", ".module_baseline")) for t in selected))
+
+    def test_unknown_similarly_named_producer_cannot_borrow_audited_owner(self):
+        for path in ("scripts/ci/test_lane_telemetry.py.unregistered", "backup/scripts/ci/test_lane_telemetry.py"):
+            with self.subTest(path=path):
+                self.assertNotIn("verify.lane.telemetry.unit", select_iteration_targets([path]))
+                self.assertEqual(select_iteration_targets([path]), [])
+
+    def test_release_tool_tests_remain_in_full_lane_without_selecting_full_lane(self):
+        from scripts.audit.verification_lane_coverage import parse_make
+        _targets, _recipes, prerequisites, _phony = parse_make(Path(__file__).resolve().parents[2])
+        self.assertIn("verify.frontend.release_tools.unit", prerequisites["verify.frontend.release.unit"])
+        self.assertEqual(set(prerequisites["verify.frontend.release_tools.unit"]), {"guard.prod.forbid"})
+        selected = select_iteration_targets(["scripts/verify/frontend_performance_budget.test.mjs"])
+        self.assertIn("verify.frontend.release_tools.unit", selected)
+        self.assertNotIn("verify.frontend.release.unit", selected)
+
     def test_shared_ownership_guards_and_test_script_lint_are_selected(self):
         cases = {
             "addons/smart_construction_core/core_extension.py":
@@ -4419,6 +4452,39 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.assertEqual(1, result["testCount"])
         self.assertEqual("unittest-summary", result["testSummarySource"])
 
+    def _run_two_node_runners(self, recipe):
+        self.root.joinpath("fail.test.mjs").write_text(
+            "import test from 'node:test'; test('failure', () => { throw Error('expected'); });\n")
+        self.root.joinpath("pass.test.mjs").write_text(
+            "import test from 'node:test'; test('success', () => {});\n")
+        self.root.joinpath("Makefile").write_text("verify.runners.unit:\n\t@" + recipe + "\n")
+        return incremental._run_make_target("verify.runners.unit", self.root, self.root / "runners.log")
+
+    def test_real_shell_cannot_hide_first_node_runner_failure(self):
+        for failed in ("node --test --test-reporter=tap fail.test.mjs", "node --test --test-reporter=tap fail.test.mjs | cat"):
+            with self.subTest(failed=failed):
+                result = self._run_two_node_runners(failed + "; node --test --test-reporter=tap pass.test.mjs")
+                self.assertEqual("failed", result["status"])
+                self.assertNotEqual(0, result["returncode"])
+                self.assertNotIn("# Subtest: success", (self.root / "runners.log").read_text())
+
+    def test_real_shell_explicit_negative_runner_remains_legal(self):
+        result = self._run_two_node_runners(
+            "if node --test --test-reporter=tap fail.test.mjs; then exit 1; fi; node --test --test-reporter=tap pass.test.mjs")
+        self.assertEqual(0, result["returncode"])
+        self.assertEqual("passed", result["status"])
+        self.assertEqual(1, result["testCount"])
+
+    def test_route_lease_producer_selects_and_executes_real_make_target(self):
+        target = "verify.frontend.action_view_route_lease_race.unit"
+        for path in ("scripts/verify/frontend_action_view_route_lease_race.test.mjs",
+                     "frontend/apps/web/src/app/actionViewRouteLeaseCore.js"):
+            targets = incremental.select_iteration_targets([path])
+            self.assertIn(target, targets)
+        result = incremental._run_make_target(target, ROOT, self.root / "real-route-lease.log")
+        self.assertEqual("passed", result["status"])
+        self.assertGreater(result["testCount"], 0)
+
     def _run_node_tap(self, source):
         self.root.joinpath("tap.test.mjs").write_text(
             "import test from 'node:test';\n" + source, encoding="utf-8",
@@ -4812,6 +4878,15 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(receipt["status"], "not_run")
         self.assertFalse(receipt["testsRun"])
+        self.assertFalse(receipt["verificationPassed"])
+
+    def test_unknown_producer_alias_is_blocked_by_real_executor(self) -> None:
+        path = "scripts/ci/test_lane_telemetry.py.unregistered"
+        code, receipt = self.execute(registered={"verify.lane.telemetry.unit"}, paths=[path])
+        self.assertEqual(code, 2)
+        self.assertEqual(receipt["status"], "blocked")
+        self.assertEqual(receipt["unmappedPaths"], [path])
+        self.assertEqual(receipt["targetResults"], [])
         self.assertFalse(receipt["verificationPassed"])
 
     def test_pure_unmapped_source_is_blocked_with_nonzero_exit(self) -> None:

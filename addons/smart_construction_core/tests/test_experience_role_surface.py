@@ -31,7 +31,8 @@ class TestExperienceRolePermissions(TransactionCase):
         group = self.env.ref('smart_construction_core.group_sc_role_experience')
         self.assertEqual(set(group.implied_ids.ids), {
             self.env.ref('smart_construction_core.group_sc_cap_internal_identity').id,
-            self.env.ref('smart_construction_core.group_sc_cap_entry_scope_full').id,
+            *(self.env.ref('smart_construction_core.group_sc_cap_entry_scope_p%02d' % n).id
+              for n in (1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14)),
         })
         self.assertFalse(any(
             group_xmlid.startswith('smart_construction_core.group_sc_entry_p')

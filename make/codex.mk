@@ -692,6 +692,7 @@ branch.cleanup.feature: guard.prod.forbid
 	@bash scripts/ops/branch_cleanup_safe.sh "$(CLEAN_BRANCH)"
 
 branch.retire.historical: guard.prod.forbid
+	$(if $(filter 1,$(CLOSE_SUPERSEDED_PR)),$(MAKE) --no-print-directory pr.close.superseded,)
 	@if [ -z "$(HISTORICAL_RETIREMENT_MANIFEST)" ] && [ -z "$(HISTORICAL_RETIREMENT_EMIT_MANIFEST)$(HISTORICAL_RETIREMENT_EMIT_INVENTORY)" ]; then echo "❌ HISTORICAL_RETIREMENT_MANIFEST is required (or request a read-only --emit output)"; exit 2; fi
 	@test -n "$(HISTORICAL_RETIREMENT_EXPECTED_MAIN)" || { echo "❌ HISTORICAL_RETIREMENT_EXPECTED_MAIN is required (full SHA of $(HISTORICAL_RETIREMENT_REMOTE)/main)"; exit 2; }
 	@python3 scripts/ops/retire_historical_branch_refs.py \
@@ -706,6 +707,7 @@ branch.retire.historical: guard.prod.forbid
 		$(if $(filter 1,$(APPLY)),--apply --bundle-output "$(HISTORICAL_RETIREMENT_BUNDLE)" --approved-manifest-sha256 "$(HISTORICAL_RETIREMENT_MANIFEST_SHA256)" --confirm "$(HISTORICAL_RETIREMENT_CONFIRM)",)
 
 verify.branch.retire.historical: guard.prod.forbid
+	$(if $(filter 1,$(CLOSE_SUPERSEDED_PR)),$(MAKE) --no-print-directory pr.close.superseded,)
 	@python3 -m py_compile scripts/ops/retire_historical_branch_refs.py scripts/ops/test_retire_historical_branch_refs.py
 	@python3 -m unittest scripts/ops/test_retire_historical_branch_refs.py
 
@@ -1888,3 +1890,13 @@ workspace.branch.sync-github-published: guard.prod.forbid
 
 verify.workspace.branch.sync-github.unit: guard.prod.forbid
 	@PYTHONPATH=scripts/ops python3 -m unittest scripts.ops.test_github_published_branch_sync scripts.ops.test_gitee_published_branch_sync
+
+.PHONY: pr.close.superseded verify.pr.close.superseded
+pr.close.superseded: guard.prod.forbid
+	@python3 scripts/ops/close_superseded_pr.py --pr "$(PR)" --replacement "$(REPLACEMENT_PR)" \
+		--manifest "$(HISTORICAL_RETIREMENT_MANIFEST)" --manifest-sha256 "$(HISTORICAL_RETIREMENT_MANIFEST_SHA256)" \
+		--expected-main "$(HISTORICAL_RETIREMENT_EXPECTED_MAIN)" --bundle "$(HISTORICAL_RETIREMENT_BUNDLE)" \
+		--report "$(SUPERSEDED_PR_REPORT)" $(if $(filter 1,$(APPLY)),--apply --confirm "$(SUPERSEDED_PR_CONFIRM)",)
+
+verify.pr.close.superseded: guard.prod.forbid
+	@python3 -m unittest scripts.ops.test_close_superseded_pr

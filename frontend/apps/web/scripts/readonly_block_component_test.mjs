@@ -60,7 +60,7 @@ async function runMounted({ useRecordFormLayout, createContractV2Store, Componen
     globalThis.window = { matchMedia: () => ({ matches: false, addEventListener() {}, removeEventListener() {} }) };
     globalThis.document = { getElementById: () => null };
     const all = (predicate, n = rootNode) => [n, ...n.children.flatMap(child => all(() => true, child))].filter(predicate);
-    const schema = nodes => nodes.filter(n => n.type === 'field').map(n => ({ name: n.name, label: n.name, key: n.name, type: n.fieldType || 'char', value: Object.hasOwn(n, 'value') ? n.value : 'visible', inputValue: Object.hasOwn(n, 'value') ? n.value : 'visible', widget: n.widget, widgetSemantics: n.widgetSemantics, readonlyEmptyText: n.readonlyEmptyText, readonly: n.readonly !== false, helpText: n.helpText, span: n.span }));
+    const schema = nodes => nodes.filter(n => n.type === 'field').map(n => ({ name: n.name, label: n.name, key: n.name, type: n.fieldType || 'char', digits: n.digits, value: Object.hasOwn(n, 'value') ? n.value : 'visible', inputValue: Object.hasOwn(n, 'value') ? n.value : 'visible', widget: n.widget, widgetSemantics: n.widgetSemantics, readonlyEmptyText: n.readonlyEmptyText, readonly: n.readonly !== false, helpText: n.helpText, span: n.span }));
     const direct = { type: 'field', name: 'direct', span: 12 };
     const group = { type: 'group', name: 'g', span: 24, columns: 2, children: [
       { type: 'field', name: 'a', span: 12 }, { type: 'field', name: 'b', span: 8 }] };
@@ -77,14 +77,14 @@ async function runMounted({ useRecordFormLayout, createContractV2Store, Componen
       { type: 'field', name: 'declared_empty', span: 12, value: '', readonlyEmptyText: '尚未生成' },
       { type: 'field', name: 'empty_without_copy', span: 12, value: null },
       { type: 'field', name: 'false_value', span: 12, fieldType: 'boolean', value: false },
-      { type: 'field', name: 'zero_value', span: 12, fieldType: 'float', value: 0 },
+      { type: 'field', name: 'zero_value', span: 12, fieldType: 'float', value: 0, digits: [16, 2] },
       { type: 'field', name: 'empty_relation', span: 12, fieldType: 'many2one', value: null },
       { type: 'field', name: 'empty_ids', span: 12, fieldType: 'many2many', value: [] },
       { type: 'field', name: 'hidden_empty', span: 12, value: '', visible: false },
     ];
     props.value = { ...props.value, nodes: [{ ...group, children: emptyFields }], isNodeVisible: n => n.visible !== false, preferReadonlyFacts: true };
     await tick();
-    equal(errors.length, 0, 'empty readonly declarations mount through real native renderer and FormSection');
+    equal(errors.length, 0, `empty readonly declarations mount through real native renderer and FormSection: ${errors.map(String).join('; ')}`);
     equal(all(n => n.props['data-field-name']).map(n => n.props['data-field-name']), emptyFields.filter(n => n.visible !== false).map(n => n.name), 'declared visible membership and order survive empty/false/zero; hidden occurrence stays absent');
     const textOf = n => n.text + n.children.map(textOf).join('');
     equal(textOf(all(n => n.props['data-field-name'] === 'declared_empty')[0]).includes('尚未生成'), true, 'declared readonly empty text rendered');
@@ -530,7 +530,7 @@ try {
         builder.onLoad({ filter: /.*/, namespace: 'popup' }, () => ({ contents: `import {h,defineComponent,ref} from 'vue';export const TDesignAlert=defineComponent({setup:(_, {attrs,slots})=>()=>h('test-alert',attrs,slots.default?.())});export const TDesignPopup=defineComponent({emits:['visible-change'],setup:(_, {attrs,slots,emit})=>{const open=ref(false);return()=>h('test-help-popover',{...attrs,onClick:()=>{open.value=!open.value;emit('visible-change',open.value)}},[slots.default?.(),open.value?slots.content?.():null])}});`, loader: 'js', resolveDir: `${root}/frontend/apps/web` }));
       }
       builder.onLoad({ filter: /\.vue$/ }, args => {
-        if (args.path !== entry && !(kind === 'attachment' && attachmentDependencyMode(args.path) === 'actual') && !(kind === 'native-layout' && /\/(FormSection|ProfessionalBaseFieldControl|ScPopover|NativeWeightedRelationDisplay)\.vue$/.test(args.path))) {
+        if (args.path !== entry && !(kind === 'attachment' && attachmentDependencyMode(args.path) === 'actual') && !(kind === 'native-layout' && /\/(FormSection|ProfessionalBaseFieldControl|ScPopover|NativeWeightedRelationDisplay|ScRichText)\.vue$/.test(args.path))) {
           if (kind === 'native-layout') {
             assert.ok(/\/(design-system|template|professional-fields)\//.test(args.path) || /\/(SceneFieldControl|SceneButton|SceneUiProvider|RestrictedHtmlEditor)\.vue$/.test(args.path), `unexpected layout presentation ${args.path}`);
             if (args.path.endsWith('/ScDescriptions.vue')) return { contents: `import {h,defineComponent} from 'vue';export default defineComponent({setup:(_, {attrs,slots})=>()=>h('test-descriptions',{},(attrs.items || []).map(item=>slots.item?.({item})))});`, loader: 'js', resolveDir: path.dirname(args.path) };

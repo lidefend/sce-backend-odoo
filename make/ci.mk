@@ -905,8 +905,7 @@ verify.unified_page_contract.lite.harmony_h5_device_acceptance_pilot.host: verif
 
 .PHONY: verify.backend_business_fact.model_audit verify.backend_business_fact.model_standard verify.output_invoice.source_gap_audit
 verify.output_invoice.source_gap_audit: guard.prod.forbid
-	@python3 -m py_compile scripts/verify/output_invoice_source_gap_audit.py
-	@python3 scripts/verify/output_invoice_source_gap_audit.py
+	@echo "[DENY] retired verification entry: verify.output_invoice.source_gap_audit. Historical invoice audit implementation was never present in this tree. See docs/ops/iterations/verify_system_closeout_01_r2c_archive.md" >&2; exit 2
 
 verify.backend_business_fact.model_audit: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/backend_business_fact_model_audit.py

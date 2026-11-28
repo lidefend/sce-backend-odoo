@@ -1,0 +1,9 @@
+schema_version: 1
+goal:
+  id: VERIFY-SYSTEM-CLOSEOUT-01-R2B
+  status: active
+  title: Runner failure propagation and producer selection
+  objective: Close confirmed F04 and F05 without broadening unrelated business validation.
+  formal_product_layer: P4
+  layer_target: standard verification infrastructure
+  module: [verification, ci]

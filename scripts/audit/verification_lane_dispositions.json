@@ -992,11 +992,6 @@
       "owner": "platform-team",
       "reason": "Odoo 日志诊断入口，人工调用。"
     },
-    "online.capture.preflight": {
-      "disposition": "audit_runbook",
-      "owner": "platform-team",
-      "reason": "线上采集安全目标。"
-    },
     "ops.auth.dev.apply": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
@@ -1492,11 +1487,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/goals/ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE.yaml。登记待接线或退役，B3 按族处理。"
     },
-    "verify.acceptance_action_count.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.admin-vis-p3.registry-audit": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
@@ -1563,11 +1553,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.backend.contract_lifecycle.runtime.schema.guard.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/BACKEND-CONTRACT-L4-CLOSURE/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.backend.contract_slo_telemetry": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
@@ -1577,11 +1562,6 @@
       "disposition": "candidate",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.backend.contract_slo_telemetry.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/BACKEND-CONTRACT-SLO-TELEMETRY/run.json。登记待接线或退役，B3 按族处理。"
     },
     "verify.backend.contract_supply_chain": {
       "disposition": "diagnostic_cli",
@@ -1612,11 +1592,6 @@
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/planning/custom-frontend-integration/G3_BOQ_READONLY_LOOP.md。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.branch.retire.historical": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/HISTORICAL-BRANCH-ASSET-RETIREMENT/run.json。登记待接线或退役，B3 按族处理。"
     },
     "verify.business.document_state_policy_switch": {
       "disposition": "history_probe_runbook",
@@ -1693,11 +1668,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/contract/README.md。登记待接线或退役，B3 按族处理。"
     },
-    "verify.contract.form_field_policy.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.contract.governed_policy_guard": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
@@ -1722,11 +1692,6 @@
       "disposition": "candidate",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.contract_retirement.declaration.unit": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.contract_retirement.declaration.unit. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
     },
     "verify.core_history_field.physical_boundary_audit": {
       "disposition": "diagnostic_cli",
@@ -1818,28 +1783,10 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.demo.baseline_readiness.unit": {
-      "disposition": "demo_runbook",
-      "owner": "demo-team",
-      "reason": "demo baseline readiness ORM suite; selected on demand by the demo runbook",
-      "review_by": "2026-12-31"
-    },
-    "verify.demo.experience_reset_scope.unit": {
-      "disposition": "demo_runbook",
-      "owner": "demo-team",
-      "reason": "experience reset scope unit suite; selected on demand by the demo runbook",
-      "review_by": "2026-12-31"
-    },
     "verify.demo.role_startup.smoke": {
       "disposition": "browser_acceptance_probe",
       "owner": "demo-team",
       "reason": "real /t/demo contract smoke for demo roles; run manually after local.dev identity verification",
-      "review_by": "2026-12-31"
-    },
-    "verify.demo.usage_foundation.unit": {
-      "disposition": "demo_runbook",
-      "owner": "demo-team",
-      "reason": "read-only user-journey foundation audit; selected on demand by the demo runbook",
       "review_by": "2026-12-31"
     },
     "verify.demo.usage_foundation_role_scope.smoke": {
@@ -1957,11 +1904,6 @@
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/product/formal_business_operation_closure_plan_v1.md。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.formal_entry_metadata.non_business_creator.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/FORMAL-SURFACE-RUNTIME-AUDIT-CONTRACT-BINDING/run.json。登记待接线或退役，B3 按族处理。"
     },
     "verify.formal_list_surface.no_test_placeholder_guard.prod": {
       "disposition": "candidate",
@@ -2088,11 +2030,6 @@
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
       "reason": "前端诊断/验收 CLI，未被任何门禁消费。"
-    },
-    "verify.frontend.explicit_any.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md。登记待接线或退役，B3 按族处理。"
     },
     "verify.frontend.field_configuration_component.unit": {
       "disposition": "history_probe_runbook",
@@ -2326,11 +2263,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.frontend.professionalization.systemwide_public_metric.unit": {
-      "disposition": "candidate",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.frontend.professionalization.tax_center.browser": {
       "disposition": "candidate",
       "owner": "platform-team",
@@ -2417,11 +2349,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.frontend.typed_dependencies.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md。登记待接线或退役，B3 按族处理。"
-    },
     "verify.frontend.workspace_composition.unit": {
       "disposition": "candidate",
       "owner": "platform-team",
@@ -2441,11 +2368,6 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/fund_daily_handling_closure_2026-06-12.md。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.gitee.check_run_ids.unit": {
-      "disposition": "candidate",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
     "verify.gitee.integration.unit": {
       "disposition": "diagnostic_cli",
@@ -2704,20 +2626,10 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.output_invoice.source_gap_audit": {
-      "disposition": "diagnostic_cli",
-      "owner": "platform-team",
-      "reason": "诊断/一次性验收 CLI，未被任何门禁消费；后续批次逐条定性为接线或退役。"
-    },
     "verify.p0_contract_producer.p0a.browser": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
       "reason": "P0-A real Chromium and exact Contract V2 response decoder acceptance. It requires the governed local.dev runtime and is intentionally explicit rather than auto-selected by ci.local.iteration; re-review when the runbook changes or a runtime lane adopts it."
-    },
-    "verify.page_contract_gate_wiring.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
     "verify.payment_execution.form_productization.runtime_guard": {
       "disposition": "candidate",
@@ -3315,11 +3227,6 @@
       "owner": "platform-team",
       "reason": "诊断/一次性验收 CLI，未被任何门禁消费；后续批次逐条定性为接线或退役。"
     },
-    "verify.tenant_rc.clean_profile.unit": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.tenant_rc.clean_profile.unit. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
-    },
     "verify.tender_optional_scope_metadata.probe": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
@@ -3913,170 +3820,7 @@
       "reason": "Playwright 浏览器验收探针：以契约声明驱动真实页面交互取证。其中 record_relation_roundtrip_acceptance.js 被本轮 run 证据显式引用为关系回环资产（T-ASSET-942），但无 make/workflow 派发。能力需要保留，登记为待接线探针；审查时接线到验收车道或登记为按需探针。"
     }
   },
-  "absent_assets": {
-    "daily.candidate.continuity.remote_install": {
-      "missing_asset": [
-        "scripts/ops/daily_candidate_clone_upgrade_contract_v1.js",
-        "scripts/ops/daily_candidate_data_continuity_contract_v1.js",
-        "scripts/ops/daily_candidate_data_sentinel_contract_v1.js",
-        "scripts/ops/daily_runtime_tenant_recovery_contract_v1.js",
-        "scripts/ops/production_acceptance_contract_v1.js",
-        "scripts/ops/production_acceptance_package_v1.sh",
-        "scripts/ops/r10_performance_ab_continuity_contract_v1.js"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "online.capture.preflight": {
-      "missing_asset": [
-        "scripts/verify/online_capture_security.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.business_config.change_set_acceptance": {
-      "missing_asset": [
-        "scripts/low_code_change_set_acceptance.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.business_config.config_workbench_operation_acceptance": {
-      "missing_asset": [
-        "scripts/config_workbench_operation_acceptance.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.business_config.low_code_acceptance": {
-      "missing_asset": [
-        "scripts/low_code_business_config_acceptance.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.business_config.low_code_global_stability": {
-      "missing_asset": [
-        "scripts/low_code_global_stability_acceptance.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.business_config.low_code_group_matrix": {
-      "missing_asset": [
-        "scripts/low_code_form_group_matrix_acceptance.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.business_config.low_code_layout_runtime": {
-      "missing_asset": [
-        "scripts/low_code_form_layout_runtime_acceptance.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.business_config.low_code_menu_navigation_alignment": {
-      "missing_asset": [
-        "scripts/low_code_menu_navigation_alignment_acceptance.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.business_config.low_code_runtime_consistency": {
-      "missing_asset": [
-        "scripts/low_code_form_runtime_consistency_acceptance.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.business_config.safe_open_acceptance": {
-      "missing_asset": [
-        "scripts/low_code_safe_open_acceptance.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.business_config.workbench_fault_acceptance": {
-      "missing_asset": [
-        "scripts/low_code_workbench_fault_acceptance.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.business_config.workbench_product_acceptance": {
-      "missing_asset": [
-        "scripts/low_code_workbench_product_acceptance.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.frontend.list_selection_contract_smoke": {
-      "missing_asset": [
-        "scripts/list_selection_contract_smoke.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.output_invoice.source_gap_audit": {
-      "missing_asset": [
-        "scripts/verify/output_invoice_source_gap_audit.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.product.page_structure": {
-      "missing_asset": [
-        "scripts/product_page_structure_guard.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.productization.system_closure.topic_guard": {
-      "missing_asset": [
-        "scripts/verify/productization_system_closure_topic_guard.py",
-        "scripts/verify/test_productization_system_closure_topic_guard.py"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.system_user_experience.business_form_user_perspective": {
-      "missing_asset": [
-        "scripts/business_form_user_perspective_summary_guard.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.system_user_experience.full_browser": {
-      "missing_asset": [
-        "scripts/system_user_experience_full_browser_summary_guard.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.system_user_experience.shell_acceptance": {
-      "missing_asset": [
-        "scripts/system_user_experience_shell_acceptance.mjs",
-        "scripts/system_user_experience_shell_summary_guard.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "verify.system_user_experience.visible_surface_visual_coverage": {
-      "missing_asset": [
-        "scripts/user_visible_surface_visual_coverage_summary_guard.mjs"
-      ],
-      "owner": "platform-team",
-      "reason": "Make target recipe calls a path absent from this repository, so 'make <target>' cannot run: 187 references are to scripts/migration/*, which .gitignore line 116 policies out of the clean product repository (customer migration collateral), plus a small set of relocated/never-added verify or root scripts. Registered so the count is owned and can only shrink; repairing means restoring the script or retiring the rule, both separate reviewed work."
-    },
-    "daily.demo.write.recovery_gate": {
-      "missing_asset": [
-        "scripts/ops/daily_candidate_data_continuity_contract_v1.js"
-      ],
-      "owner": "platform-team",
-      "reason": "Static asset matcher truncates the .json suffix to .js in the quoted remote recipe. The actual recipe reads the .json contract under the exact immutable /opt/sce/deployment-tools/<SHA> root, verified by the existing recovery receipt. No missing local executable is suppressed; re-review if the recovery recipe changes."
-    }
-  },
+  "absent_assets": {},
   "review_policy": {
     "_absent_assets": {
       "trigger": "Re-review whenever a recipe path recorded here is restored, relocated or removed; the recorded list must keep matching the measurement."

@@ -1,0 +1,173 @@
+{
+  "schema_version": 2,
+  "baseline_sha": "d79dd2caa58f7e2aa7ab17a88fa80df2fc3e266c",
+  "scope": [
+    "scripts/ops/close_superseded_pr.py",
+    "scripts/ops/test_close_superseded_pr.py",
+    "make/codex.mk",
+    ".agent/goals/VERIFY-SYSTEM-CLOSEOUT-01-R2C-ARCHIVE.yaml",
+    ".agent/runs/VERIFY-SYSTEM-CLOSEOUT-01-R2C-ARCHIVE/run.json",
+    ".agent/active-runs.json",
+    "docs/ops/iterations/verify_system_closeout_01_r2c_archive.md",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ci/test_trusted_scan_group.py",
+    ".agent/runs/VERIFY-SYSTEM-CLOSEOUT-01-R2B/run.json",
+    ".agent/goals/VERIFY-SYSTEM-CLOSEOUT-01-R2B.yaml",
+    "docs/ops/iterations/verify_system_closeout_01_r2b.md",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_incremental_environment.py",
+    "make/frontend.mk",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "scripts/ci/test_lane_telemetry.py",
+    "scripts/verify/list_surface_clean_guard.py",
+    "scripts/verify/test_page_contract_gate_wiring.py",
+    "make/runtime_ops.mk",
+    "scripts/audit/verification_lane_coverage.py",
+    "scripts/audit/test_verification_lane_coverage.py",
+    "make/ci.mk",
+    "scripts/audit/verification_lane_baseline.json",
+    "docs/audit/verify_system_closeout_01_r2bc/",
+    "addons/smart_construction_core/tests/test_project_ledger_runtime_contract.py",
+    "addons/smart_construction_core/tests/test_business_role.py",
+    "addons/smart_construction_core/tests/test_experience_role_surface.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "standing AGENTS isolated synthetic tests authorization; no persistent database writes"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Combined P4 receipt/execution/producer and archive-governance fixes; targeted nonzero tests and coverage proof."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "New governance entrypoint only; no product changes"
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "Release qualification is evaluated after mainline integration by schedule or explicit owner full dispatch on exact main head/tree; it grants candidate-build eligibility only, distinguishes scheduled_mainline from operator_full_audit, and does not substitute for exact-head PR CI or deployment."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Frontend validation carrying shared contract targets must consume the passed backend channel receipt for the same run and source identity."
+    }
+  },
+  "checks": {
+    "focused": {
+      "target": "verify.pr.close.superseded",
+      "inputs": [
+        "scripts/ops/close_superseded_pr.py",
+        "scripts/ops/test_close_superseded_pr.py",
+        "scripts/ops/retire_historical_branch_refs.py"
+      ],
+      "kind": "offline"
+    },
+    "executor": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/verify/test_incremental_environment.py"
+      ],
+      "kind": "offline"
+    },
+    "coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_dispositions.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish test-only correction and verify final Draft #1037 HEAD four required CI. No merge/deployment/R3 dispatch.",
+  "id": "VERIFY-SYSTEM-CLOSEOUT-01-R2C-ARCHIVE",
+  "branch": "fix/verify-system-closeout-01-r2c-archive-20261128",
+  "status": "verification_pending",
+  "goal": ".agent/goals/VERIFY-SYSTEM-CLOSEOUT-01-R2C-ARCHIVE.yaml",
+  "record": "docs/ops/iterations/verify_system_closeout_01_r2c_archive.md",
+  "archive_result": {
+    "status": "VERIFIED",
+    "original_pr": 1022,
+    "replacement_pr": 1024,
+    "restored_head": "7be328ae0fb987fc3a23c91bf49440ee12b71bbc",
+    "original_blob": "1582beb6a28df0d8f550a87ebff8f24c41b4d70f",
+    "bundle_sha256": "51c9e710978dbbc94b42bf6e4928206ec004613f5861f41322e6907d22e3c0d8",
+    "method": "fetch exact archived ref into independent bare repository; verify original commit and evidence blob",
+    "evidence_root": ".runtime/verify-system-closeout-resume-20261128"
+  },
+  "local_iteration": {
+    "status": "passed",
+    "executed_targets": 18,
+    "log": ".runtime/verify-system-closeout-resume-20261128/stale-orm-local-iteration.log"
+  },
+  "scan_budget_validation": {
+    "target": "security.trusted_scan_group.unit",
+    "inputs": [
+      "scripts/ci/trusted_scan_group.py",
+      "scripts/ci/test_trusted_scan_group.py"
+    ],
+    "kind": "offline",
+    "status": "passed",
+    "log": ".runtime/verify-system-closeout-resume-20261128/scan-budget-fixed.log",
+    "test_count": 17
+  },
+  "historical_scan": {
+    "status": "passed",
+    "log": ".runtime/verify-system-closeout-resume-20261128/history-after-budget-fix.log",
+    "sha256": "43b738dead49e7ad1b93f26e8c35545ea4503006ac2e4ab426d4240ee9bed10e",
+    "scanned_blobs": 40775,
+    "scope": "public_refs + secrets + personal data; unchanged policy"
+  },
+  "authorization": "2026-11-28 owner: 保持草稿，本pr次彻底收口. Consolidate independently recorded repairs into #1037; no merge authorization.",
+  "producer_evidence": {
+    "matrix": "docs/audit/verify_system_closeout_01_r2bc/producer_execution_matrix.json",
+    "producer_edges": 84,
+    "distinct_make_owners": 77,
+    "status": "stage_local_passed_not_remote_qualification"
+  },
+  "retired_asset_evidence": {
+    "matrix": "docs/audit/verify_system_closeout_01_r2bc/missing_asset_disposition_matrix.json",
+    "false_positives": 19,
+    "explicit_deny": 3
+  },
+  "coverage_validation": {
+    "status": "passed",
+    "tests": 77,
+    "log": ".runtime/verify-system-closeout-resume-20261128/coverage-final-verified.log"
+  },
+  "exact_producer_path_validation": {
+    "status": "passed",
+    "tests": 300,
+    "log": ".runtime/verify-system-closeout-resume-20261128/exact-producer-paths-final.log",
+    "sha256": "5e0aa40a560a8cb2e5f273b17c73a6d45dc9efebc6c12df8420222c441992e0b",
+    "scope": "Exact audited producer paths; unknown lookalike paths blocked by real executor; positive 84-edge mapping preserved"
+  },
+  "remote_failure": {
+    "head": "f16ad054e7c0960be7886a073ddf8737825505d4",
+    "status": "failed",
+    "log": ".runtime/verify-system-closeout-resume-20261128/final-shard2.log",
+    "failed_tests": 3,
+    "total_tests": 1855,
+    "sha256": "1c24efe6d32010feca3bac1f6c8184e712a723bc68ee9213f6680d4e17729f5c",
+    "classification": "stale ORM expectations after existing main product declarations changed in #1030 and #1036; product sources unchanged by this PR"
+  },
+  "orm_stale_expectation_validation": {
+    "status": "passed",
+    "classes": 5,
+    "tests": 60,
+    "receipt": ".runtime/test-baseline/1795865200383342379/receipt.json",
+    "log": ".runtime/verify-system-closeout-resume-20261128/stale-orm-tests-stable-source.log",
+    "prior_attempt": "1795864954744641836: assertion pass but source changed; receipt correctly denied"
+  }
+}

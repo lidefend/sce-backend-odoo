@@ -912,3 +912,31 @@ class UnregisterTargetTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class RecipeAssetIdentityTests(unittest.TestCase):
+    def test_data_suffix_is_not_an_executable_prefix(self):
+        from scripts.audit.verification_lane_coverage import SCRIPT_RE
+        self.assertEqual(SCRIPT_RE.findall("cat scripts/ops/contract.json scripts/foo.pyc"), [])
+        self.assertEqual(SCRIPT_RE.findall("node scripts/a.mjs; python3 scripts/b.py"), ["scripts/a.mjs", "scripts/b.py"])
+
+    def test_literal_working_directory_resolves_actual_asset(self):
+        from scripts.audit.verification_lane_coverage import recipe_script_paths
+        self.assertEqual(recipe_script_paths("@cd frontend/apps/web && node scripts/probe.mjs"), {"frontend/apps/web/scripts/probe.mjs"})
+        self.assertEqual(recipe_script_paths("@node scripts/probe.mjs"), {"scripts/probe.mjs"})
+        self.assertEqual(recipe_script_paths("@cd frontend/apps/web && node scripts/missing.mjs"), {"frontend/apps/web/scripts/missing.mjs"})
+
+
+class RetiredEntryTests(unittest.TestCase):
+    def test_retired_absent_entries_fail_without_claiming_verification(self):
+        from scripts.audit.verification_lane_coverage import LANES, build_graph, closure
+        targets, recipes, prerequisites, _phony = parse_make(ROOT)
+        edges, _make_refs, _script_refs = build_graph(targets, recipes, prerequisites)
+        reachable = closure([target for entries in LANES.values() for target in entries], edges)
+        for target in ("online.capture.preflight", "verify.output_invoice.source_gap_audit", "verify.productization.system_closure.topic_guard"):
+            with self.subTest(target=target):
+                self.assertNotIn(target, reachable)
+                result = subprocess.run(["make", "--no-print-directory", target], cwd=ROOT, text=True, capture_output=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("[DENY] retired verification entry: " + target, result.stderr)
+                self.assertNotIn("PASS", result.stdout)

@@ -148,9 +148,97 @@ TARGET_LAYER_ORDER = ("frontend", "backend", "contract", "docs", "governance")
 class Rule:
     fragments: tuple[str, ...]
     targets: tuple[str, ...]
+    exact_paths: bool = False
 
+
+# Existing Make owners for audited test producers, including aggregate recipes.
+AUDITED_TEST_PRODUCER_OWNERS = {
+    'daily.candidate.clone_rehearsal.test': ('scripts/ops/test_daily_candidate_clone_upgrade_executor.py', 'scripts/ops/test_daily_candidate_clone_upgrade_rehearsal.py', 'scripts/ops/test_release_candidate_eligibility.py'),
+    'daily.candidate.sentinel.test': ('scripts/ops/test_daily_candidate_data_sentinel.py',),
+    'security.online_capture.unit': ('scripts/ci/test_secret_scan.py',),
+    'security.parallel_scan.unit': ('scripts/ci/test_parallel_scan.py',),
+    'security.personal_data.unit': ('scripts/ci/test_personal_data_scan.py',),
+    'security.trusted_scan_group.unit': ('scripts/ci/test_trusted_scan_group.py',),
+    'test.unit': ('scripts/ci/test_node_syntax_check.py', 'scripts/test_render_odoo_conf.py'),
+    'verify.acceptance_action_count.unit': ('scripts/verify/test_acceptance_action_count.py',),
+    'verify.agent.ledger.unit': ('scripts/verify/test_agent_ledger_consistency_guard.py',),
+    'verify.backend.contract_lifecycle.runtime.schema.guard.unit': ('scripts/verify/test_backend_contract_lifecycle_runtime_schema_guard.py',),
+    'verify.backend.contract_slo_telemetry.unit': ('scripts/verify/test_contract_slo_telemetry.py',),
+    'verify.backend.contract_supply_chain.unit': ('scripts/verify/test_contract_supply_chain_attestation.py',),
+    'verify.business_config.formal_list.unit': ('scripts/verify/test_formal_list_configuration_baseline.py',),
+    'verify.candidate.profile.unit': ('scripts/verify/test_candidate_acceptance_profile.py',),
+    'verify.contract.form_field_policy.unit': ('scripts/verify/test_form_field_policy.py',),
+    'verify.contract.gate_case_normalisation.unit': ('scripts/verify/test_contract_gate_case_normalisation.py',),
+    'verify.contract.probe_routing.unit': ('scripts/verify/test_app_nav_config_company_cache.py',),
+    'verify.contract.unbound_structural_form_contract.repair.unit': ('scripts/ops/test_repair_unbound_structural_form_contract.py',),
+    'verify.contract_retirement.declaration.unit': ('scripts/verify/test_contract_retirement_declaration.py',),
+    'verify.daily_dev.acceptance.formal_surface.unit': ('scripts/verify/test_formal_action_runtime_drift_audit.py',),
+    'verify.demo.baseline_readiness.unit': ('scripts/verify/test_baseline_readiness_verifier.py',),
+    'verify.demo.experience_reset_scope.unit': ('scripts/verify/test_experience_reset_scope.py',),
+    'verify.demo.usage_foundation.unit': ('scripts/verify/test_demo_usage_foundation_audit.py',),
+    'verify.formal_entry_metadata.non_business_creator.unit': ('scripts/ops/test_formal_entry_metadata_non_business_creator_write.py',),
+    'verify.frontend.action_view_route_lease_race.unit': ('scripts/verify/frontend_action_view_route_lease_race.test.mjs',),
+    'verify.frontend.boq_import_preview.unit': ('scripts/verify/test_frontend_boq_import_preview_guard.py',),
+    'verify.frontend.collection_action_toolbar.unit': ('scripts/verify/test_frontend_collection_action_toolbar_guard.py',),
+    'verify.frontend.collection_group_header.unit': ('scripts/verify/test_frontend_collection_group_header_guard.py',),
+    'verify.frontend.collection_kanban_record_card.unit': ('scripts/verify/test_frontend_collection_kanban_record_card_guard.py',),
+    'verify.frontend.collection_mobile_record_row.unit': ('scripts/verify/test_frontend_collection_mobile_record_row_guard.py',),
+    'verify.frontend.collection_navigation_controls.unit': ('scripts/verify/test_frontend_collection_navigation_controls_guard.py',),
+    'verify.frontend.collection_selection_control.unit': ('scripts/verify/test_frontend_collection_selection_control_guard.py',),
+    'verify.frontend.collection_summary_strip.unit': ('scripts/verify/test_frontend_collection_summary_strip_guard.py',),
+    'verify.frontend.contract_prompt_action_presentation.unit': ('scripts/verify/test_frontend_contract_prompt_action_presentation_guard.py',),
+    'verify.frontend.contract_render_profile.unit': ('scripts/verify/frontend_contract_render_profile.test.mjs',),
+    'verify.frontend.decision_authority.unit': ('scripts/verify/test_frontend_decision_authority_guard.py',),
+    'verify.frontend.explicit_any.unit': ('scripts/verify/frontend_explicit_any_test.mjs',),
+    'verify.frontend.form_canvas_layout.unit': ('scripts/verify/frontend_form_canvas_layout_contract_test.ts',),
+    'verify.frontend.form_header_action_primitives.unit': ('scripts/verify/test_frontend_form_header_action_primitives_guard.py',),
+    'verify.frontend.industry_agnostic.audit.unit': ('scripts/verify/test_frontend_industry_agnostic_audit.py',),
+    'verify.frontend.low_code_field_create_dialog.unit': ('scripts/verify/test_frontend_low_code_field_create_dialog_guard.py',),
+    'verify.frontend.mobile_viewport.unit': ('scripts/verify/test_frontend_mobile_viewport_guard.py',),
+    'verify.frontend.navigation_initialization_race.unit': ('scripts/verify/frontend_navigation_initialization_race.test.mjs',),
+    'verify.frontend.page_pattern_reference_parity.unit': ('scripts/verify/test_page_pattern_reference_ledger_guard.py',),
+    'verify.frontend.product_page_pattern.unit': ('scripts/verify/test_frontend_product_page_pattern_guard.py',),
+    'verify.frontend.professional_audit.unit': ('scripts/verify/test_frontend_professional_audit_guard.py',),
+    'verify.frontend.professional_base_field.unit': ('scripts/verify/test_frontend_professional_base_field_guard.py',),
+    'verify.frontend.professional_collaboration.unit': ('scripts/verify/test_frontend_professional_collaboration_guard.py',),
+    'verify.frontend.professional_relation_field.unit': ('scripts/verify/test_frontend_professional_relation_field_guard.py',),
+    'verify.frontend.professional_relation_lifecycle.unit': ('scripts/verify/test_frontend_professional_relation_lifecycle_guard.py',),
+    'verify.frontend.professionalization.systemwide_public_metric.unit': ('scripts/verify/test_frontend_systemwide_public_metric_report.py',),
+    'verify.frontend.relational_action_primitives.unit': ('scripts/verify/test_frontend_relational_action_primitives_guard.py',),
+    'verify.frontend.release_tools.unit': ('scripts/verify/frontend_performance_budget.test.mjs', 'scripts/verify/test_frontend_release_gate.py'),
+    'verify.frontend.runtime_environment.unit': ('scripts/verify/test_common_env_explicit_path.py',),
+    'verify.frontend.state_dashboard.unit': ('scripts/verify/test_frontend_dashboard_state_guard.py',),
+    'verify.frontend.typed_dependencies.unit': ('scripts/verify/typed_dependency_contract_test.mjs',),
+    'verify.frontend.workspace_layout_contract.unit': ('scripts/verify/frontend_workspace_layout_contract_compatibility_test.ts',),
+    'verify.gitee.check_run_ids.unit': ('scripts/verify/test_gitee_check_run_ids.py',),
+    'verify.gitee.frontend_cache.unit': ('scripts/verify/test_gitee_frontend_reuse.py',),
+    'verify.gitee.pr_bot.unit': ('scripts/verify/test_gitee_pr_bot.py',),
+    'verify.lane.telemetry.unit': ('scripts/ci/test_lane_telemetry.py',),
+    'verify.local.dev.runtime.performance.unit': ('scripts/verify/test_local_dev_runtime_permission_probe.py',),
+    'verify.native_form.declarations.unit': ('scripts/verify/test_native_form_declarations.py',),
+    'verify.onchange.feedback_evaluation.unit': ('scripts/verify/test_onchange_feedback_evaluation_schema.py',),
+    'verify.page_contract_gate_wiring.unit': ('scripts/verify/test_page_contract_gate_wiring.py',),
+    'verify.path_namespace.acceptance.unit': ('scripts/ops/test_path_ns_c_acceptance.py', 'scripts/verify/test_path_ns_c_s4_browser_probe_credentials.py'),
+    'verify.platform.admin.credential.unit': ('scripts/ops/test_daily_runtime_platform_admin_credential.py',),
+    'verify.platform.database.lifecycle.unit': ('scripts/verify/test_platform_database_lifecycle_entry.py',),
+    'verify.platform.database.rehearsal.unit': ('scripts/verify/test_platform_database_rehearsal.py',),
+    'verify.product_menu_release_gate.contract.unit': ('scripts/verify/test_product_menu_release_gate_contract.py',),
+    'verify.repository.clean_history.unit': ('scripts/verify/test_repository_clean_history_guard.py',),
+    'verify.system.performance.baseline.unit': ('scripts/verify/test_local_dev_runtime_record_form_probe.py', 'scripts/verify/test_system_performance_baseline.py'),
+    'verify.system.permission.concurrency.unit': ('scripts/verify/test_system_permission_concurrency_probe.py',),
+    'verify.system.permission_role.inventory.unit': ('scripts/verify/test_system_permission_role_inventory.py',),
+    'verify.system.permission_role.runtime_probe.unit': ('scripts/verify/test_system_permission_runtime_observation.py',),
+    'verify.tenant_rc.clean_profile.unit': ('scripts/release/test_customer_package_preflight.py', 'scripts/release/test_tenant_rc_profile_rehearsal.py'),
+    'verify.user_permission_view_contract_boundary.unit': ('scripts/verify/test_user_permission_view_contract_boundary_guard.py',),
+}
 
 RULES = (
+    Rule(("scripts/verify/list_surface_clean_guard.py",),
+         ("verify.page_contract_gate_wiring.unit",)),
+    Rule(("scripts/ci/lane_telemetry.py",),
+         ("verify.lane.telemetry.unit",)),
+    *(Rule(tuple(producers), (target,), exact_paths=True)
+      for target, producers in AUDITED_TEST_PRODUCER_OWNERS.items()),
     # Stable projection guards read these producer and consumer facts together.
     Rule((
         'addons/smart_construction_core/core_extension_policy_maps.py',
@@ -1752,6 +1840,12 @@ RULES = (
         "verify.frontend.startup_performance.unit",
         "verify.frontend.dev_acceptance_remediation.unit",
     )),
+    Rule((
+        "scripts/verify/frontend_action_view_route_lease_race.test.mjs",
+        "frontend/apps/web/src/app/actionViewRouteLeaseCore.js",
+    ), (
+        "verify.frontend.action_view_route_lease_race.unit",
+    )),
     # ActionView 的 surface 展示形态与列表分页声明都由契约投影消费；改动入口视图
     # 或两个消费运行时都要跑对应行为锁，否则契约消费回归只能在部署面上暴露。
     Rule((
@@ -2055,6 +2149,20 @@ RULES = (
         "scripts/ops/test_github_published_branch_sync.py",
     ), (
         "verify.workspace.branch.sync-github.unit",
+    )),
+    Rule((
+        "scripts/ci/trusted_scan_group.py",
+        "scripts/ci/test_trusted_scan_group.py",
+    ), (
+        "security.trusted_scan_group.unit",
+    )),
+    Rule((
+        "scripts/ops/close_superseded_pr.py",
+        "scripts/ops/test_close_superseded_pr.py",
+        "scripts/ops/retire_historical_branch_refs.py",
+    ), (
+        "verify.pr.close.superseded",
+        "verify.branch.retire.historical",
     )),
     Rule((
         "scripts/ops/branch_cleanup_safe.sh",
@@ -3287,6 +3395,9 @@ VERIFICATION_SURFACE_PREFIXES = (
 )
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")
 DEVELOPMENT_ALLOWED_CANDIDATE_LIGHT_TARGETS = frozenset({
+    # Offline tests of release tooling, not release/browser execution.
+    "verify.frontend.release_tools.unit",
+    "verify.product_menu_release_gate.contract.unit",
     "verify.quick.input_scope.unit",
     "verify.local.dev.frontend.quick.unit",
 })
@@ -3541,7 +3652,8 @@ def select_targets(paths: list[str]) -> list[str]:
         normalized = path.replace("\\", "/")
         path_targets: set[str] = set()
         for rule in RULES:
-            if any(fragment in normalized for fragment in rule.fragments):
+            if (normalized in rule.fragments if rule.exact_paths else
+                    any(fragment in normalized for fragment in rule.fragments)):
                 path_targets.update(rule.targets)
         # A mapped backend/tool path must not mask an unmapped frontend path
         # in the same change set. Resolve the fallback per path, then union.
@@ -3664,6 +3776,7 @@ def implicitly_registered_offline_targets(targets: set[str]) -> set[str]:
         target
         for target in targets
         if target.endswith(IMPLICIT_OFFLINE_TARGET_SUFFIXES)
+        or target in {"daily.candidate.sentinel.test", "daily.candidate.clone_rehearsal.test"}
     }
 
 
@@ -4684,7 +4797,13 @@ def test_execution_metrics(output: str) -> dict:
 
 
 def _run_make_target(target: str, root: Path, log_path: Path) -> dict:
-    command = ["make", "--no-print-directory", target]
+    # Make recipes must propagate each unexpected runner/pipeline failure.
+    # Command-line assignments also reach recursive Make; do not inspect log
+    # words because explicitly handled negative tests may legitimately fail.
+    # This is the same shell policy as the repository Makefile, enforced even
+    # for isolated producer Makefiles that omit their own shell declaration.
+    command = ["make", "--no-print-directory", "SHELL=bash",
+               ".SHELLFLAGS=-eu -o pipefail -c", target]
     execution_kind = target_execution_kind(target)
     started = time.time()
     try:

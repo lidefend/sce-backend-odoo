@@ -1013,7 +1013,8 @@ verify.frontend.localized_display.unit: guard.prod.forbid
 	@node --test --test-reporter=tap /tmp/frontend-localized-display-contract-test.mjs
 
 verify.frontend.list_optional_columns.unit: guard.prod.forbid
-	@node --test --test-reporter=tap --experimental-strip-types scripts/verify/frontend_list_optional_columns_contract_test.ts
+	@frontend/apps/web/node_modules/.bin/esbuild scripts/verify/frontend_list_optional_columns_contract_test.ts --bundle --platform=node --format=esm --define:import.meta.url='"file://$(CURDIR)/scripts/verify/frontend_list_optional_columns_contract_test.ts"' --outfile=/tmp/frontend-list-optional-columns-contract-test.mjs >/dev/null
+	@node --test --test-reporter=tap /tmp/frontend-list-optional-columns-contract-test.mjs
 
 verify.frontend.collection_view_semantics.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_native_modifier.py
@@ -1590,7 +1591,7 @@ verify.frontend.bound_form_configuration.unit: guard.prod.forbid
 
 .PHONY: verify.frontend.explicit_any.unit verify.frontend.typed_dependencies.unit
 verify.frontend.explicit_any.unit: guard.prod.forbid
-	@node --test scripts/verify/frontend_explicit_any_test.mjs
+	@node --test --test-reporter=tap scripts/verify/frontend_explicit_any_test.mjs
 verify.frontend.typed_dependencies.unit: guard.prod.forbid
 	@node scripts/verify/typed_dependency_contract_test.mjs
 
