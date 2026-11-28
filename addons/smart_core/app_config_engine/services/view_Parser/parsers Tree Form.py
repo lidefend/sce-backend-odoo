@@ -469,6 +469,14 @@ class _TreeFormParserMixin:
             field_info,
         )
 
+    def _native_attributes_without_relation_actions(self, attributes, relation_active_actions):
+        """Keep get_view relation-target actions out of the generic attributes carrier."""
+        clean = dict(attributes or {})
+        if relation_active_actions:
+            clean.pop('can_create', None)
+            clean.pop('can_write', None)
+        return clean
+
     def _native_widget_options(self, raw):
         """Preserve raw embedded-widget options and expose unresolved values."""
         if raw is None:
@@ -518,7 +526,7 @@ class _TreeFormParserMixin:
         if field_type == 'many2one':
             supported_attrs = (('can_create', 'create'), ('can_write', 'write'))
         elif field_type == 'many2many' and widget == 'many2many_tags':
-            supported_attrs = (('can_create', 'create'),)
+            supported_attrs = (('can_create', 'create'), ('can_write', 'write'))
         for source_attr, action_name in supported_attrs:
             value = source.get(source_attr)
             if value is not None:
@@ -562,6 +570,10 @@ class _TreeFormParserMixin:
                         continue
                     field_info = fields_info.get(fname) if isinstance(fields_info, dict) else {}
                     occurrence_modifiers, relation_active_actions = self._native_behavior_from_element(el, field_info)
+                    attributes = self._native_attributes_without_relation_actions(
+                        dict(el.attrib or {}),
+                        relation_active_actions,
+                    )
                     occurrence_identity = self._native_element_identity(el)
                     occurrence = {
                         "name": fname,
@@ -570,7 +582,7 @@ class _TreeFormParserMixin:
                         "widget_source": "native_explicit" if el.get("widget") else "model_metadata_derived",
                         "source_position": source_position,
                         **occurrence_identity,
-                        "attributes": dict(el.attrib or {}),
+                        "attributes": attributes,
                         "modifiers": occurrence_modifiers,
                     }
                     widget_semantics = self._field_widget_semantics(
@@ -1274,6 +1286,10 @@ class _TreeFormParserMixin:
                 node['modifiers'] = fmods
             if relation_active_actions:
                 node['relation_active_actions'] = relation_active_actions
+            node['attributes'] = self._native_attributes_without_relation_actions(
+                node.get('attributes'),
+                relation_active_actions,
+            )
             node['fieldInfo'] = meta
 
             # inline 子视图在这里不展开（交给 _collect_x2many_subviews_from_dom）
@@ -1846,9 +1862,16 @@ class _TreeFormParserMixin:
             meta.pop('widget_semantics', None)
             if semantics:
                 meta['widget_semantics'] = semantics
-            for key in ('readonly', 'required', 'invisible'):
-                if attrs.get(key):
-                    meta.setdefault('modifiers', {})[key] = self._normalize_modifier_value(attrs.get(key))
+            field_modifiers, relation_active_actions = self._native_behavior_from_mapping(attrs, meta)
+            if field_modifiers:
+                meta.setdefault('modifiers', {}).update(field_modifiers)
+                layout_node['modifiers'] = field_modifiers
+            if relation_active_actions:
+                layout_node['relation_active_actions'] = relation_active_actions
+            layout_node['attributes'] = self._native_attributes_without_relation_actions(
+                attrs,
+                relation_active_actions,
+            )
             layout_node['label'] = meta.get('label') or fname
             layout_node['nolabel'] = str(attrs.get('nolabel') or '').strip().lower() in ('1', 'true', 'yes', 'on')
             layout_node['fieldInfo'] = meta
