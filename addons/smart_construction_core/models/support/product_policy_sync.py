@@ -345,6 +345,12 @@ class ScProductPolicy(models.Model):
             }
         target_policy = deepcopy(active_policy) if active_policy else rec.to_runtime_dict()
         source_policy = rec.to_runtime_dict()
+        from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
+            load_maintained_runtime_surface,
+        )
+        target_policy["business_scene_composition"] = load_maintained_runtime_surface(
+            self.env
+        )
         groups = [deepcopy(item) for item in target_policy.get("menu_groups") or []]
         target_policy["menu_groups"] = groups
         capabilities = [

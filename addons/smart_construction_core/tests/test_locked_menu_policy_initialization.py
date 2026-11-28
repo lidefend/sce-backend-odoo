@@ -603,6 +603,19 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
             if menu.get("menu_xmlid")
         }
         self.assertTrue(missing_xmlids <= released_rows)
+        from odoo.addons.smart_core.delivery.edition_release_snapshot_service import (
+            EditionReleaseSnapshotService,
+        )
+        draft = EditionReleaseSnapshotService(self.env).build_policy_draft_contract(
+            product_key=product_key
+        )
+        self.assertEqual(draft["blocking_issue_count"], 0)
+        composition_check = next(
+            row for row in draft["preflight_checks"]
+            if row.get("key") == "business_scene_composition"
+        )
+        self.assertFalse(composition_check["blocking"])
+        self.assertEqual(composition_check["unassigned_page_count"], 0)
         parent = self.env.ref(
             "smart_construction_core.menu_sc_business_config_center"
         )

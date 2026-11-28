@@ -144,6 +144,7 @@
     "fix/main-scheduled-ci-closeout-20261016": ".agent/runs/MAIN-SCHEDULED-CI-CLOSEOUT-20261016/run.json",
     "fix/main-scheduled-ci-recovery-20261122": ".agent/runs/MAIN-SCHEDULED-CI-20261122/run.json",
     "fix/mainline-performance-02-scene-facts-r2-20261122": ".agent/runs/MAINLINE-PERFORMANCE-02-R1/run.json",
+    "fix/menu-upgrade-cache-visibility-20261129": ".agent/runs/MENU-UPGRADE-CACHE-VISIBILITY-20261129/run.json",
     "fix/menu-config-recovery-authority-20261128": ".agent/runs/MENU-CONFIG-RECOVERY-AUTHORITY-20261128/run.json",
     "fix/menu-cache-invalidation-closeout-20261017": ".agent/runs/MENU-CACHE-INVALIDATION-CLOSEOUT-20261017/run.json",
     "fix/my-work-fact-layer-convergence-20261104": ".agent/runs/MY-WORK-FACT-LAYER-CONVERGENCE-20261104/run.json",

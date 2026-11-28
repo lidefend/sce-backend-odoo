@@ -1,0 +1,74 @@
+{
+  "schema_version": 2,
+  "id": "MENU-UPGRADE-CACHE-VISIBILITY-20261129",
+  "branch": "fix/menu-upgrade-cache-visibility-20261129",
+  "baseline_sha": "b974839c7d42b096baefc0fbc109bfc2284986ae",
+  "status": "verification_pending",
+  "goal": ".agent/goals/MENU-UPGRADE-CACHE-VISIBILITY-20261129.yaml",
+  "record": "docs/ops/iterations/menu_upgrade_cache_visibility_20261129.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MENU-UPGRADE-CACHE-VISIBILITY-20261129.yaml",
+    ".agent/runs/MENU-UPGRADE-CACHE-VISIBILITY-20261129/run.json",
+    "addons/smart_construction_core/migrations/17.0.0.189/post-migrate.py",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
+    "docs/ops/iterations/menu_upgrade_cache_visibility_20261129.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing local Make tools and disposable local.test database; persistent deployment is a separate explicitly authorized verification step."
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "The migration and focused ORM regression must prove cache visibility and unchanged release preflight."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The P1 migration behavior must pass current main integration gates."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "This is a targeted migration repair, not release qualification."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Persistent deployment may proceed only after backend migration validation."
+    }
+  },
+  "checks": {
+    "locked_menu_migration": {
+      "target": "verify.smart_construction_core.close_03.preview_promotion.orm",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/MENU-UPGRADE-CACHE-VISIBILITY-20261129/locked-menu-migration.log"
+      },
+      "inputs": [
+        "addons/smart_construction_core/migrations/17.0.0.189/post-migrate.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py"
+      ]
+    },
+    "navigation_projection": {
+      "target": "verify.navigation.projection.orm",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/MENU-UPGRADE-CACHE-VISIBILITY-20261129/navigation-projection.log"
+      },
+      "inputs": [
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
+        "addons/smart_construction_core/tests/test_product_policy_fact_authority.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit and publish the verified migration composition repair, complete exact-head PR CI, and merge it."
+}
