@@ -287,12 +287,53 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
         ))
         self.assertTrue(any("hard-coded hour/minute" in failure for failure in failures))
 
-    def test_generic_float_precision_fallback_fails(self):
+    def test_generic_float_absent_digits_flag_drop_fails(self):
         failures = guard.validate(lambda path: source(
             path,
-            ("field.(float).digits", "field.(float).legacy_default"),
+            (
+                "const hasDeclaredDigits = options?.digits !== undefined;",
+                "const hasDeclaredDigits = true;",
+            ),
         ) if path == "utils/fieldSemantics.ts" else source(path))
-        self.assertTrue(any("generic float formatting" in failure for failure in failures))
+        self.assertTrue(any("distinguish absent from invalid digits" in failure for failure in failures))
+
+    def test_generic_float_optional_digits_are_not_treated_as_a_gap(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "type === 'float' && hasDeclaredDigits && !validDeclaredScale",
+                "type === 'float' && !validDeclaredScale",
+            ),
+        ) if path == "utils/fieldSemantics.ts" else source(path))
+        self.assertTrue(any("treats optional absent digits" in failure for failure in failures))
+
+    def test_generic_float_frontend_default_precision_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                ": validDeclaredScale\n      ? declaredScale\n      : null;",
+                ": validDeclaredScale\n      ? declaredScale\n      : 2;",
+            ),
+        ) if path == "utils/fieldSemantics.ts" else source(path))
+        self.assertTrue(any("fixed two-decimal precision" in failure for failure in failures))
+
+    def test_kanban_primary_field_consumption_drop_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "titleField: String(listProfile.primary_field || '').trim(),",
+                "titleField: String(profile.title_field || '').trim(),",
+            ),
+        ) if path == "app/action_runtime/useActionViewContractShapeRuntime.ts" else source(path))
+        self.assertTrue(any("does not consume listProfile.primary_field" in failure for failure in failures))
+        self.assertTrue(any("superseded nested title_field" in failure for failure in failures))
+
+    def test_worksheet_temporal_consumption_drop_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            ("temporal: field.temporal,", ""),
+        ) if path == "components/action/HierarchicalWorksheet.vue" else source(path))
+        self.assertTrue(any("drops the declared temporal authority" in failure for failure in failures))
 
     def test_plain_object_label_inference_fails(self):
         failures = guard.validate(lambda path: (

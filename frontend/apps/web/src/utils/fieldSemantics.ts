@@ -132,6 +132,7 @@ export function formatNumericFieldValue(
   type: string,
   options?: { locale?: string; digits?: [number, number] },
 ): string | null {
+  const hasDeclaredDigits = options?.digits !== undefined;
   const declaredScale = Array.isArray(options?.digits) && options.digits.length === 2
     ? Number(options.digits[1])
     : null;
@@ -139,12 +140,12 @@ export function formatNumericFieldValue(
     && Number.isInteger(declaredScale)
     && declaredScale >= 0
     && declaredScale <= 20;
-  if (type === 'float' && !validDeclaredScale) {
+  if (type === 'float' && hasDeclaredDigits && !validDeclaredScale) {
     throw contractGapError({
       kind: 'contract_defect',
-      missing: 'field.(float).digits',
+      missing: 'field.(float).digits.invalid',
       requiredDeclarationLayer: 'P0:smart_core:field_descriptor_digits_projection',
-    }, '浮点字段缺少契约声明精度 digits');
+    }, '浮点字段声明了非法精度 digits');
   }
   const parsed = numericFieldValue(value);
   if (parsed === null) return null;
@@ -152,10 +153,10 @@ export function formatNumericFieldValue(
     ? 0
     : validDeclaredScale
       ? declaredScale
-      : 2;
+      : null;
   return parsed.toLocaleString(options?.locale || 'zh-CN', {
-    maximumFractionDigits: fractionDigits,
-    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits ?? 20,
+    minimumFractionDigits: fractionDigits ?? 0,
   });
 }
 

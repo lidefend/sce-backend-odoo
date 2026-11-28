@@ -191,8 +191,14 @@ export function sceneNavigationMatchesUrl(navigation, rawUrl, baseUrl = '') {
     const expectedPath = basePath && declaredPath.startsWith('/')
       ? `${basePath}${declaredPath}`
       : declaredPath;
-    if (!expectedPath || url.pathname !== expectedPath) return false;
-    if (navigation.scene_key && url.searchParams.get('scene_key') !== navigation.scene_key) return false;
+    if (expectedPath) {
+      if (url.pathname !== expectedPath) return false;
+    } else if (
+      !navigation.scene_key
+      || url.searchParams.get('scene_key') !== navigation.scene_key
+    ) {
+      return false;
+    }
     return Object.entries(navigation.query || {}).every(([key, value]) => (
       url.searchParams.get(key) === String(value)
     ));

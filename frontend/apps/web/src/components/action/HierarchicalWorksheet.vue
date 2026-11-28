@@ -199,7 +199,19 @@ import ProductListHeader from '../product-list/ProductListHeader.vue';
 import HierarchyTreeNode from './HierarchyTreeNode.vue';
 
 type Dict = Record<string, unknown>;
-type DisplayField = { field: string; label: string; type: string; selection: Array<[string, string]>; precision?: number; digits?: [number, number]; currency_field?: string };
+type DisplayField = {
+  field: string;
+  label: string;
+  type: string;
+  selection: Array<[string, string]>;
+  precision?: number;
+  digits?: [number, number];
+  currency_field?: string;
+  temporal?: {
+    kind: 'date' | 'datetime';
+    timezoneAuthority: 'user' | 'record' | 'not_applicable';
+  };
+};
 type Column = DisplayField & { align: string; width: number };
 type DetailField = DisplayField;
 type DetailTab = { key: string; label: string; fields: DetailField[] };
@@ -597,7 +609,13 @@ function formatValue(value: unknown, field: DisplayField, record?: WorksheetDict
       });
     }
   }
-  return formatDisplayValue(value, { type: field.type, selection: field.selection || [] });
+  return formatDisplayValue(value, {
+    name: field.field,
+    type: field.type,
+    selection: field.selection || [],
+    digits: field.digits,
+    temporal: field.temporal,
+  });
 }
 function displayCell(entry: VisibleEntry, column: Column): string {
   if (entry.record && column.field === sheetConfig.value.ordinal_field) return entry.ordinal ? String(entry.ordinal) : '';
