@@ -5,6 +5,7 @@ from pathlib import Path
 import json
 import sys
 import argparse
+from xml.etree import ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
 VIEWS_DIR = ROOT / "frontend/apps/web/src/views"
@@ -17,6 +18,10 @@ REPORT_JSON = ROOT / "artifacts/backend/frontend_page_contract_boundary_report.j
 REPORT_MD = ROOT / "docs/audit/frontend_page_contract_boundary_report.md"
 WORKSPACE_HOME_BUILDER = ROOT / "addons/smart_core/core/workspace_home_contract_builder.py"
 PAGE_CONTRACTS_BUILDER = ROOT / "addons/smart_core/core/page_contracts_builder.py"
+CONFIGURATION_FACT_FILES = (
+    ROOT / "addons/smart_construction_core/views/support/enterprise_initialization_views.xml",
+    ROOT / "addons/smart_construction_scene/views/enterprise_scenario_activation_views.xml",
+)
 
 
 def _read(path: Path) -> str:
@@ -35,12 +40,71 @@ def _check_forbidden(text: str, tokens: list[str], scope: str, errors: list[str]
             errors.append(f"{scope}: forbidden token present: {token}")
 
 
+def _check_configuration_fact_boundaries(errors: list[str]) -> None:
+    """Configuration facts execute native facts; scene composition is not a target."""
+    parsed: dict[Path, ET.Element] = {}
+    for path in CONFIGURATION_FACT_FILES:
+        scope = path.relative_to(ROOT).as_posix()
+        text = _read(path)
+        if not text:
+            errors.append(f"{scope}: unreadable")
+            continue
+        try:
+            root = ET.fromstring(text)
+        except ET.ParseError as exc:
+            errors.append(f"{scope}: invalid XML: {exc}")
+            continue
+        parsed[path] = root
+        for token in ("sc_web_route", "/s/"):
+            if token in text:
+                errors.append(f"{scope}: configuration facts may not reference scene route token {token}")
+        for record in root.iter("record"):
+            if record.get("model") == "ir.actions.act_url":
+                errors.append(
+                    f"{scope}: configuration facts may not declare URL actions ({record.get('id')})"
+                )
+
+    initialization = _read(CONFIGURATION_FACT_FILES[0])
+    if "%(action_sc_product_scenario)d" in initialization:
+        errors.append(
+            "enterprise initialization: business-scenario configuration must not target the global definition action"
+        )
+
+    activation = parsed.get(CONFIGURATION_FACT_FILES[1])
+    if activation is not None:
+        action = next(
+            (
+                record
+                for record in activation.iter("record")
+                if record.get("id") == "action_sc_enterprise_scenario_activation"
+            ),
+            None,
+        )
+        if action is None or action.get("model") != "ir.actions.act_window":
+            errors.append(
+                "enterprise scenario activation must be declared as an ir.actions.act_window fact"
+            )
+        if not any(
+            record.get("id") == "view_sc_enterprise_initialization_form_scenario_enablement"
+            and any(
+                field.get("name") == "inherit_id"
+                and field.get("ref") == "smart_construction_core.view_sc_enterprise_initialization_form"
+                for field in record.findall("field")
+            )
+            for record in activation.iter("record")
+        ):
+            errors.append(
+                "enterprise scenario activation must reference the native initialization view"
+            )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--check-only", action="store_true", help="Validate without regenerating reports")
     args = parser.parse_args()
     errors: list[str] = []
     scanned: list[str] = []
+    _check_configuration_fact_boundaries(errors)
 
     view_files = sorted(VIEWS_DIR.glob("*.vue"))
     expected_views = {
@@ -441,6 +505,7 @@ def main() -> int:
         "summary": {
             "checked_views": len(scanned),
             "checked_layouts": 2,
+            "checked_configuration_fact_files": len(CONFIGURATION_FACT_FILES),
             "error_count": len(errors),
             "boundary": "all-pages-contract-driven",
         },
@@ -464,6 +529,9 @@ def main() -> int:
     ]
     for item in scanned:
         lines.append(f"- `{item}`")
+    lines.extend(["", "## Configuration Fact Files"])
+    for path in CONFIGURATION_FACT_FILES:
+        lines.append(f"- `{path.relative_to(ROOT).as_posix()}`")
     if errors:
         lines.extend(["", "## Errors"])
         lines.extend([f"- {err}" for err in errors])

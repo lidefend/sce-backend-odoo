@@ -1,0 +1,195 @@
+{
+  "schema_version": 2,
+  "id": "P1-ENTERPRISE-SCENARIO-FACT-BOUNDARY-20261128",
+  "status": "verification_pending",
+  "branch": "fix/p1-enterprise-scenario-activation-20261128",
+  "baseline_sha": "10fe60ee7d96cfc60245a733b0e2f2cccc7b7e56",
+  "goal": ".agent/goals/P1-ENTERPRISE-SCENARIO-FACT-BOUNDARY-20261128.yaml",
+  "record": "docs/ops/iterations/p1_enterprise_scenario_fact_boundary_20261128.md",
+  "current_batch": "P1 enterprise scenario fact/action boundary",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P1-ENTERPRISE-SCENARIO-FACT-BOUNDARY-20261128.yaml",
+    ".agent/runs/P1-ENTERPRISE-SCENARIO-FACT-BOUNDARY-20261128/run.json",
+    "docs/audit/frontend_page_contract_boundary_report.md",
+    "docs/ops/iterations/p1_enterprise_scenario_fact_boundary_20261128.md",
+    "addons/smart_construction_core/views/support/enterprise_initialization_views.xml",
+    "addons/smart_construction_core/tests/test_enterprise_setup_native_contracts.py",
+    "addons/smart_construction_scene/__manifest__.py",
+    "addons/smart_construction_scene/models/__init__.py",
+    "addons/smart_construction_scene/models/product_scenario_activation.py",
+    "addons/smart_construction_scene/models/scene_company_enablement.py",
+    "addons/smart_construction_scene/views/enterprise_scenario_activation_views.xml",
+    "addons/smart_construction_scene/tests/test_enterprise_initialization_journey.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_page_contract_boundary_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "make/guards.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing worktree-scoped local.test and clean runtime entries only; no persistent, demo, sample, acceptance or production data."
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Native XML/action semantics plus focused non-zero scenario enablement tests."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Both affected P1 modules require exact-head integration and module baselines."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "This implementation candidate is not a release or deployment request; mainline release qualification remains a separate post-merge concern."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "No frontend target is selected in this batch, but any later shared-contract consumer must carry this run's passed backend receipt."
+    }
+  },
+  "checks": {
+    "enterprise_initialization_journey": {
+      "target": "verify.enterprise.initialization.journey.orm",
+      "inputs": [
+        "addons/smart_construction_core/views/support/enterprise_initialization_views.xml",
+        "addons/smart_construction_scene/models/product_scenario_activation.py",
+        "addons/smart_construction_scene/models/scene_company_enablement.py",
+        "addons/smart_construction_scene/views/enterprise_scenario_activation_views.xml",
+        "addons/smart_construction_scene/tests/test_enterprise_initialization_journey.py",
+        "make/ci.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/p1-enterprise-scenario-fact-boundary/enterprise-initialization-journey.readback.json"
+      }
+    },
+    "focused_backend": {
+      "target": "verify.admin_close_01.backend.unit",
+      "inputs": [
+        "addons/smart_construction_core/views/support/enterprise_initialization_views.xml",
+        "addons/smart_construction_core/tests/test_enterprise_setup_native_contracts.py",
+        "addons/smart_construction_scene/models/product_scenario_activation.py",
+        "addons/smart_construction_scene/models/scene_company_enablement.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "scene_module_baseline": {
+      "target": "verify.smart_construction_scene.module_baseline",
+      "inputs": [
+        "addons/smart_construction_scene/",
+        "make/ci.mk"
+      ],
+      "kind": "runtime"
+    },
+    "core_module_baseline": {
+      "target": "verify.smart_construction_core.module_baseline",
+      "inputs": [
+        "addons/smart_construction_core/",
+        "make/ci.mk"
+      ],
+      "kind": "runtime"
+    },
+    "permission_truth_capability": {
+      "target": "verify.daily.permission_truth.capability.orm",
+      "inputs": [
+        "addons/smart_construction_core/",
+        "addons/smart_construction_scene/",
+        "make/dev_test.mk"
+      ],
+      "kind": "runtime"
+    },
+    "extension_lifecycle": {
+      "target": "verify.extension.lifecycle.orm",
+      "inputs": [
+        "addons/smart_construction_scene/",
+        "addons/smart_core/",
+        "make/ci.mk"
+      ],
+      "kind": "runtime"
+    },
+    "test_coverage_registry": {
+      "target": "verify.test.coverage.registry",
+      "inputs": [
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/verify/test_test_coverage_registry_audit.py",
+        "scripts/verify/test_coverage_registry.yaml",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "configuration_fact_boundary": {
+      "target": "verify.frontend.page_contract_boundary.guard",
+      "inputs": [
+        "scripts/verify/frontend_page_contract_boundary_guard.py",
+        "addons/smart_construction_core/views/support/enterprise_initialization_views.xml",
+        "addons/smart_construction_scene/views/enterprise_scenario_activation_views.xml",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "evidence": {
+    "local_validation": {
+      "status": "passed",
+      "commands": [
+        {
+          "command": "make verify.enterprise.initialization.journey.orm",
+          "status": "passed",
+          "test_count": 3,
+          "receipt": ".runtime/test-baseline/1795857719386849644/receipt.json"
+        },
+        {
+          "command": "make verify.admin_close_01.backend.unit",
+          "status": "passed",
+          "test_count": 180
+        },
+        {
+          "command": "make verify.frontend.dev.incremental.unit",
+          "status": "passed",
+          "test_count": 287
+        },
+        {
+          "command": "make verify.frontend.page_contract_boundary.guard",
+          "status": "passed",
+          "test_count": 0,
+          "note": "Static guard; success is process success, not a test count."
+        },
+        {
+          "command": "make ci.local.iteration",
+          "status": "passed",
+          "receipt": ".runtime/frontend-dev-validation/executions/20261128T092341Z-1472454-569854680/receipt.json"
+        }
+      ],
+      "facts_verified": [
+        "enterprise initialization no longer references the global scenario-definition action",
+        "the composed initialization page exposes a native act_window action backed by a native tree view",
+        "company enablement writes and reads back through the existing company-scoped activation authority",
+        "unreleased scenarios and non-configuration users are rejected",
+        "configuration XML can no longer use /s/, sc_web_route or URL actions as a configuration target",
+        "the scenario requirement may later constrain facts through validation without reversing the dependency"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run git diff checks, commit the clean source scope, publish an independent PR, and wait for exact-head required checks.",
+  "excluded_preexisting_changes": "The P1 worktree is clean at the recorded baseline. No files in other worktrees, PR #1019 or PR #1029 are owned by this run."
+}

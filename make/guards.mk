@@ -576,6 +576,7 @@ verify.admin_close_01.backend.unit: guard.prod.forbid verify.platform.capability
 	  addons/smart_core/tests/test_release_operator_surface_copy_backend.py \
 	  addons/smart_construction_scene/handlers/scenario_activation.py \
 	  addons/smart_construction_scene/tests/test_tenant_scene_activation.py
+	@python3 addons/smart_construction_core/tests/test_enterprise_setup_native_contracts.py
 	@python3 addons/smart_core/tests/test_release_operator_surface_copy_backend.py
 	@python3 addons/smart_construction_scene/tests/test_tenant_scene_activation.py
 

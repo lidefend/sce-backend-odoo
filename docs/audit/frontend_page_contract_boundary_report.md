@@ -32,3 +32,7 @@
 - `frontend/apps/web/src/views/SceneView.vue`
 - `frontend/apps/web/src/views/UsageAnalyticsView.vue`
 - `frontend/apps/web/src/views/WorkbenchView.vue`
+
+## Configuration Fact Files
+- `addons/smart_construction_core/views/support/enterprise_initialization_views.xml`
+- `addons/smart_construction_scene/views/enterprise_scenario_activation_views.xml`
