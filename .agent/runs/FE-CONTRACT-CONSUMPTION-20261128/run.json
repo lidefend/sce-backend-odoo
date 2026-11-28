@@ -1,8 +1,8 @@
 {
   "schema_version": 2,
   "id": "FE-CONTRACT-CONSUMPTION-20261128",
-  "branch": "fix/frontend-contract-consumption-20261128",
-  "baseline_sha": "d79dd2caa58f7e2aa7ab17a88fa80df2fc3e266c",
+  "branch": "fix/frontend-contract-consumption-20261128-r2",
+  "baseline_sha": "dc68e914f36c653cf8c33f8ae2247829d2348dab",
   "status": "active",
   "goal": ".agent/goals/FE-CONTRACT-CONSUMPTION-20261128.yaml",
   "record": "docs/ops/iterations/frontend_contract_consumption_20261128.md",
