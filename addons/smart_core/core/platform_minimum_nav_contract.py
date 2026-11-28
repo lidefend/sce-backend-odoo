@@ -92,7 +92,6 @@ def build_platform_minimum_nav_contract() -> dict:
             "scene_source": SOURCE,
             "menu_xmlid": "scene.contract.workspace_home",
             "route": "/",
-            "entry_target": dict(workspace_entry_target),
         },
     }
     group_node = {
@@ -158,7 +157,7 @@ def merge_authenticated_safe_landing(nav, authority, *, authenticated):
     buckets = ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions")
 
     def is_home(row):
-        target = row.get("entry_target") or (row.get("meta") or {}).get("entry_target") or {}
+        target = row.get("entry_target") or {}
         return (not int(row.get("action_id") or (row.get("meta") or {}).get("action_id") or 0)
                 and target.get("type") == "scene" and target.get("scene_key") == WORKSPACE_SCENE_KEY)
 

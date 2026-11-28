@@ -70,6 +70,7 @@ SINGLE_OWNER_HOOKS = frozenset({
     "smart_core_model_code_mapping",
     "smart_core_model_specific_form_contract_policy",
     "smart_core_native_config_delivery_excluded_menu_xmlids",
+    "smart_core_native_config_action_entry_target",
     "smart_core_native_config_root_menu_xmlid",
     "smart_core_native_view_widget_payload",
     "smart_core_navigation_authority_filter",

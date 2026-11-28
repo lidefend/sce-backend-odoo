@@ -698,8 +698,6 @@ class TestProjectMemberRoleSurface(TransactionCase):
             entry_target = (
                 node.get("entry_target")
                 if isinstance(node.get("entry_target"), dict)
-                else (node.get("meta") or {}).get("entry_target")
-                if isinstance(node.get("meta"), dict)
                 else {}
             )
             expected_prefix = (

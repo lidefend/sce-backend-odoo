@@ -146,7 +146,7 @@ class ReleaseRuntimeUserProbeService:
 
     def _leaf_values(self, node: dict[str, Any]) -> set[str]:
         meta = _dict(node.get("meta"))
-        entry_target = _dict(meta.get("entry_target"))
+        entry_target = _dict(node.get("entry_target"))
         refs = _dict(entry_target.get("compatibility_refs"))
         values = {
             _text(node.get("key")),
@@ -173,7 +173,7 @@ class ReleaseRuntimeUserProbeService:
 
     def _leaf_summary(self, node: dict[str, Any], path: list[str]) -> dict[str, Any]:
         meta = _dict(node.get("meta"))
-        entry_target = _dict(meta.get("entry_target"))
+        entry_target = _dict(node.get("entry_target"))
         refs = _dict(entry_target.get("compatibility_refs"))
         return {
             "key": _text(node.get("key")),

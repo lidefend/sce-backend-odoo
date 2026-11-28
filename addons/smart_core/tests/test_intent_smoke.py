@@ -275,7 +275,6 @@ class TestIntentSmoke(HttpCase):
                 if not children and (
                     int(node.get("action_id") or meta.get("action_id") or 0) > 0
                     or isinstance(node.get("entry_target"), dict)
-                    or isinstance(meta.get("entry_target"), dict)
                 ):
                     executable_leaves.append(node)
                 collect_executable_leaves(children)

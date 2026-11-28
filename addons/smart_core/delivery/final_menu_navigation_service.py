@@ -120,7 +120,7 @@ def _delivery_node_to_fact(node: dict) -> dict:
         "action_meta": {
             "model": model,
             "route": _text(node.get("route") or meta.get("route")),
-            "entry_target": meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {},
+            "entry_target": node.get("entry_target") if isinstance(node.get("entry_target"), dict) else {},
         },
         "children": children,
     }

@@ -31,14 +31,30 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
             / "delivery"
             / "navigation_contract_compiler.py"
         ).read_text(encoding="utf-8")
-        self.assertIn("from odoo.addons.smart_core.delivery.navigation_contract_compiler import (", system_init)
+        delivery = (
+            Path(__file__).resolve().parents[1]
+            / "delivery"
+            / "delivery_engine.py"
+        ).read_text(encoding="utf-8")
+        published_scene_surface = (
+            Path(__file__).resolve().parents[1]
+            / "delivery"
+            / "published_scene_surface_service.py"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("NavigationContractCompiler(", system_init)
+        self.assertNotIn("NavigationContractCompiler(", delivery)
+        self.assertIn("from .navigation_contract_compiler import NavigationContractCompiler", published_scene_surface)
+        self.assertIn("NavigationContractCompiler(", published_scene_surface)
         self.assertIn("from odoo.addons.smart_core.delivery.scene_shell_compiler import SceneShellCompiler", system_init)
-        self.assertIn("NavigationContractCompiler(", system_init)
         self.assertIn("SceneShellCompiler.merge_scene_ready_contract(", system_init)
-        self.assertIn("designed_scene_keys=_designed_scene_keys", system_init)
-        self.assertIn(".compile(", system_init)
-        self.assertIn('data["nav"] = _compiled_navigation.nav', system_init)
-        self.assertIn('data["navigation"] = _compiled_navigation.navigation', system_init)
+        self.assertIn("designed_scene_keys=designed_scene_keys", published_scene_surface)
+        self.assertIn(").compile(", published_scene_surface)
+        self.assertIn('"navigation": compilation.navigation', published_scene_surface)
+        self.assertIn('"scene_shells": compilation.scene_shells', published_scene_surface)
+        self.assertIn('delivery_payload.get("navigation")', system_init)
+        self.assertIn('delivery_payload.get("scene_shells")', system_init)
+        self.assertIn('data["nav"] = _compiled_nav', system_init)
+        self.assertIn('data["navigation"] = _compiled_navigation', system_init)
         self.assertNotIn("filter_nav_by_route_authority(", system_init)
         self.assertNotIn("project_final_navigation_routes(", system_init)
         self.assertNotIn("project_navigation_product_policy(", system_init)
@@ -46,7 +62,7 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
         shared = (Path(__file__).resolve().parents[1] / "delivery" / "effective_delivery_service.py").read_text()
         self.assertIn("EffectiveDeliveryService(env).resolve(", system_init)
         self.assertIn("request_context=request_context", system_init)
-        self.assertIn("effective_authority=effective_delivery.route_authority", system_init)
+        self.assertNotIn("effective_authority=effective_delivery.route_authority", system_init)
         self.assertEqual(system_init.count("EffectiveDeliveryService(env).resolve("), 1)
         delivery_position = system_init.index(
             "effective_delivery = EffectiveDeliveryService(env).resolve("
@@ -93,7 +109,7 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
         self.assertIn('"missing_authority_count": 0,', compiler)
 
         self.assertLess(compiler.index("deepcopy(effective_authority)"), compiler.index("self.menu_service.filter_nav_by_route_authority("))
-        tail = system_init.split("NavigationContractCompiler(", 1)[1]
+        tail = system_init.split('_compiled_navigation = (', 1)[1]
         self.assertIn(
             "for _removed_navigation_carrier in (",
             tail,

@@ -14,6 +14,7 @@ from ..core.platform_duty_contract import build_platform_duty_surface, merge_pla
 from ..core.platform_minimum_nav_contract import merge_authenticated_safe_landing
 from .delivery_engine import DeliveryEngine
 from .effective_delivery_inputs import _resolve_startup_delivery_identity, _load_platform_release_gate
+from .published_scene_surface_service import PublishedSceneSurfaceService
 
 
 @dataclass(frozen=True)
@@ -37,7 +38,7 @@ class EffectiveDeliveryService:
                 if node.get("allowed") is False or node.get("allowed_operation") == "none":
                     continue
                 meta = node.get("meta") or {}
-                target = node.get("entry_target") or meta.get("entry_target") or {}
+                target = node.get("entry_target") or {}
                 key = node.get("scene_key") or meta.get("scene_key") or target.get("scene_key")
                 if key:
                     scene_keys.add(str(key))
@@ -126,6 +127,7 @@ class EffectiveDeliveryService:
         payload = engine.build(
             data={"role_surface": role},
             **{key: identity[key] for key in ("product_key", "base_product_key", "edition_key")},
+            request_context=request_context,
         )
         gate = _load_platform_release_gate(env, product_key=payload["product_key"])
         # Native capability execution is installed/SEC/ACL authority. A
@@ -162,12 +164,6 @@ class EffectiveDeliveryService:
         nav, authority = merge_authenticated_safe_landing(
             nav, authority, authenticated=bool(env.user) and not env.user._is_public(),
         )
-        # Landing preference is a projection of the final admitted scenes.
-        # It cannot make an unpublished, unselected or natively denied entry
-        # available merely because the role declares it as a candidate.
-        role = engine._runtime_role_surface({"role_surface": resolver.build_role_surface(
-            user_xmlids, nav, self._scene_keys(nav, authority),
-        )})
         payload["nav"] = nav
         payload["route_authority"] = authority
         payload["scene_internal_actions"] = {
@@ -178,6 +174,18 @@ class EffectiveDeliveryService:
         from .runtime_route_authority import coalesce_effective_route_authority
         authority = coalesce_effective_route_authority(authority)
         payload["route_authority"] = authority
+        published_scene_surface = PublishedSceneSurfaceService(env).build(
+            payload,
+            request_context=request_context,
+        )
+        payload.update(published_scene_surface)
+        nav = payload["nav"]
+        authority = payload["route_authority"]
+        # Landing preference consumes the same final scene surface. It cannot
+        # make an unpublished or unauthorized candidate executable.
+        role = engine._runtime_role_surface({"role_surface": resolver.build_role_surface(
+            user_xmlids, nav, self._scene_keys(nav, authority),
+        )})
         payload.setdefault("meta", {})["platform_release_gate"] = {
             key: value for key, value in gate.items() if key != "allowed"
         }

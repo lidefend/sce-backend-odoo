@@ -4,6 +4,7 @@ from copy import deepcopy
 from typing import Any, Dict, List
 from odoo.tools.safe_eval import safe_eval
 from odoo.addons.smart_core.core.form_configuration_compiler import FormConfigurationError
+from odoo.addons.smart_core.core.navigation_entry_target import build_compatibility_entry_target
 
 from odoo.addons.smart_construction_core.services import role_surface_contract as _role_surface_contract
 from odoo.addons.smart_construction_core.services import role_catalog_contract as _role_catalog_contract
@@ -1934,6 +1935,31 @@ def smart_core_native_config_root_menu_xmlid(env):
 def smart_core_native_config_delivery_excluded_menu_xmlids(env):
     del env
     return _hook_facts.native_config_delivery_excluded_menu_xmlids()
+
+
+def smart_core_native_config_action_entry_target(env, action, menu_id):
+    """Bind enterprise initialization to the authenticated company record."""
+    expected = env.ref(
+        "smart_construction_core.action_sc_enterprise_initialization",
+        raise_if_not_found=False,
+    )
+    if not expected or int(getattr(action, "id", 0) or 0) != int(expected.id):
+        return None
+    model = str(getattr(action, "res_model", "") or "").strip()
+    if model != "res.company":
+        return None
+    return build_compatibility_entry_target(
+        env=env,
+        route=f"/r/{model}/{env.company.id}",
+        menu_id=menu_id,
+        action_id=action.id,
+        model=model,
+        view_modes=["form"],
+        record_id=env.company.id,
+        target_type="action",
+        delivery_mode="native_config_record_entry",
+        entry_intent="explicit_readonly",
+    )
 
 
 def smart_core_lowcode_system_config_menu_xmlids(env):

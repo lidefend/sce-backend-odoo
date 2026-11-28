@@ -3255,6 +3255,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.scenario.center_projection.guard",
                 "verify.system_init.menu_boundary.guard",
             ],
+            "addons/smart_core/delivery/native_config_menu_projection.py": [
+                "verify.backend.navigation_delivery.unit",
+                "verify.scenario.center_projection.guard",
+                "verify.system_init.menu_boundary.guard",
+            ],
             "addons/smart_core/tests/test_entry_publication_authority.py": [
                 "verify.product.entry_publication.unit",
             ],
