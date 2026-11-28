@@ -124,10 +124,10 @@ class TestEnterpriseSetupNativeContracts(unittest.TestCase):
         view = _arch(_record(_root('views/support/enterprise_initialization_views.xml'), 'view_sc_enterprise_initialization_form'))
         self.assertEqual([g.get('name') for g in view.findall('./sheet/group')], [
             'enterprise_bootstrap', 'enterprise_business_foundation', 'enterprise_role_authority',
-            'enterprise_approval_configuration', 'enterprise_scenario_configuration'])
+            'enterprise_approval_configuration'])
         buttons = view.findall('.//button')
-        self.assertEqual(len(buttons), 16)
-        self.assertEqual(len({b.get('name') for b in buttons}), 16)
+        self.assertEqual(len(buttons), 15)
+        self.assertEqual(len({b.get('name') for b in buttons}), 15)
         for button in buttons:
             self.assertEqual(button.get('type'), 'action')
             name = button.get('name')
@@ -136,6 +136,19 @@ class TestEnterpriseSetupNativeContracts(unittest.TestCase):
             self.assertIn(xmlid, facts)
             self.assertEqual(facts[xmlid]['type'], 'ir.actions.act_window')
             self.assertNotEqual(xmlid, 'smart_construction_core.action_sc_enterprise_initialization')
+
+    def test_core_initialization_does_not_own_scenario_enablement(self):
+        """The scene extension must compose enablement from native config facts."""
+        root = _root("views/support/enterprise_initialization_views.xml")
+        view = _arch(_record(root, "view_sc_enterprise_initialization_form"))
+        self.assertIsNone(view.find(".//group[@name='enterprise_scenario_configuration']"))
+        self.assertNotIn(
+            "smart_construction_core.action_sc_product_scenario",
+            {
+                str(button.get("name") or "")
+                for button in view.findall(".//button")
+            },
+        )
 
     def test_enterprise_and_organization_entries_preserve_scope_and_editability(self):
         initialization = _root("views/support/enterprise_initialization_views.xml")

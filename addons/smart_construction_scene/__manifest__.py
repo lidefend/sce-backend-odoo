@@ -11,6 +11,7 @@
     "data": [
         "security/ir.model.access.csv",
         "security/sc_scene_company_enablement_rules.xml",
+        "views/enterprise_scenario_activation_views.xml",
         "views/scene_governance_views.xml",
         "data/scene_delivery_params.xml",
         "data/sc_scene_orchestration.xml",

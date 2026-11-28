@@ -156,6 +156,7 @@
     "fix/p0-native-action-permission-contract-20261128": ".agent/runs/P0-NATIVE-ACTION-PERMISSION-CONTRACT-20261128/run.json",
     "fix/p0-relation-active-actions-contract-20261127": ".agent/runs/P0-RELATION-ACTIVE-ACTIONS-CONTRACT-20261127/run.json",
     "fix/p0-relation-field-native-semantics-20261128": ".agent/runs/P0-RELATION-FIELD-NATIVE-SEMANTICS-20261128/run.json",
+    "fix/p1-enterprise-scenario-activation-20261128": ".agent/runs/P1-ENTERPRISE-SCENARIO-FACT-BOUNDARY-20261128/run.json",
     "fix/p1-demo-terminal-settlement-20261123": ".agent/runs/P1-DEMO-SETTLEMENT-SEED-20261123/run.json",
     "fix/p1-role-capability-authority-20261126": ".agent/runs/P1-ROLE-CAPABILITY-AUTHORITY-20261126/run.json",
     "fix/p4-acceptance-artifact-20261103": ".agent/runs/P4-ACCEPTANCE-ARTIFACT-20261103/run.json",

@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5402`
+- Scanned files: `5404`
 - Files requiring split plan: `89`
 - Files above warning threshold: `172`
 
@@ -16,9 +16,9 @@ Generated from repository source files. This report is informational during the 
 | 6739 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 6607 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 6086 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 5735 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 5747 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
-| 5288 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 5290 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 5197 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 5028 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4856 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
@@ -287,9 +287,9 @@ Generated from repository source files. This report is informational during the 
 | 6739 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 6607 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 6086 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 5735 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 5747 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
-| 5288 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 5290 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 5197 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 5028 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4856 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
