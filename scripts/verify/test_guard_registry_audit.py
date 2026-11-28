@@ -183,6 +183,45 @@ class GuardRegistryDispositionTest(unittest.TestCase):
         self.assertIn("claims file-consumed but no file reference", failures[0])
 
 
+class GuardRegistrySeedTest(unittest.TestCase):
+    def test_seed_promotes_stale_orphan_to_unwired_active(self) -> None:
+        from unittest.mock import patch
+        from scripts.verify import guard_registry_audit as audit
+
+        doc = {
+            "entries": [
+                {
+                    "script": "helper_guard.sh",
+                    "status": "orphan",
+                    "review_by": "2026-09-30",
+                    "reason": "stale orphan acknowledgement",
+                }
+            ]
+        }
+        inventory = [
+            {
+                "script": "helper_guard.sh",
+                "path": "scripts/verify/helper_guard.sh",
+                "status": "active",
+                "referenced_by_make_targets": [],
+                "referenced_by_workflows": [],
+                "referenced_by_files": ["scripts/ci/helper.py"],
+            }
+        ]
+        with patch.object(audit, "load_registry", return_value=doc), \
+             patch.object(audit, "collect_scripts", return_value=[]), \
+             patch.object(audit, "classify", return_value=inventory), \
+             patch.object(audit, "save_registry"):
+            self.assertEqual(audit.cmd_seed(), 0)
+
+        self.assertEqual(len(doc["entries"]), 1)
+        entry = doc["entries"][0]
+        self.assertEqual(entry["status"], "active")
+        self.assertEqual(entry["wire_or_retire"], "file-consumed")
+        self.assertNotIn("review_by", entry)
+        self.assertNotIn("stale orphan", entry["reason"])
+
+
 class GuardRegistryMakeGraphTest(unittest.TestCase):
     """Reachability must follow declared prerequisites, never recipe text."""
 

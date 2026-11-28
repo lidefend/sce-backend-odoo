@@ -1,0 +1,235 @@
+// P4 user-journey probe: initialize the disposable clean enterprise through the
+// product's enterprise setup page and read back the committed center scope.
+import fs from 'node:fs';
+import path from 'node:path';
+import { launchChromium } from '../verify/playwright_runtime.mjs';
+import { matrixLoginUrl } from '../verify/business_entry_matrix_model.mjs';
+import { fillLoginCredentials } from '../verify/frontend_authenticated_intent.mjs';
+import { captureReleasedNavigation } from '../verify/released_navigation_target.mjs';
+
+const BASE = String(
+  process.env.SC_ACCEPTANCE_FRONTEND_URL || 'http://127.0.0.1:18083/t/clean',
+).replace(/\/$/, '');
+const LOGIN = String(
+  process.env.CONFIGURATION_ADMIN_LOGIN || 'fixture_role_business_config_admin',
+);
+const PASSWORD = String(process.env.ACCEPTANCE_PASSWORD || '');
+const TARGET_SHA = String(process.env.SC_ACCEPTANCE_TARGET_SHA || '');
+const BUILD_SHA256 = String(process.env.SC_ACCEPTANCE_BUILD_SHA256 || '');
+const OUTPUT_DIR = path.resolve(
+  process.env.SC_ACCEPTANCE_OUTPUT_DIR
+    || '.runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/local-clean-enterprise-setup',
+);
+if (!PASSWORD) throw new Error('ACCEPTANCE_PASSWORD is required');
+fs.mkdirSync(OUTPUT_DIR, { recursive: true });
+
+const report = {
+  schema: 'local_clean.enterprise_setup.v1',
+  pass: false,
+  generated_at: new Date().toISOString(),
+  runtime: {
+    base: BASE,
+    login: LOGIN,
+    source_revision: TARGET_SHA,
+    frontend_build_sha256: BUILD_SHA256,
+  },
+  requests: [],
+  responses: [],
+  readback: null,
+  screenshots: [],
+  assertions: [],
+  console_errors: [],
+};
+
+function check(condition, assertion, facts = {}) {
+  report.assertions.push({ assertion, pass: Boolean(condition), ...facts });
+  if (!condition) throw new Error(`${assertion}: ${JSON.stringify(facts)}`);
+}
+
+function envelopeData(body) {
+  return body?.data || body?.result?.data || body?.result || {};
+}
+
+function requestOf(response) {
+  try {
+    return JSON.parse(response.request().postData() || '{}');
+  } catch {
+    return {};
+  }
+}
+
+async function shot(page, name) {
+  const file = path.join(OUTPUT_DIR, `${name}.png`);
+  await page.screenshot({ path: file, fullPage: true });
+  report.screenshots.push({ name, file, url: page.url() });
+}
+
+const browser = await launchChromium({ headless: true });
+const context = await browser.newContext({
+  viewport: { width: 1440, height: 1000 },
+  locale: 'zh-CN',
+});
+const page = await context.newPage();
+const navigation = captureReleasedNavigation(page);
+page.setDefaultTimeout(30000);
+page.on('pageerror', (error) => report.console_errors.push(`pageerror: ${error.message}`));
+page.on('console', (message) => {
+  if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) {
+    report.console_errors.push(`console.error: ${message.text()}`.slice(0, 500));
+  }
+});
+page.on('request', (request) => {
+  const envelope = request.postDataJSON?.();
+  if (!envelope || String(envelope.intent || '') !== 'scenario.activation.centers.set') return;
+  report.requests.push(envelope);
+});
+page.on('response', async (response) => {
+  const request = requestOf(response);
+  if (!['system.init', 'scenario.activation.catalog.get', 'enterprise.readiness.diagnosis.get']
+    .includes(String(request.intent || ''))) return;
+  const body = await response.json().catch(() => ({}));
+  const data = envelopeData(body);
+  report.observations ||= [];
+  report.observations.push({
+    intent: request.intent,
+    status: response.status(),
+    ok: body?.ok,
+    code: body?.code || body?.error?.code || '',
+    reason_code: body?.reason_code || body?.error?.reason_code || '',
+    error: body?.error || null,
+    scene_ready_contract: data?.scene_ready_contract || null,
+    scene_channel: data?.scene_channel || null,
+    navigation_candidates: (() => {
+      const found = [];
+      const visit = (value) => {
+        if (Array.isArray(value)) {
+          value.forEach(visit);
+          return;
+        }
+        if (!value || typeof value !== 'object') return;
+        const actionId = Number(value.action_id || value.meta?.action_id || 0);
+        const menuId = Number(value.menu_id || value.meta?.menu_id || 0);
+        if ((actionId === 966 || menuId === 719)
+          || String(value.menu_xmlid || value.meta?.menu_xmlid || '').includes('enterprise_initialization')) {
+          found.push(value);
+        }
+        Object.values(value).forEach(visit);
+      };
+      visit(data?.nav || data?.nav_meta || data?.navigation?.nav || []);
+      return found;
+    })(),
+  });
+});
+
+try {
+  await page.goto(matrixLoginUrl(BASE), { waitUntil: 'networkidle' });
+  await fillLoginCredentials(page, LOGIN, PASSWORD);
+  await page.getByRole('button', { name: /^登录$/ }).click();
+  const loginDeadline = Date.now() + 45000;
+  while (new URL(page.url()).pathname.includes('/login') && Date.now() < loginDeadline) {
+    await page.waitForTimeout(250);
+  }
+  check(!new URL(page.url()).pathname.includes('/login'), 'business configuration administrator logs in', {
+    url: page.url(),
+  });
+  const enterpriseTarget = await navigation.targetByMenuXmlid(
+    'smart_construction_core.menu_sc_enterprise_initialization',
+    '',
+    60000,
+  );
+  report.runtime.enterprise_target = enterpriseTarget;
+
+  const productConfig = page.getByRole('button', { name: /^产品配置/ }).first();
+  if (await productConfig.count()) await productConfig.click();
+  const enterpriseEntry = page.getByRole('button', { name: /^企业初始化/ }).first();
+  if (await enterpriseEntry.count()) {
+    await enterpriseEntry.click();
+  } else {
+    await page.goto(
+      `${BASE}/a/${enterpriseTarget.action_id}?menu_id=${enterpriseTarget.menu_id}`,
+      {
+      waitUntil: 'networkidle',
+      },
+    );
+  }
+  await page.getByRole('heading', { name: '企业初始化', exact: true }).first()
+    .waitFor({ state: 'visible', timeout: 45000 });
+  await page.getByRole('button', { name: '启用所选业务中心', exact: true })
+    .waitFor({ state: 'visible', timeout: 45000 });
+  const initialBody = String(await page.locator('#main-content').innerText());
+  const selected = initialBody.match(/已选择业务中心：(\d+) 个业务中心 · (\d+) 个业务场景/);
+  check(selected && Number(selected[1]) >= 6 && Number(selected[2]) >= 22,
+    'recommended enterprise centers and scenes are selected before submission', {
+      selected: selected ? selected.slice(1) : null,
+    });
+  await shot(page, '01-enterprise-setup-ready');
+
+  const responsePromise = page.waitForResponse((response) => {
+    try {
+      return JSON.parse(response.request().postData() || '{}')?.intent
+        === 'scenario.activation.centers.set';
+    } catch {
+      return false;
+    }
+  }, { timeout: 45000 });
+  await page.getByRole('button', { name: '启用所选业务中心', exact: true }).click();
+  const response = await responsePromise;
+  const body = await response.json().catch(() => ({}));
+  const data = envelopeData(body);
+  report.readback = data;
+  report.responses.push({
+    status: response.status(),
+    ok: body?.ok,
+    error: body?.error || null,
+  });
+  check(response.status() === 200 && body?.ok === true, 'business centers are enabled by the product action', {
+    status: response.status(),
+    body,
+  });
+  check(data?.readback?.write_committed === true, 'enterprise center scope is committed', {
+    readback: data?.readback,
+  });
+  check(Array.isArray(data?.center_keys) && data.center_keys.length >= 6,
+    'committed center scope contains all selected business centers', {
+      center_keys: data?.center_keys,
+    });
+  check(Array.isArray(data?.scene_keys) && data.scene_keys.length >= 22,
+    'committed enterprise scope contains the declared business scenes', {
+      scene_keys: data?.scene_keys,
+    });
+
+  await page.waitForFunction(
+    () => !/正在加载场景/.test(document.body.innerText),
+    null,
+    { timeout: 45000 },
+  );
+  await shot(page, '02-enterprise-setup-complete');
+  check(report.console_errors.length === 0, 'enterprise setup journey has no browser errors', {
+    errors: report.console_errors,
+  });
+  report.pass = true;
+} catch (error) {
+  report.error = {
+    type: error instanceof Error ? error.name : typeof error,
+    message: error instanceof Error ? error.message : String(error),
+    url: page.url(),
+    body_excerpt: String(await page.locator('#main-content').innerText().catch(() => '')).slice(0, 3000),
+  };
+  await shot(page, 'failure').catch(() => {});
+} finally {
+  const output = path.join(OUTPUT_DIR, 'receipt.json');
+  fs.writeFileSync(output, `${JSON.stringify(report, null, 2)}\n`);
+  console.log(JSON.stringify({
+    pass: report.pass,
+    output,
+    error: report.error || null,
+    requests: report.requests,
+    responses: report.responses,
+    assertions: report.assertions,
+    readback: report.readback,
+    console_errors: report.console_errors,
+  }, null, 2));
+  await context.close();
+  await browser.close();
+  if (!report.pass) process.exitCode = 1;
+}

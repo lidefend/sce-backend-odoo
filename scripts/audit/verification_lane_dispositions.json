@@ -730,30 +730,15 @@
       "owner": "platform-team",
       "reason": "BNVA-02 P4 本地 clean 依赖夹具入口，仅人工调用。"
     },
-    "local.clean.entry_identity.ensure": {
-      "disposition": "local_diagnostic",
+    "local.clean.finance_e2e": {
+      "disposition": "browser_acceptance_probe",
       "owner": "platform-team",
-      "reason": "BNVA-02 P4 本地 clean 入口身份工具，仅人工调用。"
-    },
-    "local.clean.entry_identity.verify": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "BNVA-02 P4 本地 clean 入口身份工具，仅人工调用。"
-    },
-    "local.clean.finance_fixture.ensure": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "BNVA-02 P4 本地 clean 财务夹具入口，仅人工调用。"
+      "reason": "P4 本地 clean 完整财务办理旅程，仅人工受控调用；验证企业初始化、配置、付款提交和多级审批的真实页面闭环。"
     },
     "local.clean.install": {
       "disposition": "ops_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/ops/local_development_environment_v1.md。登记待接线或退役，B3 按族处理。"
-    },
-    "local.clean.restart": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "本地 clean 安装诊断入口，仅人工调用。"
     },
     "local.clean.upgrade": {
       "disposition": "local_diagnostic",

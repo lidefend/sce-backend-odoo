@@ -939,7 +939,16 @@ local.platform: guard.prod.forbid
 local.clean.finance_fixture.ensure: guard.prod.forbid local.clean.require_env
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  CONFIRM_LOCAL_CLEAN_FINANCE_FIXTURE="$${CONFIRM_LOCAL_CLEAN_FINANCE_FIXTURE:-}" \
+	  SC_ACCEPTANCE_FINANCE_FIXTURE_RECEIPT="$${SC_ACCEPTANCE_FINANCE_FIXTURE_RECEIPT:-}" \
 	  bash scripts/dev/local_clean_finance_fixture.sh
+
+.PHONY: local.clean.finance_e2e
+local.clean.finance_e2e: guard.prod.forbid local.clean.require_env
+	@EXPECTED_HEAD="$${EXPECTED_HEAD:-$${SC_SOURCE_REVISION:-}}" \
+	  ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  CONFIRM_LOCAL_CLEAN_FINANCE_E2E="$${CONFIRM_LOCAL_CLEAN_FINANCE_E2E:-}" \
+	  SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" \
+	  bash scripts/dev/local_clean_finance_e2e.sh
 
 .PHONY: local.clean.entry_identity.ensure local.clean.entry_identity.verify
 local.clean.entry_identity.ensure: guard.prod.forbid local.clean.require_env

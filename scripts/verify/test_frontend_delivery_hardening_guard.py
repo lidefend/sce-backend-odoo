@@ -696,11 +696,21 @@ class SettlementComplianceVisibilityTest(unittest.TestCase):
                 effective = self.closure(group)
                 self.assertEqual(bool(effective & visibility), bool(effective & self.readers))
 
-    def test_project_manager_without_finance_does_not_receive_predicate(self):
-        effective = self.closure('smart_construction_core.group_sc_role_project_manager')
+    def test_partner_manager_without_finance_does_not_receive_predicate(self):
+        effective = self.closure('smart_construction_core.group_sc_role_partner_manager')
         self.assertFalse(effective & self.readers)
         for field in self.states + self.messages:
             self.assertFalse(effective & set(field.attrib.get('groups', '').split(',')))
+
+    def test_project_manager_keeps_declared_finance_read_closure(self):
+        effective = self.closure('smart_construction_core.group_sc_role_project_manager')
+        self.assertIn(
+            'smart_construction_core.group_sc_cap_finance_read',
+            effective,
+            'project managers must retain the standard finance-read closure used by payment approval',
+        )
+        for field in self.states + self.messages:
+            self.assertTrue(effective & set(field.attrib.get('groups', '').split(',')))
 
     def test_finance_and_combined_roles_keep_matching_indicators(self):
         for group in ('group_sc_cap_finance_read', 'group_sc_cap_finance_user', 'group_sc_cap_finance_manager'):

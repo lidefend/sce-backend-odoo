@@ -182,7 +182,9 @@
       ],
       "id": "browser_probe_tooling",
       "patterns": [
-        "scripts/dev/local_clean_*_pages_probe.mjs",
+        "scripts/dev/local_clean_*_probe.mjs",
+        "scripts/dev/local_clean_finance_e2e.sh",
+        "scripts/dev/local_clean_finance_fixture.sh",
         "scripts/verify/*browser*.mjs",
         "scripts/verify/*browser*.js",
         "scripts/verify/*playwright*.mjs",

@@ -706,6 +706,13 @@ def cmd_seed() -> int:
             item["referenced_by_make_targets"] or item["referenced_by_workflows"]
         )
         entry = entry_by_name.get(name)
+        if entry and entry.get("status") != STATUS_ACTIVE:
+            entry["status"] = STATUS_ACTIVE
+            entry.pop("review_by", None)
+            entry["reason"] = (
+                "referenced by active verification files;"
+                " orphan acknowledgement cleared by guard registry seed"
+            )
         if wired:
             if entry and entry.get("wire_or_retire"):
                 entry.pop("wire_or_retire")

@@ -204,6 +204,13 @@ class PathOwnershipRegistryTest(unittest.TestCase):
         paths = {
             "scripts/dev/local_clean_finance_pages_probe.mjs",
             "scripts/dev/local_clean_quality_tax_pages_probe.mjs",
+            "scripts/dev/local_clean_enterprise_setup_probe.mjs",
+            "scripts/dev/local_clean_finance_approval_configure_probe.mjs",
+            "scripts/dev/local_clean_finance_approval_journey_probe.mjs",
+            "scripts/dev/local_clean_finance_data_permission_probe.mjs",
+            "scripts/dev/local_clean_finance_payment_journey_probe.mjs",
+            "scripts/dev/local_clean_finance_e2e.sh",
+            "scripts/dev/local_clean_finance_fixture.sh",
         }
         result = ownership.classify_paths(paths)
         self.assertEqual(set(result.assignments.values()), {"browser_probe_tooling"})

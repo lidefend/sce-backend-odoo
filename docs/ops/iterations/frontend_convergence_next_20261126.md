@@ -538,6 +538,40 @@ clean 运行态回读：
 143 个业务入口的当前候选页面、角色和办理旅程仍未执行；远端 PR CI、
 `bfc954c0b` 上的主线全量资格、部署和用户验收均未完成。
 
+### 2026-11-28 clean 财务完整办理 E2E 驱动收敛
+
+主线已更新到 `92016d60251f94a9048daf7cd8fe834e00f97574`，其中包含
+PR #1030 的标准角色动作闭包和 PR #1031 的原生动作/关系字段契约权威。前端候选
+同步该主线后，先读取 #1019 旧候选的远端根因，确认首个有效失败是
+`guard_registry` 的陈旧 orphan 台账，后续 merge policy 失败只是联动结果。
+
+本切片完成：
+
+- `guard_registry_audit --seed` 现在会把“已重新被其他脚本消费、但仍登记为 orphan”
+  的条目迁移为 active + `file-consumed`，不再先加 disposition 再删除条目；
+- 增加 seed 状态迁移的定向回归测试；
+- clean 财务夹具输出精确回执，付款旅程从回执读取公司、项目、客商、业务分类、合同和
+  结算身份，不再依赖 clean 重建后不稳定的固定 ID；
+- 企业初始化、数据权限、业务配置和付款入口从发布导航解析 action/menu 身份，不再写死入口 ID；
+- clean 财务 E2E 驱动登记为 P4 `browser_acceptance_probe`，路径归属和增量选测映射覆盖
+  初始化、权限配置、审批配置、付款提交和多级审批脚本；
+- `frontend_delivery_hardening_guard` 的原“项目负责人必须无财务能力”断言与主线 P1
+  冲突。项目负责人现按标准角色闭包拥有 `finance_read`，用于付款审批和项目财务回读；
+  验证器保留无财务角色的负例，改用合作方管理员，并新增项目负责人财务只读闭包正例，
+  未修改任何角色、ACL、记录规则或产品权限。
+
+在同步后的 `cfde59e6bf6e1cab352caf2cc7707124bb5fa868` 加当前 owned dirty scope 上执行
+`make ci.local.iteration`：91 个必需目标全部成立，其中 67 个测试目标执行 2315 项测试，
+14 项静态检查通过，`outside_scope=[]`、`unmapped_paths=0`、`not_run=0`。回执：
+
+`.runtime/frontend-dev-validation/executions/20261128T004326Z-1279562-729894073/receipt.json`
+
+回执 SHA256：
+`d7c96bb48dc1724927e1596864d2bb1e0a39426cf458bf8e621f20e32f4d1100`。
+
+本回执只证明 P4 驱动、发布导航和静态角色契约。clean 财务业务旅程尚未在提交后的精确
+HEAD 上运行，远端 PR CI、主线资格、部署和整体用户验收仍未完成。
+
 ### 2026-11-27 P4 navigation context smoke 对齐 label-free URL
 
 PR #1019 的精确 head `2036e8d9ad006078536026a621ea7fc284b214d1` 远端结果已回读：
