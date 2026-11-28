@@ -35,6 +35,7 @@ const report = {
   },
   requests: [],
   responses: [],
+  intent_responses: [],
   contract_observations: [],
   failed_requests: [],
   navigations: [],
@@ -90,18 +91,19 @@ page.on('request', (request) => {
   report.requests.push(envelope);
 });
 page.on('response', async (response) => {
+  if (!response.url().includes('/api/v1/intent')) return;
   const request = requestOf(response);
   const intent = String(request.intent || '');
-  if (![
-    'system.init',
-    'scenario.activation.catalog.get',
-    'enterprise.readiness.diagnosis.get',
-    'ui.contract.v2',
-    'execute_button',
-    'api.data',
-  ].includes(intent)) return;
   const body = await response.json().catch(() => ({}));
   const data = envelopeData(body);
+  report.intent_responses.push({
+    intent,
+    status: response.status(),
+    ok: body?.ok,
+    code: body?.code || body?.reason_code || body?.error?.code || body?.error?.reason_code || '',
+    error: body?.error || null,
+    params: request.params || {},
+  });
   if (response.status() >= 400 || body?.ok === false) {
     report.failed_requests.push({
       intent,
@@ -110,6 +112,14 @@ page.on('response', async (response) => {
       body,
     });
   }
+  if (![
+    'system.init',
+    'scenario.activation.catalog.get',
+    'enterprise.readiness.diagnosis.get',
+    'ui.contract.v2',
+    'execute_button',
+    'api.data',
+  ].includes(intent)) return;
   if (intent === 'ui.contract.v2') {
     report.contract_observations.push({
       status: response.status(),
@@ -307,6 +317,7 @@ try {
     requests: report.requests,
     responses: report.responses,
     assertions: report.assertions,
+    intent_responses: report.intent_responses,
     readback: report.readback,
     navigations: report.navigations,
     console_errors: report.console_errors,
