@@ -228,7 +228,13 @@ import { resolveSceneActivityTitle, shouldRenderScenePageHeading } from '../app/
 import { usePageContract } from '../app/pageContract';
 import { config } from '../config';
 import type { NavNode } from '@sc/schema';
-import { mergeSceneRegistryFromSceneReadyContract, type Scene, type SceneTarget } from '../app/resolvers/sceneRegistry';
+import {
+  declaredSceneRecordEntry,
+  mergeSceneRegistryFromSceneReadyContract,
+  type Scene,
+  type SceneTarget,
+} from '../app/resolvers/sceneRegistry';
+import { decodeFormalRecordEntry } from '../app/runtime/recordEntryContract';
 import { isSceneBlocksDebugEnabled } from '../config/debug';
 
 const route = useRoute();
@@ -477,11 +483,15 @@ function asRouteQuery(query: Record<string, unknown>): LocationQueryRaw {
 }
 
 function resolveTargetRecordEntry(target: SceneTarget) {
-  const entryTarget = (target.entry_target && typeof target.entry_target === 'object')
-    ? target.entry_target as Record<string, unknown>
-    : undefined;
-  const recordEntry = (entryTarget?.record_entry && typeof entryTarget.record_entry === 'object')
-    ? entryTarget.record_entry as Record<string, unknown>
+  const declaredRecordEntry = declaredSceneRecordEntry(target);
+  const formalRecordEntry = decodeFormalRecordEntry(declaredRecordEntry);
+  const recordEntry = formalRecordEntry
+    ? {
+        model: formalRecordEntry.model,
+        record_id: formalRecordEntry.recordId,
+        action_id: formalRecordEntry.actionId,
+        menu_id: formalRecordEntry.menuId,
+      }
     : undefined;
   const model = String(recordEntry?.model || target.model || route.query.model || '').trim();
   const rawRecordId = recordEntry?.record_id ?? target.record_id ?? route.query.record_id;
@@ -906,8 +916,9 @@ function fallbackSceneFromSceneReady(sceneKey: string): Scene | null {
     const row = item as Record<string, unknown>;
     const scene = (row.scene && typeof row.scene === 'object') ? row.scene as Record<string, unknown> : {};
     const page = (row.page && typeof row.page === 'object') ? row.page as Record<string, unknown> : {};
-    const meta = (row.meta && typeof row.meta === 'object') ? row.meta as Record<string, unknown> : {};
-    const target = (meta.target && typeof meta.target === 'object') ? meta.target as Record<string, unknown> : {};
+    const target = (row.target && typeof row.target === 'object')
+      ? row.target as Record<string, unknown>
+      : {};
     const validationSurface = (row.validation_surface && typeof row.validation_surface === 'object')
       ? row.validation_surface as Record<string, unknown>
       : {};
@@ -1081,6 +1092,30 @@ async function resolveScene() {
       await router.replace({ path: route.path, query: asRouteQuery(canonicalOwnerQuery) });
       return;
     }
+    {
+      const recordEntry = resolveTargetRecordEntry(target);
+      if (recordEntry.model && recordEntry.recordId && recordEntry.actionId > 0) {
+        const nextQuery = {
+          menu_id: recordEntry.menuId || undefined,
+          action_id: recordEntry.actionId,
+          model: recordEntry.model || undefined,
+          record_id: recordEntry.recordId,
+          ...workspaceContextQuery,
+        };
+        const sameEmbeddedRouteState =
+          Number(route.query.action_id || 0) === recordEntry.actionId
+          && Number(route.query.menu_id || 0) === Number(recordEntry.menuId || 0)
+          && Number(route.query.record_id || 0) === recordEntry.recordId
+          && String(route.query.model || '').trim() === String(recordEntry.model || '').trim();
+        if (!sameEmbeddedRouteState) {
+          await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
+          return;
+        }
+        embeddedRecordActionId.value = recordEntry.actionId;
+        status.value = 'idle';
+        return;
+      }
+    }
     if (layout.kind === 'workspace') {
       if (hasHandlingEntryCatalog(resolvedScene)) {
         status.value = 'idle';
@@ -1131,30 +1166,6 @@ async function resolveScene() {
         status.value = 'idle';
         return;
       }
-      {
-        const recordEntry = resolveTargetRecordEntry(target);
-        if (recordEntry.model && recordEntry.recordId && recordEntry.actionId > 0) {
-          const nextQuery = {
-            menu_id: recordEntry.menuId || undefined,
-            action_id: recordEntry.actionId,
-            model: recordEntry.model || undefined,
-            record_id: recordEntry.recordId,
-            ...workspaceContextQuery,
-          };
-          const sameEmbeddedRouteState =
-            Number(route.query.action_id || 0) === recordEntry.actionId
-            && Number(route.query.menu_id || 0) === Number(recordEntry.menuId || 0)
-            && Number(route.query.record_id || 0) === recordEntry.recordId
-            && String(route.query.model || '').trim() === String(recordEntry.model || '').trim();
-          if (!sameEmbeddedRouteState) {
-            await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
-            return;
-          }
-          embeddedRecordActionId.value = recordEntry.actionId;
-          status.value = 'idle';
-          return;
-        }
-      }
     }
 
     if (layout.kind === 'record') {
@@ -1180,30 +1191,6 @@ async function resolveScene() {
         embeddedRecordActionId.value = resolvedAction.actionId;
         status.value = 'idle';
         return;
-      }
-      {
-        const recordEntry = resolveTargetRecordEntry(target);
-        if (recordEntry.model && recordEntry.recordId && recordEntry.actionId > 0) {
-          const nextQuery = {
-            menu_id: recordEntry.menuId || undefined,
-            action_id: recordEntry.actionId,
-            model: recordEntry.model,
-            record_id: recordEntry.recordId,
-            ...workspaceContextQuery,
-          };
-          const sameEmbeddedRouteState =
-            Number(route.query.action_id || 0) === recordEntry.actionId
-            && Number(route.query.menu_id || 0) === Number(recordEntry.menuId || 0)
-            && Number(route.query.record_id || 0) === recordEntry.recordId
-            && String(route.query.model || '').trim() === recordEntry.model;
-          if (!sameEmbeddedRouteState) {
-            await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
-            return;
-          }
-          embeddedRecordActionId.value = recordEntry.actionId;
-          status.value = 'idle';
-          return;
-        }
       }
       if (typeof target.menu_xmlid === 'string' && target.menu_xmlid.trim()) {
         const menuNode = findActionNodeByMenuXmlid(session.menuTree, target.menu_xmlid);
@@ -1257,30 +1244,6 @@ async function resolveScene() {
         embeddedActionId.value = resolvedAction.actionId;
         status.value = 'idle';
         return;
-      }
-      {
-        const recordEntry = resolveTargetRecordEntry(target);
-        if (recordEntry.model && recordEntry.recordId && recordEntry.actionId > 0) {
-          const nextQuery = {
-            menu_id: recordEntry.menuId || undefined,
-            action_id: recordEntry.actionId,
-            model: recordEntry.model || undefined,
-            record_id: recordEntry.recordId,
-            ...workspaceContextQuery,
-          };
-          const sameEmbeddedRouteState =
-            Number(route.query.action_id || 0) === recordEntry.actionId
-            && Number(route.query.menu_id || 0) === Number(recordEntry.menuId || 0)
-            && Number(route.query.record_id || 0) === recordEntry.recordId
-            && String(route.query.model || '').trim() === String(recordEntry.model || '').trim();
-          if (!sameEmbeddedRouteState) {
-            await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
-            return;
-          }
-          embeddedRecordActionId.value = recordEntry.actionId;
-          status.value = 'idle';
-          return;
-        }
       }
     }
 

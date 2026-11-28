@@ -3,9 +3,9 @@
   "id": "FE-CONSUMPTION-CLOSEOUT-20261126",
   "status": "active",
   "branch": "fix/fe-consumption-closeout-20261126",
-  "branch_state": "remote_pr_open_fc04_p4_clean_finance_e2e_blocked_by_p0_enterprise_action_record_identity",
-  "baseline_sha": "92016d60251f94a9048daf7cd8fe834e00f97574",
-  "baseline_state": "origin_main_includes_pr_1030_role_closure_and_pr_1031_native_action_relation_contract_authority",
+  "branch_state": "remote_pr_1019_open_frontend_scene_contract_consumption_p0_1032_pending_remote_ci",
+  "baseline_sha": "bf3e78c2a9e81448f36425b05e133170aee39875",
+  "baseline_state": "pr_1019_target_includes_pr_1029_and_p0_enterprise_record_entry_is_published_independently_as_pr_1032",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/frontend_convergence_next_20261126.md",
   "current_batch": "FC-04 clean finance end-to-end user journey and P4 driver hygiene",
@@ -27,6 +27,7 @@
     "frontend/apps/web/src/app/action_runtime/useActionViewContentDisplayRuntime.ts",
     "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts",
     "frontend/apps/web/src/app/action_runtime/useActionViewLoadPreflightRuntime.ts",
+    "frontend/apps/web/src/app/runtime/actionViewMetaRuntime.ts",
     "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts",
     "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts",
     "frontend/apps/web/src/app/action_runtime/useActionViewPageDisplayStateRuntime.ts",
@@ -43,6 +44,8 @@
     "frontend/apps/web/src/app/runtime/actionViewKanbanTitleField.ts",
     "frontend/apps/web/src/app/runtime/actionViewSurfacePolicyBudget.ts",
     "frontend/apps/web/src/app/runtime/actionViewRoutePresetRuntime.ts",
+    "frontend/apps/web/src/app/resolvers/menuResolverCore.js",
+    "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
     "frontend/apps/web/src/App.vue",
     "frontend/apps/web/src/app/contracts/v2/store.ts",
     "frontend/apps/web/src/app/contracts/v2/types.ts",
@@ -99,6 +102,7 @@
     "frontend/apps/web/src/utils/display.ts",
     "frontend/apps/web/src/utils/fieldSemantics.ts",
     "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/src/views/MenuView.vue",
     "frontend/apps/web/src/views/SceneView.vue",
     "frontend/apps/web/src/stores/session.ts",
     "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
@@ -125,6 +129,8 @@
     "frontend/apps/web/scripts/relation_column_descriptor_authority_test.ts",
     "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
     "frontend/apps/web/scripts/route_query_normalization_test.ts",
+    "frontend/apps/web/scripts/scene_entry_contract_test.ts",
+    "frontend/apps/web/scripts/scene_shell_contract_test.ts",
     "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
     "scripts/verify/frontend_page_identity_lifecycle_smoke.js",
     "scripts/verify/frontend_page_identity_smoke.js",
@@ -182,7 +188,40 @@
     "scripts/verify/guard_registry_audit.py",
     "scripts/verify/registry.yaml",
     "scripts/verify/released_navigation_target.mjs",
-    "scripts/verify/test_guard_registry_audit.py"
+    "scripts/verify/test_guard_registry_audit.py",
+    ".agent/goals/FINANCE-ROLE-DATA-READ-DEFAULT-20261128.yaml",
+    ".agent/goals/P0-NATIVE-ACTION-PERMISSION-CONTRACT-20261128.yaml",
+    ".agent/runs/FINANCE-ROLE-DATA-READ-DEFAULT-20261128/run.json",
+    ".agent/runs/P0-NATIVE-ACTION-PERMISSION-CONTRACT-20261128/run.json",
+    "addons/smart_construction_core/models/core/cost_domain.py",
+    "addons/smart_construction_core/models/core/material_acceptance.py",
+    "addons/smart_construction_core/models/core/project_project_financial.py",
+    "addons/smart_construction_core/security/sc_role_groups.xml",
+    "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    "addons/smart_construction_core/tests/test_role_capability_authority_orm.py",
+    "addons/smart_construction_core/views/core/construction_diary_views.xml",
+    "addons/smart_construction_core/views/core/contract_views.xml",
+    "addons/smart_construction_core/views/core/cost_domain_views.xml",
+    "addons/smart_construction_core/views/core/cost_plan_views.xml",
+    "addons/smart_construction_core/views/core/material_acceptance_views.xml",
+    "addons/smart_construction_core/views/core/material_supplier_return_views.xml",
+    "addons/smart_construction_core/views/core/project_overview_views.xml",
+    "addons/smart_construction_core/views/core/project_views.xml",
+    "addons/smart_construction_core/views/menu_business_taxonomy.xml",
+    "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/core/native_action_permission.py",
+    "addons/smart_core/handlers/execute_button.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/__init__.py",
+    "addons/smart_core/tests/test_native_action_permission_contract.py",
+    "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
+    "addons/smart_core/tests/test_relation_entry_contract.py",
+    "docs/ops/iterations/finance_role_data_read_default_20261128.md",
+    "docs/ops/iterations/p0_native_action_permission_contract_20261128.md",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/test_role_capability_group_authority_guard.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py"
   ],
   "environment": {
     "kind": "offline",
@@ -571,6 +610,45 @@
       ],
       "kind": "offline"
     },
+    "scene_entry_contract": {
+      "target": "verify.frontend.scene_entry_contract.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/scene_entry_contract_test.ts",
+        "frontend/apps/web/src/app/resolvers/menuResolverCore.js",
+        "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
+        "frontend/apps/web/src/views/MenuView.vue",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "scene_shell_contract": {
+      "target": "verify.frontend.scene_shell_contract.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/scene_shell_contract_test.ts",
+        "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck_strict": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/scripts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "clean_enterprise_setup_probe": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/dev/local_clean_enterprise_setup_probe.mjs",
+        "scripts/dev/local_clean_finance_e2e.sh",
+        "make/dev.mk"
+      ],
+      "kind": "runtime"
+    },
     "business_entry_evidence_scope": {
       "target": "verify.frontend.business_entry.evidence_scope.unit",
       "inputs": [
@@ -673,10 +751,37 @@
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
   "blockers": [
-    "P0 product gap on exact clean candidate b0944753809a5c09190f625e5fbf305e332265cf: action 966 resolves from released navigation and system.init says the scene is allowed, but action_open publishes dataSource.primary.params.op=default_get without an explicit record_id. runtimeContract.actionTarget=current is shared by list actions and is not a record identity; context.company_id is execution context. ActionView consequently redirects to /f/res.company/new; the model form then correctly fails with FORM_CREATE_NOT_ALLOWED because the enterprise initialization action declares create=false. The producer must publish the exact current-company record identity through entry_target.record_entry or an equivalent explicit contract; the frontend must not evaluate the singleton domain or treat context.company_id as the record ID. This is outside the frontend PR and requires owner review before an independent P0 change."
+    "PR 1032 is the independent P0 producer candidate and its exact-head remote CI is pending. Frontend browser acceptance cannot run on the current clean stack because its mounted backend is still the pre-P0 frontend worktree, not the PR 1032 backend tree."
   ],
-  "next_exact_step": "Owner reviews the evidenced P0 enterprise-initialization record identity gap. If approved, fix action_open/record-entry publication independently on a P0 branch, then resume the frontend clean finance E2E on the resulting main without adding backend semantics to PR #1019.",
+  "next_exact_step": "Run the two scene contract tests and strict typecheck on the current frontend candidate, record their exact HEAD/dirty identity, commit and update PR 1019. After PR 1032 merges, synchronize PR 1019 with the resulting main, rebuild the governed clean stack, and rerun only the affected enterprise initialization journey.",
   "evidence": {
+    "scene_target_carrier_consumption": {
+      "status": "passed_local_targeted",
+      "candidate_head": "bf5485c2c0a8028d76677bca2c6fdf09a77d0091",
+      "dirty_scope": [
+        "frontend/apps/web/scripts/scene_entry_contract_test.ts",
+        "frontend/apps/web/scripts/scene_shell_contract_test.ts",
+        "frontend/apps/web/src/app/resolvers/menuResolverCore.js",
+        "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
+        "frontend/apps/web/src/views/MenuView.vue",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "scripts/dev/local_clean_enterprise_setup_probe.mjs"
+      ],
+      "commands": [
+        "make verify.frontend.scene_entry_contract.unit: PASS, non-zero scene contract, runtime fetch, diagnostic and hydration suites",
+        "make verify.frontend.scene_shell_contract.unit: PASS, 1 scene shell test",
+        "make verify.frontend.typecheck.strict: PASS",
+        "node --check scripts/dev/local_clean_enterprise_setup_probe.mjs: PASS",
+        "git diff --check: PASS"
+      ],
+      "facts_verified": [
+        "navigation consumes only the top-level entry_target carrier",
+        "scene-ready consumes only the top-level target carrier",
+        "a declared record_entry survives scene projection into the target",
+        "the browser probe now fails if the product entry bypasses the released /s/ route"
+      ],
+      "scope_limit": "Frontend consumption is locally verified. The browser journey remains not_run until the independent P0 PR 1032 is merged and the governed clean stack mounts its backend."
+    },
     "preparation_validation": {
       "status": "passed",
       "metadata_checks": [

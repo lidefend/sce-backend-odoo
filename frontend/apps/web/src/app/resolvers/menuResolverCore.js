@@ -100,7 +100,7 @@ function resolveSceneKey(node) {
 }
 
 function resolveEntryTarget(node) {
-  const entryTarget = node?.meta?.entry_target || node?.entry_target;
+  const entryTarget = node?.entry_target;
   if (entryTarget && typeof entryTarget === 'object' && String(entryTarget.type || '').trim()) {
     return entryTarget;
   }

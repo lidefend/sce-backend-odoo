@@ -37,6 +37,7 @@ const report = {
   responses: [],
   contract_observations: [],
   failed_requests: [],
+  navigations: [],
   readback: null,
   screenshots: [],
   assertions: [],
@@ -74,6 +75,9 @@ const context = await browser.newContext({
 const page = await context.newPage();
 const navigation = captureReleasedNavigation(page);
 page.setDefaultTimeout(30000);
+page.on('framenavigated', (frame) => {
+  if (frame === page.mainFrame()) report.navigations.push(frame.url());
+});
 page.on('pageerror', (error) => report.console_errors.push(`pageerror: ${error.message}`));
 page.on('console', (message) => {
   if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) {
@@ -206,11 +210,20 @@ try {
   const productConfig = page.getByRole('button', { name: /^产品配置/ }).first();
   if (await productConfig.count()) await productConfig.click();
   const enterpriseEntry = page.getByRole('button', { name: /^企业初始化/ }).first();
+  const releasedRoute = String(enterpriseTarget.entry_target?.route || enterpriseTarget.route || '').trim();
+  check(releasedRoute.startsWith('/s/'), 'released navigation supplies a scene route', {
+    route: releasedRoute,
+    entry_target: enterpriseTarget.entry_target || null,
+  });
   if (await enterpriseEntry.count()) {
     await enterpriseEntry.click();
+    check(new URL(page.url()).pathname.includes(releasedRoute), 'product entry consumes the released scene route', {
+      expected_route: releasedRoute,
+      url: page.url(),
+    });
   } else {
     await page.goto(
-      `${BASE}/a/${enterpriseTarget.action_id}?menu_id=${enterpriseTarget.menu_id}`,
+      `${BASE}${releasedRoute}?menu_id=${enterpriseTarget.menu_id}&action_id=${enterpriseTarget.action_id}`,
       {
       waitUntil: 'networkidle',
       },
@@ -291,6 +304,7 @@ try {
     responses: report.responses,
     assertions: report.assertions,
     readback: report.readback,
+    navigations: report.navigations,
     console_errors: report.console_errors,
   }, null, 2));
   await context.close();

@@ -94,7 +94,7 @@ equal(resolveSceneContractEntryIntent({ ...base, routeName: 'scene', declaredTar
 setSceneRegistryFromSceneReadyContract({ scenes: [{
   scene: { key: 'custom.dashboard', title: 'Configured title' },
   page: { route: '/s/custom.dashboard' },
-  meta: { target: { intent: 'custom.entry', entry_intent: 'custom.override', model: 'test.item' } },
+  target: { intent: 'custom.entry', entry_intent: 'custom.override', model: 'test.item' },
 }] });
 const projected = getSceneByKey('custom.dashboard');
 equal(projected?.label, 'Configured title');
@@ -117,7 +117,7 @@ setSceneRegistry([{
 mergeSceneRegistryFromSceneReadyContract({ scenes: [{
   scene: { key: 'custom.dashboard', title: 'Configured title' },
   page: { route: '/s/custom.dashboard' },
-  meta: { target: { intent: 'custom.entry' } },
+  target: { intent: 'custom.entry' },
 }] });
 equal(
   getSceneByKey('enterprise.department')?.target.action_id,

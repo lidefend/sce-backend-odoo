@@ -12,6 +12,7 @@ export interface SceneTarget {
   model?: string;
   view_mode?: string;
   record_id?: number | string;
+  record_entry?: unknown;
   route?: string;
 }
 
@@ -240,6 +241,14 @@ function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+export function declaredSceneRecordEntry(target: SceneTarget | null | undefined): unknown {
+  if (!target) return undefined;
+  if (Object.prototype.hasOwnProperty.call(target, 'record_entry')) {
+    return target.record_entry;
+  }
+  return undefined;
+}
+
 function asContentKind(value: unknown): 'designed_scene' | 'native_delegate' | '' {
   const text = asText(value);
   return text === 'designed_scene' || text === 'native_delegate' ? text : '';
@@ -253,7 +262,9 @@ function toSceneFromSceneReadyEntry(entry: unknown): Scene | null {
   const sceneRow = (row.scene && typeof row.scene === 'object') ? row.scene as Record<string, unknown> : {};
   const pageRow = (row.page && typeof row.page === 'object') ? row.page as Record<string, unknown> : {};
   const metaRow = (row.meta && typeof row.meta === 'object') ? row.meta as Record<string, unknown> : {};
-  const targetRow = (metaRow.target && typeof metaRow.target === 'object') ? metaRow.target as Record<string, unknown> : {};
+  const targetRow = (row.target && typeof row.target === 'object')
+    ? row.target as Record<string, unknown>
+    : {};
   const permissionRow = (row.permission_surface && typeof row.permission_surface === 'object')
     ? row.permission_surface as Record<string, unknown>
     : {};
@@ -341,6 +352,11 @@ function toSceneFromSceneReadyEntry(entry: unknown): Scene | null {
     model: asText(targetRow.model) || undefined,
     view_mode: asText(targetRow.view_mode) || undefined,
   };
+  for (const key of ['record_entry'] as const) {
+    if (Object.prototype.hasOwnProperty.call(targetRow, key)) {
+      target[key] = targetRow[key];
+    }
+  }
 
   return {
     key: sceneKey,
