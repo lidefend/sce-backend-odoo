@@ -189,6 +189,7 @@
     "fix/finance-role-data-read-default-20261128": ".agent/runs/FINANCE-ROLE-DATA-READ-DEFAULT-20261128/run.json",
     "fix/p0-native-action-permission-contract-20261128": ".agent/runs/P0-NATIVE-ACTION-PERMISSION-CONTRACT-20261128/run.json",
     "fix/p0-enterprise-record-entry-20261128": ".agent/runs/P0-ENTERPRISE-RECORD-ENTRY-20261128/run.json",
-    "fix/p0-authoritative-navigation-route-20261128": ".agent/runs/P0-AUTHORITATIVE-NAVIGATION-ROUTE-20261128/run.json"
+    "fix/p0-authoritative-navigation-route-20261128": ".agent/runs/P0-AUTHORITATIVE-NAVIGATION-ROUTE-20261128/run.json",
+    "fix/p4-navigation-shell-guard-20261128": ".agent/runs/P4-NAVIGATION-SHELL-GUARD-20261128/run.json"
   }
 }
