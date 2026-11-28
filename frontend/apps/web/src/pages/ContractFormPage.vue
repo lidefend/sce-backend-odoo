@@ -749,6 +749,10 @@ import { useContractV2ShadowDiagnostics } from './contractForm/useContractV2Shad
 import { useContractFormPageState } from './contractForm/useContractFormPageState';
 import { buildFormRequestContext } from './contractForm/formRequestContext';
 import { normalizeFormRouteOwnerIdentity } from './contractForm/formRouteInstanceIdentity';
+import {
+  resolveContractFormRouteModel,
+  resolveContractFormRouteRecordId,
+} from './contractForm/contractFormRouteIdentity';
 import { collectActionParams as collectActionParamsFromPlan } from './contractForm/actionExecutionPlan';
 import {
   createRouteDefaultsFingerprint,
@@ -822,8 +826,8 @@ function formRouteIdentity() {
   const query = route.query as Record<string, unknown>;
   return [
     String(route.name || ''),
-    String(route.params.model || ''),
-    String(route.params.id || ''),
+    model.value,
+    String(recordId.value || ''),
     String(query.action_id || ''),
     String(query.menu_id || ''),
     String(recordId.value ? '' : (query.view_id || query.viewId || '')),
@@ -836,8 +840,8 @@ function formRouteOwnerIdentity() {
   const query = route.query as Record<string, unknown>;
   return normalizeFormRouteOwnerIdentity({
     routeName: route.name,
-    model: route.params.model,
-    recordId: route.params.id,
+    model: model.value,
+    recordId: recordId.value,
     activityPageId: query.activity_page_id,
     actionId: query.action_id,
     menuId: query.menu_id,
@@ -1162,7 +1166,11 @@ async function runRecordDeleteAction() {
     recordDeleteBusy.value = false;
   }
 }
-const model = computed(() => String(route.params.model || v2ContractStore.value?.snapshot.pageInfo.model || ''));
+const model = computed(() => resolveContractFormRouteModel({
+  routeModel: route.params.model,
+  queryModel: route.query.model,
+  contractModel: v2ContractStore.value?.snapshot.pageInfo.model,
+}));
 const isManagedRelationCreateDialog = computed(() => Boolean(
   resolveRelationCreateDialogCancelMessage({
     query: route.query as Record<string, unknown>,
@@ -1174,8 +1182,7 @@ const formExitPresentation = computed(() => resolveContractFormExitPresentation(
 ));
 const menuId = computed(() => Number(route.query.menu_id || 0) || 0);
 const actionId = computed(() => {
-  const rawRecordId = String(route.params.id || '').trim();
-  const isCreateRoute = !rawRecordId || rawRecordId === 'new';
+  const isCreateRoute = !recordId.value;
   const menuAction = findActionMetaByMenu(session.menuTree, menuId.value);
   return resolveActionIdFromContext({
     routeQuery: route.query as Record<string, unknown>,
@@ -1190,12 +1197,10 @@ const currentMenuTitle = computed(() => {
   const node = findMenuNode(session.menuTree, menuId.value);
   return String(node?.label || node?.name || node?.title || '').trim();
 });
-const recordId = computed(() => {
-  const raw = String(route.params.id || '').trim();
-  if (!raw || raw === 'new') return null;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-});
+const recordId = computed(() => resolveContractFormRouteRecordId({
+  routeRecordId: route.params.id,
+  queryRecordId: route.query.record_id,
+}));
 const recordIdDisplay = computed(() => (recordId.value ? String(recordId.value) : 'new'));
 feedbackEvaluationRuntime = useDraftFeedbackEvaluation({
   store: v2ContractStore,

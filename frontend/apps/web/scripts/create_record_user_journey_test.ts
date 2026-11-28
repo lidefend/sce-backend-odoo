@@ -13,6 +13,34 @@ import { useRecordFormState } from '../src/pages/contractForm/useRecordFormState
 import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormProgress.ts';
 import { useRecordRelationshipNavigation } from '../src/pages/contractForm/useRecordRelationshipNavigation.ts';
 import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime.ts';
+import {
+  resolveContractFormRouteModel,
+  resolveContractFormRouteRecordId,
+} from '../src/pages/contractForm/contractFormRouteIdentity.ts';
+
+assert.equal(resolveContractFormRouteModel({
+  routeModel: 'route.model',
+  queryModel: 'query.model',
+  contractModel: 'contract.model',
+}), 'route.model');
+assert.equal(resolveContractFormRouteModel({
+  queryModel: ['res.company'],
+  contractModel: 'contract.model',
+}), 'res.company');
+assert.equal(resolveContractFormRouteModel({
+  contractModel: 'contract.model',
+}), 'contract.model');
+assert.equal(resolveContractFormRouteRecordId({
+  routeRecordId: '12',
+  queryRecordId: '13',
+}), 12);
+assert.equal(resolveContractFormRouteRecordId({
+  queryRecordId: ['1'],
+}), 1);
+assert.equal(resolveContractFormRouteRecordId({
+  queryRecordId: 'new',
+}), null);
+console.log('[create-record-user-journey] embedded scene route identity PASS count=6');
 
 // A relation control can emit an unchanged value during hydration. Saving an
 // unrelated field must not clear or rewrite that relation; intentional clears remain writes.

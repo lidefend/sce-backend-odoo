@@ -87,6 +87,9 @@ const context = await browser.newContext({
 const page = await context.newPage();
 const navigation = captureReleasedNavigation(page);
 page.setDefaultTimeout(30000);
+if (process.env.SC_ACCEPTANCE_HUD === '1') {
+  await page.addInitScript(() => localStorage.setItem('__HUD__', '1'));
+}
 page.on('framenavigated', (frame) => {
   if (frame === page.mainFrame()) report.navigations.push(frame.url());
 });
@@ -311,10 +314,33 @@ try {
   });
   report.pass = true;
 } catch (error) {
+  const routeError = page.locator('[data-route-error-kind]').first();
+  const routeErrorState = await routeError.count()
+    ? await routeError.evaluate((node) => ({
+        kind: node.getAttribute('data-route-error-kind') || '',
+        status: node.getAttribute('data-route-error-status') || '',
+        traceId: node.getAttribute('data-trace-id') || '',
+        text: String(node.textContent || '').trim(),
+      })).catch(() => null)
+    : null;
+  const statusPanel = page.locator('.sc-state-panel').first();
+  const statusPanelState = await statusPanel.count()
+    ? await statusPanel.evaluate((node) => ({
+        state: node.getAttribute('data-state') || '',
+        errorKind: node.getAttribute('data-error-kind') || '',
+        contractGap: node.getAttribute('data-contract-gap') || '',
+        contractGapKind: node.getAttribute('data-contract-gap-kind') || '',
+        contractGapLayer: node.getAttribute('data-contract-gap-layer') || '',
+        text: String(node.textContent || '').trim(),
+      })).catch(() => null)
+    : null;
   report.error = {
     type: error instanceof Error ? error.name : typeof error,
     message: error instanceof Error ? error.message : String(error),
     url: page.url(),
+    query: Object.fromEntries(new URL(page.url()).searchParams.entries()),
+    route_error: routeErrorState,
+    status_panel: statusPanelState,
     body_excerpt: String(await page.locator('#main-content').innerText().catch(() => '')).slice(0, 3000),
   };
   await shot(page, 'failure').catch(() => {});
