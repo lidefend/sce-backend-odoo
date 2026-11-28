@@ -71,16 +71,16 @@ export function presentCollectionKanbanTitle(input: {
   if (!titleField) {
     throw contractGapError({
       kind: 'contract_defect',
-      missing: 'kanban_profile.title_field',
-      requiredDeclarationLayer: 'P0:smart_core:kanban_profile_projection',
+      missing: 'list_profile.primary_field',
+      requiredDeclarationLayer: 'P0:smart_core:contract_governance_list_surface.primary_field',
     }, '看板缺少标题字段声明');
   }
   const option = (input.columnOptions || []).find((candidate) => candidate.name === titleField);
   if (!option || !String(option.type || option.dataType || '').trim()) {
     throw contractGapError({
       kind: 'contract_defect',
-      missing: `kanban_profile.title_field.${titleField}.field_descriptor`,
-      requiredDeclarationLayer: 'P0:smart_core:kanban_profile_projection',
+      missing: `list_profile.primary_field.${titleField}.field_descriptor`,
+      requiredDeclarationLayer: 'P0:smart_core:contract_governance_list_surface.primary_field',
     }, `看板标题字段 ${titleField} 缺少字段描述符`);
   }
   return presentCollectionKanbanCell({

@@ -43,6 +43,10 @@ from .unified_page_contract_v2_permissions import permission_auth_level, resolve
 from .unified_page_contract_v2_runtime_actions import normalize_runtime_business_actions
 from .unified_page_contract_v2_action import normalize_target_scope, normalize_trigger_type
 from .unified_page_contract_v2_form_structure import normalize_form_structure_contract_roles
+try:
+    from ..utils.contract_governance_field_semantics import project_declared_field_temporal
+except ImportError:  # pragma: no cover - standalone core tests import this package as ``core``
+    from utils.contract_governance_field_semantics import project_declared_field_temporal
 
 CONTRACT_VERSION = "2.7.0"
 SOURCE_KIND = "unified_page_contract_v2_assembler_projection"
@@ -1342,10 +1346,9 @@ def _strict_field_descriptor(
         descriptor["unit"] = {"kind": "percent", "code": "percent", "label": "%"}
     elif semantic_type == "duration":
         descriptor["unit"] = {"kind": "duration", "code": "hour", "label": "小时"}
-    if field_type == "date":
-        descriptor["temporal"] = {"kind": "date", "timezoneAuthority": "not_applicable"}
-    elif field_type == "datetime":
-        descriptor["temporal"] = {"kind": "datetime", "timezoneAuthority": "user"}
+    temporal = project_declared_field_temporal(field_type)
+    if temporal:
+        descriptor["temporal"] = temporal
     if relation == "ir.attachment" and attachment_role:
         descriptor["attachmentRole"] = attachment_role
     if semantic_type == "money" and not descriptor.get("currencyField"):

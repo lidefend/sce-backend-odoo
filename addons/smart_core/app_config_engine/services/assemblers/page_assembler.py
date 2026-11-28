@@ -27,6 +27,7 @@ from odoo.exceptions import AccessError
 from odoo.http import request
 from odoo.addons.smart_core.utils.delete_policy import resolve_unlink_policy
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
+from odoo.addons.smart_core.utils.contract_governance_field_semantics import project_declared_field_temporal
 from odoo.addons.smart_core.core.unified_page_contract_v2_modifier_dependencies import collect_modifier_dependency_fields
 from odoo.addons.smart_core.utils.backend_contract_boundaries import (
     BUSINESS_CONFIG_ACTION_KEY_CURRENT_FORM_ADD_CUSTOM_FIELD,
@@ -1607,6 +1608,7 @@ class PageAssembler:
             if not isinstance(digits, (list, tuple)) or len(digits) != 2:
                 digits = None
             currency_field = str(descriptor.get("currency_field") or "").strip()
+            temporal = descriptor.get("temporal")
             columns.append({
                 "field": name,
                 "label": str(row.get("label") or row.get("string") or descriptor.get("string") or name).strip(),
@@ -1617,6 +1619,7 @@ class PageAssembler:
                 **({"precision": precision} if precision is not None else {}),
                 **({"digits": list(digits)} if digits else {}),
                 **({"currency_field": currency_field} if currency_field else {}),
+                **({"temporal": temporal} if isinstance(temporal, dict) else {}),
             })
 
         raw_tabs = raw.get("tabs") if isinstance(raw.get("tabs"), list) else []
@@ -1631,6 +1634,7 @@ class PageAssembler:
                 if not name or not descriptor:
                     continue
                 precision = worksheet_precision(name)
+                temporal = descriptor.get("temporal")
                 rows.append({
                     "field": name,
                     "label": str(descriptor.get("string") or name).strip(),
@@ -1639,6 +1643,7 @@ class PageAssembler:
                     **({"precision": precision} if precision is not None else {}),
                     **({"digits": list(descriptor.get("digits"))} if isinstance(descriptor.get("digits"), (list, tuple)) and len(descriptor.get("digits")) == 2 else {}),
                     **({"currency_field": str(descriptor.get("currency_field") or "").strip()} if str(descriptor.get("currency_field") or "").strip() else {}),
+                    **({"temporal": temporal} if isinstance(temporal, dict) else {}),
                 })
                 tab_fields.append(name)
             if rows:
@@ -5117,6 +5122,9 @@ class PageAssembler:
                         "digits": translated.get("digits") or getattr(f, "digits", None),
                         "currency_field": translated.get("currency_field") or getattr(f, "currency_field", None),
                     }
+                temporal = project_declared_field_temporal(meta[k]["type"])
+                if temporal:
+                    meta[k]["temporal"] = temporal
             except Exception:
                 meta = {}
 
@@ -5125,13 +5133,17 @@ class PageAssembler:
                 return
             meta_info = meta.get(name, {}) or {}
             localized_selection = meta_info.get("selection") or []
+            field_type = str(ftype or meta_info.get("type") or "char").strip()
             info = {
                 "name": name,
                 "string": meta_info.get("string") or string or name,
-                "type": ftype or meta_info.get("type") or "char",
+                "type": field_type,
                 "readonly": bool(meta_info.get("readonly", False)),
                 "required": bool(meta_info.get("required", False)),
             }
+            temporal = project_declared_field_temporal(field_type)
+            if temporal:
+                info["temporal"] = temporal
             if meta_info.get("help"):
                 info["help"] = meta_info["help"]
             if meta_info.get("relation"):
@@ -5158,6 +5170,11 @@ class PageAssembler:
                     if k == "selection" and localized_selection:
                         continue
                     info[k] = v
+            temporal = project_declared_field_temporal(info.get("type"))
+            if temporal:
+                info["temporal"] = temporal
+            else:
+                info.pop("temporal", None)
             res[name] = info
 
         for f in (fields or []):
@@ -5180,6 +5197,17 @@ class PageAssembler:
                     extra["selection"] = f.get("options") or []
                 if "invisible" in f:
                     extra["invisible"] = f.get("invisible")
+                for key in (
+                    "relation",
+                    "relation_field",
+                    "model_field",
+                    "digits",
+                    "currency_field",
+                    "widget",
+                    "componentKey",
+                ):
+                    if key in f:
+                        extra[key] = f.get(key)
                 add_field(
                     name,
                     f.get("label") or f.get("string"),

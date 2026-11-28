@@ -1452,6 +1452,7 @@ RULES = (
         "frontend/apps/web/scripts/professional_business_value_model_test.ts",
         "scripts/verify/frontend_business_semantics_guard.py",
         "scripts/verify/test_frontend_business_semantics_guard.py",
+        "addons/smart_core/utils/contract_governance_field_semantics.py",
         "scripts/verify/frontend_localized_display_contract_test.ts",
         "scripts/verify/frontend_collection_status_presentation.test.mjs",
         "scripts/verify/fe_polish_b1_presentation_test.ts",

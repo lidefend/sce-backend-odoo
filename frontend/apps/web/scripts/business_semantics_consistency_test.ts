@@ -461,20 +461,20 @@ assert.equal(
   'generic float values consume their declared scale',
 );
 assert.equal(formatNumericFieldValue(2.7, 'integer'), '3', 'integer precision follows the declared field type');
-assert.throws(
-  () => formatNumericFieldValue(12.5, 'float'),
-  { name: 'ContractGapError' },
-  'generic float values without declared digits must stop instead of defaulting to two places',
+assert.equal(
+  formatNumericFieldValue(12.5, 'float'),
+  '12.5',
+  'generic float values without declared digits render without inventing a fixed scale',
 );
 assert.throws(
   () => formatNumericFieldValue(12.5, 'float', { digits: [16, 25] }),
   { name: 'ContractGapError' },
   'invalid generic float digits must stop instead of being rounded to a frontend default',
 );
-assert.throws(
-  () => formatNumericFieldValue(null, 'float'),
-  { name: 'ContractGapError' },
-  'an empty generic float still requires its declared display precision',
+assert.equal(
+  formatNumericFieldValue(null, 'float'),
+  null,
+  'an empty generic float without optional digits remains empty',
 );
 assert.equal(presentCollectionKanbanCell({
   field: 'opaque_state',

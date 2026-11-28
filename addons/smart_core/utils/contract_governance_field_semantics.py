@@ -27,6 +27,15 @@ def _as_dict(value: Any) -> dict:
     return dict(value) if isinstance(value, dict) else {}
 
 
+def project_declared_field_temporal(field_type: Any) -> dict[str, str] | None:
+    normalized = _safe_lower(field_type)
+    if normalized == "date":
+        return {"kind": "date", "timezoneAuthority": "not_applicable"}
+    if normalized == "datetime":
+        return {"kind": "datetime", "timezoneAuthority": "user"}
+    return None
+
+
 def is_technical_field(name: str, descriptor: dict) -> bool:
     low = _safe_lower(name)
     if not low:

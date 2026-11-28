@@ -395,10 +395,11 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
   }
 
   function extractKanbanProfile(contract: unknown): KanbanProfile {
-    const profile = (resolveContractV2ListProfile(contract as ContractV2NormalizedStore | null).kanban_profile || {}) as Dict;
+    const listProfile = resolveContractV2ListProfile(contract as ContractV2NormalizedStore | null);
+    const profile = (listProfile.kanban_profile || {}) as Dict;
     const normalize = (rows: unknown) => normalizeFieldNames(rows);
     return {
-      titleField: String(profile.title_field || '').trim(),
+      titleField: String(listProfile.primary_field || '').trim(),
       primaryFields: normalize(profile.primary_fields),
       secondaryFields: normalize(profile.secondary_fields),
       statusFields: normalize(profile.status_fields),
