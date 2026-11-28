@@ -449,6 +449,7 @@ try {
     url: page.url(),
     body: (await page.locator('body').innerText()).slice(0, 500),
   });
+  await navigation.ready();
 
   const target = await waitForPaymentNavigationTarget(navigation);
   report.navigation = target;

@@ -572,6 +572,44 @@ PR #1030 的标准角色动作闭包和 PR #1031 的原生动作/关系字段契
 本回执只证明 P4 驱动、发布导航和静态角色契约。clean 财务业务旅程尚未在提交后的精确
 HEAD 上运行，远端 PR CI、主线资格、部署和整体用户验收仍未完成。
 
+### 2026-11-28 clean 企业初始化 P0 记录身份缺口
+
+在提交 `b0944753809a5c09190f625e5fbf305e332265cf` 上重建一次性 clean 环境，
+前端构建指纹为
+`3235f9cacc9bd2dcdc5f3b0cfcaf9951e42baf729750f766dfd36b5927c173c0`。
+clean 企业初始化首次真实页面旅程已通过登录、发布导航、动作契约读取和模型只读权限，
+但停在记录身份：
+
+- `system.init` 发布的企业初始化 scene 为 `visible=true`、`allowed=true`；
+- route authority 发布 action `966` / menu `719`，并标记
+  `allowed_operation=read`；
+- `ui.contract.v2 action_open` 返回 `pageVisible=true`、`pageAuth=read`，
+  模型与记录读取均允许；
+- 同一响应的 `dataSource.primary.params.op=default_get`，没有显式
+  `record_id`；
+- ActionView 因缺少记录身份进入 `/f/res.company/new`；
+- 后端随后以 `FORM_CREATE_NOT_ALLOWED` 正确拒绝创建表单，因为企业初始化动作声明
+  `create=false`。
+
+前端不能从 `domain=[('id', '=', allowed_company_ids[0])]` 猜测当前公司记录 ID；这会
+绕过“契约缺失即停机”的边界。正确责任层是 P0 动作/记录入口生产：为原生动作发布明确的
+当前公司 `record_id`（或等价、可审计的 update-open 入口声明）。该缺口不在前端专题
+修复范围，需所有者审核后在独立 P0 批次处理。
+
+初始化边界因此明确为：
+
+- P0 记录入口契约负责发布 `entry_target.record_entry`（至少含 `model`、`record_id`、
+  `entry_intent` 与适用的写权限事实），或由动作数据源显式发布同一记录身份；
+- P1 企业初始化动作负责声明它绑定当前企业记录，而不是通用 `res.company` 新建页；
+- 前端只消费显式 `record_entry`/记录身份并路由到该记录；不得把
+  `runtimeContract.actionTarget="current"`、`context.company_id` 或 singleton domain
+  当成记录 ID。列表动作同样携带 `actionTarget=current`，可证明它并非记录身份声明；
+- 显式记录入口缺失时，后续应停机为契约缺口，不能默认进入 `/new`。
+
+验收驱动同时修正为等待 `.nav-shell[data-navigation-state="ready"]`，避免把导航响应
+到达但 session 尚未装载的时序误判为产品权限问题。clean 财务夹具回执也已在直接验证中
+通过；完整企业初始化、后续页面、付款与多级审批旅程在 P0 解决前保持 `blocked/not_run`。
+
 ### 2026-11-27 P4 navigation context smoke 对齐 label-free URL
 
 PR #1019 的精确 head `2036e8d9ad006078536026a621ea7fc284b214d1` 远端结果已回读：

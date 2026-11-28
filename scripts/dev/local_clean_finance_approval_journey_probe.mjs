@@ -149,6 +149,8 @@ async function login(page, loginName) {
   check(!new URL(page.url()).pathname.includes('/login'), `reviewer ${loginName} logs in`, {
     url: page.url(),
   });
+  await page.locator('.nav-shell[data-navigation-state="ready"]')
+    .waitFor({ state: 'visible', timeout: 45000 });
 }
 
 async function approveFromMyWork(page, loginName, requestName, reviewId, stepIndex) {

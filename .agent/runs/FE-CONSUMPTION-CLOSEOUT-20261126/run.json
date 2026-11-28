@@ -3,7 +3,7 @@
   "id": "FE-CONSUMPTION-CLOSEOUT-20261126",
   "status": "active",
   "branch": "fix/fe-consumption-closeout-20261126",
-  "branch_state": "remote_pr_open_fc04_p4_clean_finance_e2e_hardening_in_progress",
+  "branch_state": "remote_pr_open_fc04_p4_clean_finance_e2e_blocked_by_p0_enterprise_action_record_identity",
   "baseline_sha": "92016d60251f94a9048daf7cd8fe834e00f97574",
   "baseline_state": "origin_main_includes_pr_1030_role_closure_and_pr_1031_native_action_relation_contract_authority",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
@@ -181,6 +181,7 @@
     "scripts/dev/local_clean_finance_payment_journey_probe.mjs",
     "scripts/verify/guard_registry_audit.py",
     "scripts/verify/registry.yaml",
+    "scripts/verify/released_navigation_target.mjs",
     "scripts/verify/test_guard_registry_audit.py"
   ],
   "environment": {
@@ -671,8 +672,10 @@
     "Freeze affected files and populated checks for FC-00/FC-01 in this run; set active and run make agent.run.resume.",
     "Resolve current runtime facts and discriminating cases. Implement only confirmed gaps at owning layer."
   ],
-  "blockers": [],
-  "next_exact_step": "Run make ci.local.iteration on the reconciled P4 scope, commit the clean finance E2E driver hardening, then run make local.clean.finance_e2e against that exact committed HEAD and inspect the journey receipts.",
+  "blockers": [
+    "P0 product gap on exact clean candidate b0944753809a5c09190f625e5fbf305e332265cf: action 966 resolves from released navigation and system.init says the scene is allowed, but action_open publishes dataSource.primary.params.op=default_get without an explicit record_id. runtimeContract.actionTarget=current is shared by list actions and is not a record identity; context.company_id is execution context. ActionView consequently redirects to /f/res.company/new; the model form then correctly fails with FORM_CREATE_NOT_ALLOWED because the enterprise initialization action declares create=false. The producer must publish the exact current-company record identity through entry_target.record_entry or an equivalent explicit contract; the frontend must not evaluate the singleton domain or treat context.company_id as the record ID. This is outside the frontend PR and requires owner review before an independent P0 change."
+  ],
+  "next_exact_step": "Owner reviews the evidenced P0 enterprise-initialization record identity gap. If approved, fix action_open/record-entry publication independently on a P0 branch, then resume the frontend clean finance E2E on the resulting main without adding backend semantics to PR #1019.",
   "evidence": {
     "preparation_validation": {
       "status": "passed",

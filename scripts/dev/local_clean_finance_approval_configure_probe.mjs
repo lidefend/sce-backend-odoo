@@ -153,6 +153,7 @@ try {
   check(!new URL(page.url()).pathname.includes('/login'), 'business configuration administrator logs in', {
     url: page.url(),
   });
+  await navigation.ready();
 
   const businessConfigTarget = await navigation.targetByMenuXmlid(
     'smart_construction_core.menu_sc_business_config_workbench',

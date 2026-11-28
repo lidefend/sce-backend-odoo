@@ -35,6 +35,8 @@ const report = {
   },
   requests: [],
   responses: [],
+  contract_observations: [],
+  failed_requests: [],
   readback: null,
   screenshots: [],
   assertions: [],
@@ -85,10 +87,46 @@ page.on('request', (request) => {
 });
 page.on('response', async (response) => {
   const request = requestOf(response);
-  if (!['system.init', 'scenario.activation.catalog.get', 'enterprise.readiness.diagnosis.get']
-    .includes(String(request.intent || ''))) return;
+  const intent = String(request.intent || '');
+  if (![
+    'system.init',
+    'scenario.activation.catalog.get',
+    'enterprise.readiness.diagnosis.get',
+    'ui.contract.v2',
+    'execute_button',
+    'api.data',
+  ].includes(intent)) return;
   const body = await response.json().catch(() => ({}));
   const data = envelopeData(body);
+  if (response.status() >= 400 || body?.ok === false) {
+    report.failed_requests.push({
+      intent,
+      status: response.status(),
+      request: request.params || {},
+      body,
+    });
+  }
+  if (intent === 'ui.contract.v2') {
+    report.contract_observations.push({
+      status: response.status(),
+      ok: body?.ok,
+      request: request.params || {},
+      page_info: data?.pageInfo || null,
+      permissions: data?.permissions || null,
+      data_contract: {
+        permissions: data?.dataContract?.permissions || null,
+        access_policy: data?.dataContract?.accessPolicy || data?.dataContract?.access_policy || null,
+      },
+      action_contract: {
+        permissions: data?.actionContract?.permissions || null,
+        access_policy: data?.actionContract?.accessPolicy || data?.actionContract?.access_policy || null,
+      },
+      status_contract: data?.statusContract || null,
+      error: body?.error || null,
+      ...(process.env.SC_ACCEPTANCE_CAPTURE_RAW_CONTRACTS === '1' ? { raw_body: body } : {}),
+    });
+    return;
+  }
   report.observations ||= [];
   report.observations.push({
     intent: request.intent,
@@ -99,6 +137,27 @@ page.on('response', async (response) => {
     error: body?.error || null,
     scene_ready_contract: data?.scene_ready_contract || null,
     scene_channel: data?.scene_channel || null,
+    startup_capabilities: Array.isArray(data?.capabilities)
+      ? data.capabilities
+        .map((item) => ({
+          key: String(item?.key || item || '').trim(),
+          state: String(item?.state || '').trim(),
+          capability_state: String(item?.capability_state || '').trim(),
+          reason_code: String(item?.capability_state_reason || item?.reason_code || '').trim(),
+          default_payload: item?.default_payload || null,
+        }))
+        .filter((item) => item.key)
+      : [],
+    route_authority_target: (() => {
+      const routeAuthority = data?.navigation?.route_authority || data?.route_authority || {};
+      const pending = Object.values(routeAuthority)
+        .filter((value) => Array.isArray(value))
+        .flat();
+      return pending.find((item) => (
+        Number(item?.action_id || 0) === 966
+        || Number(item?.menu_id || 0) === 719
+      )) || null;
+    })(),
     navigation_candidates: (() => {
       const found = [];
       const visit = (value) => {
@@ -107,8 +166,11 @@ page.on('response', async (response) => {
           return;
         }
         if (!value || typeof value !== 'object') return;
-        const actionId = Number(value.action_id || value.meta?.action_id || 0);
-        const menuId = Number(value.menu_id || value.meta?.menu_id || 0);
+        const actionId = Number(
+          value.action_id || value.actionId || value.action
+          || value.meta?.action_id || value.meta?.actionId || 0,
+        );
+        const menuId = Number(value.menu_id || value.menuId || value.meta?.menu_id || 0);
         if ((actionId === 966 || menuId === 719)
           || String(value.menu_xmlid || value.meta?.menu_xmlid || '').includes('enterprise_initialization')) {
           found.push(value);
@@ -118,6 +180,7 @@ page.on('response', async (response) => {
       visit(data?.nav || data?.nav_meta || data?.navigation?.nav || []);
       return found;
     })(),
+    ...(process.env.SC_ACCEPTANCE_CAPTURE_RAW_CONTRACTS === '1' ? { raw_body: body } : {}),
   });
 });
 
@@ -132,6 +195,7 @@ try {
   check(!new URL(page.url()).pathname.includes('/login'), 'business configuration administrator logs in', {
     url: page.url(),
   });
+  await navigation.ready();
   const enterpriseTarget = await navigation.targetByMenuXmlid(
     'smart_construction_core.menu_sc_enterprise_initialization',
     '',

@@ -127,6 +127,7 @@ try {
   check(!new URL(page.url()).pathname.includes('/login'), 'business configuration administrator logs in', {
     url: page.url(),
   });
+  await navigation.ready();
 
   const dataPermissionTarget = await navigation.targetByMenuXmlid(
     'smart_construction_core.menu_sc_product_data_permission_v1',
