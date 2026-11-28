@@ -1,0 +1,110 @@
+{
+  "schema_version": 2,
+  "id": "MENU-CONFIG-RECOVERY-AUTHORITY-20261128",
+  "branch": "fix/menu-config-recovery-authority-20261128",
+  "baseline_sha": "2d410dad1cf3ca01057d32553f3231fb00b960d7",
+  "status": "verification_pending",
+  "goal": ".agent/goals/MENU-CONFIG-RECOVERY-AUTHORITY-20261128.yaml",
+  "record": "docs/ops/iterations/menu_config_recovery_authority_20261128.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MENU-CONFIG-RECOVERY-AUTHORITY-20261128.yaml",
+    ".agent/runs/MENU-CONFIG-RECOVERY-AUTHORITY-20261128/run.json",
+    "docs/ops/iterations/menu_config_recovery_authority_20261128.md",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/__init__.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/core_extension_hook_facts.py",
+    "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_core/migrations/17.0.0.189/post-migrate.py",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
+    "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+    "addons/smart_core/core/extension_hook_contracts.py",
+    "addons/smart_core/handlers/menu_configuration.py",
+    "addons/smart_core/tests/test_menu_configuration_audit.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing local Make tools and disposable local.test database; no persistent database mutation during source validation."
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "The policy reconciliation and role-surface defaults require affected nonzero offline and disposable ORM checks."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The P1 policy and migration change must be validated against the protected target base."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "This task is product configuration repair, not release qualification."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "The published product menu policy must converge before runtime navigation and menu configuration are checked."
+    }
+  },
+  "checks": {
+    "business_config": {
+      "target": "verify.business_config.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/handlers/menu_configuration.py",
+        "addons/smart_core/core/extension_hook_contracts.py",
+        "addons/smart_core/tests/test_menu_configuration_audit.py",
+        "scripts/verify/lowcode_config_boundary_guard.py"
+      ]
+    },
+    "role_surface_contract": {
+      "target": "verify.role_surface.landing.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_core/core_extension_hook_facts.py",
+        "addons/smart_construction_core/services/locked_menu_policy_contract.py",
+        "addons/smart_construction_core/services/role_surface_contract.py"
+      ]
+    },
+    "navigation_projection": {
+      "target": "verify.navigation.projection.orm",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/MENU-CONFIG-RECOVERY-AUTHORITY-20261128/navigation-projection-orm.log"
+      },
+      "inputs": [
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
+        "addons/smart_construction_core/tests/test_product_policy_fact_authority.py"
+      ]
+    },
+    "extension_hook_contracts": {
+      "target": "verify.extension.hook_contracts.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/extension_hook_contracts.py",
+        "scripts/verify/extension_hook_contract_guard.py",
+        "scripts/verify/test_extension_hook_contract_guard.py"
+      ]
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the verified candidate, publish its exact HEAD, and complete required remote PR checks."
+}

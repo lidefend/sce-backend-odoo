@@ -73,6 +73,35 @@ def lowcode_config_recovery_parent_menu_xmlids():
         "smart_construction_core.menu_sc_business_config_center",
     ]
 
+def menu_config_recovery_menu_xmlids():
+    """Product configuration entries recoverable from the menu panel.
+
+    This catalog is independent of the persisted product policy and released
+    navigation. A stale policy must not hide the product's own configuration
+    entries from the administrator who is expected to repair them.
+    """
+    return [
+        "smart_construction_core.menu_sc_business_config_center",
+        "smart_construction_core.menu_business_role",
+        "smart_construction_core.menu_user_role_assignment",
+        "smart_construction_core.menu_business_role_change",
+        "smart_construction_core.menu_business_role_event",
+        "smart_construction_core.menu_sc_business_config_workbench",
+        "smart_construction_core.menu_sc_approval_policy",
+        "smart_construction_core.menu_ui_form_field_policy_business_config",
+        "smart_construction_core.menu_ui_menu_config_policy_business_config",
+        "smart_construction_core.menu_sc_product_data_permission_v1",
+        "smart_construction_core.menu_sc_product_system_parameter_v1",
+        "smart_construction_core.menu_sc_product_numbering_rule_v1",
+        "smart_construction_core.menu_sc_enterprise_initialization",
+        "smart_construction_core.menu_sc_business_category",
+        "smart_construction_core.menu_sc_dictionary",
+        "smart_construction_core.menu_sc_project_cost_code",
+        "smart_construction_core.menu_sc_project_stage_requirement_items",
+        "smart_construction_core.menu_sc_approval_scope",
+        "smart_construction_core.menu_sc_product_scenario_business_config",
+    ]
+
 def business_root_menu_xmlid():
     return "smart_construction_core.menu_sc_root"
 

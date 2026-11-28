@@ -1972,6 +1972,11 @@ def smart_core_lowcode_config_recovery_parent_menu_xmlids(env):
     return _hook_facts.lowcode_config_recovery_parent_menu_xmlids()
 
 
+def smart_core_menu_config_recovery_menu_xmlids(env):
+    del env
+    return _hook_facts.menu_config_recovery_menu_xmlids()
+
+
 def smart_core_business_root_menu_xmlid(env):
     del env
     return _hook_facts.business_root_menu_xmlid()

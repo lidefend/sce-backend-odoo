@@ -274,6 +274,15 @@ ROLE_SURFACE_OVERRIDES = {
         ],
         "admin_menu_xmlids": [
             "smart_construction_core.menu_sc_business_category",
+            "smart_construction_core.menu_sc_dictionary",
+            "smart_construction_core.menu_sc_project_cost_code",
+            "smart_construction_core.menu_sc_project_stage_requirement_items",
+            "smart_construction_core.menu_sc_approval_scope",
+            "smart_construction_core.menu_business_role",
+            "smart_construction_core.menu_user_role_assignment",
+            "smart_construction_core.menu_business_role_change",
+            "smart_construction_core.menu_business_role_event",
+            "smart_construction_core.menu_sc_product_scenario_business_config",
             "smart_construction_core.menu_sc_runtime_user_management",
             "smart_construction_core.menu_sc_business_config_workbench",
             "smart_construction_core.menu_ui_menu_config_policy_business_config",
@@ -283,6 +292,7 @@ ROLE_SURFACE_OVERRIDES = {
             "smart_construction_core.menu_sc_product_data_permission_v1",
             "smart_construction_core.menu_sc_product_system_parameter_v1",
             "smart_construction_core.menu_sc_product_numbering_rule_v1",
+            "smart_construction_core.menu_sc_enterprise_initialization",
         ],
         "denied_menu_xmlids": [],
         "admin_action_authorities": [

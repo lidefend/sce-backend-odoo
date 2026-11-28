@@ -1,5 +1,6 @@
 """Industry configuration entry authority; no Odoo registry or database."""
 import importlib.util
+import json
 from pathlib import Path
 import unittest
 import xml.etree.ElementTree as ET
@@ -8,6 +9,9 @@ MODULE = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location("category_role_policy", MODULE / "core_extension_policy_maps.py")
 policy = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(policy)
+spec = importlib.util.spec_from_file_location("category_hook_facts", MODULE / "core_extension_hook_facts.py")
+hook_facts = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(hook_facts)
 CATEGORY = "smart_construction_core.menu_sc_business_category"
 
 
@@ -21,6 +25,48 @@ class CategoryEntryPolicyTest(unittest.TestCase):
         self.assertEqual(menu.get("groups"), "smart_construction_core.group_sc_cap_business_config_admin")
         action = tree.find(".//record[@id='action_sc_business_category']")
         self.assertEqual(action.find("field[@name='res_model']").text, "sc.business.category")
+
+    def test_configuration_role_exposes_every_formal_product_configuration_menu(self):
+        contract = json.loads(
+            (MODULE / "data/formal_business_product_menu_policy_v1.json").read_text(encoding="utf-8")
+        )
+        product = next(
+            row for row in contract["products"]
+            if row["product_key"] == "construction.standard"
+        )
+        group = next(
+            row for row in product["menu_groups"]
+            if row["group_label"] == "产品配置"
+        )
+        expected = {
+            row["menu_xmlid"]
+            for row in group["menus"]
+            if row.get("enabled") is not False
+            and row.get("release_state") in {"", "released"}
+        }
+        actual = set(policy.ROLE_SURFACE_OVERRIDES["business_config_admin"]["admin_menu_xmlids"])
+        self.assertFalse(expected - actual, sorted(expected - actual))
+
+    def test_menu_configuration_recovery_catalog_covers_formal_product_configuration(self):
+        contract = json.loads(
+            (MODULE / "data/formal_business_product_menu_policy_v1.json").read_text(encoding="utf-8")
+        )
+        product = next(
+            row for row in contract["products"]
+            if row["product_key"] == "construction.standard"
+        )
+        group = next(
+            row for row in product["menu_groups"]
+            if row["group_label"] == "产品配置"
+        )
+        expected = {
+            row["menu_xmlid"]
+            for row in group["menus"]
+            if row.get("enabled") is not False
+            and row.get("release_state") in {"", "released"}
+        }
+        actual = set(hook_facts.menu_config_recovery_menu_xmlids())
+        self.assertFalse(expected - actual, sorted(expected - actual))
 
     def test_business_roles_do_not_gain_configuration_entry(self):
         for name in ("finance", "pm", "owner", "executive"):

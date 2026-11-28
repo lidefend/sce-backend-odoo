@@ -1030,6 +1030,63 @@ class TestMenuConfigurationAudit(unittest.TestCase):
             self.module.MENU_HANDLING_STATE_CONTRACT,
         )
 
+    def test_menu_config_panel_recovers_product_configuration_missing_from_release(self):
+        company = types.SimpleNamespace(id=7, display_name="测试公司", name="测试公司")
+        user = _User([])
+        business_root = _Menu(291, "智慧施工管理平台")
+        config_root = _Menu(297, "产品配置", parent=business_root, sequence=90)
+        recoverable_entry = _Menu(410, "企业角色分配", parent=config_root, sequence=30)
+        recoverable_entry._name = "ir.ui.menu"
+        menus = _MenuModel([business_root, config_root, recoverable_entry], visible_ids=[291])
+        policies = _PolicyModel(
+            [
+                _Policy(1, business_root, company=company),
+                _Policy(2, config_root, company=company),
+            ],
+            user=user,
+        )
+        env = _Env(
+            {
+                "ir.ui.menu": menus,
+                "ir.model.data": _ModelDataModel([]),
+                "ui.menu.config.policy": policies,
+                "res.company": _CompanyModel([company]),
+            },
+            company=company,
+            user=user,
+        )
+        env.ref = lambda xmlid, raise_if_not_found=False: (
+            recoverable_entry
+            if xmlid == "smart_construction_core.menu_user_role_assignment"
+            else _RecordSet([])
+        )
+        handler = self.module.MenuConfigurationLoadHandler(
+            env=env,
+            params={"company_id": 7, "root_menu_id": 291},
+        )
+        handler._group_option_records = lambda menus, policies: _RecordSet([])
+        handler._expand_with_parent_ids = lambda menus: [int(menu.id) for menu in menus]
+        handler._native_config_menu_scope_ids = lambda root_menu_id: set()
+        handler._runtime_navigation_state = lambda configured, rows: {
+            "states": {},
+            "tree": [],
+        }
+        original_hook = self.module.call_extension_hook_first
+
+        def recovery_hook(env, hook_name, *args, **kwargs):
+            if hook_name == "smart_core_menu_config_recovery_menu_xmlids":
+                return ["smart_construction_core.menu_user_role_assignment"]
+            return original_hook(env, hook_name, *args, **kwargs)
+
+        self.module.call_extension_hook_first = recovery_hook
+        try:
+            result = handler.handle({"params": handler.params})
+        finally:
+            self.module.call_extension_hook_first = original_hook
+
+        self.assertIn(410, {row["id"] for row in result["data"]["menus"]})
+        self.assertNotIn(410, result["data"]["policies"])
+
     def test_menu_config_save_rejects_menu_outside_business_root(self):
         company = types.SimpleNamespace(id=7, display_name="测试公司", name="测试公司")
         user = _User([])

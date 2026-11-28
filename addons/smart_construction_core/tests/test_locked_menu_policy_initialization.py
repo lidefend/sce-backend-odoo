@@ -46,6 +46,19 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
         self.env["sc.product.policy"].invalidate_model()
         return result
 
+    def _run_product_configuration_surface_migration(self):
+        path = (
+            Path(__file__).resolve().parents[1]
+            / "migrations"
+            / "17.0.0.189"
+            / "post-migrate.py"
+        )
+        migration = runpy.run_path(str(path))
+        result = migration["migrate"](self.env.cr, "17.0.0.188")
+        self.env["sc.product.policy"].invalidate_model()
+        self.env["ir.ui.menu"].invalidate_model()
+        return result
+
     def _artifact_state(self):
         policies = self.env["sc.product.policy"].search_read(
             [("product_key", "in", ["construction.standard", "construction.preview"])],
@@ -513,3 +526,99 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
             if menu.get("menu_xmlid") == "smart_construction_core.menu_sc_my_work"
         ]
         self.assertEqual(len(rows), 1)
+
+    def test_product_configuration_surface_migration_adds_all_missing_menus_once(self):
+        missing_xmlids = {
+            "smart_construction_core.menu_sc_business_category",
+            "smart_construction_core.menu_sc_dictionary",
+            "smart_construction_core.menu_sc_project_cost_code",
+            "smart_construction_core.menu_sc_project_stage_requirement_items",
+            "smart_construction_core.menu_sc_approval_scope",
+            "smart_construction_core.menu_business_role",
+            "smart_construction_core.menu_user_role_assignment",
+            "smart_construction_core.menu_business_role_change",
+            "smart_construction_core.menu_business_role_event",
+            "smart_construction_core.menu_sc_product_scenario_business_config",
+        }
+        product_key = "construction.standard"
+        policy_model = self.env["sc.product.policy"]
+        policy = policy_model.search([("product_key", "=", product_key)], limit=1)
+        groups = deepcopy(policy.menu_groups)
+        retained = []
+        maintained_label = "Operator maintained My Work"
+        for group in groups:
+            menus = []
+            for menu in group.get("menus") or []:
+                xmlid = str(menu.get("menu_xmlid") or "")
+                if xmlid in missing_xmlids:
+                    continue
+                if xmlid == "smart_construction_core.menu_sc_my_work":
+                    menu = {**menu, "label": maintained_label, "name": maintained_label}
+                menus.append(menu)
+            group["menus"] = menus
+            if menus:
+                retained.append(group)
+        policy.write({"menu_groups": retained})
+        snapshots = self.env["sc.edition.release.snapshot"].sudo()
+        snapshots.search([
+            ("product_key", "=", product_key),
+            ("is_active", "=", True),
+        ]).write({"is_active": False})
+        from odoo.addons.smart_core.delivery.edition_release_snapshot_service import (
+            EditionReleaseSnapshotService,
+        )
+        EditionReleaseSnapshotService(self.env).freeze_release_surface(
+            product_key=product_key,
+            version="test-before-product-configuration-delta",
+            replace_active=True,
+            note="test reduced product configuration baseline",
+        )
+        before_count = snapshots.search_count([("product_key", "=", product_key)])
+
+        result = self._run_product_configuration_surface_migration()
+
+        self.assertEqual(set(result[product_key]["added"]), missing_xmlids)
+        rows = {
+            menu["menu_xmlid"]: menu
+            for group in policy.menu_groups
+            for menu in group.get("menus") or []
+            if menu.get("menu_xmlid")
+        }
+        self.assertTrue(missing_xmlids <= set(rows))
+        self.assertEqual(rows["smart_construction_core.menu_sc_my_work"]["label"], maintained_label)
+        self.assertEqual(
+            snapshots.search_count([("product_key", "=", product_key)]),
+            before_count + 1,
+        )
+        active = snapshots.search([
+            ("product_key", "=", product_key),
+            ("state", "=", "released"),
+            ("is_active", "=", True),
+            ("active", "=", True),
+        ], limit=1)
+        released_rows = {
+            menu["menu_xmlid"]
+            for group in active.snapshot_json["policy"]["menu_groups"]
+            for menu in group.get("menus") or []
+            if menu.get("menu_xmlid")
+        }
+        self.assertTrue(missing_xmlids <= released_rows)
+        parent = self.env.ref(
+            "smart_construction_core.menu_sc_business_config_center"
+        )
+        for xmlid in (
+            "smart_construction_core.menu_sc_business_category",
+            "smart_construction_core.menu_sc_dictionary",
+            "smart_construction_core.menu_sc_project_cost_code",
+            "smart_construction_core.menu_sc_project_stage_requirement_items",
+            "smart_construction_core.menu_sc_approval_scope",
+        ):
+            self.assertEqual(self.env.ref(xmlid).parent_id, parent)
+
+        replay = self._run_product_configuration_surface_migration()
+        self.assertEqual(replay[product_key]["added"], [])
+        self.assertFalse(replay[product_key]["snapshot_created"])
+        self.assertEqual(
+            snapshots.search_count([("product_key", "=", product_key)]),
+            before_count + 1,
+        )
