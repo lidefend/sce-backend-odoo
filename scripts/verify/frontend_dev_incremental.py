@@ -2057,6 +2057,14 @@ RULES = (
         "verify.workspace.branch.sync-github.unit",
     )),
     Rule((
+        "scripts/ops/close_superseded_pr.py",
+        "scripts/ops/test_close_superseded_pr.py",
+        "scripts/ops/retire_historical_branch_refs.py",
+    ), (
+        "verify.pr.close.superseded",
+        "verify.branch.retire.historical",
+    )),
+    Rule((
         "scripts/ops/branch_cleanup_safe.sh",
         "scripts/ops/test_safe_worktree_cleanup.py",
     ), (

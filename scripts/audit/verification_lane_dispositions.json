@@ -1613,11 +1613,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/planning/custom-frontend-integration/G3_BOQ_READONLY_LOOP.md。登记待接线或退役，B3 按族处理。"
     },
-    "verify.branch.retire.historical": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/HISTORICAL-BRANCH-ASSET-RETIREMENT/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.business.document_state_policy_switch": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",

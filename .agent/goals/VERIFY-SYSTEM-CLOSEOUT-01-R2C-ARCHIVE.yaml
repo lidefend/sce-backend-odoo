@@ -1,0 +1,9 @@
+schema_version: 1
+goal:
+  id: VERIFY-SYSTEM-CLOSEOUT-01-R2C-ARCHIVE
+  status: active
+  title: Archive superseded verification candidate
+  objective: Preserve recoverable evidence before retiring obsolete branch
+  formal_product_layer: P4
+  layer_target: standard delivery governance
+  module: [ops]

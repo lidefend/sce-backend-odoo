@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5416`
+- Scanned files: `5418`
 - Files requiring split plan: `89`
 - Files above warning threshold: `173`
 
@@ -17,7 +17,7 @@ Generated from repository source files. This report is informational during the 
 | 6607 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 6086 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 5883 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
-| 5370 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 5378 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5197 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 5028 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
@@ -289,7 +289,7 @@ Generated from repository source files. This report is informational during the 
 | 6607 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 6086 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 5883 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
-| 5370 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 5378 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5197 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 5028 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |

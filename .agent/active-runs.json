@@ -194,6 +194,7 @@
     "refactor/be00-be01-fact-closure-20261105": ".agent/runs/BE00-BE01-FACT-CLOSURE-20261105/run.json",
     "refactor/be02-product-fact-authority-20261105": ".agent/runs/BE02-PRODUCT-FACT-AUTHORITY-20261105/run.json",
     "refactor/scene-diagnosis-boundary-20261105": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json",
-    "release/daily-main-mode-20261124": ".agent/runs/USER-BARRIERLESS-CLOSURE-20261125/run.json"
+    "release/daily-main-mode-20261124": ".agent/runs/USER-BARRIERLESS-CLOSURE-20261125/run.json",
+    "fix/verify-system-closeout-01-r2c-archive-20261128": ".agent/runs/VERIFY-SYSTEM-CLOSEOUT-01-R2C-ARCHIVE/run.json"
   }
 }
