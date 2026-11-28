@@ -370,6 +370,9 @@ router.beforeEach(async (to) => {
   if (!isLoginRoute && to.name !== 'access-denied' && session.isReady) {
     const actionId = positiveInteger(to.params.actionId || to.query.action_id);
     const menuId = positiveInteger(to.params.menuId || to.query.menu_id);
+    const currentRouteActionId = positiveInteger(
+      router.currentRoute.value.params.actionId || router.currentRoute.value.query.action_id,
+    );
     const routeAuthority = actionId > 0 || menuId > 0 ? findRouteAuthority(session.routeAuthority, {
       actionId,
       menuId,
@@ -426,6 +429,15 @@ router.beforeEach(async (to) => {
       if (consumeButtonNavigationAuthority(actionId, to.fullPath)) {
         runtimeRouteAuthorized = true;
       }
+    }
+    if (
+      authorityBoundRoute
+      && to.name === 'action'
+      && actionId > 0
+      && actionId === currentRouteActionId
+      && currentActionMatches(session, actionId)
+    ) {
+      runtimeRouteAuthorized = true;
     }
     if (authorityBoundRoute && (actionId > 0 || menuId > 0) && !runtimeRouteAuthorized) {
       if (routeAuthorityFailure) return routeFailureRedirect(routeAuthorityFailure, to.fullPath);

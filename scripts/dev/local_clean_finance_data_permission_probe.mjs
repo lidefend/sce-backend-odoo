@@ -43,6 +43,7 @@ const report = {
   screenshots: [],
   console_errors: [],
   failed_requests: [],
+  button_responses: [],
 };
 
 function check(condition, assertion, facts = {}) {
@@ -106,9 +107,18 @@ page.on('request', (request) => {
   if (!envelope || String(envelope.params?.model || '') !== 'res.users') return;
   report.requests.push({ intent: envelope.intent, params: envelope.params || {} });
 });
-page.on('response', (response) => {
-  if (response.status() < 400) return;
+page.on('response', async (response) => {
   const request = requestOf(response);
+  if (request.intent === 'execute_button') {
+    const body = await response.json().catch(() => ({}));
+    report.button_responses.push({
+      status: response.status(),
+      ok: body?.ok,
+      result: body?.data?.result || body?.result || null,
+      entry_target: body?.data?.entry_target || body?.result?.entry_target || null,
+    });
+  }
+  if (response.status() < 400) return;
   report.failed_requests.push({
     status: response.status(),
     intent: request.intent || '',
