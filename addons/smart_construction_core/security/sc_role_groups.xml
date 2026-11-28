@@ -7,7 +7,19 @@
 
             <field name="comment">体验身份标记；业务能力由另外分配的正式角色及原生访问规则决定。</field>
         <field name="implied_ids" eval="[(6, 0, [
-                ref('smart_construction_core.group_sc_cap_entry_scope_full'),
+                ref('smart_construction_core.group_sc_cap_entry_scope_p01'),
+                ref('smart_construction_core.group_sc_cap_entry_scope_p02'),
+                ref('smart_construction_core.group_sc_cap_entry_scope_p03'),
+                ref('smart_construction_core.group_sc_cap_entry_scope_p05'),
+                ref('smart_construction_core.group_sc_cap_entry_scope_p06'),
+                ref('smart_construction_core.group_sc_cap_entry_scope_p07'),
+                ref('smart_construction_core.group_sc_cap_entry_scope_p08'),
+                ref('smart_construction_core.group_sc_cap_entry_scope_p09'),
+                ref('smart_construction_core.group_sc_cap_entry_scope_p10'),
+                ref('smart_construction_core.group_sc_cap_entry_scope_p11'),
+                ref('smart_construction_core.group_sc_cap_entry_scope_p12'),
+                ref('smart_construction_core.group_sc_cap_entry_scope_p13'),
+                ref('smart_construction_core.group_sc_cap_entry_scope_p14'),
                 ref('smart_construction_core.group_sc_cap_internal_identity')
             ])]"/>
         </record>
@@ -63,7 +75,6 @@
                 ref('smart_construction_core.group_sc_cap_data_read'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p02'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p03'),
-                ref('smart_construction_core.group_sc_cap_entry_scope_p04'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p05'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p06'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p07'),
@@ -71,7 +82,8 @@
                 ref('smart_construction_core.group_sc_cap_entry_scope_p11'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p13'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p14'),
-                ref('smart_construction_core.group_sc_cap_project_workspace_read')
+                ref('smart_construction_core.group_sc_cap_project_workspace_read'),
+                ref('smart_construction_core.group_sc_cap_settlement_user')
             ])]"/>
         </record>
 
@@ -82,9 +94,9 @@
 
         <field name="implied_ids" eval="[(6, 0, [
                 ref('smart_construction_core.group_sc_cap_contract_read'),
-                ref('smart_construction_core.group_sc_cap_cost_read'),
+                ref('smart_construction_core.group_sc_cap_cost_user'),
+                ref('smart_construction_core.group_sc_cap_data_read'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p03'),
-                ref('smart_construction_core.group_sc_cap_entry_scope_p04'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p05'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p06'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p07'),
@@ -95,7 +107,7 @@
                 ref('smart_construction_core.group_sc_cap_entry_scope_p14'),
                 ref('smart_construction_core.group_sc_cap_material_read'),
                 ref('smart_construction_core.group_sc_cap_project_user'),
-                ref('smart_construction_core.group_sc_cap_settlement_read')
+                ref('smart_construction_core.group_sc_cap_settlement_user')
             ])]"/>
         </record>
 
@@ -105,19 +117,19 @@
 
         <field name="implied_ids" eval="[(6, 0, [
                 ref('smart_construction_core.group_sc_cap_contract_read'),
-                ref('smart_construction_core.group_sc_cap_cost_read'),
+                ref('smart_construction_core.group_sc_cap_cost_user'),
                 ref('smart_construction_core.group_sc_cap_data_read'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p02'),
-                ref('smart_construction_core.group_sc_cap_entry_scope_p04'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p05'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p06'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p07'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p11'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p13'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p14'),
+                ref('smart_construction_core.group_sc_cap_finance_read'),
                 ref('smart_construction_core.group_sc_cap_material_manager'),
                 ref('smart_construction_core.group_sc_cap_project_manager'),
-                ref('smart_construction_core.group_sc_cap_settlement_read')
+                ref('smart_construction_core.group_sc_cap_settlement_user')
             ])]"/>
         </record>
 
@@ -130,9 +142,10 @@
                 ref('smart_construction_core.group_sc_cap_contact_manager'),
                 ref('smart_construction_core.group_sc_cap_contract_user'),
                 ref('smart_construction_core.group_sc_cap_cost_read'),
+                ref('smart_construction_core.group_sc_cap_data_read'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p06'),
                 ref('smart_construction_core.group_sc_cap_project_workspace_read'),
-                ref('smart_construction_core.group_sc_cap_settlement_read')
+                ref('smart_construction_core.group_sc_cap_settlement_user')
             ])]"/>
         </record>
 
@@ -187,7 +200,9 @@
                 ref('smart_construction_core.group_sc_cap_entry_scope_p06'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p08'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p13'),
+                ref('smart_construction_core.group_sc_cap_data_read'),
                 ref('smart_construction_core.group_sc_cap_finance_user'),
+                ref('smart_construction_core.group_sc_cap_material_read'),
                 ref('smart_construction_core.group_sc_cap_project_workspace_read')
             ])]"/>
         </record>
@@ -303,9 +318,9 @@
 
         <field name="implied_ids" eval="[(6, 0, [
                 ref('smart_construction_core.group_sc_cap_cost_user'),
+                ref('smart_construction_core.group_sc_cap_data_read'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p02'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p03'),
-                ref('smart_construction_core.group_sc_cap_entry_scope_p04'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p06'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p07'),
                 ref('smart_construction_core.group_sc_cap_entry_scope_p08'),

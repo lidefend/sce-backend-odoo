@@ -18,6 +18,7 @@ from ..core.contract_version_negotiation import (
 )
 from ..core.base_handler import BaseIntentHandler
 from ..core.intent_execution_result import IntentExecutionResult
+from ..core.native_action_permission import apply_native_action_permission_verdicts
 from ..core.unified_page_contract_v2_assembler import (
     CONTRACT_VERSION,
     assemble_unified_page_contract_v2,
@@ -103,7 +104,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v127"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v130"
 
 
 def _create_defaults_fingerprint(env, model_name, params, ui_params):
@@ -1479,6 +1480,17 @@ class UiContractV2Handler(BaseIntentHandler):
         )
         hydrate_final_layout_modifier_status(contract_v2)
         _projection.apply_field_policies_to_v2_status(contract_v2, source_contract, tighten_only=True)
+        apply_native_action_permission_verdicts(
+            self.env,
+            contract_v2,
+            model=str(model or "").strip(),
+            record_id=(
+                params.get("record_id")
+                or params.get("recordId")
+                or ui_params.get("record_id")
+                or ui_params.get("recordId")
+            ),
+        )
         hydrate_final_action_modifier_status(contract_v2)
         from odoo.addons.smart_core.core.action_guidance import project_native_action_guidance
         def read_action_fact(field_name):

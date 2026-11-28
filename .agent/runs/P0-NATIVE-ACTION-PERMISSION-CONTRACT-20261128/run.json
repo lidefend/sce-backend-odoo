@@ -1,0 +1,122 @@
+{
+  "schema_version": 2,
+  "id": "P0-NATIVE-ACTION-PERMISSION-CONTRACT-20261128",
+  "status": "verification_pending",
+  "branch": "fix/p0-native-action-permission-contract-20261128",
+  "baseline_sha": "c528f45c46bb6cc178a868cf5eb10a7c341a4f39",
+  "branch_state": "implementation_started_from_latest_origin_main",
+  "goal": ".agent/goals/P0-NATIVE-ACTION-PERMISSION-CONTRACT-20261128.yaml",
+  "record": "docs/ops/iterations/p0_native_action_permission_contract_20261128.md",
+  "current_batch": "NAPC-01 native action and relation contract authority",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P0-NATIVE-ACTION-PERMISSION-CONTRACT-20261128.yaml",
+    ".agent/runs/P0-NATIVE-ACTION-PERMISSION-CONTRACT-20261128/run.json",
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/p0_native_action_permission_contract_20261128.md",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/core/native_action_permission.py",
+    "addons/smart_core/handlers/execute_button.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/__init__.py",
+    "addons/smart_core/tests/test_native_action_permission_contract.py",
+    "addons/smart_core/tests/test_relation_entry_contract.py",
+    "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+    "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
+    "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Worktree-scoped local.test ORM and offline TypeScript contract tests; no persistent business database, migration or external write before PR publication."
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "P0 producer, execution authority, strict runtime contract and frontend presenter parity require non-zero affected checks."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The independent P0 contract repair must be integrated against the latest main."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "This contract repair is not a release qualification or deployment."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Frontend checks must decode and present the exact runtime action verdict produced by the backend."
+    }
+  },
+  "checks": {
+    "native_action_permission": {
+      "target": "verify.unified_page_contract.v2.action",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/native_action_permission.py",
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_native_action_permission_contract.py",
+        "addons/smart_core/tests/test_relation_entry_contract.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts"
+      ]
+    },
+    "execute_button_authority": {
+      "target": "verify.execute_button.authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_core/tests/test_execute_button_server_action_boundaries.py"
+      ]
+    },
+    "frontend_action_consumer": {
+      "target": "verify.frontend.contract_header_action.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts"
+      ]
+    },
+    "relation_entry_contract": {
+      "target": "verify.frontend.relation_entry.contract_guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/tests/test_relation_entry_contract.py"
+      ]
+    },
+    "native_action_permission_orm": {
+      "target": "verify.changed_tests.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_core/core/native_action_permission.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_native_action_permission_contract.py",
+        "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py"
+      ],
+      "readback": {
+        "artifact": ".runtime/native-action-permission/native-action-permission.readback.json"
+      }
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run freeze preparation, commit the clean exact-head P0 candidate, publish the independent PR and await exact-head required CI.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

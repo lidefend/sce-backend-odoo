@@ -101,14 +101,14 @@
         <field name="arch" type="xml">
             <form string="项目合同">
                 <header>
-                    <button name="action_generate_lines_from_budget" type="object" string="从中标清单生成" class="oe_highlight" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;!=&quot;,&quot;draft&quot;]]}" />
+                    <button name="action_generate_lines_from_budget" type="object" string="从中标清单生成" class="oe_highlight" groups="smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;!=&quot;,&quot;draft&quot;]]}" />
                     <button name="action_confirm" type="object" class="oe_highlight" string="提交审批" modifiers="{&quot;invisible&quot;:[&quot;|&quot;,[&quot;state&quot;,&quot;!=&quot;,&quot;draft&quot;],[&quot;validation_status&quot;,&quot;in&quot;,[&quot;waiting&quot;,&quot;pending&quot;]]]}" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager" />
                     <button name="validate_tier" type="object" class="oe_highlight" string="审批通过" modifiers="{&quot;invisible&quot;:[[&quot;can_review&quot;,&quot;=&quot;,false]]}" />
                     <button name="reject_tier" type="object" string="审批驳回" modifiers="{&quot;invisible&quot;:[[&quot;can_review&quot;,&quot;=&quot;,false]]}" />
                     <button name="action_set_running" type="object" string="开始执行" invisible="state != 'confirmed'" groups="smart_construction_core.group_sc_cap_contract_manager" />
                     <button name="action_close" type="object" string="完成" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;not in&quot;,[&quot;running&quot;,&quot;confirmed&quot;]]]}" groups="smart_construction_core.group_sc_cap_contract_manager" />
                     <button name="action_cancel" type="object" string="作废" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;not in&quot;,[&quot;draft&quot;,&quot;confirmed&quot;,&quot;running&quot;]]]}" groups="smart_construction_core.group_sc_cap_contract_manager" />
-                    <button name="action_reset_draft" type="object" string="重置为草稿" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;!=&quot;,&quot;cancel&quot;]]}" />
+                    <button name="action_reset_draft" type="object" string="重置为草稿" groups="smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;!=&quot;,&quot;cancel&quot;]]}" />
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,running,closed,cancel" />
                     <field name="validation_status" invisible="1" />
                     <field name="can_review" invisible="1" />
@@ -245,14 +245,14 @@
         <field name="arch" type="xml">
             <form string="收入合同">
                 <header>
-                    <button name="action_generate_lines_from_budget" type="object" string="从中标清单生成" class="oe_highlight" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;!=&quot;,&quot;draft&quot;]]}" />
+                    <button name="action_generate_lines_from_budget" type="object" string="从中标清单生成" class="oe_highlight" groups="smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;!=&quot;,&quot;draft&quot;]]}" />
                     <button name="action_confirm" type="object" class="oe_highlight" string="提交审批" modifiers="{&quot;invisible&quot;:[&quot;|&quot;,[&quot;state&quot;,&quot;!=&quot;,&quot;draft&quot;],[&quot;validation_status&quot;,&quot;in&quot;,[&quot;waiting&quot;,&quot;pending&quot;]]]}" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager" />
                     <button name="validate_tier" type="object" class="oe_highlight" string="审批通过" modifiers="{&quot;invisible&quot;:[[&quot;can_review&quot;,&quot;=&quot;,false]]}" />
                     <button name="reject_tier" type="object" string="审批驳回" modifiers="{&quot;invisible&quot;:[[&quot;can_review&quot;,&quot;=&quot;,false]]}" />
                     <button name="action_set_running" type="object" string="开始执行" invisible="state != 'confirmed'" groups="smart_construction_core.group_sc_cap_contract_manager" />
                     <button name="action_close" type="object" string="完成" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;not in&quot;,[&quot;running&quot;,&quot;confirmed&quot;]]]}" groups="smart_construction_core.group_sc_cap_contract_manager" />
                     <button name="action_cancel" type="object" string="作废" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;not in&quot;,[&quot;draft&quot;,&quot;confirmed&quot;,&quot;running&quot;]]]}" groups="smart_construction_core.group_sc_cap_contract_manager" />
-                    <button name="action_reset_draft" type="object" string="重置为草稿" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;!=&quot;,&quot;cancel&quot;]]}" />
+                    <button name="action_reset_draft" type="object" string="重置为草稿" groups="smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;!=&quot;,&quot;cancel&quot;]]}" />
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,running,closed,cancel" />
                     <field name="validation_status" invisible="1" />
                     <field name="can_review" invisible="1" />
@@ -363,14 +363,14 @@
         <field name="arch" type="xml">
             <form string="支出合同">
                 <header>
-                    <button name="action_generate_lines_from_budget" type="object" string="从预算生成" class="oe_highlight" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;!=&quot;,&quot;draft&quot;]]}" />
+                    <button name="action_generate_lines_from_budget" type="object" string="从预算生成" class="oe_highlight" groups="smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;!=&quot;,&quot;draft&quot;]]}" />
                     <button name="action_confirm" type="object" class="oe_highlight" string="提交审批" modifiers="{&quot;invisible&quot;:[&quot;|&quot;,[&quot;state&quot;,&quot;!=&quot;,&quot;draft&quot;],[&quot;validation_status&quot;,&quot;in&quot;,[&quot;waiting&quot;,&quot;pending&quot;]]]}" groups="smart_construction_core.group_sc_cap_business_initiator,smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager" />
                     <button name="validate_tier" type="object" class="oe_highlight" string="审批通过" modifiers="{&quot;invisible&quot;:[[&quot;can_review&quot;,&quot;=&quot;,false]]}" />
                     <button name="reject_tier" type="object" string="审批驳回" modifiers="{&quot;invisible&quot;:[[&quot;can_review&quot;,&quot;=&quot;,false]]}" />
                     <button name="action_set_running" type="object" string="开始执行" invisible="state != 'confirmed'" groups="smart_construction_core.group_sc_cap_contract_manager" />
                     <button name="action_close" type="object" string="完成" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;not in&quot;,[&quot;running&quot;,&quot;confirmed&quot;]]]}" groups="smart_construction_core.group_sc_cap_contract_manager" />
                     <button name="action_cancel" type="object" string="作废" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;not in&quot;,[&quot;draft&quot;,&quot;confirmed&quot;,&quot;running&quot;]]]}" groups="smart_construction_core.group_sc_cap_contract_manager" />
-                    <button name="action_reset_draft" type="object" string="重置为草稿" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;!=&quot;,&quot;cancel&quot;]]}" />
+                    <button name="action_reset_draft" type="object" string="重置为草稿" groups="smart_construction_core.group_sc_cap_contract_user,smart_construction_core.group_sc_cap_contract_manager" modifiers="{&quot;invisible&quot;:[[&quot;state&quot;,&quot;!=&quot;,&quot;cancel&quot;]]}" />
                     <field name="state" widget="statusbar" statusbar_visible="draft,confirmed,running,closed,cancel" />
                     <field name="validation_status" invisible="1" />
                     <field name="can_review" invisible="1" />

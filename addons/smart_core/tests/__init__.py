@@ -50,3 +50,4 @@ from . import test_extension_registry_lifecycle
 from . import test_workflow_contract_platform
 from . import test_platform_multi_company
 from . import test_group_authority_sources
+from . import test_native_action_permission_contract

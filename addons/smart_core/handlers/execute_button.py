@@ -18,6 +18,7 @@ except ImportError:  # pragma: no cover - compatibility for lightweight boundary
     def record_in_business_scope(env_model, record_id, params=None, context=None):
         return record_in_project_scope(env_model, record_id, selected_record_context_id_from_context(params, context))
 from ..core.navigation_entry_target import normalize_odoo_action_result
+from ..core.native_action_permission import button_access_mode
 from ..core.page_block_action_contract import build_action_feedback_from_result
 from ..core.request_params import parse_bool
 from odoo.exceptions import AccessError, UserError
@@ -39,6 +40,7 @@ from ..utils.reason_codes import (
 
 _logger = logging.getLogger(__name__)
 _CONTRACT_REASON_CODE = re.compile(r"^[A-Z][A-Z0-9_]{2,}$")
+
 
 class ExecuteButtonHandler(BaseIntentHandler):
     INTENT_TYPE = "execute_button"
@@ -66,10 +68,7 @@ class ExecuteButtonHandler(BaseIntentHandler):
         }
 
     def _button_access_mode(self, env_model, method_name: str) -> str:
-        readonly_methods = getattr(env_model, "_sc_readonly_navigation_button_methods", ())
-        if method_name in set(readonly_methods or ()):
-            return "read"
-        return "write"
+        return button_access_mode(env_model, method_name)
 
     def _load_current_action_contract(
         self,

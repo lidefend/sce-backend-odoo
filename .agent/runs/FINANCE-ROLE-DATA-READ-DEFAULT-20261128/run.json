@@ -1,0 +1,112 @@
+{
+  "schema_version": 2,
+  "id": "FINANCE-ROLE-DATA-READ-DEFAULT-20261128",
+  "status": "verification_pending",
+  "branch": "fix/finance-role-data-read-default-20261128",
+  "baseline_sha": "bf3e78c2a9e81448f36425b05e133170aee39875",
+  "branch_state": "implementation_started_from_exact_origin_main",
+  "goal": ".agent/goals/FINANCE-ROLE-DATA-READ-DEFAULT-20261128.yaml",
+  "record": "docs/ops/iterations/finance_role_data_read_default_20261128.md",
+  "current_batch": "FRD-02 standard role action and search dependency closure",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FINANCE-ROLE-DATA-READ-DEFAULT-20261128.yaml",
+    ".agent/runs/FINANCE-ROLE-DATA-READ-DEFAULT-20261128/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/finance_role_data_read_default_20261128.md",
+    "addons/smart_construction_core/models/core/cost_domain.py",
+    "addons/smart_construction_core/models/core/material_acceptance.py",
+    "addons/smart_construction_core/models/core/project_project_financial.py",
+    "addons/smart_construction_core/security/sc_role_groups.xml",
+    "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    "addons/smart_construction_core/tests/test_role_capability_authority_orm.py",
+    "addons/smart_construction_core/views/core/construction_diary_views.xml",
+    "addons/smart_construction_core/views/core/contract_views.xml",
+    "addons/smart_construction_core/views/core/cost_domain_views.xml",
+    "addons/smart_construction_core/views/core/cost_plan_views.xml",
+    "addons/smart_construction_core/views/core/material_acceptance_views.xml",
+    "addons/smart_construction_core/views/core/material_supplier_return_views.xml",
+    "addons/smart_construction_core/views/core/project_overview_views.xml",
+    "addons/smart_construction_core/views/core/project_views.xml",
+    "addons/smart_construction_core/views/menu_business_taxonomy.xml",
+    "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_role_capability_group_authority_guard.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Worktree-scoped local.test ORM and the existing disposable local.clean runtime; no demo, sample, acceptance, customer or production data."
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "P1 standard role/action capability composition plus affected view, ORM and low-code page coverage."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The role default must be integrated against the current target main."
+    },
+    "scheduled_release": {
+      "status": "required",
+      "entrypoint": "make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "Resulting mainline release qualification remains separate from PR integration."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "The frontend payment-request journey consumes the corrected role composition."
+    }
+  },
+  "checks": {
+    "capability_role_composition": {
+      "target": "verify.changed_tests.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/"
+      ],
+      "readback": {
+        "artifact": ".runtime/finance-role-data-read-default/capability-role-composition.readback.json"
+      }
+    },
+    "role_capability_guard": {
+      "target": "verify.role_capability_group_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/security/sc_role_groups.xml",
+        "scripts/verify/role_capability_group_authority_guard.py",
+        "scripts/verify/test_role_capability_group_authority_guard.py"
+      ]
+    },
+    "local_iteration": {
+      "target": "verify.admin_close_01.backend.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/FINANCE-ROLE-DATA-READ-DEFAULT-20261128.yaml",
+        ".agent/runs/FINANCE-ROLE-DATA-READ-DEFAULT-20261128/run.json",
+        "docs/ops/iterations/finance_role_data_read_default_20261128.md",
+        "addons/smart_construction_core/",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/role_capability_group_authority_guard.py",
+        "scripts/verify/test_role_capability_group_authority_guard.py"
+      ]
+    },
+    "module_baseline": {
+      "target": "verify.smart_construction_core.module_baseline",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/",
+        "make/ci.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Prepare and publish the clean exact-head P1 candidate for remote PR verification, then start the independent P0 native button/relation contract-projection batch.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

@@ -1749,6 +1749,7 @@ class ScMaterialOutbound(models.Model):
     _description = "材料出库单"
     _inherit = ["mail.thread", "mail.activity.mixin", "tier.validation", "sc.material.system.default.mixin"]
     _order = "outbound_date desc, id desc"
+    _sc_readonly_navigation_button_methods = {"action_open_transfer_inbound"}
     _FACT_IMMUTABLE_FIELDS = {
         "outbound_type", "project_id", "outbound_date", "currency_id",
         "receiver_id", "line_ids",

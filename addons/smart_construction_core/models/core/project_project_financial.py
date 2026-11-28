@@ -8,7 +8,11 @@ from odoo.addons.smart_core.delivery.runtime_route_authority import build_runtim
 
 class ProjectProjectFinancial(models.Model):
     _inherit = "project.project"
-    _sc_readonly_navigation_button_methods = ("action_open_project_contracts",)
+    _sc_readonly_navigation_button_methods = (
+        "action_open_project_contracts",
+        "action_view_my_tasks",
+        "action_view_stage_requirements",
+    )
 
     sc_project_contract_entry_available = fields.Boolean(
         string="项目合同入口可用", compute="_compute_project_contract_entry_available",
