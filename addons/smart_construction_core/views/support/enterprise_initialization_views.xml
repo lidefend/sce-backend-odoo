@@ -70,9 +70,6 @@
                         <button name="%(action_sc_approval_scope)d" type="action" string="审批岗位人员"/>
                         <button name="%(action_sc_approval_policy)d" type="action" string="审批策略"/>
                     </group>
-                    <group name="enterprise_scenario_configuration" string="场景配置">
-                        <button name="%(action_sc_product_scenario)d" type="action" string="业务场景配置"/>
-                    </group>
                 </sheet>
             </form>
         </field>

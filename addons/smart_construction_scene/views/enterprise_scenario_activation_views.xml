@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_sc_product_scenario_company_activation_tree" model="ir.ui.view">
+    <field name="name">sc.product.scenario.company.activation.tree</field>
+    <field name="model">sc.product.scenario</field>
+    <field name="arch" type="xml">
+      <tree string="企业业务场景" create="0" delete="0" edit="0">
+        <field name="sequence"/>
+        <field name="name"/>
+        <field name="code"/>
+        <field name="sc_product_release_label"/>
+        <field name="sc_company_status_label"/>
+        <field name="active" column_invisible="True"/>
+        <field name="sc_product_released" column_invisible="True"/>
+        <field name="sc_company_enabled" column_invisible="True"/>
+        <button name="action_enable_for_company"
+                type="object"
+                string="启用"
+                class="btn-primary"
+                invisible="not sc_product_released or sc_company_enabled"/>
+        <button name="action_disable_for_company"
+                type="object"
+                string="停用"
+                invisible="not sc_company_enabled"/>
+      </tree>
+    </field>
+  </record>
+
+  <record id="action_sc_enterprise_scenario_activation" model="ir.actions.act_window">
+    <field name="name">企业业务场景</field>
+    <field name="res_model">sc.product.scenario</field>
+    <field name="view_mode">tree</field>
+    <field name="view_id" ref="view_sc_product_scenario_company_activation_tree"/>
+    <field name="domain">[('active', '=', True)]</field>
+    <field name="context">{'sc_delivery_scope': 'configuration', 'create': False, 'delete': False}</field>
+    <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_business_config_admin')])]"/>
+  </record>
+
+  <record id="view_sc_enterprise_initialization_form_scenario_enablement" model="ir.ui.view">
+    <field name="name">res.company.sc.enterprise.initialization.scenario.enablement</field>
+    <field name="model">res.company</field>
+    <field name="inherit_id" ref="smart_construction_core.view_sc_enterprise_initialization_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//sheet" position="inside">
+        <group name="enterprise_scenario_configuration" string="场景配置">
+          <button name="%(action_sc_enterprise_scenario_activation)d"
+                  type="action"
+                  string="业务场景配置"/>
+        </group>
+      </xpath>
+    </field>
+  </record>
+</odoo>
