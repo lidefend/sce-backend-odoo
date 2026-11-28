@@ -11,7 +11,11 @@
     ".agent/goals/P0-ENTERPRISE-RECORD-ENTRY-20261128.yaml",
     ".agent/runs/P0-ENTERPRISE-RECORD-ENTRY-20261128/run.json",
     "addons/smart_core/core/extension_hook_contracts.py",
+    "addons/smart_core/delivery/delivery_engine.py",
     "addons/smart_core/delivery/native_config_menu_projection.py",
+    "addons/smart_core/delivery/scene_shell_compiler.py",
+    "addons/smart_core/tests/test_entry_publication_authority.py",
+    "addons/smart_core/tests/test_scene_shell_compiler.py",
     "addons/smart_construction_scene/__init__.py",
     "addons/smart_construction_scene/core_extension.py",
     "addons/smart_construction_core/__init__.py",
@@ -57,14 +61,44 @@
     "scene_action_supply": {
       "target": "verify.navigation.publication_consumers.unit",
       "inputs": [
+        "addons/smart_construction_core/core_extension.py",
         "addons/smart_construction_scene/scene_registry.py",
-        "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py"
+        "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+        "addons/smart_core/delivery/delivery_engine.py"
+      ],
+      "kind": "offline"
+    },
+    "entry_publication_authority": {
+      "target": "verify.product.entry_publication.unit",
+      "inputs": [
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_core/tests/test_entry_publication_authority.py"
+      ],
+      "kind": "offline"
+    },
+    "navigation_delivery": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "inputs": [
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_core/delivery/scene_shell_compiler.py",
+        "addons/smart_core/tests/test_entry_publication_authority.py",
+        "addons/smart_core/tests/test_scene_shell_compiler.py"
+      ],
+      "kind": "offline"
+    },
+    "extension_hook_contracts": {
+      "target": "verify.extension.hook_contracts.unit",
+      "inputs": [
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_core/core/extension_hook_contracts.py"
       ],
       "kind": "offline"
     },
     "company_route_scope": {
       "target": "verify.scene.company_route_scope_cache.orm",
       "inputs": [
+        "addons/smart_construction_core/core_extension.py",
         "addons/smart_construction_scene/scene_registry.py",
         "addons/smart_construction_scene/tests/test_company_route_scope_cache.py"
       ],
@@ -78,11 +112,12 @@
   "evidence": {
     "local_iteration": {
       "status": "passed",
-      "head": "92016d60251f94a9048daf7cd8fe834e00f97574",
-      "receipt": ".runtime/frontend-dev-validation/executions/20261128T020816Z-1986435-109178055/receipt.json",
-      "receipt_sha256": "9ad0122f0cf2893c66ca059e74e050be8375dc9aceb8f58ed46e19e74efa7ac2",
-      "executed_targets": 18,
-      "test_count": 597,
+      "head": "d2da3b9dd4a54ba1ccba901d5472dceb9029ec67",
+      "dirty": true,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261128T024119Z-2257973-304822757/receipt.json",
+      "receipt_sha256": "8066bebd19f3858fd3dd91769ff08755cd87084f34d2e742f8bbbb2a92f53494",
+      "executed_targets": 20,
+      "test_count": 614,
       "static_checks": 3,
       "unmapped_paths": 0,
       "channel_handoff_required": false
@@ -90,6 +125,8 @@
     "facts_verified": [
       "enterprise initialization scopes its target to env.company.id",
       "system.init nav and route authority publish entry_target.record_entry model=res.company for the authenticated current company",
+      "the shared delivery normalizer preserves the formal record_entry while rebuilding compatibility references",
+      "the scene shell compiler preserves the same record_entry on the navigation target, native delegate target and scene shell target",
       "normal business scene targets without record_id remain unchanged",
       "the native config action hook is declared under the extension hook contract and passes authority/lifecycle tests",
       "the hook provider is located in smart_construction_core, which is the extension module actually loaded by the clean runtime"

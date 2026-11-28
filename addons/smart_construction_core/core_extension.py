@@ -4,7 +4,7 @@ from copy import deepcopy
 from typing import Any, Dict, List
 from odoo.tools.safe_eval import safe_eval
 from odoo.addons.smart_core.core.form_configuration_compiler import FormConfigurationError
-from odoo.addons.smart_core.core.navigation_entry_target import build_scene_entry_target
+from odoo.addons.smart_core.core.navigation_entry_target import build_compatibility_entry_target
 
 from odoo.addons.smart_construction_core.services import role_surface_contract as _role_surface_contract
 from odoo.addons.smart_construction_core.services import role_catalog_contract as _role_catalog_contract
@@ -1948,14 +1948,16 @@ def smart_core_native_config_action_entry_target(env, action, menu_id):
     model = str(getattr(action, "res_model", "") or "").strip()
     if model != "res.company":
         return None
-    return build_scene_entry_target(
+    return build_compatibility_entry_target(
         env=env,
-        scene_key="enterprise.setup",
+        route=f"/r/{model}/{env.company.id}",
         menu_id=menu_id,
         action_id=action.id,
         model=model,
         view_modes=["form"],
         record_id=env.company.id,
+        target_type="action",
+        delivery_mode="native_config_record_entry",
         entry_intent="explicit_readonly",
     )
 

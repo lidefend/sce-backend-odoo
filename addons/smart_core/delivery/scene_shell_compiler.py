@@ -120,7 +120,7 @@ def _native_scene_key(target: dict) -> str:
 
 def _native_target(node: dict, scene_key: str) -> dict:
     target = _target(node)
-    return {
+    native_target = {
         "type": "action",
         "route": "/s/%s" % scene_key,
         "menu_id": target["menu_id"],
@@ -133,6 +133,10 @@ def _native_target(node: dict, scene_key: str) -> dict:
             **({"model": target["model"]} if target["model"] else {}),
         },
     }
+    record_entry = target["entry_target"].get("record_entry")
+    if isinstance(record_entry, dict) and record_entry:
+        native_target["record_entry"] = deepcopy(record_entry)
+    return native_target
 
 
 @dataclass(frozen=True)
@@ -255,6 +259,10 @@ class SceneShellCompiler:
                 "content_kind": CONTENT_NATIVE_DELEGATE,
                 "native_target": native_target,
             }
+            if isinstance(native_target.get("record_entry"), dict):
+                candidate["entry_target"]["record_entry"] = deepcopy(
+                    native_target["record_entry"]
+                )
             meta.update({
                 "scene_key": scene_key,
                 "route": candidate["route"],
@@ -308,6 +316,11 @@ class SceneShellCompiler:
             "menu_id": native_target.get("menu_id"),
             "model": native_target.get("model"),
             "view_mode": ",".join(native_target.get("view_modes") or []),
+            **(
+                {"record_entry": deepcopy(native_target["record_entry"])}
+                if isinstance(native_target.get("record_entry"), dict)
+                else {}
+            ),
         }
         return {
             "scene": {

@@ -599,6 +599,66 @@ class EntryPublicationTest(unittest.TestCase):
         self.assertEqual(result["entry_target"]["surface"], "business_config")
         self.assertEqual(result["entry_target"]["route"], "/admin/business-config")
 
+    def test_shared_normalizer_preserves_formal_record_entry(self):
+        path = ROOT / "delivery/delivery_engine.py"
+        cls = next(n for n in ast.parse(path.read_text()).body if isinstance(n, ast.ClassDef) and n.name == "DeliveryEngine")
+        names = {"_normalize_entry_target_refs", "_normalize_delivery_nav_node_refs", "_normalize_delivery_nav_refs"}
+        methods = [n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name in names]
+        target_api = load_entry_target_module()
+        scope = {
+            "_text": lambda v: str(v or "").strip(),
+            "_to_int": lambda v: int(v or 0),
+            "build_web_surface_entry_target": target_api.build_web_surface_entry_target,
+            "derive_entry_route": target_api.derive_entry_route,
+            "target_route": target_api.target_route,
+            "deepcopy": deepcopy,
+        }
+        target_class = ast.ClassDef(name="Normalizer", bases=[], keywords=[], body=methods, decorator_list=[])
+        tree = ast.fix_missing_locations(ast.Module(body=[target_class], type_ignores=[]))
+        exec(compile(tree, str(path), "exec"), scope)
+        normalizer = scope["Normalizer"]()
+        records = {
+            "setup.menu": SimpleNamespace(id=719, active=True),
+            "setup.action": SimpleNamespace(
+                id=966,
+                _name="ir.actions.act_window",
+                res_model="res.company",
+                view_mode="form",
+                context="{'sc_delivery_scope': 'configuration', 'create': False, 'delete': False}",
+            ),
+        }
+        normalizer._resolve_xmlid_record = lambda xmlid, **kwargs: records.get(xmlid)
+        record_entry = {
+            "model": "res.company",
+            "record_id": 1,
+            "entry_intent": "explicit_readonly",
+            "model_write_authority": True,
+            "action_id": 966,
+            "menu_id": 719,
+        }
+        target = {
+            "type": "compatibility",
+            "route": "/r/res.company/1",
+            "compatibility_refs": {"menu_id": 719, "action_id": 966},
+            "record_entry": record_entry,
+        }
+        node = {
+            "menu_id": 719,
+            "route": "/r/res.company/1",
+            "entry_target": dict(target),
+            "meta": {
+                "menu_xmlid": "setup.menu",
+                "action_xmlid": "setup.action",
+                "menu_id": 719,
+                "action_id": 966,
+                "route": "/r/res.company/1",
+                "entry_target": dict(target),
+            },
+        }
+        result = normalizer._normalize_delivery_nav_refs([node])[0]
+        self.assertEqual(result["entry_target"]["record_entry"], record_entry)
+        self.assertEqual(result["meta"]["entry_target"]["record_entry"], record_entry)
+
     def test_runtime_validator_obeys_failed_publication_authority(self):
         result, _ = self.handler(775, fail_closed=True)
         self.assertFalse(result.ok)

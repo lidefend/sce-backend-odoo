@@ -153,12 +153,21 @@ class TestCompanyRouteScopeCache(TransactionCase):
                 False,
             )
         env = actor.with_user(actor).with_context(allowed_company_ids=[self.env.company.id]).env
-        projected = {
-            row.get("menu_xmlid")
+        projected_rows = [
+            row
             for group in native_config_delivery_groups(env)
             for row in group.get("menus") or []
-        }
+        ]
+        projected = {row.get("menu_xmlid") for row in projected_rows}
         self.assertIn(menu_xmlid, projected)
+        projected_initialize = [
+            row for row in projected_rows if row.get("menu_xmlid") == menu_xmlid
+        ]
+        self.assertEqual(len(projected_initialize), 1)
+        self.assertEqual(
+            ((projected_initialize[0].get("entry_target") or {}).get("record_entry") or {}).get("record_id"),
+            self.env.company.id,
+        )
 
         admitted = EffectiveDeliveryService(env).resolve()
         initialize_rows = [

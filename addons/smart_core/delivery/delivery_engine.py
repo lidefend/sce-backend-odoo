@@ -131,11 +131,18 @@ class DeliveryEngine:
             refs["model"] = model
         if view_modes:
             refs["view_modes"] = view_modes
-        return {
+        next_target = dict(entry_target)
+        next_target.update({
             "type": "compatibility",
             "route": route or _text(entry_target.get("route")),
             "compatibility_refs": refs,
-        }
+        })
+        for keep in ("record_entry", "delivery_scope", "root_menu_xmlid", "presentation"):
+            if entry_target.get(keep) in (None, "", [], {}):
+                next_target.pop(keep, None)
+            else:
+                next_target[keep] = deepcopy(entry_target[keep])
+        return next_target
 
     def _normalize_delivery_nav_node_refs(self, node: dict) -> None:
         if not isinstance(node, dict):
@@ -187,6 +194,7 @@ class DeliveryEngine:
         declared_surface = (
             {}
             if _text(existing_target.get("type")) == "scene"
+            or isinstance(existing_target.get("record_entry"), dict)
             else build_web_surface_entry_target(
                 getattr(action, "context", None) if action else meta.get("context"),
                 menu_id=menu_id,
