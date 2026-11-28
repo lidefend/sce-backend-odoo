@@ -432,7 +432,7 @@ router.beforeEach(async (to) => {
     }
     if (
       authorityBoundRoute
-      && to.name === 'action'
+      && (to.name === 'action' || to.name === 'record' || to.name === 'model-form')
       && actionId > 0
       && actionId === currentRouteActionId
       && currentActionMatches(session, actionId)
