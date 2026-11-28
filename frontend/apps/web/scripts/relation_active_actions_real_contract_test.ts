@@ -65,12 +65,12 @@ test('real assembler output decodes occurrence relation actions and the consumer
       raw: "state != 'done'",
     },
   });
-  assert.deepEqual(tags.fieldDescriptor.relationActiveActions, { create: true });
+  assert.deepEqual(tags.fieldDescriptor.relationActiveActions, { create: true, write: false });
   assert.deepEqual(formFields.partner_id.relationActiveActions, {
     create: false,
     write: true,
   }, 'ContractV2FormFieldDescriptor compatibility projection preserves the descriptor declaration');
-  assert.deepEqual(formFields.tag_ids.relationActiveActions, { create: true });
+  assert.deepEqual(formFields.tag_ids.relationActiveActions, { create: true, write: false });
 
   assert.deepEqual(resolveNativeRelationActiveActions(first, evaluate), {
     create: false,
@@ -82,7 +82,7 @@ test('real assembler output decodes occurrence relation actions and the consumer
   });
   assert.deepEqual(resolveNativeRelationActiveActions(tags, evaluate), {
     create: true,
-    write: null,
+    write: false,
   });
 
   const conflicting = {

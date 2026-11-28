@@ -789,7 +789,7 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
                         "occurrence_index": 3,
                         "source_position": 3,
                         "attributes": {"widget": "many2many_tags"},
-                        "relation_active_actions": {"create": True},
+                        "relation_active_actions": {"create": True, "write": False},
                     },
                 ],
             }]}},
@@ -827,9 +827,8 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertNotIn("write", second["fieldDescriptor"]["relationActiveActions"])
         self.assertEqual(
             tags["fieldDescriptor"]["relationActiveActions"],
-            {"create": True},
+            {"create": True, "write": False},
         )
-        self.assertNotIn("write", tags["fieldDescriptor"]["relationActiveActions"])
         for widget in (first, second, tags):
             self.assertNotIn("relationActiveActions", widget["componentConfig"])
             self.assertNotIn("relation_active_actions", widget["componentConfig"])

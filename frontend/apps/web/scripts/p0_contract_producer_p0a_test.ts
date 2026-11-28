@@ -434,10 +434,10 @@ assert.deepEqual(
     widgetType: 'many2many_tags',
     semanticType: 'tag_collection',
     relation: 'res.partner.category',
-    relationActiveActions: { create: true },
+    relationActiveActions: { create: true, write: false },
   }).descriptor.relationActiveActions,
-  { create: true },
-  'many2many_tags preserves its create declaration without manufacturing write',
+  { create: true, write: false },
+  'many2many_tags preserves both native relation action declarations',
 );
 assert.deepEqual(
   decodeContractV2FieldDescriptor({

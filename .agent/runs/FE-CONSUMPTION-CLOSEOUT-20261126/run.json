@@ -4,7 +4,7 @@
   "status": "active",
   "branch": "fix/fe-consumption-closeout-20261126",
   "branch_state": "remote_pr_1019_open_frontend_scene_contract_consumption_p0_1032_pending_remote_ci",
-  "baseline_sha": "bf3e78c2a9e81448f36425b05e133170aee39875",
+  "baseline_sha": "10fe60ee7d96cfc60245a733b0e2f2cccc7b7e56",
   "baseline_state": "pr_1019_target_includes_pr_1029_and_p0_enterprise_record_entry_is_published_independently_as_pr_1032",
   "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
   "record": "docs/ops/iterations/frontend_convergence_next_20261126.md",
@@ -753,7 +753,7 @@
   "blockers": [
     "PR 1032 is the independent P0 producer candidate and its exact-head remote CI is pending. Frontend browser acceptance cannot run on the current clean stack because its mounted backend is still the pre-P0 frontend worktree, not the PR 1032 backend tree."
   ],
-  "next_exact_step": "Run the two scene contract tests and strict typecheck on the current frontend candidate, record their exact HEAD/dirty identity, commit and update PR 1019. After PR 1032 merges, synchronize PR 1019 with the resulting main, rebuild the governed clean stack, and rerun only the affected enterprise initialization journey.",
+  "next_exact_step": "Run one complete representative finance payment journey on the main-synchronized candidate, record the exact contract and business readback evidence, commit the batch evidence, then publish and verify PR 1019.",
   "evidence": {
     "scene_target_carrier_consumption": {
       "status": "passed_local_targeted",

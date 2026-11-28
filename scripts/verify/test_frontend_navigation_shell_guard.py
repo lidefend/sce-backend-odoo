@@ -21,6 +21,7 @@ PATHS = (
     "frontend/apps/web/src/app/canonicalNavigation.ts",
     "addons/smart_core/delivery/menu_service.py",
     "addons/smart_core/delivery/navigation_contract_compiler.py",
+    "addons/smart_core/delivery/published_scene_surface_service.py",
     "addons/smart_core/handlers/system_init.py",
     *(f"frontend/apps/web/src/components/product-shell/{component}.vue" for component in COMPONENTS),
 )
@@ -109,12 +110,33 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         path = root / "addons/smart_core/handlers/system_init.py"
         path.write_text(
             path.read_text().replace(
-                'data["navigation"] = _compiled_navigation.navigation',
+                'data["navigation"] = _compiled_navigation',
                 'data["navigation"] = {"nav": data["nav"]}',
             ),
             encoding="utf-8",
         )
-        self.assertTrue(any("delegate navigation compilation" in error for error in validate(root)))
+        self.assertTrue(any("consume the sealed delivery navigation" in error for error in validate(root)))
+
+    def test_system_init_cannot_construct_a_second_navigation_compiler(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "addons/smart_core/handlers/system_init.py"
+        path.write_text(
+            path.read_text()
+            + "\nNavigationContractCompiler(None).compile()\n",
+            encoding="utf-8",
+        )
+        self.assertTrue(any("constructing a second compiler" in error for error in validate(root)))
+
+    def test_published_scene_surface_must_own_navigation_compilation(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "addons/smart_core/delivery/published_scene_surface_service.py"
+        path.write_text(
+            path.read_text().replace("NavigationContractCompiler(", "removed_compiler("),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("single navigation compiler" in error for error in validate(root)))
 
     def test_sidebar_child_root_must_keep_bounded_scroll_style(self):
         temporary, root = self.fixture()

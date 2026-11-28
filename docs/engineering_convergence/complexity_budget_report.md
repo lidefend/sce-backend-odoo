@@ -15,7 +15,7 @@ Generated from repository source files. This report is informational during the 
 | 7090 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 6739 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 6607 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
-| 6087 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
+| 6086 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 5871 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 5368 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
@@ -57,9 +57,9 @@ Generated from repository source files. This report is informational during the 
 | 2068 | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
 | 2021 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 2004 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
+| 1982 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1980 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1977 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
-| 1959 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1948 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1930 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1914 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
@@ -117,7 +117,7 @@ Generated from repository source files. This report is informational during the 
 | 1397 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1392 | Python source | `scripts/ops/change_impact_planner.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
-| 1365 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
+| 1374 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1363 | Python source | `addons/smart_core/delivery/edition_release_snapshot_service.py` |
 | 1361 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
@@ -287,7 +287,7 @@ Generated from repository source files. This report is informational during the 
 | 7090 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 6739 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 6607 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
-| 6087 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
+| 6086 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 5871 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 5368 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
@@ -329,9 +329,9 @@ Generated from repository source files. This report is informational during the 
 | 2068 | split_plan_required | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
 | 2021 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 2004 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
+| 1982 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1980 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1977 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
-| 1959 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1948 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1930 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1914 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |

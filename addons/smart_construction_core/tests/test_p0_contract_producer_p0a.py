@@ -786,7 +786,7 @@ class TestRelationActiveActionsContractEvidence(TransactionCase):
                         'name': 'tag_ids',
                         'source_position': 3,
                         'attributes': {'widget': 'many2many_tags'},
-                        'relation_active_actions': {'create': True},
+                        'relation_active_actions': {'create': True, 'write': False},
                     },
                 ],
             }]}},
@@ -823,7 +823,7 @@ class TestRelationActiveActionsContractEvidence(TransactionCase):
         self.assertNotIn('write', second['fieldDescriptor']['relationActiveActions'])
         self.assertEqual(
             tags['fieldDescriptor']['relationActiveActions'],
-            {'create': True},
+            {'create': True, 'write': False},
         )
         for widget in (first, second, tags):
             self.assertNotIn('relationActiveActions', widget['componentConfig'])
