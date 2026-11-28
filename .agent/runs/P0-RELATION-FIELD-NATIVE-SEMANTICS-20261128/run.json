@@ -2,7 +2,7 @@
   "schema_version": 2,
   "id": "P0-RELATION-FIELD-NATIVE-SEMANTICS-20261128",
   "branch": "fix/p0-relation-field-native-semantics-20261128",
-  "baseline_sha": "d8783563830dcd9fa80220b2769340be66acf79d",
+  "baseline_sha": "9210cab66961797c9c3fad9da4b4dfd0ccfa6c24",
   "status": "verification_pending",
   "goal": ".agent/goals/P0-RELATION-FIELD-NATIVE-SEMANTICS-20261128.yaml",
   "record": "docs/ops/iterations/p0_relation_field_native_semantics_20261128.md",
@@ -135,5 +135,5 @@
       "reason": "The candidate is not committed or frozen yet."
     }
   },
-  "next_exact_step": "Review the complete diff, commit the P0 candidate, publish an independent PR, and verify exact-head required CI."
+  "next_exact_step": "Run affected local validation and generated-evidence preflight on the main-synchronized candidate, then publish and verify exact-head required CI."
 }
