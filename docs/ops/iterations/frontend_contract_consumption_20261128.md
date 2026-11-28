@@ -96,9 +96,10 @@ authority to an old inline declaration. The ledger now points to
 
 ## Verification record
 
-`make ci.local.iteration` passed 42 required targets: 23 test targets with 1030
+After synchronizing onto main `dc68e914f36c653cf8c33f8ae2247829d2348dab`,
+`make ci.local.iteration` passed 48 required targets: 28 test targets with 1413
 non-zero tests, 8 static checks and zero unmapped paths. The receipt is
-`.runtime/frontend-dev-validation/executions/20261128T114730Z-2855543-81896435/receipt.json`.
+`.runtime/frontend-dev-validation/executions/20261128T120143Z-2993859-172499035/receipt.json`.
 Generated complexity and split-plan evidence was refreshed and the read-only
 generated-evidence preflight is rerun after every refresh.
 

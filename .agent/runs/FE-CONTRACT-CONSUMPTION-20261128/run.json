@@ -133,10 +133,10 @@
     "focused_local_iteration": {
       "status": "passed",
       "command": "make ci.local.iteration",
-      "receipt": ".runtime/frontend-dev-validation/executions/20261128T114730Z-2855543-81896435/receipt.json",
-      "executed_targets": 42,
-      "test_targets": 23,
-      "test_count": 1030,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261128T120143Z-2993859-172499035/receipt.json",
+      "executed_targets": 48,
+      "test_targets": 28,
+      "test_count": 1413,
       "static_checks": 8,
       "unmapped_paths": 0
     },
