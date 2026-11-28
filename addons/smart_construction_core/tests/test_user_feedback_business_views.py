@@ -2675,6 +2675,26 @@ class TestUserFeedbackBusinessViews(BusinessTransactionCase):
         self.assertEqual(certificate_entry.get("type"), "scene")
         self.assertEqual(certificate_entry.get("scene_key"), expected_scene_key)
         self.assertEqual((certificate_entry.get("compatibility_refs") or {}).get("menu_id"), menu.id)
+        scenario_surface = (payload.get("navigation") or {}).get("scenario_surface") or {}
+        center_rows = ((scenario_surface.get("tree") or {}).get("centers") or [])
+        scenario_entries = [
+            entry
+            for center in center_rows
+            for entry in (
+                (center.get("entries") or [])
+                + [
+                    row
+                    for scenario in (center.get("scenarios") or [])
+                    for row in (scenario.get("entries") or [])
+                ]
+            )
+            if int(entry.get("menu_id") or 0) == menu.id
+            and int(entry.get("action_id") or 0) == menu.action.id
+        ]
+        self.assertTrue(scenario_entries)
+        for entry in scenario_entries:
+            self.assertEqual(entry.get("route"), expected_route)
+            self.assertEqual((entry.get("entry_target") or {}).get("route"), expected_route)
 
     def test_product_menu_business_domains_are_released_as_formal_capabilities(self):
         self.env["sc.product.policy"].sync_construction_menu_product_policies()

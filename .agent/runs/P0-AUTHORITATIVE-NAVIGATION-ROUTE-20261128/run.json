@@ -1,0 +1,119 @@
+{
+  "schema_version": 2,
+  "id": "P0-AUTHORITATIVE-NAVIGATION-ROUTE-20261128",
+  "branch": "fix/p0-authoritative-navigation-route-20261128",
+  "status": "active",
+  "baseline_sha": "8bdb564b8bae190996d597a76f8c42a797d6b167",
+  "goal": ".agent/goals/P0-AUTHORITATIVE-NAVIGATION-ROUTE-20261128.yaml",
+  "record": "docs/ops/iterations/p0_authoritative_navigation_route_20261128.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P0-AUTHORITATIVE-NAVIGATION-ROUTE-20261128.yaml",
+    ".agent/runs/P0-AUTHORITATIVE-NAVIGATION-ROUTE-20261128/run.json",
+    "addons/smart_core/delivery/delivery_engine.py",
+    "addons/smart_core/delivery/navigation_contract_compiler.py",
+    "addons/smart_core/tests/test_entry_publication_authority.py",
+    "addons/smart_core/tests/test_navigation_contract_compiler.py",
+    "addons/smart_construction_core/tests/test_user_feedback_business_views.py",
+    "docs/ops/iterations/p0_authoritative_navigation_route_20261128.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no persistent data or deployment write"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Route normalization, final scenario-surface and enterprise-target contract tests"
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The P0 route carrier correction must integrate independently from frontend PR 1019"
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "release full audit",
+      "reason": "No deployment or release is requested by this batch"
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "The frontend must consume one route from the final published scene contract."
+    }
+  },
+  "checks": {
+    "entry_publication": {
+      "target": "verify.product.entry_publication.unit",
+      "inputs": [
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_core/tests/test_entry_publication_authority.py"
+      ],
+      "kind": "offline"
+    },
+    "navigation_compiler": {
+      "target": "verify.navigation_contract_compiler.unit",
+      "inputs": [
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "addons/smart_core/delivery/scene_shell_compiler.py",
+        "addons/smart_core/tests/test_navigation_contract_compiler.py"
+      ],
+      "kind": "offline"
+    },
+    "navigation_delivery": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "inputs": [
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "addons/smart_core/delivery/scene_shell_compiler.py",
+        "addons/smart_core/tests/test_entry_publication_authority.py",
+        "addons/smart_core/tests/test_navigation_contract_compiler.py"
+      ],
+      "kind": "offline"
+    },
+    "scenario_surface_orm": {
+      "target": "verify.changed_tests.orm",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_user_feedback_business_views.py"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "evidence": {
+    "route_carrier_gate": {
+      "status": "passed_local_targeted",
+      "candidate_head": "8bdb564b8bae190996d597a76f8c42a797d6b167",
+      "dirty_scope": [
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_core/delivery/navigation_contract_compiler.py",
+        "addons/smart_core/tests/test_entry_publication_authority.py",
+        "addons/smart_core/tests/test_navigation_contract_compiler.py",
+        "addons/smart_construction_core/tests/test_user_feedback_business_views.py"
+      ],
+      "pre_fix_failures": [
+        "verify.product.entry_publication.unit: normalized scene node had no top-level route",
+        "verify.navigation_contract_compiler.unit: scenario-surface tree retained /a/20?menu_id=10 instead of the final /s route"
+      ],
+      "commands": [
+        "make verify.product.entry_publication.unit: PASS, 51 tests",
+        "make verify.navigation_contract_compiler.unit: PASS, 8 tests",
+        "make verify.backend.navigation_delivery.unit: PASS, 181 tests",
+        "make verify.changed_tests.orm: PASS, 72 tests across 2 affected classes",
+        "python3 -m py_compile: PASS",
+        "git diff --check: PASS"
+      ],
+      "facts_verified": [
+        "resolved node destinations update the top-level route carrier",
+        "scenario-surface center and scenario entries consume the final published route",
+        "final nav and scenario-surface nav share the same route carriers",
+        "conflicting final routes for one menu/action pair fail closed"
+      ],
+      "scope_limit": "The exact merged backend has not yet been exercised by the clean browser journey; that rerun follows mainline integration."
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit and publish the independent P0 route-carrier fix, wait for exact-head CI, merge it, then synchronize PR 1019 and rerun the clean enterprise journey."
+}

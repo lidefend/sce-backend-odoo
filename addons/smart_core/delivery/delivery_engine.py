@@ -222,6 +222,7 @@ class DeliveryEngine:
             )
         )
         if route:
+            node["route"] = route
             meta["route"] = route
         if declared_surface:
             node["entry_target"] = self._normalize_entry_target_refs(

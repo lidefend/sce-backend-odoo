@@ -36,7 +36,7 @@ Generated from repository source files. This report is informational during the 
 | 3226 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2928 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
-| 2881 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
+| 2901 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2769 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2740 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2734 | Python source | `addons/smart_core/handlers/api_data.py` |
@@ -307,7 +307,7 @@ Generated from repository source files. This report is informational during the 
 | 3226 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2928 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
-| 2881 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
+| 2901 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2769 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2740 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2734 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |

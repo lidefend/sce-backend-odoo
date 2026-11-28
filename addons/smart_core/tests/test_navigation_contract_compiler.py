@@ -203,6 +203,81 @@ class NavigationContractCompilerTests(unittest.TestCase):
         self.assertEqual(result.navigation["product_policy"]["entries"][0]["route"], "/s/my_work.workspace")
         self.assertEqual(result.route_authority["primary_actions"][0]["route"], "/s/my_work.workspace")
 
+    def test_scenario_surface_tree_consumes_final_scene_route(self):
+        stale_target = {
+            "type": "scene",
+            "scene_key": "published.page",
+            "route": "/a/20?menu_id=10",
+            "compatibility_refs": {"menu_id": 10, "action_id": 20},
+        }
+        nav = [{
+            "menu_id": 10,
+            "action_id": 20,
+            "scene_key": "published.page",
+            "route": "/a/20?menu_id=10",
+            "entry_target": copy.deepcopy(stale_target),
+        }]
+
+        def project(current_nav, authority):
+            del authority
+            return {
+                "ok": True,
+                "nav": copy.deepcopy(current_nav),
+                "tree": {
+                    "centers": [{
+                        "key": "center.test",
+                        "entries": [{
+                            "menu_id": 10,
+                            "action_id": 20,
+                            "scene_key": "published.page",
+                            "route": "/a/20?menu_id=10",
+                            "entry_target": copy.deepcopy(stale_target),
+                        }],
+                        "scenarios": [{
+                            "key": "scenario.test",
+                            "entries": [{
+                                "menu_id": 10,
+                                "action_id": 20,
+                                "scene_key": "published.page",
+                                "route": "/a/20?menu_id=10",
+                                "entry_target": copy.deepcopy(stale_target),
+                            }],
+                        }],
+                    }],
+                },
+            }
+
+        result = self.compile(
+            _authority((10, 20)),
+            nav,
+            scenario_provider=project,
+            designed={"published.page"},
+        )
+        surface = result.navigation["scenario_surface"]
+        center = surface["tree"]["centers"][0]
+        for entry in (center["entries"][0], center["scenarios"][0]["entries"][0]):
+            self.assertEqual(entry["route"], "/s/published.page")
+            self.assertEqual(entry["entry_target"]["route"], "/s/published.page")
+            self.assertEqual(entry["entry_target"]["scene_key"], "published.page")
+        self.assertEqual(surface["nav"], result.nav)
+
+    def test_conflicting_final_routes_fail_closed(self):
+        with self.assertRaisesRegex(RuntimeError, "conflicting final routes"):
+            MODULE._final_target_index([
+                {
+                    "menu_id": 10,
+                    "action_id": 20,
+                    "scene_key": "first.page",
+                    "route": "/s/first.page",
+                },
+                {
+                    "menu_id": 10,
+                    "action_id": 20,
+                    "scene_key": "second.page",
+                    "route": "/s/second.page",
+                },
+            ])
+
     def test_scenarioization_cannot_add_authority(self):
         def project(nav, authority):
             return {"nav": [{"menu_id": 10, "action_id": 20, "scene_key": "allowed"},
