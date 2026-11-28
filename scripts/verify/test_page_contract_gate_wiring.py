@@ -42,7 +42,7 @@ class PageContractGateTest(unittest.TestCase):
             with self.subTest(runtime=runtime):
                 self.assertNotEqual(self.run_guard('list_surface_clean_guard', (
                     'frontend/apps/web/src/app/action_runtime/' + runtime,
-                    'resolveContractV2SurfacePolicies(options.actionContract.value)', '{}',
+                    'resolveContractV2SurfacePolicies(store)', '{}',
                 )), 0)
 
     def test_form_rejects_bypassed_capability_and_readonly_fallback(self):

@@ -1513,6 +1513,11 @@ verify.frontend.payment_request.diagnostic: guard.prod.forbid check-compose-proj
 verify.frontend.release.unit: verify.frontend.j13_required_value_semantics.unit verify.frontend.canonical_form_presenter.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.native_collaboration_presentation.unit verify.frontend.contract_render_profile.unit verify.frontend.static.image.decoupling
 verify.frontend.release.unit: verify.frontend.cross_model_action_navigation.unit
 verify.frontend.release.unit: verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit verify.frontend.navigation_initialization_race.unit verify.frontend.action_view_route_lease_race.unit verify.frontend.runtime_environment.unit verify.frontend.contract_header_action.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.native_section_navigation.unit verify.frontend.auth_credential.guard verify.frontend.auth_surface.guard
+
+# Keep release-tool regressions focused while retaining full-lane ownership.
+verify.frontend.release.unit: verify.frontend.release_tools.unit
+.PHONY: verify.frontend.release_tools.unit
+verify.frontend.release_tools.unit: guard.prod.forbid
 	@node scripts/verify/frontend_navigation_audit.test.mjs
 	@node scripts/verify/frontend_performance_budget.test.mjs
 	@python3 scripts/verify/test_frontend_delivery_hardening_guard.py

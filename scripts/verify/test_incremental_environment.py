@@ -30,7 +30,7 @@ class EnvironmentExecutionTests(unittest.TestCase):
         self.targets=executor.select_iteration_targets(self.paths)
         (self.root/'.gitignore').write_text('.runtime/\nfrontend/apps/web/node_modules/\n')
         (self.root/'producer.py').write_text("import os,time,pathlib\nif os.getenv('ENV_TEST_BLOCK')=='1':\n pathlib.Path('.runtime/entered').touch()\n time.sleep(30)\nprint('Ran 1 test in 0.001s\\nOK')\n")
-        (self.root/'Makefile').write_text(''.join(target+':\n\t@ENV_TEST_BLOCK='+('$$ENV_TEST_BLOCK' if 'workspace' in target else '0')+' python3 producer.py\n' for target in self.targets))
+        (self.root/'Makefile').write_text(''.join(target+':\n\t@ENV_TEST_BLOCK='+('$${ENV_TEST_BLOCK:-0}' if 'workspace' in target else '0')+' python3 producer.py\n' for target in self.targets))
         for cmd in [['init','-q','-b','main'],['config','user.name','Test'],['config','user.email','test@example.invalid'],['add','.'],['commit','-qm','fixture']]:self.git(*cmd)
         (self.root/'.runtime').mkdir()
 

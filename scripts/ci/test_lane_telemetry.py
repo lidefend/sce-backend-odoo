@@ -142,16 +142,12 @@ class LaneTelemetryTests(unittest.TestCase):
         self.assertFalse(version["worktree_dirty"])
 
     def test_declared_lane_names_come_from_the_coverage_audit(self) -> None:
-        self.assertEqual(sorted(telemetry.lanes.LANES), [
-            "local.iteration",
-            "local.quick",
-            "remote.frontend.full",
-            "remote.frontend.standard",
-            "remote.professional.backend.reports",
-            "remote.professional.backend.tests",
-            "remote.professional.backend.verify",
-            "remote.standard_backend",
-        ])
+        # Every currently declared lane must appear, with its actual owners.
+        # This must evolve with the authoritative lane catalog, not a copied list.
+        summary = telemetry.summarise(self.root)
+        self.assertEqual(set(summary["lanes"]), set(telemetry.lanes.LANES))
+        for lane, entrypoints in telemetry.lanes.LANES.items():
+            self.assertEqual(telemetry.owned_entrypoints(lane), list(entrypoints))
         self.assertIn("ci.local.quick", telemetry.owned_entrypoints("local.quick"))
 
 

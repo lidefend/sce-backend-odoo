@@ -1492,11 +1492,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/goals/ENV-ACCEPTANCE-REBUILD-LANE-PREREQUISITE.yaml。登记待接线或退役，B3 按族处理。"
     },
-    "verify.acceptance_action_count.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.admin-vis-p3.registry-audit": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
@@ -1563,11 +1558,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.backend.contract_lifecycle.runtime.schema.guard.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/BACKEND-CONTRACT-L4-CLOSURE/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.backend.contract_slo_telemetry": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
@@ -1577,11 +1567,6 @@
       "disposition": "candidate",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.backend.contract_slo_telemetry.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/BACKEND-CONTRACT-SLO-TELEMETRY/run.json。登记待接线或退役，B3 按族处理。"
     },
     "verify.backend.contract_supply_chain": {
       "disposition": "diagnostic_cli",
@@ -1688,11 +1673,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/contract/README.md。登记待接线或退役，B3 按族处理。"
     },
-    "verify.contract.form_field_policy.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.contract.governed_policy_guard": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
@@ -1717,11 +1697,6 @@
       "disposition": "candidate",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.contract_retirement.declaration.unit": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.contract_retirement.declaration.unit. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
     },
     "verify.core_history_field.physical_boundary_audit": {
       "disposition": "diagnostic_cli",
@@ -1813,28 +1788,10 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.demo.baseline_readiness.unit": {
-      "disposition": "demo_runbook",
-      "owner": "demo-team",
-      "reason": "demo baseline readiness ORM suite; selected on demand by the demo runbook",
-      "review_by": "2026-12-31"
-    },
-    "verify.demo.experience_reset_scope.unit": {
-      "disposition": "demo_runbook",
-      "owner": "demo-team",
-      "reason": "experience reset scope unit suite; selected on demand by the demo runbook",
-      "review_by": "2026-12-31"
-    },
     "verify.demo.role_startup.smoke": {
       "disposition": "browser_acceptance_probe",
       "owner": "demo-team",
       "reason": "real /t/demo contract smoke for demo roles; run manually after local.dev identity verification",
-      "review_by": "2026-12-31"
-    },
-    "verify.demo.usage_foundation.unit": {
-      "disposition": "demo_runbook",
-      "owner": "demo-team",
-      "reason": "read-only user-journey foundation audit; selected on demand by the demo runbook",
       "review_by": "2026-12-31"
     },
     "verify.demo.usage_foundation_role_scope.smoke": {
@@ -1952,11 +1909,6 @@
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；运行手册声明：docs/product/formal_business_operation_closure_plan_v1.md。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.formal_entry_metadata.non_business_creator.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/FORMAL-SURFACE-RUNTIME-AUDIT-CONTRACT-BINDING/run.json。登记待接线或退役，B3 按族处理。"
     },
     "verify.formal_list_surface.no_test_placeholder_guard.prod": {
       "disposition": "candidate",
@@ -2083,11 +2035,6 @@
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
       "reason": "前端诊断/验收 CLI，未被任何门禁消费。"
-    },
-    "verify.frontend.explicit_any.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md。登记待接线或退役，B3 按族处理。"
     },
     "verify.frontend.field_configuration_component.unit": {
       "disposition": "history_probe_runbook",
@@ -2321,11 +2268,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.frontend.professionalization.systemwide_public_metric.unit": {
-      "disposition": "candidate",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.frontend.professionalization.tax_center.browser": {
       "disposition": "candidate",
       "owner": "platform-team",
@@ -2412,11 +2354,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.frontend.typed_dependencies.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/frontend_shared_foundation_gap_audit_20260909.md。登记待接线或退役，B3 按族处理。"
-    },
     "verify.frontend.workspace_composition.unit": {
       "disposition": "candidate",
       "owner": "platform-team",
@@ -2436,11 +2373,6 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/fund_daily_handling_closure_2026-06-12.md。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.gitee.check_run_ids.unit": {
-      "disposition": "candidate",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
     "verify.gitee.integration.unit": {
       "disposition": "diagnostic_cli",
@@ -2708,11 +2640,6 @@
       "disposition": "local_diagnostic",
       "owner": "platform-team",
       "reason": "P0-A real Chromium and exact Contract V2 response decoder acceptance. It requires the governed local.dev runtime and is intentionally explicit rather than auto-selected by ci.local.iteration; re-review when the runbook changes or a runtime lane adopts it."
-    },
-    "verify.page_contract_gate_wiring.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
     "verify.payment_execution.form_productization.runtime_guard": {
       "disposition": "candidate",
@@ -3309,11 +3236,6 @@
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
       "reason": "诊断/一次性验收 CLI，未被任何门禁消费；后续批次逐条定性为接线或退役。"
-    },
-    "verify.tenant_rc.clean_profile.unit": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "PRODUCT-ITERATION-V2-20261020 explicit scoped Make entry for verify.tenant_rc.clean_profile.unit. Executed on demand for retirement, contract or role-surface evidence; no recurring CI claim."
     },
     "verify.tender_optional_scope_metadata.probe": {
       "disposition": "diagnostic_cli",
