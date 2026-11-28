@@ -266,7 +266,7 @@ Generated from repository source files. This report is informational during the 
 | 553 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 499 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
-| 392 | Shell script | `scripts/dev/local_clean_finance_fixture.sh` |
+| 402 | Shell script | `scripts/dev/local_clean_finance_fixture.sh` |
 | 385 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 381 | Shell script | `scripts/demo/verify.sh` |
 | 364 | Shell script | `scripts/test/admin_vis_p3_project_record_rule_orm.sh` |

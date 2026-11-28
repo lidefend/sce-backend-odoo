@@ -29,10 +29,12 @@ if [[ -z "${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" ]]; then
   exit 24
 fi
 
-ODOO_SHELL_RUN_ISOLATED=1 DB_NAME="sc_clean" bash scripts/ops/odoo_shell_exec.sh <<'PY'
+FINANCE_FIXTURE_RECEIPT="${SC_ACCEPTANCE_FINANCE_FIXTURE_RECEIPT:-$ROOT_DIR/.runtime/agent-runs/FE-CONSUMPTION-CLOSEOUT-20261126/local-clean-finance-fixture.json}"
+mkdir -p "$(dirname "$FINANCE_FIXTURE_RECEIPT")"
+
+FIXTURE_OUTPUT="$(ODOO_SHELL_RUN_ISOLATED=1 DB_NAME="sc_clean" bash scripts/ops/odoo_shell_exec.sh <<'PY'
 import json
 import os
-from pathlib import Path
 
 from odoo.addons.smart_core.security import data_space_provisioning as provisioning
 
@@ -380,13 +382,21 @@ payload = {
     "action_count": action_counts,
     "lowcode_seed_count": lowcode_seed_count,
 }
-receipt_path = os.environ.get("SC_ACCEPTANCE_FINANCE_FIXTURE_RECEIPT", "").strip()
-if receipt_path:
-    receipt = Path(receipt_path)
-    receipt.parent.mkdir(parents=True, exist_ok=True)
-    receipt.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
+print("__SC_FINANCE_FIXTURE_RECEIPT_BEGIN__")
 print(json.dumps(payload, ensure_ascii=False, indent=2))
+print("__SC_FINANCE_FIXTURE_RECEIPT_END__")
 PY
+)"
+printf '%s\n' "$FIXTURE_OUTPUT"
+FIXTURE_JSON="$(
+  sed -n '/^__SC_FINANCE_FIXTURE_RECEIPT_BEGIN__$/,/^__SC_FINANCE_FIXTURE_RECEIPT_END__$/p' \
+    <<<"$FIXTURE_OUTPUT" \
+    | sed '1d;$d'
+)"
+if [[ -z "$FIXTURE_JSON" ]]; then
+  echo "[DENY] finance fixture emitted no structured receipt" >&2
+  exit 5
+fi
+printf '%s\n' "$FIXTURE_JSON" >"$FINANCE_FIXTURE_RECEIPT"
+node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "$FINANCE_FIXTURE_RECEIPT"
+echo "[finance.fixture] receipt=$FINANCE_FIXTURE_RECEIPT"
