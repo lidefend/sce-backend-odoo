@@ -62,6 +62,17 @@ function requestOf(response) {
   }
 }
 
+function diagnosticParams(intent, params) {
+  const value = params && typeof params === 'object' ? params : {};
+  if (String(intent || '') === 'login') {
+    return {
+      login: String(value.login || ''),
+      contract_mode: String(value.contract_mode || ''),
+    };
+  }
+  return value;
+}
+
 async function shot(page, name) {
   const file = path.join(OUTPUT_DIR, `${name}.png`);
   await page.screenshot({ path: file, fullPage: true });
@@ -102,13 +113,13 @@ page.on('response', async (response) => {
     ok: body?.ok,
     code: body?.code || body?.reason_code || body?.error?.code || body?.error?.reason_code || '',
     error: body?.error || null,
-    params: request.params || {},
+    params: diagnosticParams(intent, request.params),
   });
   if (response.status() >= 400 || body?.ok === false) {
     report.failed_requests.push({
       intent,
       status: response.status(),
-      request: request.params || {},
+      request: diagnosticParams(intent, request.params),
       body,
     });
   }
