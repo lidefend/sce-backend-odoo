@@ -2057,6 +2057,12 @@ RULES = (
         "verify.workspace.branch.sync-github.unit",
     )),
     Rule((
+        "scripts/ci/trusted_scan_group.py",
+        "scripts/ci/test_trusted_scan_group.py",
+    ), (
+        "security.trusted_scan_group.unit",
+    )),
+    Rule((
         "scripts/ops/close_superseded_pr.py",
         "scripts/ops/test_close_superseded_pr.py",
         "scripts/ops/retire_historical_branch_refs.py",

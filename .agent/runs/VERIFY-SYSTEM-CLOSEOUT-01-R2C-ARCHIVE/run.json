@@ -10,7 +10,8 @@
     ".agent/active-runs.json",
     "docs/ops/iterations/verify_system_closeout_01_r2c_archive.md",
     "scripts/verify/frontend_dev_incremental.py",
-    "scripts/audit/verification_lane_dispositions.json"
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/ci/test_trusted_scan_group.py"
   ],
   "environment": {
     "kind": "offline",
@@ -51,10 +52,8 @@
       "kind": "offline"
     }
   },
-  "blockers": [
-    "Full historical scan not reached: trusted_scan_group unknown-memory worker test expected 2, got 1. See history-after-retirement.log."
-  ],
-  "next_exact_step": "Complete local validation and independent R2-C tooling review; R2-B is preserved in named stash; R3 remains unexecuted.",
+  "blockers": [],
+  "next_exact_step": "Publish exact clean R2-C candidate as Draft; check its four required PR workflows. R2-B remains separately preserved and R3 follows integration.",
   "id": "VERIFY-SYSTEM-CLOSEOUT-01-R2C-ARCHIVE",
   "branch": "fix/verify-system-closeout-01-r2c-archive-20261128",
   "status": "verification_pending",
@@ -72,6 +71,25 @@
   },
   "local_iteration": {
     "status": "passed",
-    "log": ".runtime/verify-system-closeout-resume-20261128/r2c-local-wired.log"
+    "log": ".runtime/verify-system-closeout-resume-20261128/r2c-local-budget-registered.log",
+    "executed_targets": 13
+  },
+  "scan_budget_validation": {
+    "target": "security.trusted_scan_group.unit",
+    "inputs": [
+      "scripts/ci/trusted_scan_group.py",
+      "scripts/ci/test_trusted_scan_group.py"
+    ],
+    "kind": "offline",
+    "status": "passed",
+    "log": ".runtime/verify-system-closeout-resume-20261128/scan-budget-fixed.log",
+    "test_count": 17
+  },
+  "historical_scan": {
+    "status": "passed",
+    "log": ".runtime/verify-system-closeout-resume-20261128/history-after-budget-fix.log",
+    "sha256": "43b738dead49e7ad1b93f26e8c35545ea4503006ac2e4ab426d4240ee9bed10e",
+    "scanned_blobs": 40775,
+    "scope": "public_refs + secrets + personal data; unchanged policy"
   }
 }

@@ -31,3 +31,11 @@ The initial local iteration correctly rejected a new unreferenced operator targe
 Preserved R2-B stash: `d5f038c09b0e497552268678399fa2bd6b2402f4`; apply on its own branch, do not pop or merge indiscriminately.
 
 Final local iteration: PASS, log `.runtime/verify-system-closeout-resume-20261128/r2c-local-wired.log`. Includes nonzero close, retirement, executor and coverage regressions. No remote candidate CI claimed.
+
+## Scan budget follow-up
+
+The unknown-memory test passed `memory=None`, which requests actual host detection. Its expected CPU-only result therefore depended on host load. The test now explicitly mocks an unavailable probe; a second test verifies detected low memory still constrains the worker count. Production resource budgeting is unchanged. The 17-test registered scan-group target passed. Producer and test changes now select that exact target through the incremental planner. Earlier failed logs are retained.
+
+Follow-up result: `make verify.repository.clean_history` PASS. Secret, personal-data and public-ref history members all exited zero; history scanned 40,775 blobs. No rule or exception changes. Log `.runtime/verify-system-closeout-resume-20261128/history-after-budget-fix.log`, SHA-256 `43b738dead49e7ad1b93f26e8c35545ea4503006ac2e4ab426d4240ee9bed10e`. This supersedes the earlier blocked attempt as the current result, without deleting its evidence.
+
+Post-fix local iteration PASS: 13 targets actually executed; log `.runtime/verify-system-closeout-resume-20261128/r2c-local-budget-registered.log`.
