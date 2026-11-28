@@ -146,9 +146,9 @@ Generated from repository source files. This report is informational during the 
 | 1217 | Vue source | `frontend/apps/web/src/views/MenuConfigView.vue` |
 | 1209 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
+| 1204 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1199 | Python source | `scripts/ops/safe_branch_sync_main.py` |
 | 1199 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
-| 1198 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1197 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 1197 | Vue source | `frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue` |
 | 1192 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |

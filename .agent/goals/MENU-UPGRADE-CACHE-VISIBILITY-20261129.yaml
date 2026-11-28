@@ -1,0 +1,37 @@
+schema_version: 1
+goal:
+  id: MENU-UPGRADE-CACHE-VISIBILITY-20261129
+  status: active
+  title: Refresh maintained scene composition in product menu release reconciliation
+  objective: >-
+    Make migration 17.0.0.189 reconcile newly shipped menus against the current
+    maintained business-scene composition instead of the older active snapshot
+    composition.
+  formal_product_layers:
+    - P1
+    - P4
+  layer_target: construction product menu migration and focused ORM regression
+  module:
+    - smart_construction_core
+  standard_vs_user_specific: construction industry standard migration behavior
+  why_here: >-
+    smart_construction_core owns migration 17.0.0.189, its product-policy
+    reconciliation, and the maintained business-scene composition.
+  why_not_elsewhere: >-
+    smart_core release preflight must remain fail-closed. The frontend, runtime
+    configuration, groups and business data must not compensate for an outdated
+    composition carried from the prior active snapshot.
+  blast_radius:
+    - migration 17.0.0.189 only
+    - persisted construction.standard and construction.preview reconciliation
+    - focused locked-menu migration regression
+  exclusions:
+    - persistent business-data writes
+    - permission, group, user or record-rule changes
+    - frontend behavior
+    - release preflight weakening
+  acceptance:
+    - Reconciliation applies the current maintained scene composition to the target policy.
+    - The nine configuration menus moved or loaded in the upgrade transaction are visible to business scene composition.
+    - The standard and preview migration reconciliation has zero blocking issues.
+    - The persistent upgrade completes and readback proves version 17.0.0.189 plus complete menu/snapshot state.
