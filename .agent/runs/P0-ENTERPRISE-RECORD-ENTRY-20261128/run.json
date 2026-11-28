@@ -14,6 +14,8 @@
     "addons/smart_core/delivery/native_config_menu_projection.py",
     "addons/smart_construction_scene/__init__.py",
     "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_core/__init__.py",
+    "addons/smart_construction_core/core_extension.py",
     "addons/smart_construction_scene/scene_registry.py",
     "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
     "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
@@ -77,10 +79,10 @@
     "local_iteration": {
       "status": "passed",
       "head": "92016d60251f94a9048daf7cd8fe834e00f97574",
-      "receipt": ".runtime/frontend-dev-validation/executions/20261128T014323Z-1789915-255425642/receipt.json",
-      "receipt_sha256": "d766ea3c8ec975165c85e04a9cab2a0a11e21d22c29e34b17b998ae74e1bc253",
-      "executed_targets": 15,
-      "test_count": 535,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261128T020816Z-1986435-109178055/receipt.json",
+      "receipt_sha256": "9ad0122f0cf2893c66ca059e74e050be8375dc9aceb8f58ed46e19e74efa7ac2",
+      "executed_targets": 18,
+      "test_count": 597,
       "static_checks": 3,
       "unmapped_paths": 0,
       "channel_handoff_required": false
@@ -89,7 +91,8 @@
       "enterprise initialization scopes its target to env.company.id",
       "system.init nav and route authority publish entry_target.record_entry model=res.company for the authenticated current company",
       "normal business scene targets without record_id remain unchanged",
-      "the native config action hook is declared under the extension hook contract and passes authority/lifecycle tests"
+      "the native config action hook is declared under the extension hook contract and passes authority/lifecycle tests",
+      "the hook provider is located in smart_construction_core, which is the extension module actually loaded by the clean runtime"
     ]
   }
 }

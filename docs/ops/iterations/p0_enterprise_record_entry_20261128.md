@@ -25,12 +25,12 @@ instead of constructing `/new` from an absent record identity.
 - `make verify.navigation.publication_consumers.unit`: PASS
 - `make verify.extension.hook_contracts.unit`: PASS
 - `make verify.scene.company_route_scope_cache.orm`: PASS, 11 ORM tests
-- `make ci.local.iteration`: PASS, 15 targets, 535 tests, 3 static checks
+- `make ci.local.iteration`: PASS, 18 targets, 597 tests, 3 static checks
 
 Receipt:
-`.runtime/frontend-dev-validation/executions/20261128T014323Z-1789915-255425642/receipt.json`
+`.runtime/frontend-dev-validation/executions/20261128T020816Z-1986435-109178055/receipt.json`
 
 SHA256:
-`d766ea3c8ec975165c85e04a9cab2a0a11e21d22c29e34b17b998ae74e1bc253`
+`9ad0122f0cf2893c66ca059e74e050be8375dc9aceb8f58ed46e19e74efa7ac2`
 
 PR integration, deployment and complete frontend user acceptance are not claimed.
