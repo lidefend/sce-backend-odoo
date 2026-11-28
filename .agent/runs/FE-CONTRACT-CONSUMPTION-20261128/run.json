@@ -12,6 +12,7 @@
     ".agent/runs/FE-CONTRACT-CONSUMPTION-20261128/run.json",
     "docs/ops/iterations/frontend_contract_consumption_20261128.md",
     "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    "docs/architecture/frontend_contract_basis_ledger.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
