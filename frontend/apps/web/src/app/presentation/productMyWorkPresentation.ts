@@ -1,5 +1,9 @@
 import type { ProductMyWorkFact } from '../../api/myWork';
-import { formatMonetaryDisplayValue } from './businessValuePresentation';
+import {
+  formatMonetaryDisplayValue,
+  normalizeDeclaredDigits,
+} from './businessValuePresentation';
+import { contractGapError } from '../contract/contractGap';
 import { FIELD_VALUE_EMPTY_TEXT, formatTemporalFieldValue } from '../../utils/fieldSemantics';
 
 export type ProductMyWorkFactPresentation = {
@@ -9,25 +13,32 @@ export type ProductMyWorkFactPresentation = {
 };
 
 function normalizedDigits(value: unknown) {
-  const digits = Number(value);
-  return Number.isFinite(digits) ? Math.min(20, Math.max(0, Math.trunc(digits))) : 2;
+  const digits = normalizeDeclaredDigits([20, Number(value)]);
+  if (!digits) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'product_my_work.fact.money.digits',
+      requiredDeclarationLayer: 'P0:smart_core:money_fact_digits_projection',
+    }, '我的工作金额事实缺少契约声明精度 digits');
+  }
+  return digits;
 }
 
-export function formatProductMyWorkFact(fact: ProductMyWorkFact): string {
+export function formatProductMyWorkFact(fact: ProductMyWorkFact, timeZone = ''): string {
   if (fact.display_role === 'money') {
     const money = fact.money;
     if (money?.value == null || !Number.isFinite(Number(money.value))) return FIELD_VALUE_EMPTY_TEXT;
     const digits = normalizedDigits(money.digits);
     return formatMonetaryDisplayValue(
       Number(money.value),
-      [20, digits],
+      digits,
       money.currency || money.currency_symbol || '',
       'zh-CN',
       FIELD_VALUE_EMPTY_TEXT,
     );
   }
   if (fact.display_role === 'datetime') {
-    return formatTemporalFieldValue(fact.value, 'compact') || FIELD_VALUE_EMPTY_TEXT;
+    return formatTemporalFieldValue(fact.value, 'datetime', 'compact', timeZone) || FIELD_VALUE_EMPTY_TEXT;
   }
   return String(fact.value ?? '').trim() || FIELD_VALUE_EMPTY_TEXT;
 }
@@ -35,10 +46,11 @@ export function formatProductMyWorkFact(fact: ProductMyWorkFact): string {
 export function productMyWorkIdentityDisplay(
   label: string,
   amount?: ProductMyWorkFact,
+  timeZone = '',
 ): string {
   const identity = String(label || '').trim();
   if (!identity || amount?.display_role !== 'money') return identity;
-  const amountDisplay = formatProductMyWorkFact(amount).trim();
+  const amountDisplay = formatProductMyWorkFact(amount, timeZone).trim();
   if (!amountDisplay || amountDisplay === FIELD_VALUE_EMPTY_TEXT) return identity;
   const segments = identity.split(/\s+\/\s+/);
   if (!segments.includes(amountDisplay)) return identity;
@@ -57,11 +69,12 @@ export function productMyWorkTaskFacts(
 export function partitionProductMyWorkFacts(
   facts: ProductMyWorkFact[],
   visibleLimit = 3,
+  timeZone = '',
 ): { primary: ProductMyWorkFactPresentation[]; supplementary: ProductMyWorkFactPresentation[] } {
   const rows = facts.map((fact, index) => ({
     key: `${String(fact.key || 'fact')}:${index}`,
     fact,
-    display: formatProductMyWorkFact(fact),
+    display: formatProductMyWorkFact(fact, timeZone),
     index,
   }));
   const businessRows = rows.filter((row) => row.fact.field_group !== 'audit');

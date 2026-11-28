@@ -15,12 +15,45 @@ import {
   normalizeContractAuthLevel,
   requireContractAuthLevel,
 } from '../src/app/contract/contractAuthLevel';
-import { buildEntryTargetRouteTarget } from '../src/app/routeQuery';
+import {
+  buildCanonicalSceneRouteTarget,
+  buildEntryTargetRouteTarget,
+  stripCanonicalSceneIdentityQuery,
+} from '../src/app/routeQuery';
 import { buildActionViewRowClickTarget } from '../src/app/runtime/actionViewInteractionRuntime';
 
 function resolvedPath(entry: Parameters<typeof resolveRecordOpenTarget>[0]) {
   return resolveRecordOpenTarget(entry)?.path;
 }
+
+const canonicalSceneRoute = buildCanonicalSceneRouteTarget('projects.ledger', {
+  scene: {
+    label: 'Project ledger',
+    target: { menu_id: 310, action_id: 506, default_order: 'write_date desc' },
+  },
+  query: {
+    scene: 'projects.ledger',
+    scene_key: 'projects.ledger',
+    scene_label: 'Project ledger',
+    search: 'active',
+    menu_id: '999',
+    action_id: '999',
+  },
+});
+assert.equal(canonicalSceneRoute.path, '/s/projects.ledger');
+assert.deepEqual(canonicalSceneRoute.query, {
+  search: 'active',
+  menu_id: 310,
+  action_id: 506,
+  order: 'write_date desc',
+});
+assert.deepEqual(stripCanonicalSceneIdentityQuery({
+  scene: 'projects.ledger',
+  scene_key: 'projects.ledger',
+  sceneKey: 'projects.ledger',
+  scene_label: 'Project ledger',
+  menu_id: 310,
+}), { menu_id: 310 });
 
 // A declared-but-illegal formal carrier must stop with a contract gap instead
 // of being downgraded (T5).  assertGap proves the negative path is a real stop.
@@ -133,6 +166,12 @@ assert.equal(buildEntryTargetRouteTarget({
   route: '/r/x.model/7',
   record_entry: { model: 'x.model', record_id: 7, entry_intent: 'handling', model_write_authority: true },
 }, { actionId: 4, menuId: 3 }).path, '/f/x.model/7');
+assert.equal(buildEntryTargetRouteTarget({
+  type: 'compatibility',
+  route: '/f/x.model/new',
+  presentation: { title: 'Presentation-only title' },
+  compatibility_refs: { model: 'x.model', action_id: 4, menu_id: 3 },
+}, { query: { entry_title: 'stale title' } }).query.entry_title, undefined);
 assertGap('entry target missing write authority', () => buildEntryTargetRouteTarget({
   type: 'compatibility',
   route: '/r/x.model/7',

@@ -749,6 +749,10 @@ import { useContractV2ShadowDiagnostics } from './contractForm/useContractV2Shad
 import { useContractFormPageState } from './contractForm/useContractFormPageState';
 import { buildFormRequestContext } from './contractForm/formRequestContext';
 import { normalizeFormRouteOwnerIdentity } from './contractForm/formRouteInstanceIdentity';
+import {
+  resolveContractFormRouteModel,
+  resolveContractFormRouteRecordId,
+} from './contractForm/contractFormRouteIdentity';
 import { collectActionParams as collectActionParamsFromPlan } from './contractForm/actionExecutionPlan';
 import {
   createRouteDefaultsFingerprint,
@@ -767,6 +771,10 @@ import {
 const route = useRoute();
 const router = useRouter();
 const session = useSessionStore();
+const one2manyColumnDisplayValueForUser = (
+  column: Parameters<typeof one2manyColumnDisplayValue>[0],
+  value: unknown,
+) => one2manyColumnDisplayValue(column, value, session.user?.tz || '');
 const recordPageContract = usePageContract('record');
 const pageSectionEnabled = recordPageContract.sectionEnabled;
 const pageSectionTagIs = recordPageContract.sectionTagIs;
@@ -818,8 +826,8 @@ function formRouteIdentity() {
   const query = route.query as Record<string, unknown>;
   return [
     String(route.name || ''),
-    String(route.params.model || ''),
-    String(route.params.id || ''),
+    model.value,
+    String(recordId.value || ''),
     String(query.action_id || ''),
     String(query.menu_id || ''),
     String(recordId.value ? '' : (query.view_id || query.viewId || '')),
@@ -832,8 +840,8 @@ function formRouteOwnerIdentity() {
   const query = route.query as Record<string, unknown>;
   return normalizeFormRouteOwnerIdentity({
     routeName: route.name,
-    model: route.params.model,
-    recordId: route.params.id,
+    model: model.value,
+    recordId: recordId.value,
     activityPageId: query.activity_page_id,
     actionId: query.action_id,
     menuId: query.menu_id,
@@ -952,6 +960,7 @@ const {
   removedRows: removedOne2manyRows,
   ensureRows: ensureOne2manyRows,
   clearRows: clearOne2manyRows,
+  invalidatePendingRequests: invalidateOne2manyRequests,
   addRow: addOne2manyRow,
   setRowField: setOne2manyRowField,
   effectiveColumn: one2manyEffectiveColumn, visibleColumns: one2manyVisibleColumns,
@@ -971,9 +980,11 @@ const {
   parentValues: (fieldName) => bindNativeRowParentContext(
     resolveContractV2ModifierValues(v2ContractStore.value, formData), (effectiveFieldDescriptor(fieldName) as Record<string, unknown> | undefined)?.context,
   ),
-  loadDefaults: (fieldName) => loadOne2manyCreateDefaults(fieldName, one2manyParentDraftRequest()),
-  loadRowChange: (fieldName, row) => loadOne2manyRowChange(fieldName, row, one2manyParentDraftRequest()),
+  loadDefaults: (fieldName, requestIsCurrent) => loadOne2manyCreateDefaults(fieldName, one2manyParentDraftRequest(), requestIsCurrent),
+  loadRowChange: (fieldName, row, requestIsCurrent) => loadOne2manyRowChange(fieldName, row, one2manyParentDraftRequest(), requestIsCurrent),
   markDirty: (fieldName) => dirtyFieldSet.add(fieldName),
+  captureRequest: captureRelationRequest,
+  isActive: () => isComponentActive.value,
   createDraftIdentity: (fieldName) => ({ request: one2manyParentDraftRequest(),
     context: resolveContractFormReadContext(v2ContractStore.value), fieldContext: (effectiveFieldDescriptor(fieldName) as Record<string, unknown> | undefined)?.context }),
   createScope: () => v2ContractStore.value,
@@ -1155,7 +1166,11 @@ async function runRecordDeleteAction() {
     recordDeleteBusy.value = false;
   }
 }
-const model = computed(() => String(route.params.model || v2ContractStore.value?.snapshot.pageInfo.model || ''));
+const model = computed(() => resolveContractFormRouteModel({
+  routeModel: route.params.model,
+  queryModel: route.query.model,
+  contractModel: v2ContractStore.value?.snapshot.pageInfo.model,
+}));
 const isManagedRelationCreateDialog = computed(() => Boolean(
   resolveRelationCreateDialogCancelMessage({
     query: route.query as Record<string, unknown>,
@@ -1167,8 +1182,7 @@ const formExitPresentation = computed(() => resolveContractFormExitPresentation(
 ));
 const menuId = computed(() => Number(route.query.menu_id || 0) || 0);
 const actionId = computed(() => {
-  const rawRecordId = String(route.params.id || '').trim();
-  const isCreateRoute = !rawRecordId || rawRecordId === 'new';
+  const isCreateRoute = !recordId.value;
   const menuAction = findActionMetaByMenu(session.menuTree, menuId.value);
   return resolveActionIdFromContext({
     routeQuery: route.query as Record<string, unknown>,
@@ -1183,12 +1197,10 @@ const currentMenuTitle = computed(() => {
   const node = findMenuNode(session.menuTree, menuId.value);
   return String(node?.label || node?.name || node?.title || '').trim();
 });
-const recordId = computed(() => {
-  const raw = String(route.params.id || '').trim();
-  if (!raw || raw === 'new') return null;
-  const parsed = Number(raw);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
-});
+const recordId = computed(() => resolveContractFormRouteRecordId({
+  routeRecordId: route.params.id,
+  queryRecordId: route.query.record_id,
+}));
 const recordIdDisplay = computed(() => (recordId.value ? String(recordId.value) : 'new'));
 feedbackEvaluationRuntime = useDraftFeedbackEvaluation({
   store: v2ContractStore,
@@ -1514,8 +1526,8 @@ const currentBusinessCategoryContext = computed(() => resolveBusinessCategoryCon
 }));
 const currentBusinessCategoryLabel = computed(() => currentBusinessCategoryContext.value.label);
 const currentBusinessCategoryCode = computed(() => currentBusinessCategoryContext.value.code);
-const pageIdentityInput = computed(() => buildContractFormPageIdentity({ action: currentActionMeta.value, authoritativeActionName: currentRouteAuthority.value?.action_name, breadcrumbs: resolveRoutePageIdentity(route, session.menuTree).breadcrumbs, businessCategoryLabel: currentBusinessCategoryLabel.value,
-  contract: contract.value, formData, recordData: resolveContractV2MainData(v2ContractStore.value), entryTitle: route.query.entry_title, isCreate: !recordId.value, isEdit: route.name === 'model-form', menuName: currentMenuTitle.value, modelName: model.value,
+const pageIdentityInput = computed(() => buildContractFormPageIdentity({ action: currentActionMeta.value, authoritativeActionName: currentRouteAuthority.value?.action_name, breadcrumbs: resolveRoutePageIdentity(route, session.menuTree, session.pageContracts).breadcrumbs, businessCategoryLabel: currentBusinessCategoryLabel.value,
+  contract: contract.value, formData, recordData: resolveContractV2MainData(v2ContractStore.value), isCreate: !recordId.value, isEdit: route.name === 'model-form', menuName: currentMenuTitle.value, modelName: model.value,
   recordMissing: recordMissing.value, renderError: Boolean(renderErrorMessage.value), status: status.value }));
 function publishActivityPageTitle(title: string) {
   const activityTitle = recordId.value ? title : resolveBusinessActivityTitle({
@@ -1931,8 +1943,9 @@ const {
   onNativeAttachmentSelected, onchangeModifiersPatch, one2manyCanCreate, one2manyCanInlineEdit, one2manyCanUnlink,
   one2manyRowRecordId, canOpenRelationRecord, openRelationRecord, effectiveFieldDescriptor,
   one2manyEffectiveColumn, one2manyVisibleColumns,
-  one2manyColumnDisplayValue, one2manyColumnInputValue, one2manyColumnInputType, one2manyColumns,
+  one2manyColumnDisplayValue: one2manyColumnDisplayValueForUser, one2manyColumnInputValue, one2manyColumnInputType, one2manyColumns,
   one2manyCreateLabel, one2manyRemovalLabels, one2manyRowErrors, one2manyCellError, one2manyColumnQueryScope, queryOne2manyColumnOptions, one2manyRowHints,
+  relationRuntimeGeneration: () => relationRuntimeGeneration.value,
   ensureRelationFieldDescriptors,
   one2manyRowLabel, one2manyRowStateLabel, one2manySummary, isOne2manyHydrating,
   openNativeAttachment, deleteNativeAttachment: confirmAndDeleteNativeAttachment, deleteNativeMessage: confirmAndDeleteNativeMessage, openNativeChatterAction, replyNativeChatter, openRelationCreateForm,
@@ -2045,6 +2058,7 @@ recordFormStateRuntime = useRecordFormState({
   formFields: canonicalFormFields, model, recordId, rights, formData, originalValues, submissionFeedback, relationKeywords,
   invalidatedRelationKeywords, clearedDynamicRelationFields, relationQueryTimers, relationOptions,
   validationErrors, validationFieldErrors, onchangeModifiersPatch, onchangeWarnings, onchangeLinePatches, applyingOnchangePatch,
+  captureRelationRequest,
   changedFieldSet, dirtyFieldSet, getOnchangeTimer: () => onchangeTimer,
   setOnchangeTimer: (timer) => { onchangeTimer = timer; }, contractV2ActionRules, layoutNodes,
   nativeStatusbar, route, isNativeFavoriteField, clearDynamicRelationDependents,
@@ -2179,7 +2193,10 @@ const unsavedFormGuard = useUnsavedFormGuard({ dirty: () => hasChanges.value, bu
 // Route/actor/context ownership changes invalidate candidates, selected labels,
 // child hydration and dialog work before any queued response can publish.
 watch(() => [formRouteIdentity(), session.user?.id, session.roleSurface?.role_code,
-  JSON.stringify(session.recordContext), isComponentActive.value], invalidateRelationRequests, { flush: 'sync' });
+  JSON.stringify(session.recordContext), isComponentActive.value], () => {
+    invalidateRelationRequests();
+    invalidateOne2manyRequests();
+  }, { flush: 'sync' });
 watch(() => [hasChanges.value, isComponentActive.value] as const, ([dirty, active]) => { if (active && isFormPageRouteOwner(route.name)) session.updateActiveActivityDirty(dirty); }, { immediate: true, flush: 'sync' });
 const returnToPreviousPage = createRecordFormReturnHandler({
   route, router, model: () => model.value,

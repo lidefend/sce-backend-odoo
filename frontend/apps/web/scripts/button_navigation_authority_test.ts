@@ -20,6 +20,21 @@ assert.equal(
 );
 assert.equal(pendingButtonNavigationAuthorityCount(), 0);
 
+grantButtonNavigationAuthority(962, '/a/962?action_id=962');
+assert.equal(
+  consumeButtonNavigationAuthority(
+    962,
+    '/a/962?action_id=962&domain_raw=%5B%5D&context_raw=%7B%7D&order=name%20asc',
+  ),
+  true,
+  'the authority remains bound to the action path while contract query transport varies',
+);
+assert.equal(
+  consumeButtonNavigationAuthority(962, '/a/963?action_id=962'),
+  false,
+  'query normalization must not authorize a different action path',
+);
+
 grantButtonNavigationAuthority(593, '/f/project.cost.ledger/1?action_id=593');
 assert.equal(
   consumeButtonNavigationAuthority(593, '/f/project.cost.ledger/2?action_id=593'),

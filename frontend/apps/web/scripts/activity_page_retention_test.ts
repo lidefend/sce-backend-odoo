@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { isActionPageIdentityOwner } from '../src/app/runtime/actionViewRouteRuntime';
 import { createPageIdentityCoordinator } from '../src/app/pageIdentityCoordinator';
 import {
+  activityPageBelongsToCompany,
   activityPageTitleTargetKeys,
   isSupersededEntryActionActivityPage,
   normalizeRetainedActivityPageIdentity,
@@ -68,8 +69,16 @@ assert.deepEqual(
   [previous.key],
   'only the entry action intermediate is removed when the form replaces it',
 );
+assert.equal(activityPageBelongsToCompany(previous, 1), true, 'matching company activity is visible');
+assert.equal(activityPageBelongsToCompany(previous, 2), false, 'other-company activity is hidden');
+assert.equal(
+  activityPageBelongsToCompany(createPage({ record_context: null }), 1),
+  false,
+  'activity without company ownership is not attributed to the current company',
+);
+assert.equal(activityPageBelongsToCompany(previous, 0), false, 'missing current company exposes no cached activity');
 
-console.log('[activity_page_retention_test] PASS cases=7');
+console.log('[activity_page_retention_test] PASS cases=11');
 
 const legacyEntryAction = normalizeRetainedActivityPageIdentity(createPage({
   key: 'legacy:action',
@@ -215,11 +224,21 @@ assert.equal(
   'workspace:my-work',
   'my-work is one workspace identity rather than an arbitrary scene cache key',
 );
+assert.equal(
+  resolveActivityRouteKey({ routeName: 'scene', params: { sceneKey: 'projects.ledger' }, query: {} }),
+  'scene:projects.ledger:all',
+  'the scene path parameter owns the activity identity',
+);
+assert.equal(
+  resolveActivityRouteKey({ routeName: 'scene', params: {}, query: { scene_key: 'projects.ledger' } }),
+  '',
+  'a duplicate query scene identity cannot create an activity',
+);
 const epochs = { [persistedRecordKey]: 0 };
 const advanced = advanceActivityPageCacheEpoch(epochs, persistedRecordKey);
 assert.equal(advanced[persistedRecordKey], 1, 'close advances the exact key App reads');
 assert.equal(epochs[persistedRecordKey], 0, 'epoch advancement does not mutate prior state');
-console.log('[activity_page_cache_identity_test] PASS cases=6');
+console.log('[activity_page_cache_identity_test] PASS cases=8');
 
 const actionOwner = { active: true, routeName: 'action', instanceRouteKey: 'action:809:menu:559', currentRouteKey: 'action:809:menu:559' };
 assert.equal(isActionPageIdentityOwner(actionOwner), true, 'active action can publish its own title');

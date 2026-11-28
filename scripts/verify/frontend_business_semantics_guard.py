@@ -25,14 +25,16 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("utils/semantic.ts is a second business-level status/value vocabulary")
 
     authority = _read(AUTHORITY, read_text)
+    field_semantics = _read("utils/fieldSemantics.ts", read_text)
     kanban_adapter = _read(KANBAN_ADAPTER, read_text)
     for marker in (
         "function formatMonetaryDisplayValue(",
         "function presentDeclaredBusinessValue(",
+        "function presentDeclaredPlainValue(",
         "function presentDeclaredRelation(",
         "function presentDeclaredRelationCollection(",
         "function relationLabel(value: unknown, locale?: LocalizedDisplayOptions)",
-        "resolveLocalizedDisplayValue(",
+        "value = resolveLocalizedDisplayValue(value, locale);",
         "function statusBadgeSemantic(",
         "FIELD_VALUE_EMPTY_TEXT",
     ):
@@ -59,20 +61,82 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         authority,
     ):
         failures.append("status type identity must be explicitly selection or char")
-    if not re.search(
-        r"const statusContract = kind === 'status'\s*"
-        r"\? resolveDeclaredStatusContract\(input\.field\)\s*"
-        r": null;\s*"
-        r"if \(isEmptyFieldValue\(input\.value\)\)",
-        authority,
-    ):
+    status_contract_marker = (
+        "const statusContract = kind === 'status'\n"
+        "    ? resolveDeclaredStatusContract(input.field)\n"
+        "    : null;"
+    )
+    status_position = authority.find(status_contract_marker)
+    empty_position = authority.find("if (isEmptyFieldValue(input.value))", status_position + 1)
+    if status_position < 0 or empty_position < 0:
         failures.append("status declaration validation must precede empty-value return")
+    if "function requireDeclaredBusinessDigits(" not in authority:
+        failures.append("money and percentage values do not require declared precision")
+    if "function requireDeclaredBusinessUnit(" not in authority:
+        failures.append("percentage and duration values do not require declared units")
+    if "unit?.kind === 'duration'" not in authority or "unit?.kind === 'percent'" not in authority:
+        failures.append("percentage and duration unit kinds are not consumed")
+    if "Math.round(absolute * 3_600_000)" in authority:
+        failures.append("duration still rounds through a hard-coded hour/minute algorithm")
+    if "function resolveDeclaredTemporal(" not in authority:
+        failures.append("date and datetime values do not require declared temporal authority")
+    if "temporal.kind" not in authority or "timezoneAuthority" not in authority:
+        failures.append("temporal kind and timezone authority are not consumed")
+    if "if (kind === 'date') return date;" not in field_semantics:
+        failures.append("temporal display does not branch on the declared date kind")
+    if "00:00:00') return date" in field_semantics:
+        failures.append("datetime display still downgrades midnight values by value shape")
+    if ".resolvedOptions().maximumFractionDigits" in authority:
+        failures.append("monetary precision still falls back to currency-code metadata")
+    if "const scale = resolveMonetaryScale(digits);" not in authority:
+        failures.append("monetary helpers do not validate declared digits through the shared scale authority")
+    if "if (scale === undefined) return 'any';" not in authority:
+        failures.append("monetary input without a declared precision invents a frontend step")
+    if "if (scale === undefined) {" not in authority:
+        failures.append("monetary value without a declared precision does not preserve the unrounded value")
+    if "field.(float).digits" not in field_semantics:
+        failures.append("generic float formatting does not require declared digits")
+    if "const text = String(row.display_name || row.label || row.name || '').trim();" in authority:
+        failures.append("plain text still infers a business label from object shape")
     if "presentDeclaredBusinessValue" not in kanban_adapter:
         failures.append("Kanban adapter does not consume declared business-value semantics")
+    if "unit: option?.unit" not in kanban_adapter:
+        failures.append("Kanban adapter drops the declared field unit")
+
+    shape_runtime = _read("app/action_runtime/useActionViewContractShapeRuntime.ts", read_text)
+    if "isRegisteredComponentKey(declaredComponentKey)" not in shape_runtime:
+        failures.append("collection projection does not validate declared component identity through the semantic registry")
+    if "['sc.value.duration', 'sc.value.percentage'].includes(declaredComponentKey)" in shape_runtime:
+        failures.append("collection projection still hard-codes a partial component identity allowlist")
+
+    canonical_form = _read("pages/contractForm/canonicalFormRenderer.ts", read_text)
+    if "function declaredSelectionOptions(field: CanonicalFormField)" not in canonical_form:
+        failures.append("canonical form projection does not consolidate declared selection authority")
+    if "const selection = declaredSelectionOptions(field);" not in canonical_form:
+        failures.append("canonical form controls do not consume the declared selection projection")
+    if "selectionOptions: selection," not in canonical_form:
+        failures.append("canonical form controls do not consume the declared selection projection")
+    if "selectionOptions: selectionOptions(config.selection)" in canonical_form:
+        failures.append("canonical form controls still read component selection instead of the declared projection")
+    if "String(item[1] ?? item[0] ?? '')" in canonical_form:
+        failures.append("canonical form still synthesizes a selection label from its storage key")
+
+    relation_descriptor = _read("pages/contractForm/relationDescriptor.ts", read_text)
+    if "relation_model_consistency" not in relation_descriptor:
+        failures.append("relation target consumers do not reject conflicting relation and relationEntry models")
+    if "relation !== entryModel" not in relation_descriptor:
+        failures.append("relation target consistency does not compare both declared carriers")
+    relation_field_utils = _read("pages/contractForm/fieldUtils.ts", read_text)
+    if "#${id}" in relation_descriptor or "#${id}" in relation_field_utils:
+        failures.append("relation display still synthesizes a #id label from record identity")
 
     display = _read("utils/display.ts", read_text)
     if "presentDeclaredBusinessValue({" not in display:
         failures.append("[CFG-001] generic display does not delegate declared business values to the shared authority")
+    if "missing: 'fieldDescriptor'" not in display or "formatUndeclaredDisplayValue" in display:
+        failures.append("[CFG-001] generic display retains an undeclared value-formatting fallback")
+    if "containsAttachmentReference(" in display:
+        failures.append("[CFG-010] generic display still infers attachment behavior from text appearance")
     for forbidden in (
         "isSelectionFieldType",
         "isScalarRelationFieldType",
@@ -118,10 +182,17 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("ListPage still derives status columns from field names")
     if "COLLECTION_NUMERIC_EMPTY_TEXT" in list_page:
         failures.append("ListPage still renders missing numeric values as zero")
+    if (
+        "function hasAttachmentIdentity(field: string)" not in list_page
+        or "return hasDeclaredAttachmentIdentity(columnSemanticInput(field));" not in list_page
+    ):
+        failures.append("[CFG-010] ListPage does not require declared attachment identity")
 
     list_cells = _read("pages/listPage/listCellPresentation.ts", read_text)
     if "presentDeclaredBusinessValue" not in list_cells:
         failures.append("[CFG-002] List cells bypass the shared declared business-value authority")
+    if "unit: column.unit" not in list_cells:
+        failures.append("[CFG-004] List cells drop the declared field unit")
     for forbidden in ("selectionText", "String(displayRaw)", "String(raw)"):
         if forbidden in list_cells:
             failures.append(f"[CFG-002] List cells retain a raw-value fallback: {forbidden}")
@@ -141,6 +212,12 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     )
     if "function statusSemantic(" in professional_status:
         failures.append("professional business values keep a second status tone table")
+
+    my_work = _read("app/presentation/productMyWorkPresentation.ts", read_text)
+    if "normalizeDeclaredDigits([20, Number(value)])" not in my_work:
+        failures.append("my-work money facts do not require declared digits")
+    if "product_my_work.fact.money.digits" not in my_work:
+        failures.append("my-work money facts do not report the missing precision contract")
 
     approval = _read("components/business/MyWorkApprovalWorkspace.vue", read_text)
     if "function statusSemantic(" in approval or "statusBadgeSemantic(" not in approval:
@@ -169,8 +246,11 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("Professional fields do not consume the platform empty-value rule")
 
     field_value = _read("components/FieldValue.vue", read_text)
+    if "hasDeclaredAttachmentIdentity(props.field)" not in field_value:
+        failures.append("[CFG-010] FieldValue does not require declared attachment identity")
     for marker in (
         "return presentDeclaredBusinessValue({",
+        "hasDeclaredAttachmentIdentity(props.field)",
         "componentKey: props.componentKey",
         "widget: props.widget",
         "cellRole: props.cellRole",
@@ -179,6 +259,8 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     ):
         if marker not in field_value:
             failures.append(f"[CFG-004] FieldValue drops declared semantic marker {marker}")
+    if "computed(() => parseAttachmentReferenceLinks(props.value))" in field_value:
+        failures.append("[CFG-010] FieldValue derives attachment actions from value appearance")
 
     base_control = _read(
         "components/professional-fields/ProfessionalBaseFieldControl.vue",
@@ -189,6 +271,7 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         "componentKey: props.field.componentKey",
         "widget: props.field.widget",
         "currencyField: props.field.currencyField",
+        "unit: props.field.unit",
     ):
         if marker not in base_control:
             failures.append(
@@ -201,16 +284,21 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         "componentKey: field.componentKey",
         "widget: field.widget",
         "digits: field.digits",
+        "unit: field.unit",
         "currencyField: field.currencyField",
     ):
         if marker not in form_section:
             failures.append(f"[CFG-004] FormSection drops declared semantic marker {marker}")
 
     kanban = _read("pages/KanbanPage.vue", read_text)
-    if "function formatValue(value: unknown, field?: string)" not in kanban:
-        failures.append("[CFG-004] Kanban title formatting does not accept a field descriptor key")
-    if "(props.columnOptions || []).find((candidate) => candidate.name === field)" not in kanban:
-        failures.append("[CFG-004] Kanban title fallback does not resolve its declared column option")
+    if "presentCollectionKanbanTitle({" not in kanban:
+        failures.append("[CFG-004] Kanban title does not consume the declared title adapter")
+    row_title_start = kanban.find("function rowTitle(")
+    row_title_end = kanban.find("\n}", row_title_start + 1)
+    row_title = kanban[row_title_start:row_title_end] if row_title_start >= 0 else ""
+    for forbidden in ("formatValue(", "row.name", "row.display_name", "String(row.id"):
+        if forbidden in row_title:
+            failures.append(f"[CFG-004] Kanban title retains an undeclared fallback: {forbidden}")
 
     native_canvas = _read("pages/contractForm/ContractFormNativeCanvas.vue", read_text)
     if "resolveReadonlyEmptyText(field, '未填写')" in native_canvas:

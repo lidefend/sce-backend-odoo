@@ -82,7 +82,7 @@ function favoriteActive(value: unknown): boolean {
 export function resolveCanonicalNativeFieldSchemas(
   schemas: readonly FormSectionFieldSchema[],
 ): FormSectionFieldSchema[] {
-  const favorite = schemas.find((field) => field.widget === 'boolean_favorite' || field.name === 'is_favorite');
+  const favorite = schemas.find((field) => field.widget === 'boolean_favorite');
   const content = schemas.filter((field) => field !== favorite).map((field) => ({ ...field }));
   if (!favorite || !content.length) return content;
   const targetIndex = content.findIndex((field) => field.name === 'name');
@@ -131,6 +131,7 @@ function fieldNode(
   if (sourceNode?.nativePresentation.feedbackContentOwned && field.errorText) throw contractGapError({
     kind: 'contract_defect', missing: 'exclusive feedback source ownership',
     requiredDeclarationLayer: 'P0: error presentation ownership'}, 'Field error already owns feedback source');
+  const descriptor = field.fieldDescriptor as Record<string, unknown>;
   const node: CanonicalNativeLayoutNode = {
     ...(sourceNode?.nativePresentation || {}),
     type: 'field',
@@ -156,8 +157,8 @@ function fieldNode(
       sectionNavigationRole: sourceNode?.zoneRole,
       semanticFormRole: sourceNode?.semanticRole || field.semanticRole,
       contractStyleToken: sourceNode?.styleToken,
-      surfaceRole: text((field.componentConfig as Record<string, unknown>)?.surfaceRole),
-      technical: (field.componentConfig as Record<string, unknown>)?.technical === true,
+      surfaceRole: text(descriptor.surfaceRole),
+      technical: descriptor.technical === true,
       sectionNavigationTarget: sectionTarget?.key,
       sectionContentKind: sectionTarget?.contentKind,
       sectionSourceIdentity: sectionTarget?.sourceIdentity,

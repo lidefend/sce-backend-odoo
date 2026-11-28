@@ -5,7 +5,7 @@ import {
   normalizeLowCodeColumnsOrNull,
   normalizeLowCodeFieldSize,
 } from './fieldUtils';
-import { nativeLayoutNodeType, nativeNodeFieldInfo, type NativeLayoutLikeNode } from './nativeLayoutUtils';
+import { nativeLayoutNodeType, type NativeLayoutLikeNode } from './nativeLayoutUtils';
 
 export function routeQueryText(query: Record<string, unknown>, key: string) {
   const value = query[key];
@@ -893,12 +893,15 @@ export function lowCodeLayoutFieldLabelFromNodes(name: string, ...nodeGroups: Na
       const nodeType = String(node.type || (node as { containerType?: string }).containerType || '').trim().toLowerCase();
       const nodeName = String(node.name || '').trim();
       if (nodeType === 'field' && nodeName === targetName) {
-        const fieldInfo = nativeNodeFieldInfo(node);
+        const fieldDescriptor = node.fieldDescriptor
+          && typeof node.fieldDescriptor === 'object'
+          && !Array.isArray(node.fieldDescriptor)
+          ? node.fieldDescriptor as Record<string, unknown>
+          : {};
         const label = String(
           node.string
           || node.label
-          || fieldInfo.string
-          || fieldInfo.label
+          || fieldDescriptor.label
           || '',
         ).trim();
         if (label) return label;

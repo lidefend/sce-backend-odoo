@@ -31,9 +31,24 @@ const server = await createServer({
           { name: 'name', label: '名称', type: 'char' },
           { name: 'state', label: '状态', type: 'selection', cellRole: 'status', selection: [{ value: 'pending', label: '待处理' }] },
           { name: 'project_id', label: '项目', type: 'many2one' },
-          { name: 'ratio', label: '比例', type: 'float', componentKey: 'sc.value.percentage', digits: [16, 4] },
+          {
+            name: 'ratio',
+            label: '比例',
+            type: 'float',
+            componentKey: 'sc.value.percentage',
+            digits: [16, 4],
+            unit: { kind: 'percent', code: 'percent', label: '%' },
+          },
           { name: 'amount', label: '金额', type: 'monetary', componentKey: 'sc.value.money', digits: [20, 2], currencyField: 'currency_id' },
-          { name: 'hours', label: '工时', type: 'float', widget: 'float_time', componentKey: 'sc.value.duration' },
+          {
+            name: 'hours',
+            label: '工时',
+            type: 'float',
+            widget: 'float_time',
+            componentKey: 'sc.value.duration',
+            digits: [16, 3],
+            unit: { kind: 'duration', code: 'hour', label: '小时' },
+          },
           { name: 'active', label: '启用', type: 'boolean' },
         ];
         const semanticRecords = [{
@@ -154,7 +169,7 @@ try {
     }
     check(html.includes('data-semantic-component="CollectionActionToolbar"'), queryMode === 'declared', `${state}: declared query uses actual toolbar`);
   }
-  const semanticLabels = ['待处理', '项目甲', '12.5000%', '¥1,234.50', '1 小时 30 分钟', '否'];
+  const semanticLabels = ['待处理', '项目甲', '12.5000%', '¥1,234.50', '1.500 小时', '否'];
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
     for (const surface of ['list', 'kanban']) {

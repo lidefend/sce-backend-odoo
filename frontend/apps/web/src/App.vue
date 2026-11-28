@@ -45,8 +45,10 @@ import { useSessionStore } from './stores/session';
 import { tdesignGlobalConfig } from './styles/tdesignGlobalConfig';
 import { useThemeApplicationRuntime } from './styles/themeApplicationRuntime';
 import { resolveActivityCacheKey } from './app/activityPageCacheIdentity';
+import { provideRuntimeTimeZone } from './app/runtimeTimeZone';
 
 const session = useSessionStore();
+provideRuntimeTimeZone(() => session.user?.tz);
 const pageIdentity = usePageIdentityRuntime();
 const retainedActivityActorId = ref(0);
 

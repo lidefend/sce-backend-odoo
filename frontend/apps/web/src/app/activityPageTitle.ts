@@ -19,7 +19,6 @@ export interface SceneActivityTitleInput {
   sceneKey?: unknown;
   runtimeLabel?: unknown;
   registeredLabel?: unknown;
-  queryLabel?: unknown;
 }
 
 function titleText(value: unknown): string {
@@ -53,15 +52,13 @@ export function shouldDeferActivityPageTitle(
 
 /**
  * Resolve a scene tab/page title from declared scene labels. Runtime scene
- * projection wins over the static registry and the route-carried label; the
- * technical scene key is never rendered as a business title.
+ * projection wins over the bundled registry; the technical scene key is never
+ * rendered as a business title.
  */
 export function resolveSceneActivityTitle(input: SceneActivityTitleInput): string {
-  const sceneKey = titleText(input.sceneKey);
   const runtimeLabel = productIdentityText(input.runtimeLabel);
   const registeredLabel = productIdentityText(input.registeredLabel);
-  const queryLabel = productIdentityText(input.queryLabel);
-  return runtimeLabel || registeredLabel || (queryLabel !== sceneKey ? queryLabel : '') || '业务场景';
+  return runtimeLabel || registeredLabel || '业务场景';
 }
 
 /**

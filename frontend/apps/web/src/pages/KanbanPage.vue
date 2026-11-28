@@ -108,10 +108,10 @@ import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composa
 import { groupCollectionRecords } from '../app/runtime/collectionViewRuntime';
 import {
   presentCollectionKanbanCell,
+  presentCollectionKanbanTitle,
   type CollectionKanbanFieldOption,
 } from '../app/presentation/collectionKanbanPresentation';
-import { formatDisplayValue } from '../utils/display';
-import { FIELD_VALUE_EMPTY_TEXT } from '../utils/fieldSemantics';
+import { useRuntimeTimeZone } from '../app/runtimeTimeZone';
 
 const props = defineProps<{
   title: string;
@@ -145,6 +145,7 @@ const props = defineProps<{
   presentationSemantic?: 'card' | 'workflow_board' | string;
   groupField?: string;
 }>();
+const timeZone = useRuntimeTimeZone();
 const errorCopy = computed(() =>
   resolveErrorCopy(
     props.error || null,
@@ -246,6 +247,7 @@ function semanticCell(field: string, value: unknown, row: Record<string, unknown
     statusFields: statusMetaFields.value,
     fieldSelections: props.fieldSelections,
     columnOptions: props.columnOptions,
+    timeZone: timeZone.value,
   });
   return { text: presentation.text, tone: presentation.tone, badgeSemantic: presentation.badgeSemantic };
 }
@@ -256,10 +258,11 @@ function rowTone(row: Record<string, unknown>) {
 }
 
 function rowTitle(row: Record<string, unknown>): string {
-  return formatValue(row[props.titleField], props.titleField)
-    || formatValue(row.name, 'name')
-    || formatValue(row.display_name, 'display_name')
-    || String(row.id ?? FIELD_VALUE_EMPTY_TEXT);
+  return presentCollectionKanbanTitle({
+    titleField: props.titleField,
+    value: row[props.titleField],
+    columnOptions: props.columnOptions,
+  });
 }
 
 function cardFacts(row: Record<string, unknown>, fields: string[]): CollectionKanbanFact[] {
@@ -339,12 +342,6 @@ watch(
   { immediate: true },
 );
 
-function formatValue(value: unknown, field?: string) {
-  const option = field
-    ? (props.columnOptions || []).find((candidate) => candidate.name === field)
-    : undefined;
-  return formatDisplayValue(value, option, { emptyText: FIELD_VALUE_EMPTY_TEXT });
-}
 </script>
 
 <style scoped>

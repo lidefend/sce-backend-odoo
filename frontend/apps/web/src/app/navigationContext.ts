@@ -5,8 +5,6 @@ export const CONTRACT_NAV_QUERY_KEYS = [
   'action_id',
   'hud',
   'surface',
-  'scene',
-  'scene_key',
   'domain_raw',
   'context_raw',
   'preset',
@@ -38,14 +36,10 @@ export const CONTRACT_NAV_QUERY_KEYS = [
   'integration_target',
   'entry_target_policy',
   'business_entry_contract_version',
-  'entry_title',
   'current_business_category_code',
   'default_business_category_code',
   'allowed_business_category_codes',
-  'current_business_category_label',
-  'default_business_category_label',
   'return_url',
-  'return_label',
   'return_product_key',
 ] as const;
 
@@ -59,8 +53,6 @@ export const BUSINESS_ENTRY_NAV_QUERY_KEYS = [
   'current_business_category_code',
   'default_business_category_code',
   'allowed_business_category_codes',
-  'current_business_category_label',
-  'default_business_category_label',
 ] as const;
 
 const CROSS_MODEL_SHELL_QUERY_KEYS = ['hud'] as const;
@@ -219,12 +211,9 @@ export function buildBusinessCategoryCreateNavQuery(options: {
     if (Array.isArray(value) || typeof value === 'object') return;
     defaults[`default_${normalizedKey}`] = String(value);
   });
-  const label = asText(option?.label || options.fallbackLabel || '办理类型');
   return {
     current_business_category_code: code,
     default_business_category_code: code,
-    current_business_category_label: label,
-    default_business_category_label: label,
     ctx_source: 'business_category_create_picker',
     ...defaults,
   };

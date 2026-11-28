@@ -285,14 +285,22 @@ const schemaSelectionColumns = one2manyColumnsFromSubview({ tree: {
   columns_schema: [{ name: 'state', label: '状态', type: 'selection', selection: [
     { value: 'submitted', label: '已提交' }, { value: 'won', label: '中标' },
   ] }],
-} }, () => null);
+} }, (name) => name === 'completion_ratio'
+  ? { unit: { kind: 'percent', code: 'percent', label: '%' } }
+  : null);
 assert.deepEqual(schemaSelectionColumns[0], {
   name: 'state', label: '状态', ttype: 'selection', required: false, readonly: false,
   selection: [['submitted', '已提交'], ['won', '中标']],
 });
 assert.equal(one2manyColumnDisplayValue(schemaSelectionColumns[0], 'submitted'), '已提交');
-assert.equal(one2manyColumnDisplayValue({ name: 'amount', label: '金额', ttype: 'monetary', required: false }, 3260000), '3,260,000');
-assert.equal(one2manyColumnDisplayValue({ name: 'quantity', label: '数量', ttype: 'float', required: false }, 1280.5), '1,280.50');
+assert.equal(one2manyColumnDisplayValue({
+  name: 'amount',
+  label: '金额',
+  ttype: 'monetary',
+  required: false,
+  digits: [16, 0],
+}, 3260000), '3,260,000');
+assert.equal(one2manyColumnDisplayValue({ name: 'quantity', label: '数量', ttype: 'float', required: false, digits: [16, 2] }, 1280.5), '1,280.50');
 const percentageColumns = one2manyColumnsFromSubview({ tree: {
   columns: [{ name: 'completion_ratio', label: '完成率', type: 'float' }],
   columns_schema: [{
@@ -303,7 +311,9 @@ const percentageColumns = one2manyColumnsFromSubview({ tree: {
     name: 'completion_ratio', field_type: 'float', widget: 'percentage', digits: [16, 4],
     attributes: { widget: 'percentage' }, modifiers: {},
   }],
-} }, () => null);
+} }, (name) => name === 'completion_ratio'
+  ? { unit: { kind: 'percent', code: 'percent', label: '%' } }
+  : null);
 assert.equal(percentageColumns[0]?.componentKey, 'sc.value.percentage');
 assert.deepEqual(percentageColumns[0]?.digits, [16, 4]);
 assert.equal(one2manyColumnDisplayValue(percentageColumns[0]!, 12.5), '12.5000%');
@@ -347,16 +357,36 @@ mergeOne2manyHydratedRecords({
 });
 assert.deepEqual(monetaryHydratedRow.values.currency_id, [1, 'CNY']);
 assert.equal(
-  one2manyColumnDisplayValue({ name: 'business_date', label: '日期', ttype: 'date', required: false }, '2025-06-10T09:00:00'),
+  one2manyColumnDisplayValue({
+    name: 'business_date',
+    label: '日期',
+    ttype: 'date',
+    required: false,
+    temporal: { kind: 'date', timezoneAuthority: 'not_applicable' },
+  }, '2025-06-10T09:00:00'),
   '2025-06-10',
 );
 assert.equal(
-  one2manyColumnDisplayValue({ name: 'business_time', label: '时间', ttype: 'datetime', required: false }, '2025-06-10T09:00:30'),
+  one2manyColumnDisplayValue({
+    name: 'business_time',
+    label: '时间',
+    ttype: 'datetime',
+    required: false,
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+  }, '2025-06-10T09:00:30', 'UTC'),
   '2025-06-10 09:00',
 );
 assert.equal(
-  one2manyColumnDisplayValue({ name: 'duration', label: '工时', ttype: 'float', widget: 'float_time', required: false }, 1.5),
-  '1 小时 30 分钟',
+  one2manyColumnDisplayValue({
+    name: 'duration',
+    label: '工时',
+    ttype: 'float',
+    widget: 'float_time',
+    required: false,
+    digits: [16, 3],
+    unit: { kind: 'duration', code: 'hour', label: '小时' },
+  }, 1.5),
+  '1.500 小时',
 );
 assert.equal(
   one2manyColumnInputValue({ name: 'duration', label: '工时', ttype: 'float', widget: 'float_time', required: false }, 1.5),
@@ -370,7 +400,13 @@ assert.equal(one2manyColumnDisplayValue(integerColumn, false), '');
 assert.equal(one2manyColumnDisplayValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, true), '是');
 assert.equal(one2manyColumnDisplayValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, false), '否');
 assert.equal(
-  one2manyColumnDisplayValue({ name: 'opened_at', label: '开启时间', ttype: 'datetime', required: false }, '2025-06-10T09:00:00'),
+  one2manyColumnDisplayValue({
+    name: 'opened_at',
+    label: '开启时间',
+    ttype: 'datetime',
+    required: false,
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+  }, '2025-06-10T09:00:00', 'UTC'),
   '2025-06-10 09:00',
 );
 assert.equal(isOne2manyEmptyValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, false), false, 'false is a readable business fact');

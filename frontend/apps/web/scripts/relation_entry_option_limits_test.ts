@@ -3,10 +3,15 @@ import {
   relationCreateMode,
   relationEntry,
   relationInlineCreate,
+  relationModel,
+  relationOptionFromRow,
   relationOptionsLimit,
+  relationOptionsFromRecords,
   relationOptionsSearchLimit,
   relationOptionsWithSelectedFallback,
 } from '../src/pages/contractForm/relationDescriptor';
+import { parseMany2oneDisplay } from '../src/pages/contractForm/fieldUtils';
+import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime';
 import { nativeNodeFieldDescriptor } from '../src/pages/contractForm/nativeLayoutUtils';
 import { resolveContractV2FormFieldMap } from '../src/app/contracts/v2/store';
 import { isContractGapError } from '../src/app/contract/contractGap';
@@ -55,6 +60,7 @@ const baselineDescriptor = descriptorWith({
 
 const baselineEntry = relationEntry(baselineDescriptor);
 assert.ok(baselineEntry, 'baseline: a declared relation entry must project to a non-null entry');
+assert.equal(relationModel(baselineDescriptor), 'project.project', 'matching relation target declarations must resolve once');
 for (const key of REQUIRED_PROJECTED_KEYS) {
   assert.ok(
     Object.prototype.hasOwnProperty.call(baselineEntry as Record<string, unknown>, key),
@@ -70,6 +76,29 @@ assert.equal(
   relationOptionsSearchLimit(baselineEntry as Record<string, unknown>),
   DECLARED_SEARCH_LIMIT,
   'baseline: options_search_limit must equal the declared value, not a frontend constant',
+);
+checked += 1;
+
+const conflictingTargetDescriptor = descriptorWith({
+  model: 'res.partner',
+  can_read: true,
+  options_limit: DECLARED_LIMIT,
+  options_search_limit: DECLARED_SEARCH_LIMIT,
+});
+let conflictingTargetError: unknown;
+try {
+  relationModel(conflictingTargetDescriptor);
+} catch (error) {
+  conflictingTargetError = error;
+}
+assert.ok(
+  isContractGapError(conflictingTargetError),
+  'conflicting relation target declarations must stop with ContractGapError',
+);
+assert.equal(
+  (conflictingTargetError as ContractGapError).defect.missing,
+  'field.project_id.relation_model_consistency',
+  'the stop must name the conflicting relation target identity',
 );
 checked += 1;
 
@@ -123,10 +152,74 @@ assert.equal(relationOptionsLimit(storeEntry as Record<string, unknown>), DECLAR
 assert.equal(relationOptionsSearchLimit(storeEntry as Record<string, unknown>), DECLARED_SEARCH_LIMIT);
 assert.equal(relationCreateMode(storeField), 'quick', 'store projection: quick create must remain available');
 assert.equal(relationInlineCreate(storeField).enabled, true, 'store projection: inline create must remain available');
+for (const [inlineCreate, missing] of [
+  [{ enabled: true, create_on_no_match: true, name_field: '', match: 'single_contains_or_exact' }, 'inlineCreate.nameField'],
+  [{ enabled: true, create_on_no_match: true, name_field: 'name', match: '' }, 'inlineCreate.match'],
+] as const) {
+  assert.throws(
+    () => relationEntry(descriptorWith({
+      model: 'project.project',
+      can_read: true,
+      can_create: true,
+      create_mode: 'quick',
+      options_limit: DECLARED_LIMIT,
+      options_search_limit: DECLARED_SEARCH_LIMIT,
+      inline_create: inlineCreate,
+    })),
+    (error: unknown) => isContractGapError(error) && error.defect.missing.includes(missing),
+    `enabled inline create must stop when ${missing} is not declared`,
+  );
+}
+assert.doesNotThrow(
+  () => relationEntry(descriptorWith({
+    model: 'project.project',
+    can_read: true,
+    can_create: false,
+    create_mode: 'disabled',
+    inline_create: { enabled: false, create_on_no_match: false, name_field: '', match: '' },
+  })),
+  'a disabled inline-create declaration may omit create-time fields without being treated as a gap',
+);
 assert.deepEqual(
-  relationOptionsWithSelectedFallback([], [42, '已有负责人']),
-  [{ id: 42, label: '#42' }],
-  'store projection: selected IDs without cached labels must retain a hydration fallback',
+  relationOptionsWithSelectedFallback([]),
+  [],
+  'store projection: selected IDs without authoritative labels must not synthesize a #id label',
+);
+const missingRelationLabel = (() => {
+  try {
+    relationOptionFromRow({ id: 42 }, descriptorWith({ model: 'project.project', can_read: true }));
+  } catch (error) {
+    return error;
+  }
+  return null;
+})();
+assert.ok(isContractGapError(missingRelationLabel), 'relation rows without an authoritative label must stop');
+assert.equal(
+  (missingRelationLabel as ContractGapError).defect.missing,
+  'relation_option.42.label',
+  'the stop must name the missing relation display label',
+);
+assert.equal(parseMany2oneDisplay(42), null, 'a bare many2one identity has no display label');
+assert.equal(parseMany2oneDisplay([42, '']), null, 'an empty many2one display label is not a business label');
+const relationRuntime = useRelationRuntime();
+await assert.rejects(
+  relationRuntime.queryRelationOptions({
+    fieldName: 'project_id',
+    keyword: '',
+    relation: 'project.project',
+    canRead: true,
+    hasDynamicFallback: false,
+    currentValue: null,
+    optionsLimit: DECLARED_LIMIT,
+    optionsSearchLimit: DECLARED_SEARCH_LIMIT,
+    fetchOptions: async () => relationOptionsFromRecords(
+      [{ id: 42 }],
+      descriptorWith({ model: 'project.project', can_read: true }),
+    ),
+    isDeniedError: () => false,
+  }),
+  { name: 'ContractGapError' },
+  'candidate loading must surface a missing relation label instead of swallowing the contract defect',
 );
 assert.equal(
   Object.prototype.hasOwnProperty.call(storeField as object, 'relation_entry'),
@@ -140,11 +233,12 @@ checked += 1;
 // misreported as a missing canonical relationEntry.
 const nativeDescriptor = nativeNodeFieldDescriptor({
   name: 'project_id',
-  fieldInfo: {
-    name: 'project_id',
-    type: 'many2one',
+  fieldDescriptor: {
+    fieldCode: 'project_id',
+    label: 'project_id',
+    fieldType: 'many2one',
     relation: 'project.project',
-    relation_entry: {
+    relationEntry: {
       model: 'project.project',
       can_read: true,
       options_limit: DECLARED_LIMIT,
@@ -153,7 +247,7 @@ const nativeDescriptor = nativeNodeFieldDescriptor({
   },
 } as never, undefined, (name) => name);
 const nativeEntry = relationEntry(nativeDescriptor);
-assert.ok(nativeEntry, 'native adapter: producer evidence must normalize to canonical relationEntry');
+assert.ok(nativeEntry, 'native adapter: fieldDescriptor must normalize to canonical relationEntry');
 assert.equal(
   relationOptionsLimit(nativeEntry as Record<string, unknown>),
   DECLARED_LIMIT,

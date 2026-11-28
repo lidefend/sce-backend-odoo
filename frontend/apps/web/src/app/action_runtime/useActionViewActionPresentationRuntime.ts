@@ -4,6 +4,7 @@ import {
   resolveContractV2ActionRules,
   resolveContractV2SurfacePolicies,
 } from '../contracts/v2/store';
+import { resolveDeclaredSurfaceBudget } from '../runtime/actionViewSurfacePolicyBudget';
 import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 import type { ActionPresentation } from './useActionViewActionGroupingRuntime';
 
@@ -124,6 +125,14 @@ export function normalizeV2ActionRows(store: ContractV2NormalizedStore | null): 
   return normalized;
 }
 
+export function resolveLoadedActionPrimaryBudget(store: ContractV2NormalizedStore | null): number {
+  if (!store) return 0;
+  return resolveDeclaredSurfaceBudget(
+    resolveContractV2SurfacePolicies(store),
+    'actions_primary_max',
+  );
+}
+
 export function useActionViewActionPresentationRuntime(options: UseActionViewActionPresentationRuntimeOptions) {
   const contractActionButtons = computed<ContractActionButton[]>(() => {
     const contract = options.actionContract.value;
@@ -135,10 +144,7 @@ export function useActionViewActionPresentationRuntime(options: UseActionViewAct
   });
 
   const actionPrimaryBudget = computed(() => {
-    const surfacePolicies = resolveContractV2SurfacePolicies(options.actionContract.value);
-    const raw = Number(surfacePolicies.actions_primary_max ?? 4);
-    if (!Number.isFinite(raw) || raw < 0) return 4;
-    return Math.floor(raw);
+    return resolveLoadedActionPrimaryBudget(options.actionContract.value);
   });
 
   const contractActionPresentation = computed(() => {

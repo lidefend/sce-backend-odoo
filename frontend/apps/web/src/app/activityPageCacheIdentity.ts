@@ -48,7 +48,7 @@ export function resolveActivityRouteKey(input: ActivityRouteIdentityInput): stri
   }
   if (routeName === 'my-work' || routeName === 'scene-my-work') return 'workspace:my-work';
   if (routeName === 'scene' || routeName.startsWith('scene-')) {
-    const sceneKey = text(params.sceneKey ?? meta.sceneKey ?? query.scene_key ?? query.scene);
+    const sceneKey = text(params.sceneKey ?? meta.sceneKey);
     if (!sceneKey || sceneKey === 'workspace.home') return '';
     return `scene:${sceneKey}:${context}`;
   }

@@ -60,6 +60,7 @@ import {
   monetaryInputStep,
   statusBadgeSemantic,
 } from '../../app/presentation/businessValuePresentation';
+import { useRuntimeTimeZone } from '../../app/runtimeTimeZone';
 import type { FormSectionFieldSchema } from '../template/formSection.types';
 import {
   businessValueKind,
@@ -73,6 +74,7 @@ const props = defineProps<{
   controlId: string;
   placeholder?: string;
 }>();
+const timeZone = useRuntimeTimeZone();
 
 defineEmits<{ 'update:value': [value: string | number | boolean | null] }>();
 
@@ -81,19 +83,19 @@ const isChoice = computed(() => ['sc.display.status'].includes(kind.value));
 const numeric = computed(() => ['sc.value.money', 'sc.value.percentage', 'sc.value.duration'].includes(kind.value));
 const inputModelValue = computed(() => {
   if (kind.value === 'sc.value.money') {
-    return formatMonetaryInputValue(props.field.inputValue, props.field.digits, props.field.currencyLabel);
+    return formatMonetaryInputValue(props.field.inputValue, props.field.digits);
   }
   if (props.field.inputValue === false || props.field.inputValue === null || props.field.inputValue === undefined) return '';
   return typeof props.field.inputValue === 'boolean' ? String(props.field.inputValue) : props.field.inputValue ?? '';
 });
 const choiceOptions = computed(() => props.field.relationOptions?.length ? props.field.relationOptions : props.field.selectionOptions || []);
 const normalizedChoiceOptions = computed(() => normalizeBusinessValueChoiceOptions(choiceOptions.value));
-const inputStep = computed(() => kind.value === 'sc.value.money' ? monetaryInputStep(props.field.digits, props.field.currencyLabel) : 'any');
+const inputStep = computed(() => kind.value === 'sc.value.money' ? monetaryInputStep(props.field.digits) : 'any');
 
 const suffix = computed(() => {
   if (kind.value === 'sc.value.money') return props.field.currencyLabel || '';
   if (kind.value === 'sc.value.percentage') return '%';
-  if (kind.value === 'sc.value.duration') return '小时';
+  if (kind.value === 'sc.value.duration') return props.field.unit?.label || '';
   return '';
 });
 const emptyDisplayText = computed(() => resolveReadonlyEmptyText(props.field));
@@ -106,7 +108,7 @@ const moneyDisplay = computed(() => formatMonetaryDisplayValue(
 ));
 const displayText = computed(() => {
   const value = props.field.value;
-  if (kind.value === 'sc.value.percentage') return formatPercentage(value, props.field.digits);
+  if (kind.value === 'sc.value.percentage') return formatPercentage(value, props.field.digits, props.field.unit);
   if (kind.value === 'sc.value.duration' || kind.value === 'sc.display.status') {
     return presentDeclaredBusinessValue({
       field: {
@@ -115,9 +117,13 @@ const displayText = computed(() => {
         componentKey: props.field.componentKey,
         widget: props.field.widget,
         selection: props.field.selectionOptions,
+        digits: props.field.digits,
+        unit: props.field.unit,
+        temporal: props.field.temporal,
       },
       value: props.field.inputValue ?? value,
       emptyText: emptyDisplayText.value,
+      timeZone: timeZone.value,
     }).text;
   }
   return String(value ?? emptyDisplayText.value) || emptyDisplayText.value;

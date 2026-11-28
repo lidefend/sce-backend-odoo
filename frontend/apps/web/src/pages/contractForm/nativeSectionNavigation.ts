@@ -293,12 +293,9 @@ export function relationshipCollectionNavigationItems(
     const descriptor = field.fieldDescriptor && typeof field.fieldDescriptor === 'object'
       ? field.fieldDescriptor as Record<string, unknown>
       : {};
-    const config = field.componentConfig && typeof field.componentConfig === 'object'
-      ? field.componentConfig as Record<string, unknown>
-      : {};
-    const subview = descriptor.subview || config.subview;
+    const subview = descriptor.subview;
     const hasStructuredSubview = Boolean(subview && typeof subview === 'object' && !Array.isArray(subview));
-    const widget = String(config.nativeWidget || config.widget || field.widgetType || '').trim().toLowerCase();
+    const widget = String(field.widgetType || '').trim().toLowerCase();
     return (hasStructuredSubview ? 20 : 0)
       + (field.fieldType.trim().toLowerCase() === 'one2many' ? 10 : 0)
       + (widget === 'many2many_tags' ? -1 : 0);

@@ -17,11 +17,7 @@ function formPrimaryFields(contract: BusinessMetadata): unknown[] {
 }
 
 function primaryRecordName(contract: BusinessMetadata, formData: Record<string, unknown>): string {
-  const fieldNames = [
-    ...formPrimaryFields(contract),
-    'display_name',
-    'name',
-  ];
+  const fieldNames = formPrimaryFields(contract);
   for (const fieldName of Array.from(new Set(fieldNames))) {
     const normalizedFieldName = String(fieldName || '').trim();
     if (!normalizedFieldName || normalizedFieldName === 'display_name') continue;
@@ -35,7 +31,7 @@ function primaryRecordName(contract: BusinessMetadata, formData: Record<string, 
     const label = String(value).replace(/\s+/g, ' ').trim();
     if (label) return label;
   }
-  return String(formData.display_name || '').replace(/\s+/g, ' ').trim();
+  return '';
 }
 
 export function buildContractFormPageIdentity(input: {
@@ -43,7 +39,6 @@ export function buildContractFormPageIdentity(input: {
   authoritativeActionName?: unknown;
   breadcrumbs?: PageBreadcrumb[];
   businessCategoryLabel?: unknown;
-  entryTitle?: unknown;
   contract: BusinessMetadata;
   formData: Record<string, unknown>;
   recordData?: Record<string, unknown>;
@@ -59,9 +54,9 @@ export function buildContractFormPageIdentity(input: {
     ? input.contract.head as Record<string, unknown>
     : {};
   const modelLabel = head.model_label || input.action?.model_label;
-  const businessName = input.entryTitle || input.businessCategoryLabel || head.title || actionName(input.action);
+  const businessName = input.businessCategoryLabel || head.title || actionName(input.action);
   const identityName = input.isCreate
-    ? input.entryTitle || input.authoritativeActionName || input.businessCategoryLabel || modelLabel || businessName
+    ? input.authoritativeActionName || input.businessCategoryLabel || modelLabel || businessName
     : businessName;
   // Identity may be absent from body controls but present in the authorized
   // record snapshot. Keep it out of the writable draft; current edits win.
@@ -109,7 +104,6 @@ export function buildActionPageIdentity(input: {
   action: BusinessMetadata;
   actionContractTitle?: unknown;
   breadcrumbs?: PageBreadcrumb[];
-  legacyTitle?: unknown;
   menuName?: unknown;
   modelName?: unknown;
   sceneLabel?: unknown;
@@ -122,7 +116,6 @@ export function buildActionPageIdentity(input: {
       input.actionContractTitle,
       input.sceneLabel,
       actionName(input.action),
-      input.legacyTitle,
     ].map(productIdentityText).find(Boolean) || '',
     menuName: input.menuName,
     modelName: input.modelName,

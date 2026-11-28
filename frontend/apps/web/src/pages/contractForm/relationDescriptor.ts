@@ -24,6 +24,24 @@ export function relationEntry(descriptor?: FieldDescriptor) {
   const inlineRaw = row.inline_create && typeof row.inline_create === 'object' && !Array.isArray(row.inline_create)
     ? row.inline_create as Record<string, unknown>
     : {};
+  const inlineEnabled = inlineRaw.enabled === true;
+  const inlineNameField = String(inlineRaw.name_field || '').trim();
+  const inlineMatch = String(inlineRaw.match || '').trim();
+  const fieldName = String((descriptor as Record<string, unknown> | undefined)?.name || '(unknown)').trim() || '(unknown)';
+  if (inlineEnabled && !inlineNameField) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${fieldName}.relationEntry.inlineCreate.nameField`,
+      requiredDeclarationLayer: 'P0:smart_core:page_assembler._build_relation_inline_create_contract',
+    }, `关系字段 ${fieldName} 的内联创建缺少 name_field 声明`);
+  }
+  if (inlineEnabled && !inlineMatch) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${fieldName}.relationEntry.inlineCreate.match`,
+      requiredDeclarationLayer: 'P0:smart_core:page_assembler._build_relation_inline_create_contract',
+    }, `关系字段 ${fieldName} 的内联创建缺少 match 声明`);
+  }
   const switchRaw = row.switch_context && typeof row.switch_context === 'object' && !Array.isArray(row.switch_context)
     ? row.switch_context as Record<string, unknown>
     : {};
@@ -62,17 +80,27 @@ export function relationEntry(descriptor?: FieldDescriptor) {
     // 消费点经 requireDeclaredNumber 缺失或非法即停机；此处不得补前端默认值。
     pageSize: row.page_size,
     inlineCreate: {
-      enabled: inlineRaw.enabled === true,
+      enabled: inlineEnabled,
       createOnNoMatch: inlineRaw.create_on_no_match === true,
-      nameField: String(inlineRaw.name_field || 'name').trim() || 'name',
-      match: String(inlineRaw.match || '').trim() || 'exact_label',
+      nameField: inlineNameField,
+      match: inlineMatch,
     },
   };
 }
 
 export function relationModel(descriptor?: FieldDescriptor) {
+  const descriptorRecord = descriptor as Record<string, unknown> | undefined;
+  const relation = String(descriptorRecord?.relation || '').trim();
   const entry = relationEntry(descriptor);
-  return String((descriptor as Record<string, unknown> | undefined)?.relation || entry?.model || '').trim();
+  const entryModel = String(entry?.model || '').trim();
+  if (relation && entryModel && relation !== entryModel) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${String(descriptorRecord?.name || '(unknown)').trim() || '(unknown)'}.relation_model_consistency`,
+      requiredDeclarationLayer: 'P0:smart_core:relation_target_projection',
+    }, `关系字段 ${String(descriptorRecord?.name || '(unknown)')} 的 relation 与 relationEntry.model 冲突`);
+  }
+  return relation || entryModel;
 }
 
 export function relationOrder(descriptor?: FieldDescriptor) {
@@ -123,7 +151,14 @@ export function relationOptionFromRow(row: Record<string, unknown>, descriptor?:
   const entry = relationEntry(descriptor);
   const displayField = String(entry?.displayField || '').trim();
   const displayValue = displayField ? row[displayField] : '';
-  const label = String(displayValue || row.display_name || row.name || `#${id}`).trim();
+  const label = cleanRelationDisplayLabel(displayValue || row.display_name || row.name);
+  if (!label) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `relation_option.${Math.trunc(id)}.label`,
+      requiredDeclarationLayer: 'P0:smart_core:relation_display_projection',
+    }, `关系记录 ${Math.trunc(id)} 缺少权威显示标签`);
+  }
   const colorField = relationColorField(descriptor);
   const colorValue = colorField ? Number(row[colorField]) : NaN;
   const switchContract = entry?.switchContext?.enabled ? entry.switchContext : null;
@@ -134,7 +169,7 @@ export function relationOptionFromRow(row: Record<string, unknown>, descriptor?:
     : {};
   return {
     id: Math.trunc(id),
-    label: cleanRelationDisplayLabel(label, id),
+    label,
     ...(switchCode ? { switchContext: { code: switchCode, label: switchLabel || label, defaultValues } } : {}),
     ...(Number.isFinite(colorValue) ? { color: Math.trunc(colorValue) } : {}),
   };
@@ -146,17 +181,17 @@ export function relationOptionsFromRecords(records: unknown, descriptor?: FieldD
     .filter((item): item is RelationOption => Boolean(item));
 }
 
-export function relationOptionsWithSelectedFallback(options: RelationOption[] | undefined, value: unknown): RelationOption[] {
-  const rows = Array.isArray(options) ? options.filter((item): item is RelationOption => Boolean(item)) : [];
-  if (rows.length) return rows;
-  const ids = normalizeRelationIds(value);
-  return ids.map((id) => ({ id, label: `#${id}` }));
+export function relationOptionsWithSelectedFallback(options: RelationOption[] | undefined): RelationOption[] {
+  return Array.isArray(options) ? options.filter((item): item is RelationOption => Boolean(item)) : [];
 }
 
 export function selectedRelationOptionsFromValue(options: RelationOption[] | undefined, value: unknown): RelationOption[] {
-  const rows = relationOptionsWithSelectedFallback(options, value);
+  const rows = relationOptionsWithSelectedFallback(options);
   const byId = new Map(rows.map((option) => [option.id, option]));
-  return normalizeRelationIds(value).map((id) => byId.get(id) || { id, label: `#${id}` });
+  return normalizeRelationIds(value).flatMap((id) => {
+    const option = byId.get(id);
+    return option ? [option] : [];
+  });
 }
 
 export function mergeRelationOptionRows(current: RelationOption[] | undefined, incoming: RelationOption[]) {
@@ -242,9 +277,6 @@ export function relationCreateMode(descriptor?: FieldDescriptor): 'page' | 'dial
   if (entry.createMode === 'page' && entry.canCreate && entry.actionId) return 'page';
   if (entry.createMode === 'dialog' && entry.canCreate && entry.actionId && entry.menuId) return 'dialog';
   if (entry.createMode === 'quick' && entry.canCreate) return 'quick';
-  if (entry.model === 'sc.dictionary' && entry.canCreate && Object.keys(entry.defaultVals || {}).length) {
-    return 'quick';
-  }
   return 'none';
 }
 
@@ -262,7 +294,7 @@ export function relationInlineCreate(descriptor?: FieldDescriptor) {
     enabled: false,
     createOnNoMatch: false,
     nameField: '',
-    match: entry?.inlineCreate?.match || 'exact_label',
+    match: '',
   };
 }
 
@@ -597,7 +629,14 @@ export function relationSearchRowsFromRecords(
       const id = Number(values.id);
       if (!Number.isFinite(id) || id <= 0) return null;
       const firstColumn = columns[0]?.name || '';
-      const label = cleanRelationDisplayLabel(values.display_name || values.name || values[firstColumn], id);
+      const label = cleanRelationDisplayLabel(values.display_name || values.name || values[firstColumn]);
+      if (!label) {
+        throw contractGapError({
+          kind: 'contract_defect',
+          missing: `relation_search_row.${Math.trunc(id)}.label`,
+          requiredDeclarationLayer: 'P0:smart_core:relation_search_display_projection',
+        }, `关系搜索结果 ${Math.trunc(id)} 缺少权威显示标签`);
+      }
       return { id: Math.trunc(id), label, values };
     })
     .filter((item): item is RelationSearchRow => Boolean(item));

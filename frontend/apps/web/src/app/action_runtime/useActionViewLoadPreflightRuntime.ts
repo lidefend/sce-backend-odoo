@@ -4,6 +4,7 @@ import {
   resolveContractV2SearchContract,
 } from '../contracts/v2/store';
 import type { ContractV2NormalizedStore } from '../contracts/v2/types';
+import { resolveDeclaredSavedFilterIdentity } from './useActionViewFilterComputedRuntime';
 
 type Dict = Record<string, unknown>;
 type SavedFilterChip = { key: string; isDefault: boolean };
@@ -200,14 +201,15 @@ function searchContract(contract: ContractV2NormalizedStore): Dict {
   return resolveContractV2SearchContract(contract);
 }
 
-function deriveSavedFilterChipsFromContract(contract: ContractV2NormalizedStore): SavedFilterChip[] {
+export function deriveSavedFilterChipsFromContract(contract: ContractV2NormalizedStore): SavedFilterChip[] {
   const rows = searchContract(contract).saved_filters;
   if (!Array.isArray(rows)) return [];
   return rows
-    .map((row, idx) => {
+    .map((row) => {
       const raw = row && typeof row === 'object' ? row as Dict : {};
-      const key = String(raw.key || raw.name || raw.xmlid || raw.xml_id || `saved_${idx + 1}`).trim();
-      if (!key) return null;
+      const key = resolveDeclaredSavedFilterIdentity(raw);
+      const label = String(raw.label || raw.name || '').trim();
+      if (!key || !label) return null;
       return {
         key,
         isDefault: raw.default === true || raw.is_default === true,
@@ -216,7 +218,7 @@ function deriveSavedFilterChipsFromContract(contract: ContractV2NormalizedStore)
     .filter((row): row is SavedFilterChip => Boolean(row));
 }
 
-function deriveGroupByChipsFromContract(contract: ContractV2NormalizedStore): GroupByChip[] {
+export function deriveGroupByChipsFromContract(contract: ContractV2NormalizedStore): GroupByChip[] {
   const search = searchContract(contract);
   const custom = search.custom as Dict | undefined;
   const customGroup = custom?.group_by as Dict | undefined;
@@ -228,8 +230,9 @@ function deriveGroupByChipsFromContract(contract: ContractV2NormalizedStore): Gr
   return rows
     .map((row) => {
       const raw = row && typeof row === 'object' ? row as Dict : {};
-      const field = String(raw.field || raw.group_by || raw.groupBy || raw.group || raw.key || raw.name || '').trim();
-      if (!field) return null;
+      const field = String(raw.field || raw.group_by || raw.groupBy || raw.group || '').trim();
+      const label = String(raw.label || raw.string || raw.name || '').trim();
+      if (!field || !label) return null;
       return {
         field,
         isDefault: raw.default === true || raw.is_default === true,
@@ -283,8 +286,8 @@ export function useActionViewLoadPreflightRuntime() {
       activeSavedFilterKey: options.activeSavedFilterKey,
       activeGroupByField: options.activeGroupByField,
       contractFiltersRaw: searchContract(contract).filters,
-      savedFilterChips: contractSavedFilterChips.length ? contractSavedFilterChips : options.contractSavedFilterChips,
-      groupByChips: contractGroupByChips.length ? contractGroupByChips : options.contractGroupByChips,
+      savedFilterChips: contractSavedFilterChips,
+      groupByChips: contractGroupByChips,
     });
     const routeSelectionState = options.resolveRouteSelectionApplyState({ routeSelection });
 

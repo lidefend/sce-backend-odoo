@@ -12,9 +12,21 @@ export type ColumnSemanticInput = {
   componentKey?: string;
   widget?: string;
   cellRole?: string;
+  relation?: string;
+  attachmentRole?: string;
   digits?: [number, number];
+  unit?: {
+    kind: 'percent' | 'duration' | 'count' | 'quantity';
+    code: string;
+    label: string;
+  };
   currencyField?: string;
   currencyLabel?: string;
+  temporal?: {
+    kind: 'date' | 'datetime';
+    timezoneAuthority: 'user' | 'record' | 'not_applicable';
+  };
+  timeZone?: string;
   selection?: Array<{ value: string; label: string }>;
 };
 
@@ -62,6 +74,7 @@ type CellPresentationInput = {
   currencyLabel?: string;
   attachmentText?: string;
   emptyText?: string;
+  timeZone?: string;
 };
 
 function normalized(input: unknown) {
@@ -86,9 +99,12 @@ export function formatListTemporalValue(value: unknown, input: ColumnSemanticInp
       widget: input.widget,
       cellRole: input.cellRole,
       digits: input.digits,
+      unit: input.unit,
+      temporal: input.temporal,
       selection: input.selection,
     },
     value,
+    timeZone: input.timeZone,
     temporalProfile: 'compact',
   }).text;
 }
@@ -116,6 +132,7 @@ export function presentListCell(input: CellPresentationInput) {
     attachmentText = '',
     emptyText = FIELD_VALUE_EMPTY_TEXT,
   } = input;
+  const timeZone = input.timeZone || input.column.timeZone || '';
   const fieldType = normalized(column.type || column.dataType).toLowerCase();
   const relationValue = fieldType === 'many2many' && relationItems.length
     ? relationItems.map((item) => [item.id, item.label] as const)
@@ -133,11 +150,14 @@ export function presentListCell(input: CellPresentationInput) {
       cellRole: column.cellRole,
       selection: column.selection,
       digits: column.digits,
+      unit: column.unit,
+      temporal: column.temporal,
       currencyField: column.currencyField,
       currencyLabel: column.currencyLabel,
     },
     value,
     currencyLabel: currencyLabel || column.currencyLabel,
+    timeZone,
     emptyText,
     status: isListStatusColumn(column),
     temporalProfile: 'compact',

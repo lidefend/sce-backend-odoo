@@ -55,7 +55,6 @@ check(
   resolveSceneActivityTitle({
     sceneKey: 'enterprise.department',
     runtimeLabel: '部门管理',
-    queryLabel: 'enterprise.department',
   }),
   '部门管理',
   'runtime scene projection owns the enterprise tab title',
@@ -71,10 +70,9 @@ check(
 check(
   resolveSceneActivityTitle({
     sceneKey: 'projects.ledger',
-    queryLabel: '项目台账',
   }),
-  '项目台账',
-  'a distinct route-carried business label is consumed',
+  '业务场景',
+  'a route without a declared scene label does not invent one',
 );
 check(
   resolveBusinessActivityTitle({
@@ -87,10 +85,9 @@ check(
 check(
   resolveSceneActivityTitle({
     sceneKey: 'enterprise.department',
-    queryLabel: 'enterprise.department',
   }),
   '业务场景',
-  'a technical scene key is not exposed as a business title',
+  'a technical scene key without a declared label is not exposed as a title',
 );
 check(
   resolveProductPageIdentity(buildActionPageIdentity({

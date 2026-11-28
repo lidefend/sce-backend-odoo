@@ -7,6 +7,7 @@ import { buildContractActionRouteTarget } from '../src/app/runtime/actionViewCon
 import { useActionResponseNavigation } from '../src/pages/contractForm/useActionResponseNavigation';
 import { buildContractFormPageIdentity } from '../src/app/pageIdentityAdapters';
 import { resolveProductPageIdentity } from '../src/app/pageIdentity';
+import { consumeButtonNavigationAuthority } from '../src/app/buttonNavigationAuthority';
 
 const sourceQuery = {
   menu_id: '501',
@@ -90,6 +91,9 @@ assert.equal(sameModelQuery.current_business_category_code, 'source.category', '
 assert.equal(sameModelQuery.search, 'source search', 'same-model actions retain collection context');
 assert.equal(sameModelQuery.field_filter, sourceQuery.field_filter, 'same-model actions retain field-query context');
 assert.equal(sameModelQuery.entry_context, sourceQuery.entry_context, 'same-model actions retain validated workspace context');
+assert.equal(sameModelQuery.entry_title, undefined, 'presentation titles never persist in the address bar');
+assert.equal(sameModelQuery.current_business_category_label, undefined, 'presentation category labels never persist');
+assert.equal(sameModelQuery.default_business_category_label, undefined, 'paired presentation category labels never persist');
 
 const sameModelActionViewTarget = buildContractActionRouteTarget({
   nextActionId: 700,
@@ -160,12 +164,12 @@ assert.equal(pushedQuery.action_id, 626, 'the real navigation route uses the tar
 assert.equal(pushedQuery.menu_id, 627, 'the real navigation route uses the target menu');
 assert.equal(pushedQuery.current_business_category_label, undefined, 'the real navigation route cannot inherit a source-model label');
 assert.equal(pushedQuery.context_raw, crossModelResult.context_raw, 'the real navigation route preserves backend context');
-assert.equal(pushedQuery.entry_title, 'Create target settlement', 'the normalized target keeps the transient action title');
+assert.equal(pushedQuery.entry_title, undefined, 'the normalized target does not carry a presentation title');
 
 const targetPageIdentity = resolveProductPageIdentity(buildContractFormPageIdentity({
   action: { name: 'Persisted target action' },
+  authoritativeActionName: 'Create target settlement',
   businessCategoryLabel: 'Target business category',
-  entryTitle: pushedQuery.entry_title,
   contract: { head: { title: 'Target product contract' } },
   formData: {},
   isCreate: true,
@@ -175,7 +179,7 @@ const targetPageIdentity = resolveProductPageIdentity(buildContractFormPageIdent
   renderError: false,
   status: 'ready',
 }));
-assert.equal(targetPageIdentity.title, '新建Create target settlement', 'create identity consumes the backend action-result title before category or stored action labels');
+assert.equal(targetPageIdentity.title, '新建Create target settlement', 'create identity consumes the authoritative action name without a URL title');
 
 const directCreatePageIdentity = resolveProductPageIdentity(buildContractFormPageIdentity({
   action: { name: '新项目立项', model_label: '项目立项' },
@@ -209,5 +213,39 @@ assert.equal(await rawOnlyNavigation.navigateActionResponseResult({
   },
 }), true, 'a normalized raw action remains a backend navigation authority');
 assert.equal((rawOnlyTargets[0].query as Record<string, unknown>).current_business_category_code, undefined, 'raw-action targets receive the same cross-model reset');
+
+const windowActionTargets: Array<Record<string, unknown>> = [];
+const windowActionNavigation = useActionResponseNavigation({
+  router: {
+    currentRoute: { value: { fullPath: '/r/x.source/7?action_id=502' } },
+    resolve: () => ({ fullPath: '/a/628?action_id=628' }),
+    push: async (target: unknown) => { windowActionTargets.push(target as Record<string, unknown>); },
+  } as never,
+  currentQuery: () => sourceQuery,
+  currentModel: () => 'x.source',
+});
+assert.equal(await windowActionNavigation.navigateActionResponseResult({
+  type: 'refresh',
+  window_action_id: 628,
+  raw_action: {
+    id: 628,
+    type: 'ir.actions.act_window',
+    entry_target: {
+      type: 'compatibility',
+      route: '/a/628',
+      compatibility_refs: { action_id: 628, menu_id: 627 },
+    },
+  },
+  entry_target: {
+    type: 'compatibility',
+    route: '/a/628',
+    compatibility_refs: { action_id: 628, menu_id: 627 },
+  },
+}), true, 'a window-action result grants navigation from window_action_id');
+assert.equal(
+  consumeButtonNavigationAuthority(628, '/a/628?action_id=628'),
+  true,
+  'the granted action identity reaches the router guard',
+);
 
 console.log('cross-model action navigation tests passed');

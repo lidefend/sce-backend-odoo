@@ -182,6 +182,9 @@
       ],
       "id": "browser_probe_tooling",
       "patterns": [
+        "scripts/dev/local_clean_*_probe.mjs",
+        "scripts/dev/local_clean_finance_e2e.sh",
+        "scripts/dev/local_clean_finance_fixture.sh",
         "scripts/verify/*browser*.mjs",
         "scripts/verify/*browser*.js",
         "scripts/verify/*playwright*.mjs",
@@ -203,6 +206,25 @@
       "tool_checks": [
         "verify.local.dev.project_profile_write.unit"
       ]
+    },
+    {
+      "id": "shared_runtime_environment_tooling",
+      "patterns": [
+        "scripts/common/env.sh",
+        "scripts/verify/test_common_env_explicit_path.py",
+        "scripts/verify/test_env_external_topology_precedence.sh"
+      ],
+      "risk": "standard",
+      "frontend": true,
+      "frontend_runtime": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.frontend.runtime_environment.unit",
+        "verify.local.development_lifecycle.unit"
+      ],
+      "local_targeted": true
     },
     {
       "id": "acceptance_contract_instance_config",

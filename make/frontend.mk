@@ -742,6 +742,8 @@ verify.frontend.collection_action_capability.unit: guard.prod.forbid
 	@node /tmp/collection-action-capability-test.mjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/detail_collection_pagination_test.ts --bundle --platform=node --format=esm --outfile=/tmp/detail-collection-pagination-test.mjs >/dev/null
 	@node /tmp/detail-collection-pagination-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_import_lifecycle_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-import-lifecycle-test.mjs >/dev/null
+	@node /tmp/native-import-lifecycle-test.mjs
 
 # A declared node's authoritative verdict (field widgetStatus / declared action
 # buttonStatus / container containerStatus) must be consumed for that node; a
@@ -1027,6 +1029,13 @@ verify.frontend.collection_view_semantics.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_native_view_parser_surfaces.py
 	@python3 scripts/verify/collection_view_semantics_guard.py
 
+.PHONY: verify.frontend.route_query.unit
+verify.frontend.route_query.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/record_entry_contract_test.ts --bundle --platform=node --format=esm --outfile=/tmp/record-entry-contract-test.mjs >/dev/null
+	@node --test --test-reporter=tap /tmp/record-entry-contract-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/route_query_normalization_test.ts --bundle --platform=node --format=esm --outfile=/tmp/route-query-normalization-test.mjs >/dev/null
+	@node --test --test-reporter=tap /tmp/route-query-normalization-test.mjs
+
 # Native Action Contract 的前端消费边界：Decoder 必须拒绝 Search identity 的
 # 局部/冲突声明，且已发布的 View Set 必须提供有序视图；客户端渲染能力由各
 # View 的 rendererStatus 消费，不从 Action 级 readiness 重新推导产品语义。
@@ -1036,7 +1045,7 @@ verify.frontend.native_action_contract_consumption.unit: guard.prod.forbid
 
 verify.frontend.action_surface_renderer_registry.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/action_surface_renderer_registry_test.ts --bundle --platform=node --format=esm --outfile=/tmp/action-surface-renderer-registry-test.mjs >/dev/null
-	@node /tmp/action-surface-renderer-registry-test.mjs
+	@node --test --test-reporter=tap /tmp/action-surface-renderer-registry-test.mjs
 	@python3 scripts/verify/action_surface_renderer_architecture_guard.py
 
 verify.frontend.all_list_visual.audit: guard.prod.forbid

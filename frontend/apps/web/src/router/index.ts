@@ -9,8 +9,9 @@ import { resolveCreateFormActivityRedirect } from '../app/recordFormActivityRout
 import { findActionMeta, findActionMetaByMenu, findActionNodeByModel, findMenuNode } from '../app/menu';
 import { BUSINESS_CONFIG_MODELS } from '../app/businessConfigBoundaries';
 import { beginPageIdentity } from '../app/pageIdentityRuntime';
-import { resolveRoutePageIdentity } from '../app/pageIdentityRoute';
+import { resolveRouteContractTitle, resolveRoutePageIdentity } from '../app/pageIdentityRoute';
 import type { NavMeta } from '@sc/schema';
+import type { PageContract } from '../stores/session';
 import { findRouteAuthority, validateRouteAuthorityContext } from '../app/routeAuthority';
 import { consumeButtonNavigationAuthority } from '../app/buttonNavigationAuthority';
 import { resolveAuthorizedConfigurationRoute } from '../services/actionRoutePolicy';
@@ -27,35 +28,19 @@ import { resolveEntryBasePath } from '../services/entryNamespace';
 import { resolveActivityRouteKey } from '../app/activityPageCacheIdentity';
 import { routeFailureRedirect } from '../app/routeFailure';
 
-function routeTitle(routeName: string | symbol | null | undefined): string {
+const ROUTE_STATE_TITLE_FALLBACKS: Record<string, string> = {
+  'access-denied': '无权访问',
+  'route-error': '请求未完成',
+  record: '记录详情',
+  'model-form': '记录表单',
+};
+
+function routeTitle(
+  routeName: string | symbol | null | undefined,
+  pageContracts: Record<string, PageContract>,
+): string {
   const name = typeof routeName === 'string' ? routeName : '';
-  const map: Record<string, string> = {
-    login: '登录',
-    'account-activation': '激活账号',
-    'password-recovery': '忘记密码',
-    home: '角色首页',
-    'scene-home': '角色首页',
-    'my-work': '我的工作',
-    'scene-my-work': '我的工作',
-    scene: '业务场景',
-    menu: '业务菜单',
-    action: '业务列表',
-    workbench: '诊断页',
-    'scene-health': '场景健康',
-    'scene-packages': '场景发布包',
-    'usage-analytics': '使用分析',
-    'release-operator': '产品发布',
-    'capability-explorer': '平台能力浏览器',
-    'business-config': '配置工作台',
-    'menu-config': '菜单配置',
-    'form-field-config': '表单字段配置',
-    'api-key-management': 'API Key 管理',
-    'model-form': '记录表单',
-    record: '记录详情',
-    'access-denied': '无权访问',
-    'route-error': '请求未完成',
-  };
-  return map[name] || '系统';
+  return resolveRouteContractTitle(name, pageContracts) || ROUTE_STATE_TITLE_FALLBACKS[name] || '系统';
 }
 
 function splitRoutePath(rawPath: string) {
@@ -111,9 +96,7 @@ function resolveActivityRoute(to: RouteLocationNormalized, actionId: number, men
       'business_entry_contract_version',
       'allowed_business_category_codes',
       'default_business_category_code',
-      'default_business_category_label',
       'current_business_category_code',
-      'current_business_category_label',
     ]);
     return `/a/${actionId}${query}`;
   }
@@ -123,9 +106,7 @@ function resolveActivityRoute(to: RouteLocationNormalized, actionId: number, men
       'action_id',
       'activity_page_id',
       'current_business_category_code',
-      'current_business_category_label',
       'default_business_category_code',
-      'default_business_category_label',
     ]);
     const prefix = to.name === 'record' ? '/r' : '/f';
     return `${prefix}/${encodeURIComponent(model)}/${encodeURIComponent(recordId)}${query}`;
@@ -134,8 +115,6 @@ function resolveActivityRoute(to: RouteLocationNormalized, actionId: number, men
     const query = buildActivityQuery(to, [
       'menu_id',
       'action_id',
-      'scene_key',
-      'scene',
       'entry_intent',
       'project_id',
       'scene_intent',
@@ -202,12 +181,10 @@ function resolveRouteAuthorityEntry(
 }
 
 function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<typeof useSessionStore>): string {
-  const businessLabel = routeQueryText(to.query.current_business_category_label || to.query.default_business_category_label);
-  if (businessLabel) return businessLabel;
   if (to.name === 'home' || to.name === 'scene-home') return '角色首页';
   if (to.name === 'my-work' || to.name === 'scene-my-work') return '我的工作';
   if (to.name === 'scene') {
-    const sceneKey = routeQueryText(to.params.sceneKey || to.query.scene_key || to.query.scene);
+    const sceneKey = routeQueryText(to.params.sceneKey);
     const registeredScene = sceneKey ? getSceneByKey(sceneKey) : null;
     const runtimeScene = sceneKey
       ? session.scenes.find((item) => (
@@ -219,7 +196,6 @@ function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<t
       sceneKey,
       runtimeLabel: runtimeScene?.label,
       registeredLabel: registeredScene?.label,
-      queryLabel: to.query.scene_label,
     });
   }
   if (to.name === 'action') {
@@ -228,7 +204,7 @@ function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<t
     const meta = resolveRouteActivityActionMeta(to, session);
     const menuNode = menuId > 0 ? findMenuNode(session.menuTree, menuId) : null;
     const authority = resolveRouteAuthorityEntry(to, session);
-    const sceneKey = routeQueryText(meta?.scene_key || meta?.sceneKey || to.query.scene_key || to.query.scene);
+    const sceneKey = routeQueryText(meta?.scene_key || meta?.sceneKey);
     const runtimeScene = sceneKey
       ? session.scenes.find((item) => (
         String(item.key || '').trim() === sceneKey
@@ -252,16 +228,15 @@ function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<t
       const authority = resolveRouteAuthorityEntry(to, session);
       return resolveBusinessActivityTitle({
         authorityName: authority?.action_name || authority?.name,
-        businessLabel,
         actionTitle: meta?.ui_title || meta?.scene_title || meta?.name,
         modelLabel: meta?.model_label,
         menuTitle: meta?.menu_title || menuNode?.label,
         fallback: '业务表单',
       });
     }
-    return routeTitle(to.name);
+    return routeTitle(to.name, session.pageContracts);
   }
-  return routeTitle(to.name);
+  return routeTitle(to.name, session.pageContracts);
 }
 
 function registerRouteActivity(to: RouteLocationNormalized, options: { settling?: boolean } = {}): string {
@@ -304,7 +279,7 @@ function registerRouteActivity(to: RouteLocationNormalized, options: { settling?
       : `record:${model}:${recordId}`);
     kind = 'record_form';
   } else if (to.name === 'scene' || String(to.name || '').startsWith('scene-')) {
-    sceneKey = routeQueryText(to.params.sceneKey || to.meta?.sceneKey || to.query.scene_key || to.query.scene);
+    sceneKey = routeQueryText(to.params.sceneKey || to.meta?.sceneKey);
     key = activityKey || `scene:${sceneKey || String(to.name || 'scene')}`;
     kind = sceneKey === 'workspace.home' || to.name === 'scene-home' ? 'workspace' : 'scene';
   } else if (to.name === 'home' || to.name === 'my-work') {
@@ -395,6 +370,9 @@ router.beforeEach(async (to) => {
   if (!isLoginRoute && to.name !== 'access-denied' && session.isReady) {
     const actionId = positiveInteger(to.params.actionId || to.query.action_id);
     const menuId = positiveInteger(to.params.menuId || to.query.menu_id);
+    const currentRouteActionId = positiveInteger(
+      router.currentRoute.value.params.actionId || router.currentRoute.value.query.action_id,
+    );
     const routeAuthority = actionId > 0 || menuId > 0 ? findRouteAuthority(session.routeAuthority, {
       actionId,
       menuId,
@@ -451,6 +429,15 @@ router.beforeEach(async (to) => {
       if (consumeButtonNavigationAuthority(actionId, to.fullPath)) {
         runtimeRouteAuthorized = true;
       }
+    }
+    if (
+      authorityBoundRoute
+      && (to.name === 'action' || to.name === 'record' || to.name === 'model-form')
+      && actionId > 0
+      && actionId === currentRouteActionId
+      && currentActionMatches(session, actionId)
+    ) {
+      runtimeRouteAuthorized = true;
     }
     if (authorityBoundRoute && (actionId > 0 || menuId > 0) && !runtimeRouteAuthorized) {
       if (routeAuthorityFailure) return routeFailureRedirect(routeAuthorityFailure, to.fullPath);
@@ -510,7 +497,7 @@ router.beforeEach(async (to) => {
 
 router.afterEach((to) => {
   const session = useSessionStore();
-  const routeIdentity = resolveRoutePageIdentity(to, session.menuTree);
+  const routeIdentity = resolveRoutePageIdentity(to, session.menuTree, session.pageContracts);
   const isCreateForm = (to.name === 'record' || to.name === 'model-form') && routeQueryText(to.params.id) === 'new';
   const authority = isCreateForm ? resolveRouteAuthorityEntry(to, session) : null;
   const deferUntilPageIdentity = shouldDeferActivityPageTitle({

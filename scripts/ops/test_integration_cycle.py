@@ -178,7 +178,7 @@ class GateTests(unittest.TestCase):
         head = "a" * 40
         rows = [self.check(10, 100, "SUCCESS", workflow=name, name=name)
                 for name in cycle.REQUIRED_MERGE_CHECKS]
-        base = {"state": "OPEN", "headRefOid": head, "mergeable": "MERGEABLE",
+        base = {"state": "OPEN", "baseRefName": "main", "headRefOid": head, "mergeable": "MERGEABLE",
                 "mergeStateStatus": "CLEAN", "statusCheckRollup": rows}
         for delta, quick, expected in (({}, True, 0), ({"headRefOid": "b" * 40}, True, 1),
                                      ({}, False, 0), ({"mergeStateStatus": "BLOCKED"}, True, 1),
@@ -197,7 +197,7 @@ class GateTests(unittest.TestCase):
 
     def test_explicit_quick_diagnostic_is_reported_but_not_a_merge_gate(self):
         head = 'a' * 40
-        payload = {'state': 'OPEN', 'headRefOid': head, 'mergeable': 'MERGEABLE',
+        payload = {'state': 'OPEN', 'baseRefName': 'main', 'headRefOid': head, 'mergeable': 'MERGEABLE',
                    'mergeStateStatus': 'CLEAN', 'statusCheckRollup': [
                        self.check(10, 100, 'SUCCESS', workflow=name, name=name)
                        for name in cycle.REQUIRED_MERGE_CHECKS]}
@@ -211,9 +211,31 @@ class GateTests(unittest.TestCase):
         self.assertIs(False, report['quick_verified'])
         self.assertEqual('checked', report['local_quick_inspection'])
 
+    def test_explicit_stack_base_accepts_clean_pr_without_main_required_checks(self):
+        head = 'a' * 40
+        base = 'fix/fe-consumption-closeout-20261126'
+        payload = {'state': 'OPEN', 'baseRefName': base, 'headRefOid': head,
+                   'mergeable': 'MERGEABLE', 'mergeStateStatus': 'CLEAN',
+                   'statusCheckRollup': []}
+        with patch.object(cycle, 'git', side_effect=lambda root, *args: '' if args[0] == 'status' else head), \
+             patch.object(cycle.subprocess, 'run', return_value=subprocess.CompletedProcess(
+                 [], 0, stdout=json.dumps(payload), stderr='')):
+            code, report = cycle.merge_readiness(
+                Path('/unused'), 1025, expected_base=base, stack=True
+            )
+            main_code, _main_report = cycle.merge_readiness(Path('/unused'), 1025)
+            wrong_base_code = cycle.merge_readiness(
+                Path('/unused'), 1025, expected_base='wrong/stack', stack=True
+            )[0]
+        self.assertEqual(0, code)
+        self.assertEqual('stack_local_gate', report['check_mode'])
+        self.assertEqual(base, report['pr_base'])
+        self.assertEqual(1, main_code)
+        self.assertEqual(1, wrong_base_code)
+
     def test_dirty_checkout_blocks_merge_even_with_successful_remote_checks(self):
         head = "a" * 40
-        payload = {"state": "OPEN", "headRefOid": head, "mergeable": "MERGEABLE",
+        payload = {"state": "OPEN", "baseRefName": "main", "headRefOid": head, "mergeable": "MERGEABLE",
                    "mergeStateStatus": "CLEAN", "statusCheckRollup": [
                        self.check(10, 100, "SUCCESS", workflow=name, name=name)
                        for name in cycle.REQUIRED_MERGE_CHECKS]}

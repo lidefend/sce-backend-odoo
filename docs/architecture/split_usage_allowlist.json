@@ -101,13 +101,13 @@
       "count": 1,
       "mechanism": "contract_error_protocol"
     },
+    "frontend/apps/web/src/app/buttonNavigationAuthority.ts": {
+      "count": 1,
+      "mechanism": "route_protocol"
+    },
     "frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts": {
       "count": 1,
       "mechanism": "contract_token_list"
-    },
-    "frontend/apps/web/src/app/presentation/businessValuePresentation.ts": {
-      "count": 1,
-      "mechanism": "temporal_format"
     },
     "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts": {
       "count": 1,

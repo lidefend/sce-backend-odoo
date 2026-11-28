@@ -211,7 +211,12 @@ import { resolveActivityRouteKey } from '../app/activityPageCacheIdentity';
 import { awaitSceneHydration } from '../app/sceneHydration';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { readWorkspaceContext } from '../app/workspaceContext';
-import { buildCanonicalSceneRouteTarget, normalizeLegacyWorkbenchPath, resolveSceneDefaultOrder } from '../app/routeQuery';
+import {
+  buildCanonicalSceneRouteTarget,
+  normalizeLegacyWorkbenchPath,
+  resolveSceneDefaultOrder,
+  stripCanonicalSceneIdentityQuery,
+} from '../app/routeQuery';
 import { withEnterpriseSetupReturnTarget } from '../app/enterpriseSetupNavigation';
 import { ownsSceneActivity, resolveSceneContractEntryIntent, resolveSceneRuntimeDiagnostic } from '../app/sceneEntryContract';
 import {
@@ -223,7 +228,13 @@ import { resolveSceneActivityTitle, shouldRenderScenePageHeading } from '../app/
 import { usePageContract } from '../app/pageContract';
 import { config } from '../config';
 import type { NavNode } from '@sc/schema';
-import { mergeSceneRegistryFromSceneReadyContract, type Scene, type SceneTarget } from '../app/resolvers/sceneRegistry';
+import {
+  declaredSceneRecordEntry,
+  mergeSceneRegistryFromSceneReadyContract,
+  type Scene,
+  type SceneTarget,
+} from '../app/resolvers/sceneRegistry';
+import { decodeFormalRecordEntry } from '../app/runtime/recordEntryContract';
 import { isSceneBlocksDebugEnabled } from '../config/debug';
 
 const route = useRoute();
@@ -393,7 +404,6 @@ const scenePageHeading = computed(() => resolveSceneActivityTitle({
   sceneKey: currentSceneKey.value,
   runtimeLabel: scene.value?.label,
   registeredLabel: getSceneByKey(currentSceneKey.value)?.label,
-  queryLabel: route.query.scene_label,
 }));
 const renderScenePageHeading = computed(() => shouldRenderScenePageHeading({
   hasSceneIdentity: currentSceneKey.value,
@@ -458,7 +468,6 @@ const sceneResolveSignature = computed(() => JSON.stringify({
   menuId: Number(route.query.menu_id || 0) || 0,
   model: String(route.query.model || '').trim(),
   recordId: String(route.query.record_id || '').trim(),
-  sceneQueryKey: String(route.query.scene_key || '').trim(),
   releaseProduct: String(route.query.release_product || '').trim(),
   preset: String(route.query.preset || '').trim(),
   ctxSource: String(route.query.ctx_source || '').trim(),
@@ -470,15 +479,19 @@ function resolveWorkspaceContextQuery() {
 }
 
 function asRouteQuery(query: Record<string, unknown>): LocationQueryRaw {
-  return query as LocationQueryRaw;
+  return stripCanonicalSceneIdentityQuery(query as LocationQueryRaw);
 }
 
 function resolveTargetRecordEntry(target: SceneTarget) {
-  const entryTarget = (target.entry_target && typeof target.entry_target === 'object')
-    ? target.entry_target as Record<string, unknown>
-    : undefined;
-  const recordEntry = (entryTarget?.record_entry && typeof entryTarget.record_entry === 'object')
-    ? entryTarget.record_entry as Record<string, unknown>
+  const declaredRecordEntry = declaredSceneRecordEntry(target);
+  const formalRecordEntry = decodeFormalRecordEntry(declaredRecordEntry);
+  const recordEntry = formalRecordEntry
+    ? {
+        model: formalRecordEntry.model,
+        record_id: formalRecordEntry.recordId,
+        action_id: formalRecordEntry.actionId,
+        menu_id: formalRecordEntry.menuId,
+      }
     : undefined;
   const model = String(recordEntry?.model || target.model || route.query.model || '').trim();
   const rawRecordId = recordEntry?.record_id ?? target.record_id ?? route.query.record_id;
@@ -903,8 +916,9 @@ function fallbackSceneFromSceneReady(sceneKey: string): Scene | null {
     const row = item as Record<string, unknown>;
     const scene = (row.scene && typeof row.scene === 'object') ? row.scene as Record<string, unknown> : {};
     const page = (row.page && typeof row.page === 'object') ? row.page as Record<string, unknown> : {};
-    const meta = (row.meta && typeof row.meta === 'object') ? row.meta as Record<string, unknown> : {};
-    const target = (meta.target && typeof meta.target === 'object') ? meta.target as Record<string, unknown> : {};
+    const target = (row.target && typeof row.target === 'object')
+      ? row.target as Record<string, unknown>
+      : {};
     const validationSurface = (row.validation_surface && typeof row.validation_surface === 'object')
       ? row.validation_surface as Record<string, unknown>
       : {};
@@ -941,10 +955,8 @@ function resolveRoutePathOnly(targetRoute: string) {
 }
 
 function resolveCanonicalSceneOwnerQuery(sceneKey: string, workspaceContextQuery: Record<string, unknown>) {
-  return {
-    scene_key: sceneKey || undefined,
-    ...workspaceContextQuery,
-  };
+  void sceneKey;
+  return stripCanonicalSceneIdentityQuery(workspaceContextQuery as LocationQueryRaw);
 }
 
 function resolveSceneActionOrder(scene: Scene, target: SceneTarget, sceneKey: string) {
@@ -1062,7 +1074,6 @@ async function resolveScene() {
     void trackSceneOpen(sceneKey).catch(() => {});
 
     const target = resolvedScene.target || {};
-    const sceneLabel = String(resolvedScene.label || sceneKey || '').trim();
     const layout = resolveSceneLayout(resolvedScene);
     const workspaceContextQuery = sanitizeWorkspaceContextForLayout(
       layout.kind,
@@ -1072,12 +1083,38 @@ async function resolveScene() {
     const hasForeignSceneQuery = Boolean(
       route.query.menu_id
       || route.query.action_id
+      || route.query.scene
+      || route.query.scene_key
       || route.query.scene_label
     );
     const hasActionRouteContext = Number(route.query.action_id || 0) > 0 || Number(route.query.menu_id || 0) > 0;
     if (hasForeignSceneQuery && !hasActionRouteContext && isCanonicalSceneOwnerTarget(target, sceneKey)) {
       await router.replace({ path: route.path, query: asRouteQuery(canonicalOwnerQuery) });
       return;
+    }
+    {
+      const recordEntry = resolveTargetRecordEntry(target);
+      if (recordEntry.model && recordEntry.recordId && recordEntry.actionId > 0) {
+        const nextQuery = {
+          menu_id: recordEntry.menuId || undefined,
+          action_id: recordEntry.actionId,
+          model: recordEntry.model || undefined,
+          record_id: recordEntry.recordId,
+          ...workspaceContextQuery,
+        };
+        const sameEmbeddedRouteState =
+          Number(route.query.action_id || 0) === recordEntry.actionId
+          && Number(route.query.menu_id || 0) === Number(recordEntry.menuId || 0)
+          && Number(route.query.record_id || 0) === recordEntry.recordId
+          && String(route.query.model || '').trim() === String(recordEntry.model || '').trim();
+        if (!sameEmbeddedRouteState) {
+          await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
+          return;
+        }
+        embeddedRecordActionId.value = recordEntry.actionId;
+        status.value = 'idle';
+        return;
+      }
     }
     if (layout.kind === 'workspace') {
       if (hasHandlingEntryCatalog(resolvedScene)) {
@@ -1113,8 +1150,6 @@ async function resolveScene() {
         const nextQuery = {
           menu_id: effectiveMenuId,
           action_id: resolvedAction.actionId,
-          scene_key: sceneKey || undefined,
-          scene_label: sceneLabel || undefined,
           order: defaultOrder || undefined,
           ...workspaceContextQuery,
         };
@@ -1122,8 +1157,7 @@ async function resolveScene() {
         const currentMenuId = Number(route.query.menu_id || 0);
         const sameEmbeddedRouteState =
           currentActionId === resolvedAction.actionId
-          && currentMenuId === Number(effectiveMenuId || 0)
-          && String(route.query.scene_key || '') === sceneKey;
+          && currentMenuId === Number(effectiveMenuId || 0);
         if (!sameEmbeddedRouteState) {
           await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
           return;
@@ -1131,33 +1165,6 @@ async function resolveScene() {
         embeddedActionId.value = resolvedAction.actionId;
         status.value = 'idle';
         return;
-      }
-      {
-        const recordEntry = resolveTargetRecordEntry(target);
-        if (recordEntry.model && recordEntry.recordId && recordEntry.actionId > 0) {
-          const nextQuery = {
-            menu_id: recordEntry.menuId || undefined,
-            action_id: recordEntry.actionId,
-            scene_key: sceneKey || undefined,
-            scene_label: sceneLabel || undefined,
-            model: recordEntry.model || undefined,
-            record_id: recordEntry.recordId,
-            ...workspaceContextQuery,
-          };
-          const sameEmbeddedRouteState =
-            Number(route.query.action_id || 0) === recordEntry.actionId
-            && Number(route.query.menu_id || 0) === Number(recordEntry.menuId || 0)
-            && Number(route.query.record_id || 0) === recordEntry.recordId
-            && String(route.query.model || '').trim() === String(recordEntry.model || '').trim()
-            && String(route.query.scene_key || '') === sceneKey;
-          if (!sameEmbeddedRouteState) {
-            await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
-            return;
-          }
-          embeddedRecordActionId.value = recordEntry.actionId;
-          status.value = 'idle';
-          return;
-        }
       }
     }
 
@@ -1169,8 +1176,6 @@ async function resolveScene() {
         const nextQuery = {
           menu_id: effectiveMenuId,
           action_id: resolvedAction.actionId,
-          scene_key: sceneKey || undefined,
-          scene_label: sceneLabel || undefined,
           order: defaultOrder || undefined,
           ...workspaceContextQuery,
         };
@@ -1178,8 +1183,7 @@ async function resolveScene() {
         const currentMenuId = Number(route.query.menu_id || 0);
         const sameEmbeddedRouteState =
           currentActionId === resolvedAction.actionId
-          && currentMenuId === Number(effectiveMenuId || 0)
-          && String(route.query.scene_key || '') === sceneKey;
+          && currentMenuId === Number(effectiveMenuId || 0);
         if (!sameEmbeddedRouteState) {
           await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
           return;
@@ -1187,33 +1191,6 @@ async function resolveScene() {
         embeddedRecordActionId.value = resolvedAction.actionId;
         status.value = 'idle';
         return;
-      }
-      {
-        const recordEntry = resolveTargetRecordEntry(target);
-        if (recordEntry.model && recordEntry.recordId && recordEntry.actionId > 0) {
-          const nextQuery = {
-            menu_id: recordEntry.menuId || undefined,
-            action_id: recordEntry.actionId,
-            scene_key: sceneKey || undefined,
-            scene_label: sceneLabel || undefined,
-            model: recordEntry.model,
-            record_id: recordEntry.recordId,
-            ...workspaceContextQuery,
-          };
-          const sameEmbeddedRouteState =
-            Number(route.query.action_id || 0) === recordEntry.actionId
-            && Number(route.query.menu_id || 0) === Number(recordEntry.menuId || 0)
-            && Number(route.query.record_id || 0) === recordEntry.recordId
-            && String(route.query.model || '').trim() === recordEntry.model
-            && String(route.query.scene_key || '') === sceneKey;
-          if (!sameEmbeddedRouteState) {
-            await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
-            return;
-          }
-          embeddedRecordActionId.value = recordEntry.actionId;
-          status.value = 'idle';
-          return;
-        }
       }
       if (typeof target.menu_xmlid === 'string' && target.menu_xmlid.trim()) {
         const menuNode = findActionNodeByMenuXmlid(session.menuTree, target.menu_xmlid);
@@ -1229,14 +1206,11 @@ async function resolveScene() {
         const nextQuery = {
           menu_id: target.menu_id || undefined,
           action_id: target.action_id,
-          scene_key: sceneKey || undefined,
-          scene_label: sceneLabel || undefined,
           ...workspaceContextQuery,
         };
         const sameEmbeddedRouteState =
           Number(route.query.action_id || 0) === Number(target.action_id || 0)
-          && Number(route.query.menu_id || 0) === Number(target.menu_id || 0)
-          && String(route.query.scene_key || '') === sceneKey;
+          && Number(route.query.menu_id || 0) === Number(target.menu_id || 0);
         if (!sameEmbeddedRouteState) {
           await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
           return;
@@ -1255,8 +1229,6 @@ async function resolveScene() {
         const nextQuery = {
           menu_id: effectiveMenuId,
           action_id: resolvedAction.actionId,
-          scene_key: sceneKey || undefined,
-          scene_label: sceneLabel || undefined,
           order: defaultOrder || undefined,
           ...workspaceContextQuery,
         };
@@ -1264,8 +1236,7 @@ async function resolveScene() {
         const currentMenuId = Number(route.query.menu_id || 0);
         const sameEmbeddedRouteState =
           currentActionId === resolvedAction.actionId
-          && currentMenuId === Number(effectiveMenuId || 0)
-          && String(route.query.scene_key || '') === sceneKey;
+          && currentMenuId === Number(effectiveMenuId || 0);
         if (!sameEmbeddedRouteState) {
           await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
           return;
@@ -1273,33 +1244,6 @@ async function resolveScene() {
         embeddedActionId.value = resolvedAction.actionId;
         status.value = 'idle';
         return;
-      }
-      {
-        const recordEntry = resolveTargetRecordEntry(target);
-        if (recordEntry.model && recordEntry.recordId && recordEntry.actionId > 0) {
-          const nextQuery = {
-            menu_id: recordEntry.menuId || undefined,
-            action_id: recordEntry.actionId,
-            scene_key: sceneKey || undefined,
-            scene_label: sceneLabel || undefined,
-            model: recordEntry.model || undefined,
-            record_id: recordEntry.recordId,
-            ...workspaceContextQuery,
-          };
-          const sameEmbeddedRouteState =
-            Number(route.query.action_id || 0) === recordEntry.actionId
-            && Number(route.query.menu_id || 0) === Number(recordEntry.menuId || 0)
-            && Number(route.query.record_id || 0) === recordEntry.recordId
-            && String(route.query.model || '').trim() === String(recordEntry.model || '').trim()
-            && String(route.query.scene_key || '') === sceneKey;
-          if (!sameEmbeddedRouteState) {
-            await router.replace({ path: route.path, query: asRouteQuery(nextQuery) });
-            return;
-          }
-          embeddedRecordActionId.value = recordEntry.actionId;
-          status.value = 'idle';
-          return;
-        }
       }
     }
 

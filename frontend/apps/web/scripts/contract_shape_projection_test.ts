@@ -15,6 +15,7 @@
  *   - a declared but incomplete batch policy still fails closed.
  */
 import assert from 'node:assert/strict';
+import { isContractGapError } from '../src/app/contract/contractGap';
 import { projectStoredListPreference } from '../src/app/runtime/listPreferenceProjection';
 import { resolveEnabledListColumns, resolveListColumnChoices } from '../src/pages/listPage/listColumnVisibility';
 import { ref } from 'vue';
@@ -23,9 +24,34 @@ import {
   extractListFieldSemanticsFromContract,
   useActionViewContractShapeRuntime,
 } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
+import { collectUnifiedPageContractV2Widgets } from '../src/app/contracts/unifiedPageContractV2';
+import { resolveDeclaredAssigneeQuery } from '../src/app/runtime/actionViewAssigneeOptionsContract';
+import { resolveDeclaredKanbanTitleField } from '../src/app/runtime/actionViewKanbanTitleField';
+import {
+  resolveDeclaredFilterBudget,
+  resolveDeclaredGroupByLabel,
+  resolveDeclaredPrimaryFilterBudget,
+  resolveDeclaredSavedFilterIdentity,
+  resolveLoadedPrimaryFilterBudget,
+  useActionViewFilterComputedRuntime,
+} from '../src/app/action_runtime/useActionViewFilterComputedRuntime';
+import {
+  deriveGroupByChipsFromContract,
+  deriveSavedFilterChipsFromContract,
+} from '../src/app/action_runtime/useActionViewLoadPreflightRuntime';
+import { resolveLoadedActionPrimaryBudget } from '../src/app/action_runtime/useActionViewActionPresentationRuntime';
+import { resolveDeclaredSurfaceBudget } from '../src/app/runtime/actionViewSurfacePolicyBudget';
+import {
+  resolveContractV2FieldDescriptorMap,
+  resolveContractV2FormFieldMap,
+} from '../src/app/contracts/v2/store';
 import type { ContractV2NormalizedStore } from '../src/app/contracts/v2/types';
-import { presentCollectionKanbanCell } from '../src/app/presentation/collectionKanbanPresentation';
+import {
+  presentCollectionKanbanCell,
+} from '../src/app/presentation/collectionKanbanPresentation';
+import { presentDeclaredBusinessValue } from '../src/app/presentation/businessValuePresentation';
 import { normalizeListRelationValue, presentListCell } from '../src/pages/listPage/listCellPresentation';
+import { hasDeclaredAttachmentIdentity } from '../src/utils/fieldSemantics';
 
 let cases = 0;
 const check = (actual: unknown, expected: unknown, label: string) => {
@@ -90,6 +116,7 @@ const tagCollectionWidget = {
     fieldCode: 'company_ids',
     fieldType: 'many2many',
     widgetType: 'many2many_tags',
+    componentKey: 'sc.select.tags',
   },
   componentConfig: {
     fieldType: 'many2many',
@@ -110,6 +137,137 @@ check(
   'many2many_tags',
   'list field semantics preserve the field widget instead of the table container widget',
 );
+
+// List-column transport declarations remain available, but componentConfig is
+// not a second field-semantic authority. A conflicting transport payload must
+// not replace the descriptor's type, widget, money field, precision, unit,
+// temporal authority, selection or visibility.
+const semanticAuthorityWidget = {
+  widgetId: 'field.amount_display',
+  fieldCode: 'amount_display',
+  label: 'Container label',
+  widgetType: 'table',
+  componentKey: 'sc.value.percentage',
+  fieldDescriptor: {
+    fieldCode: 'amount_display',
+    label: 'Declared amount',
+    fieldType: 'float',
+    widgetType: 'float_time',
+    semanticType: 'duration',
+    componentKey: 'sc.value.duration',
+    currencyField: 'currency_id',
+    digits: [16, 3],
+    unit: { kind: 'duration', code: 'hour', label: '小时' },
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+    sortable: true,
+    invisible: false,
+  },
+  componentConfig: {
+    fieldType: 'char',
+    nativeWidget: 'text',
+    data_type: 'char',
+    widget: 'text',
+    componentKey: 'sc.value.percentage',
+    currency_field: 'wrong_currency_id',
+    digits: [4, 1],
+    unit: { kind: 'percent', code: 'percent', label: '%' },
+    temporal: { kind: 'date', timezoneAuthority: 'record' },
+    selection: [['wrong', 'Wrong']],
+    relation: 'res.partner',
+    invisible: true,
+    display_field: 'amount_display',
+    value_field: 'amount',
+    sort_field: 'amount',
+    filter_field: 'amount',
+    export_field: 'amount',
+    aggregate: 'sum',
+  },
+};
+const semanticAuthorityStore = {
+  snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
+  widgetsById: new Map([[semanticAuthorityWidget.widgetId, semanticAuthorityWidget]]),
+  widgetsByFieldCode: new Map([[semanticAuthorityWidget.fieldCode, semanticAuthorityWidget]]),
+  widgetsByFieldCodeAll: new Map([[semanticAuthorityWidget.fieldCode, [semanticAuthorityWidget]]]),
+  widgetStatusById: new Map(),
+  primaryDataSource: {},
+} as unknown as ContractV2NormalizedStore;
+const semanticAuthorityRows = extractListFieldSemanticsFromContract(semanticAuthorityStore);
+check(semanticAuthorityRows[0]?.data_type, 'float', 'request field semantics use descriptor fieldType');
+check(semanticAuthorityRows[0]?.widget, 'float_time', 'request field semantics use descriptor widgetType');
+check(semanticAuthorityRows[0]?.currency_field, 'currency_id', 'request dependencies use descriptor currencyField');
+check(semanticAuthorityRows[0]?.value_field, 'amount', 'list transport keeps its declared value field');
+check(semanticAuthorityRows[0]?.sort_field, 'amount', 'list transport keeps its declared sort field');
+
+const semanticAuthorityOption = runtime.resolveListColumnOptions(
+  semanticAuthorityStore,
+  { columns: ['amount_display'] },
+)[0];
+assert.ok(semanticAuthorityOption);
+check(semanticAuthorityOption?.label, 'Declared amount', 'list column label comes from fieldDescriptor');
+check(semanticAuthorityOption?.type, 'float', 'list column type comes from fieldDescriptor');
+check(semanticAuthorityOption?.widget, 'float_time', 'list column widget comes from fieldDescriptor');
+check(semanticAuthorityOption?.componentKey, 'sc.value.duration', 'list column component identity comes from fieldDescriptor');
+check(semanticAuthorityOption?.currencyField, 'currency_id', 'list column currency field comes from fieldDescriptor');
+check(JSON.stringify(semanticAuthorityOption?.digits), JSON.stringify([16, 3]), 'list column digits come from fieldDescriptor');
+check(semanticAuthorityOption?.unit?.code, 'hour', 'list column unit comes from fieldDescriptor');
+check(semanticAuthorityOption?.temporal?.kind, 'datetime', 'list column temporal authority comes from fieldDescriptor');
+check(semanticAuthorityOption?.relation, undefined, 'componentConfig cannot introduce a relation target');
+check(semanticAuthorityOption?.selection, undefined, 'componentConfig cannot introduce selection semantics');
+check(semanticAuthorityOption?.defaultVisible, true, 'componentConfig cannot override descriptor visibility');
+check(semanticAuthorityOption?.sortable, true, 'list column sortability comes from fieldDescriptor');
+check(semanticAuthorityOption?.valueField, 'amount', 'list transport keeps its declared value field');
+check(semanticAuthorityOption?.sortField, 'amount', 'list transport keeps its declared sort field');
+
+const synthesizedV2Widgets = collectUnifiedPageContractV2Widgets({
+  pageInfo: {
+    pageId: 'contract-closure',
+    contractVersion: '2.7.0',
+    clientType: 'web_pc',
+  },
+  layoutContract: {
+    containerTree: [{
+      containerId: 'root',
+      children: [],
+      widgetList: [{
+        widgetId: 'field.partner_id',
+        widgetType: 'many2one',
+        fieldCode: 'partner_id',
+        label: 'Partner',
+        componentKey: 'sc.relation',
+        fieldDescriptor: {
+          fieldType: 'many2one',
+          relation: 'res.partner',
+        },
+        componentConfig: {
+          fieldType: 'char',
+          relation: 'res.users',
+          relationEntry: { page_size: 999 },
+          relationActiveActions: { create: true, write: true },
+          widgetOptions: { readonly_empty_text: 'forged' },
+          subview: { policies: { can_create: true } },
+          selection: [['forged', 'Forged']],
+          nativeWidget: 'many2one',
+        },
+      }],
+    }],
+  },
+  actionContract: { actionRuleList: [] },
+});
+const synthesizedV2Widget = synthesizedV2Widgets[0];
+assert.ok(synthesizedV2Widget);
+check(synthesizedV2Widget?.fieldType, 'many2one', 'legacy widget projection reads field type from fieldDescriptor');
+check(synthesizedV2Widget?.relation, 'res.partner', 'legacy widget projection reads relation from fieldDescriptor');
+check(synthesizedV2Widget?.componentConfig?.nativeWidget, 'many2one', 'transport-only widget config is preserved');
+for (const key of [
+  'fieldType', 'relation', 'relationEntry', 'relationActiveActions',
+  'widgetOptions', 'subview', 'selection',
+]) {
+  check(
+    synthesizedV2Widget?.componentConfig?.[key],
+    undefined,
+    `legacy widget projection removes ${key} from componentConfig`,
+  );
+}
 
 const storeWithListProfile = (listProfile: Record<string, unknown>) => ({
   snapshot: {
@@ -150,7 +308,22 @@ cases += 1;
 // Contract denial must survive the complete parse -> preference -> display chain.
 const names = ['normal','optional','invisible','column_invisible','status_hidden','no_auth'];
 const configs: Record<string, Record<string, unknown>> = {optional:{optional:'hide'},invisible:{invisible:true},column_invisible:{column_invisible:true}};
-const widgets = names.map(name => ({widgetId:name,fieldCode:name,componentConfig:configs[name] || {}}));
+const descriptors: Record<string, Record<string, unknown>> = {
+  invisible: {fieldCode:'invisible',label:'Invisible',fieldType:'char',widgetType:'text',componentKey:'sc.display.text',invisible:true},
+  column_invisible: {fieldCode:'column_invisible',label:'Column invisible',fieldType:'char',widgetType:'text',componentKey:'sc.display.text',invisible:true},
+};
+const widgets = names.map(name => ({
+  widgetId:name,
+  fieldCode:name,
+  componentConfig:configs[name] || {},
+  fieldDescriptor:descriptors[name] || {
+    fieldCode:name,
+    label:name,
+    fieldType:'char',
+    widgetType:'text',
+    componentKey:'sc.display.text',
+  },
+}));
 const fixture = {
   snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
   widgetsById: new Map(widgets.map(widget => [widget.widgetId,widget])),
@@ -188,6 +361,12 @@ const durationWidget = {
   widgetType: 'number',
   componentKey: 'sc.value.duration',
   componentConfig: { fieldType: 'float', nativeWidget: 'float_time' },
+  fieldDescriptor: {
+    fieldType: 'float',
+    componentKey: 'sc.value.duration',
+    digits: [16, 3],
+    unit: { kind: 'duration', code: 'hour', label: '小时' },
+  },
 };
 const durationStore = {
   snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
@@ -200,15 +379,16 @@ const durationStore = {
 const durationOption = runtime.resolveListColumnOptions(durationStore, { columns: ['duration_hours'] })[0];
 assert.ok(durationOption);
 check(durationOption?.componentKey, 'sc.value.duration', 'collection projection preserves duration component identity');
+check(durationOption?.unit?.label, '小时', 'collection projection preserves declared duration unit');
 check(presentListCell({
   raw: 1.5,
   column: { ...durationOption, field: durationOption.name },
-}).text, '1 小时 30 分钟', 'List consumes projected duration identity');
+}).text, '1.500 小时', 'List consumes projected duration identity and unit');
 check(presentCollectionKanbanCell({
   field: 'duration_hours',
   value: 1.5,
   columnOptions: [durationOption],
-}).text, '1 小时 30 分钟', 'Kanban consumes projected duration identity');
+}).text, '1.500 小时', 'Kanban consumes projected duration identity and unit');
 
 // Percentage is an existing declared component identity. It must cross the same
 // Contract V2 collection producer before List or Kanban interprets the value.
@@ -219,6 +399,12 @@ const percentageWidget = {
   widgetType: 'percentage',
   componentKey: 'sc.value.percentage',
   componentConfig: { fieldType: 'float', digits: [16, 4] },
+  fieldDescriptor: {
+    fieldType: 'float',
+    componentKey: 'sc.value.percentage',
+    digits: [16, 4],
+    unit: { kind: 'percent', code: 'percent', label: '%' },
+  },
 };
 const percentageStore = {
   snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
@@ -240,5 +426,503 @@ check(presentCollectionKanbanCell({
   value: 12.5,
   columnOptions: [percentageOption],
 }).text, '12.5000%', 'Kanban consumes projected percentage identity and precision');
+
+const statusWidget = {
+  widgetId: 'status',
+  fieldCode: 'state',
+  label: 'State',
+  widgetType: 'selection',
+  componentKey: 'sc.display.status',
+  componentConfig: {
+    fieldType: 'selection',
+    selection: [['pending', '待处理']],
+  },
+  fieldDescriptor: {
+    fieldType: 'selection',
+    componentKey: 'sc.display.status',
+    selection: [['pending', '待处理']],
+  },
+};
+const statusStore = {
+  snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
+  widgetsById: new Map([[statusWidget.widgetId, statusWidget]]),
+  widgetsByFieldCode: new Map([[statusWidget.fieldCode, statusWidget]]),
+  widgetsByFieldCodeAll: new Map([[statusWidget.fieldCode, [statusWidget]]]),
+  widgetStatusById: new Map(),
+  primaryDataSource: {},
+} as unknown as ContractV2NormalizedStore;
+const statusOption = runtime.resolveListColumnOptions(statusStore, { columns: ['state'] })[0];
+check(statusOption?.componentKey, 'sc.display.status', 'collection projection preserves status component identity');
+check(presentListCell({
+  raw: 'pending',
+  column: { ...statusOption, field: statusOption.name },
+}).text, '待处理', 'List consumes projected status identity');
+
+const unknownWidget = {
+  ...statusWidget,
+  widgetId: 'unknown-component',
+  fieldCode: 'unknown_component',
+  componentKey: 'sc.unknown.component',
+  fieldDescriptor: { ...statusWidget.fieldDescriptor, componentKey: 'sc.unknown.component' },
+};
+const unknownStore = {
+  ...statusStore,
+  widgetsById: new Map([[unknownWidget.widgetId, unknownWidget]]),
+  widgetsByFieldCode: new Map([[unknownWidget.fieldCode, unknownWidget]]),
+  widgetsByFieldCodeAll: new Map([[unknownWidget.fieldCode, [unknownWidget]]]),
+} as unknown as ContractV2NormalizedStore;
+assert.throws(
+  () => runtime.resolveListColumnOptions(unknownStore, { columns: ['unknown_component'] }),
+  { name: 'ContractGapError' },
+  'an unregistered declared component identity must stop instead of being dropped',
+);
+cases += 1;
+
+// Attachment actions cross the same producer as any other field identity. A
+// relation target and role are both required before List or FieldValue may
+// expose link behavior.
+const attachmentWidget = {
+  widgetId: 'invoice-evidence',
+  fieldCode: 'invoice_evidence_ids',
+  label: '发票证据',
+  widgetType: 'many2many',
+  componentConfig: { fieldType: 'many2many' },
+  fieldDescriptor: {
+    fieldCode: 'invoice_evidence_ids',
+    fieldType: 'many2many',
+    relation: 'ir.attachment',
+    attachmentRole: 'invoice_evidence',
+  },
+};
+const attachmentStore = {
+  snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
+  widgetsById: new Map([[attachmentWidget.widgetId, attachmentWidget]]),
+  widgetsByFieldCode: new Map([[attachmentWidget.fieldCode, attachmentWidget]]),
+  widgetsByFieldCodeAll: new Map([[attachmentWidget.fieldCode, [attachmentWidget]]]),
+  widgetStatusById: new Map(),
+  primaryDataSource: {},
+} as unknown as ContractV2NormalizedStore;
+const attachmentOption = runtime.resolveListColumnOptions(
+  attachmentStore,
+  { columns: ['invoice_evidence_ids'] },
+)[0];
+check(attachmentOption?.relation, 'ir.attachment', 'collection projection preserves attachment relation identity');
+check(attachmentOption?.attachmentRole, 'invoice_evidence', 'collection projection preserves attachment role');
+
+// The strict widget descriptor is the final declaration carrier. The form
+// projection must retain every semantic that has a downstream consumer; a
+// second projection cannot silently reduce it back to the Odoo scalar shape.
+const declaredFacetWidgets = [
+  {
+    widgetId: 'source-reference',
+    fieldCode: 'sc_source_res_id',
+    label: 'Source',
+    widgetType: 'many2one_reference',
+    componentConfig: { fieldType: 'many2one_reference' },
+    fieldDescriptor: {
+      fieldCode: 'sc_source_res_id',
+      fieldType: 'many2one_reference',
+      semanticType: 'reference',
+      componentKey: 'sc.display.text',
+      referenceModelField: 'sc_source_model',
+    },
+  },
+  {
+    widgetId: 'binary-content',
+    fieldCode: 'binary_content',
+    label: 'Attachment',
+    widgetType: 'binary',
+    componentConfig: { fieldType: 'binary' },
+    fieldDescriptor: {
+      fieldCode: 'binary_content',
+      fieldType: 'binary',
+      filename: 'attachment_name',
+    },
+  },
+  {
+    widgetId: 'progress',
+    fieldCode: 'progress',
+    label: 'Progress',
+    widgetType: 'percentage',
+    componentConfig: { fieldType: 'float' },
+    fieldDescriptor: {
+      fieldCode: 'progress',
+      fieldType: 'float',
+      semanticType: 'percentage',
+      componentKey: 'sc.value.percentage',
+      digits: [16, 2],
+      unit: { kind: 'percent', code: 'percent', label: '%' },
+    },
+  },
+  {
+    widgetId: 'occurred-at',
+    fieldCode: 'occurred_at',
+    label: 'Occurred at',
+    widgetType: 'datetime',
+    componentConfig: { fieldType: 'datetime' },
+    fieldDescriptor: {
+      fieldCode: 'occurred_at',
+      fieldType: 'datetime',
+      semanticType: 'datetime',
+      temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+    },
+  },
+  {
+    widgetId: 'evidence',
+    fieldCode: 'evidence_ids',
+    label: 'Evidence',
+    widgetType: 'many2many',
+    componentConfig: { fieldType: 'many2many' },
+    fieldDescriptor: {
+      fieldCode: 'evidence_ids',
+      fieldType: 'many2many',
+      relation: 'ir.attachment',
+      attachmentRole: 'evidence',
+    },
+  },
+];
+const declaredFacetStore = {
+  snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
+  widgetsById: new Map(declaredFacetWidgets.map(widget => [widget.widgetId, widget])),
+  widgetsByFieldCode: new Map(declaredFacetWidgets.map(widget => [widget.fieldCode, widget])),
+  widgetsByFieldCodeAll: new Map(declaredFacetWidgets.map(widget => [widget.fieldCode, [widget]])),
+  widgetStatusById: new Map(),
+  primaryDataSource: {},
+} as unknown as ContractV2NormalizedStore;
+const canonicalFacetFields = resolveContractV2FieldDescriptorMap(declaredFacetStore);
+const formFacetFields = resolveContractV2FormFieldMap(declaredFacetStore);
+check(
+  canonicalFacetFields.sc_source_res_id?.referenceModelField,
+  'sc_source_model',
+  'normalized field descriptor preserves the polymorphic model pointer',
+);
+check(
+  formFacetFields.sc_source_res_id?.referenceModelField,
+  'sc_source_model',
+  'form field projection preserves the polymorphic model pointer',
+);
+check(
+  canonicalFacetFields.binary_content?.filename,
+  'attachment_name',
+  'descriptor-only filename survives normalization',
+);
+check(
+  formFacetFields.binary_content?.filename,
+  'attachment_name',
+  'descriptor-only filename survives form projection',
+);
+check(
+  JSON.stringify(formFacetFields.progress?.digits),
+  JSON.stringify([16, 2]),
+  'form field projection preserves declared digits',
+);
+check(
+  formFacetFields.progress?.unit?.label,
+  '%',
+  'form field projection preserves declared unit',
+);
+check(
+  formFacetFields.occurred_at?.temporal?.timezoneAuthority,
+  'user',
+  'form field projection preserves declared temporal authority',
+);
+check(
+  formFacetFields.evidence_ids?.attachmentRole,
+  'evidence',
+  'form field projection preserves declared attachment role',
+);
+check(
+  presentDeclaredBusinessValue({
+    field: formFacetFields.progress!,
+    value: 12.34,
+  }).text,
+  '12.34%',
+  'business-value presentation consumes digits and unit from the form projection',
+);
+check(
+  hasDeclaredAttachmentIdentity(formFacetFields.evidence_ids),
+  true,
+  'attachment behavior consumes the form projection without recovering a second carrier',
+);
+
+const declaredAssigneeQuery = resolveDeclaredAssigneeQuery({
+  model: 'res.users',
+  fields: ['id', 'display_name'],
+  domain: [['active', '=', true]],
+  order: 'display_name asc',
+  limit: 25,
+});
+check(declaredAssigneeQuery.model, 'res.users', 'assignee query consumes the declared model');
+check(declaredAssigneeQuery.fields.join(','), 'id,display_name', 'assignee query consumes declared fields verbatim');
+check(declaredAssigneeQuery.order, 'display_name asc', 'assignee query consumes declared ordering');
+check(declaredAssigneeQuery.limit, 25, 'assignee query consumes declared limit');
+for (const [invalidContract, expected] of [
+  [null, 'assignee_options.fields'],
+  [{ model: 'res.users', fields: [], domain: [], order: 'name asc', limit: 80 }, 'assignee_options.fields'],
+  [{ model: 'res.users', fields: ['id'], domain: 'bad', order: 'name asc', limit: 80 }, 'assignee_options.domain'],
+  [{ model: 'res.users', fields: ['id'], domain: [], order: '', limit: 80 }, 'assignee_options.order'],
+  [{ model: 'res.users', fields: ['id'], domain: [], order: 'name asc', limit: 0 }, 'assignee_options.limit'],
+] as const) {
+  assert.throws(
+    () => resolveDeclaredAssigneeQuery(invalidContract),
+    (error: unknown) => isContractGapError(error) && error.defect.missing.includes(expected),
+    `assignee options must stop when ${expected} is missing or invalid`,
+  );
+}
+check(
+  resolveDeclaredKanbanTitleField('project_title', ['id', 'project_title']),
+  'project_title',
+  'Kanban consumes the declared title field',
+);
+check(
+  resolveDeclaredKanbanTitleField('', []),
+  '',
+  'non-Kanban views do not invent a title field',
+);
+for (const [hint, fields] of [
+  ['', ['name', 'display_name']],
+  ['missing_title', ['name', 'display_name']],
+] as const) {
+  assert.throws(
+    () => resolveDeclaredKanbanTitleField(hint, fields),
+    (error: unknown) => isContractGapError(error)
+      && error.defect.missing === 'list_profile.kanban_profile.title_field',
+    'Kanban must stop instead of falling back to name/display_name/first field/id',
+  );
+}
+check(
+  resolveDeclaredPrimaryFilterBudget({ filters_primary_max: 0 }),
+  0,
+  'primary filter budget preserves an explicit zero',
+);
+check(
+  resolveDeclaredPrimaryFilterBudget({ filters_primary_max: 3 }),
+  3,
+  'primary filter budget consumes the declared value',
+);
+check(
+  resolveDeclaredGroupByLabel([
+    { field: 'manager_id', label: '按项目经理' },
+    { field: 'state', label: '' },
+  ], 'manager_id'),
+  '按项目经理',
+  'active grouping consumes the declared group label',
+);
+check(
+  resolveDeclaredGroupByLabel([{ field: 'manager_id', label: '按项目经理' }], 'unknown_field'),
+  '',
+  'an unknown grouping field never falls back to the technical field name',
+);
+check(
+  resolveDeclaredGroupByLabel([{ field: 'state', label: '' }], 'state'),
+  '',
+  'an undeclared grouping label remains empty',
+);
+const unlabeledFilterContract = ref({
+    snapshot: {
+      layoutContract: { listProfile: {} },
+      actionContract: {
+        surfacePolicies: { filters_max: 10, filters_primary_max: 3 },
+      },
+      statusContract: { selectorStatus: [] },
+      searchContract: {
+        filters: [{ key: 'missing_label', domain_raw: '[]' }],
+        saved_filters: [{ id: 1, name: 'Saved filter', domain: [] }],
+        group_by: [
+          { field: 'missing_group_label', context_raw: "{'group_by':'missing_group_label'}" },
+          { key: 'state', label: '状态' },
+        ],
+        fields: [{ field: 'missing_field_label', occurrence_key: 'missing@search', type: 'char' }],
+        custom: {
+          filters: { enabled: true, fields: [{ field: 'missing_custom_label', type: 'char' }] },
+          group_by: { enabled: true, fields: [{ field: 'missing_custom_group' }] },
+        },
+      },
+    },
+    widgetsById: new Map(),
+    widgetsByFieldCode: new Map(),
+    widgetsByFieldCodeAll: new Map(),
+    widgetStatusById: new Map(),
+    primaryDataSource: {},
+  } as unknown as ContractV2NormalizedStore);
+const unlabeledFilterRuntime = useActionViewFilterComputedRuntime({
+  actionContract: unlabeledFilterContract,
+  activeGroupByField: ref(''),
+  parseContractContextRaw: () => ({}),
+  isActionViewNumericToken: () => false,
+  hasActionViewNoiseMarker: () => false,
+});
+check(unlabeledFilterRuntime.contractFilterChips.value.length, 0, 'a filter without a declared label is withheld');
+check(unlabeledFilterRuntime.contractSavedFilterChips.value.length, 1, 'a saved filter with declared identity and label is available');
+check(unlabeledFilterRuntime.contractSavedFilterChips.value[0]?.key, '1', 'the saved filter route identity comes from the declared id');
+check(unlabeledFilterRuntime.contractSavedFilterChips.value[0]?.label, 'Saved filter', 'the saved filter name remains presentation text');
+check(
+  deriveSavedFilterChipsFromContract(unlabeledFilterContract.value)[0]?.key,
+  '1',
+  'load preflight uses the same declared saved-filter identity',
+);
+check(
+  resolveDeclaredSavedFilterIdentity({ name: 'Name must not become route identity' }),
+  '',
+  'a saved filter without declared id cannot derive identity from its name',
+);
+check(unlabeledFilterRuntime.contractGroupByChips.value.length, 0, 'a grouping without a declared label is withheld');
+check(
+  deriveGroupByChipsFromContract(unlabeledFilterContract.value).length,
+  0,
+  'a grouping key never becomes field semantics when the contract field declaration is absent',
+);
+check(unlabeledFilterRuntime.nativeFilterFields.value.length, 0, 'a filter field without a declared label is withheld');
+check(unlabeledFilterRuntime.customGroupByChips.value.length, 0, 'a custom grouping without a declared label is withheld');
+check(unlabeledFilterRuntime.customFilterFields.value.length, 0, 'a custom filter field without a declared label is withheld');
+const customFilterRuntime = useActionViewFilterComputedRuntime({
+  actionContract: ref({
+    snapshot: {
+      layoutContract: { listProfile: {} },
+      actionContract: { surfacePolicies: { filters_max: 10, filters_primary_max: 3 } },
+      statusContract: { selectorStatus: [] },
+      searchContract: {
+        custom: {
+          filters: {
+            enabled: true,
+            fields: [
+              { field: 'state', label: '状态', type: 'selection', operators: [{ value: '=', label: '等于' }] },
+              { field: 'missing_type', label: '缺类型', operators: [{ value: '=', label: '等于' }] },
+              { field: 'missing_operator', label: '缺操作符', type: 'char' },
+            ],
+          },
+        },
+      },
+    },
+    widgetsById: new Map(),
+    widgetsByFieldCode: new Map(),
+    widgetsByFieldCodeAll: new Map(),
+    widgetStatusById: new Map(),
+    primaryDataSource: {},
+  } as unknown as ContractV2NormalizedStore),
+  activeGroupByField: ref(''),
+  parseContractContextRaw: () => ({}),
+  isActionViewNumericToken: () => false,
+  hasActionViewNoiseMarker: () => false,
+});
+check(customFilterRuntime.customFilterFields.value.length, 1, 'custom filters without declared type or operator are withheld');
+check(customFilterRuntime.customFilterFields.value[0]?.field, 'state', 'a declared custom filter remains available');
+check(customFilterRuntime.customFilterFields.value[0]?.type, 'selection', 'the declared custom filter type is preserved');
+check(customFilterRuntime.customFilterFields.value[0]?.operator, '=', 'the declared custom filter operator is preserved');
+const unsupportedSortOptions = runtime.buildListSortOptions({
+  snapshot: {
+    layoutContract: { listProfile: {} },
+    actionContract: { surfacePolicies: {} },
+    searchContract: {
+      default_order: 'name asc',
+      sort_options: [{ value: 'hidden_order', label: 'Undeclared sort' }],
+    },
+  },
+  widgetsById: new Map(),
+  widgetsByFieldCode: new Map(),
+  widgetsByFieldCodeAll: new Map(),
+  widgetStatusById: new Map(),
+  primaryDataSource: {},
+} as unknown as ContractV2NormalizedStore, '', '排序');
+check(
+  unsupportedSortOptions.some((option) => option.value === 'hidden_order'),
+  false,
+  'the frontend ignores a sort carrier rejected by the current contract decoder',
+);
+for (const invalid of [{}, { filters_primary_max: -1 }, { filters_primary_max: 1.5 }, { filters_primary_max: '3' }]) {
+  assert.throws(
+    () => resolveDeclaredPrimaryFilterBudget(invalid),
+    (error: unknown) => isContractGapError(error)
+      && error.defect.missing === 'surface_policies.filters_primary_max',
+    'primary filter budget must stop instead of defaulting or clamping',
+  );
+}
+check(
+  resolveLoadedPrimaryFilterBudget(null),
+  0,
+  'primary filter budget waits for the contract instead of reporting a missing declaration during load',
+);
+check(
+  resolveLoadedPrimaryFilterBudget({
+    snapshot: {
+      actionContract: {
+        surfacePolicies: { filters_primary_max: 4 },
+      },
+    },
+  } as ContractV2NormalizedStore),
+  4,
+  'loaded primary filter budget consumes the declared contract value',
+);
+assert.throws(
+  () => resolveLoadedPrimaryFilterBudget({
+    snapshot: {
+      actionContract: {
+        surfacePolicies: {},
+      },
+    },
+  } as ContractV2NormalizedStore),
+  (error: unknown) => isContractGapError(error)
+    && error.defect.missing === 'surface_policies.filters_primary_max',
+  'loaded contract with no primary filter budget still fails closed',
+);
+check(
+  resolveDeclaredFilterBudget({ filters_max: 0 }, 'filters_max'),
+  0,
+  'total filter budget preserves an explicit zero',
+);
+check(
+  resolveDeclaredFilterBudget({ filters_max: 12 }, 'filters_max'),
+  12,
+  'total filter budget consumes the declared value instead of the former eight-item cap',
+);
+for (const invalid of [{}, { filters_max: -1 }, { filters_max: 2.5 }, { filters_max: '12' }]) {
+  assert.throws(
+    () => resolveDeclaredFilterBudget(invalid, 'filters_max'),
+    (error: unknown) => isContractGapError(error)
+      && error.defect.missing === 'surface_policies.filters_max',
+    'total filter budget must stop instead of silently truncating to eight',
+  );
+}
+check(
+  resolveDeclaredSurfaceBudget({ actions_primary_max: 3 }, 'actions_primary_max'),
+  3,
+  'primary action budget consumes the declared value',
+);
+for (const invalid of [{}, { actions_primary_max: -1 }, { actions_primary_max: 2.5 }, { actions_primary_max: '3' }]) {
+  assert.throws(
+    () => resolveDeclaredSurfaceBudget(invalid, 'actions_primary_max'),
+    (error: unknown) => isContractGapError(error)
+      && error.defect.missing === 'surface_policies.actions_primary_max',
+    'primary action budget must stop instead of defaulting to four',
+  );
+}
+check(
+  resolveLoadedActionPrimaryBudget(null),
+  0,
+  'primary action budget waits for the contract instead of reporting a missing declaration during load',
+);
+check(
+  resolveLoadedActionPrimaryBudget({
+    snapshot: {
+      actionContract: {
+        surfacePolicies: { actions_primary_max: 3 },
+      },
+    },
+  } as ContractV2NormalizedStore),
+  3,
+  'loaded primary action budget consumes the declared contract value',
+);
+assert.throws(
+  () => resolveLoadedActionPrimaryBudget({
+    snapshot: {
+      actionContract: {
+        surfacePolicies: {},
+      },
+    },
+  } as ContractV2NormalizedStore),
+  (error: unknown) => isContractGapError(error)
+    && error.defect.missing === 'surface_policies.actions_primary_max',
+  'loaded contract with no primary action budget still fails closed',
+);
 
 console.log(`[frontend.contract.shape.projection] PASS cases=${cases}`);

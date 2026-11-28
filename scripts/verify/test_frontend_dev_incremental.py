@@ -986,6 +986,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ("addons/smart_core/tests/test_system_init_extension_fact_merger.py", "verify.backend.navigation_delivery.unit"),
             ("frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue", "verify.frontend.professional_relation_field.unit"),
             ("frontend/apps/web/scripts/readonly_block_component_test.mjs", "verify.frontend.professional_relation_field.unit"),
+            ("frontend/apps/web/src/pages/contractForm/relationDescriptor.ts", "verify.frontend.professional_relation_field.unit"),
+            ("frontend/apps/web/scripts/relation_entry_option_limits_test.ts", "verify.frontend.professional_relation_field.unit"),
         ]:
             with self.subTest(path=path):
                 self.assertIn(owner, select_targets([path]))
@@ -1194,6 +1196,80 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(select_targets([path]), expected)
 
+    def test_page_identity_sources_and_tests_select_their_own_guard(self) -> None:
+        for path in (
+            "frontend/apps/web/src/app/pageIdentity.ts",
+            "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+            "frontend/apps/web/src/app/pageIdentityRoute.ts",
+            "frontend/apps/web/src/app/pageIdentityCoordinator.ts",
+            "frontend/apps/web/src/app/pageIdentityRuntime.ts",
+            "frontend/apps/web/src/app/usePublishedPageIdentity.ts",
+            "scripts/verify/frontend_page_identity_smoke.js",
+            "scripts/verify/frontend_page_identity_lifecycle_smoke.js",
+            "scripts/verify/frontend_page_identity_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.frontend.page_identity",
+                    select_targets([path]),
+                )
+        self.assertNotIn(
+            "verify.frontend.page_identity",
+            select_targets([
+                "frontend/apps/web/src/app/businessScenarioNavigation.ts",
+                "scripts/verify/frontend_product_page_header_browser.mjs",
+            ]),
+        )
+
+    def test_navigation_context_selects_action_view_runtime_smoke(self) -> None:
+        for path in (
+            "frontend/apps/web/src/app/navigationContext.ts",
+            "scripts/verify/navigation_context_smoke.js",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.action_view_runtime_smoke.behavior",
+                    select_targets([path]),
+                )
+        self.assertNotIn(
+            "verify.action_view_runtime_smoke.behavior",
+            select_targets(["frontend/apps/web/src/app/businessScenarioNavigation.ts"]),
+        )
+
+    def test_activity_company_scope_selects_activity_and_session_suites(self) -> None:
+        for path in (
+            "frontend/apps/web/src/app/activityPageRetention.ts",
+            "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
+            "frontend/apps/web/scripts/activity_page_retention_test.ts",
+        ):
+            with self.subTest(path=path):
+                selected = select_targets([path])
+                self.assertIn("verify.frontend.state_dashboard.unit", selected)
+                self.assertIn("verify.frontend.session_persistence.snapshot.unit", selected)
+                self.assertIn("verify.frontend.session_persistence.recovery.unit", selected)
+        self.assertNotIn(
+            "verify.frontend.state_dashboard.unit",
+            select_targets(["frontend/apps/web/src/app/pageIdentity.ts"]),
+        )
+
+    def test_route_query_inputs_select_canonical_url_checks(self) -> None:
+        for path in (
+            "frontend/apps/web/src/app/routeQuery.ts",
+            "frontend/apps/web/src/app/runtime/actionViewRoutePresetRuntime.ts",
+            "frontend/apps/web/src/views/SceneView.vue",
+            "frontend/apps/web/scripts/record_entry_contract_test.ts",
+            "frontend/apps/web/scripts/route_query_normalization_test.ts",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.frontend.route_query.unit",
+                    select_targets([path]),
+                )
+        self.assertNotIn(
+            "verify.frontend.route_query.unit",
+            select_targets(["frontend/apps/web/src/app/businessScenarioNavigation.ts"]),
+        )
+
     def test_expression_feedback_and_responsive_inputs_route_to_owning_units(self) -> None:
         self.assertEqual(
             select_targets(["frontend/apps/web/src/app/routeFailure.ts"]),
@@ -1388,6 +1464,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_generic_form_and_relation_surfaces_select_static_owners_only(self) -> None:
         for path in (
             "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
+            "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
             "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
             "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
             "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
@@ -1482,7 +1559,13 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_business_value_semantics_select_cross_page_executor(self) -> None:
         for path in (
             "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+            "frontend/apps/web/src/app/contracts/actionViewActivityContract.ts",
+            "frontend/apps/web/src/app/runtimeTimeZone.ts",
             "frontend/apps/web/src/pages/KanbanPage.vue",
+            "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
+            "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
+            "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
+            "frontend/apps/web/scripts/list_surface_component_test.mjs",
             "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
             "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
             "scripts/verify/frontend_business_semantics_guard.py",
@@ -1494,6 +1577,22 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     "verify.frontend.business_semantics.unit",
                     select_targets([path]),
                 )
+        shared_authority_targets = select_targets([
+            "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        ])
+        for target in (
+            "verify.frontend.professional_business_value.unit",
+            "verify.frontend.canonical_form_presenter.unit",
+            "verify.frontend.my_work_approval.guard",
+            "verify.frontend.payment_settlement_introduce.amount.unit",
+            "verify.frontend.hierarchical_worksheet.unit",
+            "verify.frontend.action_surface_renderer_registry.unit",
+            "verify.frontend.collection_view_semantics.unit",
+            "verify.frontend.collection_kanban_record_card.unit",
+            "verify.frontend.collection_row_cell.unit",
+        ):
+            with self.subTest(target=target):
+                self.assertIn(target, shared_authority_targets)
         self.assertIn(
             "verify.frontend.boq_import_preview.unit",
             select_targets(["frontend/apps/web/src/app/presentation/boqImportPreview.ts"]),
@@ -2681,6 +2780,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]
             if path.endswith("/SceneView.vue"):
                 expected.insert(2, "verify.frontend.product_page_header.unit")
+                expected.insert(3, "verify.frontend.route_query.unit")
             self.assertEqual(
                 select_targets([path]),
                 expected,
@@ -3829,6 +3929,42 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.local.dev.frontend.quick.unit"],
                 )
+
+    def test_clean_page_probes_keep_lifecycle_and_playwright_checks(self) -> None:
+        expected = [
+            "verify.frontend.playwright_vendor_coupling.guard",
+            "verify.local.development_lifecycle.unit",
+        ]
+        for path in (
+            "scripts/dev/local_clean_finance_pages_probe.mjs",
+            "scripts/dev/local_clean_quality_tax_pages_probe.mjs",
+            "scripts/dev/local_clean_enterprise_setup_probe.mjs",
+            "scripts/dev/local_clean_finance_approval_configure_probe.mjs",
+            "scripts/dev/local_clean_finance_approval_journey_probe.mjs",
+            "scripts/dev/local_clean_finance_data_permission_probe.mjs",
+            "scripts/dev/local_clean_finance_payment_journey_probe.mjs",
+            "scripts/dev/local_clean_finance_e2e.sh",
+            "scripts/dev/local_clean_finance_fixture.sh",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), expected)
+        self.assertNotIn(
+            "verify.frontend.playwright_vendor_coupling.guard",
+            select_targets(["scripts/dev/local_test_runner.py"]),
+        )
+
+    def test_common_environment_keeps_runtime_identity_checks(self) -> None:
+        expected = [
+            "verify.frontend.runtime_environment.unit",
+            "verify.local.development_lifecycle.unit",
+        ]
+        for path in (
+            "scripts/common/env.sh",
+            "scripts/verify/test_common_env_explicit_path.py",
+            "scripts/verify/test_env_external_topology_precedence.sh",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), expected)
 
     def test_detail_collection_guard_keeps_its_behavior_target(self) -> None:
         self.assertEqual(

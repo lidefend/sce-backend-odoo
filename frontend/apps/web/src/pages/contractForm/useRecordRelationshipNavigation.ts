@@ -1,12 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FieldDescriptor } from '@sc/schema';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2/store';
+import { currentContextEpoch } from '../../app/contextEpoch';
 import { resolveRecordOpenTarget } from '../../app/runtime/recordEntryContract';
 
 type NavigationDependencies = Record<string, any>;
 
 export function useRecordRelationshipNavigation(dependencies: NavigationDependencies) {
-  const { actionId, createContractFormRecord, effectiveFieldDescriptor, fetchRelationOptions, formData, loadModelContractV2, model, normalizeFieldValue, one2manyRelationModel, openRelationCreateDialog, pickContractNavQuery, queryRelationOptions, relationCreateMode, relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate, relationKeyword, relationModel, relationUiLabel, route, router, sanitizeUiErrorMessage, setMany2oneOption, validationErrors } = dependencies;
+  const { actionId, captureRelationRequest, createContractFormRecord, effectiveFieldDescriptor, fetchRelationOptions, formData, loadModelContractV2, model, normalizeFieldValue, one2manyRelationModel, openRelationCreateDialog, pickContractNavQuery, queryRelationOptions, relationCreateMode, relationEntry, relationFieldDescriptors, relationIds, relationInlineCreate, relationKeyword, relationModel, relationUiLabel, route, router, sanitizeUiErrorMessage, setMany2oneOption, validationErrors } = dependencies;
   async function ensureRelationFieldDescriptors(name: string) {
     const relation = one2manyRelationModel(name);
     if (!relation) return;
@@ -17,11 +18,16 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     // was never entitled to issue. Fail closed on the declaration and keep the
     // existing char-field fallback (mirrors openRelationSearchDialog).
     if (relationEntry(effectiveFieldDescriptor?.(name))?.canRead !== true) return;
+    const ownsRequest = captureRelationRequest?.(`relation-field-descriptors:${relation}`) ?? (() => true);
+    const contextEpoch = currentContextEpoch();
+    const isCurrent = () => ownsRequest() && currentContextEpoch() === contextEpoch;
+    if (!isCurrent()) return;
     try {
       const response = await loadModelContractV2(relation, {
         viewType: 'form',
         renderProfile: 'edit',
       });
+      if (!isCurrent()) return;
       const fields = resolveContractV2FormFieldMap(response.store) as Record<string, FieldDescriptor>;
       if (Object.keys(fields).length) {
         relationFieldDescriptors.value = {
@@ -168,7 +174,7 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
           return_url: encodeURIComponent(returnUrl),
           return_field: fieldName,
           return_model: model.value,
-          return_record_id: Number(route.params.id || 0) || undefined,
+          return_record_id: Number(dependencies.recordId?.() || 0) || undefined,
           return_action_id: actionId.value || undefined,
           return_menu_id: Number(route.query.menu_id || 0) || undefined,
         },
@@ -194,16 +200,24 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
     const entry = relationEntry(descriptor);
     const inline = relationInlineCreate(descriptor);
     if (entry?.canCreate !== true || !inline.enabled || !inline.createOnNoMatch) return;
+    const ownsRequest = captureRelationRequest(`quick-create:${fieldName}`);
+    const contextEpoch = currentContextEpoch();
+    const isCurrent = () => ownsRequest()
+      && currentContextEpoch() === contextEpoch
+      && relationModel(fieldName) === relation;
+    if (!isCurrent()) return;
     try {
       const existing = await fetchRelationOptions(fieldName, label);
+      if (!isCurrent()) return;
       const exact = existing.find((item) => item.label.trim().toLowerCase() === label.trim().toLowerCase());
       if (exact) {
         setMany2oneOption(fieldName, exact);
         return;
       }
-      const nameField = inline.nameField || 'name';
+      const nameField = inline.nameField;
       const vals: Record<string, unknown> = { ...(entry?.defaultVals || {}), [nameField]: label };
       const created = await createContractFormRecord({ model: relation, vals });
+      if (!isCurrent()) return;
       const id = Number(created?.id || 0);
       if (Number.isFinite(id) && id > 0) {
         const option = { id: Math.trunc(id), label };
@@ -211,6 +225,7 @@ export function useRecordRelationshipNavigation(dependencies: NavigationDependen
         if (!options.stayInDialog) await queryRelationOptions(fieldName, label);
       }
     } catch (err) {
+      if (!isCurrent()) return;
       const message = sanitizeUiErrorMessage(err instanceof Error ? err.message : err, relationUiLabel(descriptor, 'quick_create_failed'));
       validationErrors.value = [message];
     }

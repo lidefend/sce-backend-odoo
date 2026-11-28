@@ -1,0 +1,163 @@
+schema_version: 1
+goal:
+  id: FE-CONSUMPTION-CLOSEOUT-20261126
+  title: 基于当前前端事实的契约消费、办理与稳定性收敛
+  status: active
+  implementation_authorized: true
+  execution_status: fc_00_completed_fc_01_core_consumers_validated_fc_02_local_static_closed_browser_pending_fc_03_fc04_active_clean_initialization_unblocked
+  planning_analysis: readonly_source_assessment_completed
+  plan: docs/ops/iterations/frontend_convergence_next_20261126.md
+  reference_candidate: e62a4b5dcdf726b3c15292cddde185925b0d5725
+  execution_baseline: bf3e78c2a9e81448f36425b05e133170aee39875
+  formal_product_layer: P0
+  layer_target: existing generic frontend contract consumers and interaction lifecycle
+  module:
+  - frontend/apps/web
+  - frontend/packages/ui
+  standard_vs_user_specific: platform_standard
+  objective: 保留已成立的契约加载、意图执行、组件及原生向导底座，以当前源码问题和行为证据为依据， 收敛业务值解释、入口与权限呈现、异步所有权、单条与批量办理、用户导入和统一反馈， 使实际用户操作与后端声明及回读一致。
+  why_here: 通用消费与交互稳定性属于 P0 前端；声明缺口修复返回 P0 后端机制或 P1 行业事实， P4 只负责选测和证据，不能用 UI 兜底或运维脚本成为产品权威。
+  activation_conditions:
+  - owner_explicitly_starts_implementation
+  - current_main_ci_closeout_is_qualified_at_exact_main_sha
+  - current_worktree_and_environment_authorities_are_reconciled
+  - one_execution_run_is_registered_without_replacing_unfinished_work
+  boundaries:
+  - current_page_contract_only_no_retired_compatibility
+  - backend_declares_product_semantics_frontend_faithfully_consumes
+  - no_parallel_permission_approval_import_or_renderer_engine
+  - native_capabilities_first_and_no_changes_to_odoo_native_execution
+  - company_and_project_boundaries_include_group_internal_companies
+  - public_auth_protocol_boundary_requires_explicit_platform_resolution
+  - user_import_and_batch_operations_must_use_actual_product_surfaces
+  - no_capability_catalog_expansion_under_ui_convergence
+  - no_automatic_persistent_deployment_or_database_mutation
+  related_sources:
+  - .agent/goals/FE-CONVERGE-01.yaml
+  - .agent/goals/FE-CLOSE-01.yaml
+  - .agent/goals/FE-CONVERGENCE-FE04-20261113.yaml
+  - docs/architecture/fe_contract_fidelity_02_remediation_plan.md
+  - docs/architecture/frontend_contract_basis_ledger.json
+  - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+  - docs/engineering_convergence/complexity_budget_report.md
+  source_assessment:
+    existing_foundations:
+    - current_contract_loader_decoder_normalized_store
+    - business_intent_transport
+    - shared_components_and_registered_drivers
+    - context_epoch_and_relation_request_ownership
+    - declared_recordset_execution
+    - native_import_wizard_phases_and_mapping
+    first_priority_findings:
+    - FE-S01_guard_coverage_is_not_all_semantic_consumers
+    - FE-S02_undeclared_value_formatting_branch
+    - FE-S03_numeric_precision_fallbacks
+    - FE-S04_text_pattern_driven_attachment_presentation
+    - FE-S05_kanban_title_and_descriptor_fallback
+    - FE-S10_plan_and_validation_dependency_drift
+    next_priority_findings:
+    - FE-S06_import_lifecycle_proof_gap
+    - FE-S07_apparently_unused_old_import_flow
+    - FE-S08_concentrated_orchestration_maintenance_risk
+    - FE-S09_registered_bridge_behavior_assessment
+    - FE-S11_public_auth_transport_boundary
+    finding_policy: 源码分支存在与生产缺陷复现分开记录；未验证项不是 PASS，也不因关键词或文件行数 推定故障。详细源码锚点、判断和待证条件以 plan 第 2 节为准。
+  tasks:
+  - id: FC-00
+    status: completed
+    depends_on: []
+    outcome: 已完成合格主线源码差异复核，并从当前声明生成 143 单元正式入口/动作/场景矩阵；当前候选运行态证据仍按单元待验
+  - id: FC-01
+    status: active
+    depends_on:
+    - FC-00
+    outcome: 已验证首批值格式化、金额/比例精度、附件身份、看板标题、选测依赖和公共认证边界的声明到消费链；完整语义覆盖扩展与运行时权威继续推进
+  - id: FC-02
+    status: active
+    depends_on:
+    - FC-01
+    outcome: scene 身份已收敛为 /s/:sceneKey 的路径唯一来源，导航、活动页和标题不再消费 URL 展示标签；产品配置投影、只读入口及公司项目运行态仍待证明
+  - id: FC-03
+    status: active
+    depends_on:
+    - FC-01
+    - FC-02
+    outcome: 已收敛 URL 恢复筛选、分组与筛选字段声明标签呈现，让保存筛选使用契约 id 作为路由身份，要求自定义筛选消费声明的 type/operator/query mode，清除 preflight 的旧 chip 与分组 key/name 回退，并彻底移除自定义筛选的等号默认；查询条生产观察仍待受管浏览器环境
+  - id: FC-04
+    status: active
+    depends_on:
+    - FC-03
+    outcome: 已为 many2one 快速创建、many2many 标签创建、one2many 新增/行联动/行内候选、关系字段描述符缓存和附件元数据/上传接入共享 request owner、context epoch、runtime generation 与记录身份；迟到响应不会回填到失活或已切换页面，并保留已稳定草稿；真实浏览器生命周期继续验证
+  - id: FC-05
+    status: planned
+    depends_on:
+    - FC-02
+    - FC-04
+    outcome: 完成单条、recordset、统一审批与企业角色真实办理证明
+  - id: FC-06
+    status: planned
+    depends_on:
+    - FC-05
+    outcome: 完整验证用户原生导入并清理无消费者旧流程
+  - id: FC-07
+    status: planned
+    depends_on:
+    - FC-02
+    - FC-03
+    - FC-04
+    - FC-05
+    - FC-06
+    outcome: 收敛公共表现、可访问性及可解释性能基线
+  - id: FC-08
+    status: planned
+    depends_on:
+    - FC-00
+    - FC-01
+    - FC-02
+    - FC-03
+    - FC-04
+    - FC-05
+    - FC-06
+    - FC-07
+    outcome: 全部适用单元有行为证据，独立区分批次主线部署与用户交付结论
+  acceptance:
+  - actual_declaration_decode_consumer_and_readback_evidence
+  - no_unresolved_authority_isolation_or_stale_response_blockers
+  - no_unexplained_not_verified_applicable_cells
+  - readonly_empty_lists_remain_accessible_and_unauthorized_entries_are_not_projected
+  - real_user_batch_import_and_approval_paths_work_as_declared
+  - current_head_integration_and_resulting_main_qualification_are_separate
+  current_turn_validation:
+    document_structure: passed
+    product_tests: relation_descriptor_and_attachment_lifecycle_batch_passed_clean_probe_unit_passed
+    contract_basis: passed_42_bindings_zero_open_defects
+    local_targeted: passed_backend_60_targets_1181_tests_and_frontend_87_targets_1580_tests_with_same_run_handoff
+    browser: clean_initialization_and_three_finance_business_pages_passed_on_exact_code_build
+    database: prior_clean_runtime_identity_passed_synchronized_candidate_refresh_not_run
+    ci_dispatch: synchronized_candidate_requires_new_exact_head_checks
+  exclusions:
+  - implementation_before_explicit_start
+  - rebuilding_existing_frontend_foundations
+  - full_industry_business_acceptance_without_separate_scope
+  - changing_existing_ci_candidate_or_merging_it
+  - publishing_or_committing_this_plan_in_this_turn
+  next_exact_step: Publish the clean candidate to PR 1019 through make pr.push and read one
+    exact-head required-check result set. Preserve the runtime evidence as code-HEAD evidence;
+    do not infer mainline, deployment or complete FC-04 completion from the PR run.
+  run: .agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/run.json
+  preparation_status: activated
+  preparation_authorized: true
+  source_matrix: .agent/runs/FE-CONSUMPTION-CLOSEOUT-20261126/coverage_matrix.json
+
+qualified_main_reference:
+  sha: a92114f0efb6733253d827e3a9985af21ab96be6
+  manifest: .runtime/main-full-release/a92114f0efb6733253d827e3a9985af21ab96be6.json
+  refresh_at_activation: false
+  activation_status: qualified
+
+inherited_mainline_fix:
+  sha: bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5
+  merge: PR #1018
+  subject: polymorphic many2one_reference declaration and frontend decoder fix
+  integration_status: merged_into_origin_main
+  release_qualification_status: not_run

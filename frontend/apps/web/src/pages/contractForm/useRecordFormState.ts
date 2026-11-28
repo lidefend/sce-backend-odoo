@@ -2,6 +2,7 @@ import { isContractGapError } from '../../app/contract/contractGap';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { ComputedRef, Ref } from 'vue';
 import type { FieldDescriptor } from '@sc/schema';
+import { currentContextEpoch } from '../../app/contextEpoch';
 import { createContractFormRecord, writeContractFormRecord } from '../../app/runtime/contractFormDataRuntime';
 import { triggerOnchange } from '../../api/onchange';
 import { fieldRequiresServerOnchange } from './contractActionRules';
@@ -50,6 +51,7 @@ export function useRecordFormState(context: {
   pendingInlineCreateFields?: Ref<string[]>;
   feedbackPresence?: Ref<Set<string>>;
   onFeedbackDraftChanged?:(name:string)=>void;
+  captureRelationRequest?:(key:string)=>()=>boolean;
 }) {
   const inputFieldValue=(name:string)=>{const raw=context.formData[name];return raw===false||raw===null||raw===undefined?'':String(raw);};
   const comparableFieldValue=(name:string,value:unknown)=>{const type=fieldType(context.formFields.value[name]);
@@ -165,8 +167,67 @@ export function useRecordFormState(context: {
   };
   const setRelationIds=(name:string,ids:number[])=>{if(!isFieldWritable(name))return;context.formData[name]=Array.from(new Set(ids.map(Number).filter(id=>Number.isFinite(id)&&id>0).map(Math.trunc)));syncFieldDirty(name);};
   const addRelationId=(name:string,option:RelationOption)=>{context.upsertRelationOption(name,option);setRelationIds(name,[...context.relationIds(name),option.id]);context.relationKeywords[name]='';};
-  const quickCreateMany2manyTag=async(name:string)=>{const descriptor=context.formFields.value[name];const entry=relationEntry(descriptor);const relation=context.relationModel(name);const label=context.relationKeyword(name).trim();const inline=relationInlineCreate(descriptor);if(entry?.canCreate!==true||!relation||!label||!inline.enabled||!inline.createOnNoMatch)return;const existing=resolveRelationQuickFillOption(context.relationOptionsForField(name),label,inline.match);if(existing){addRelationId(name,existing);return;}try{const created=await createContractFormRecord({model:relation,vals:{...(entry.defaultVals||{}),[inline.nameField||'name']:label}});const id=Number(created?.id||0);if(id>0){addRelationId(name,{id:Math.trunc(id),label});await context.queryRelationOptions(name,'');}}catch(error){context.validationErrors.value=[sanitizeUiErrorMessage(error instanceof Error?error.message:error,context.relationUiLabel(descriptor,'quick_create_failed'))];}};
-  const resolvePendingMany2manyTagCreates=async()=>{const issues:string[]=[];for(const [name,raw] of Object.entries(context.relationKeywords)){const keyword=String(raw||'').trim();if(!keyword||!isFieldWritable(name)||!Array.isArray(context.formData[name])||!context.relationModel(name))continue;const descriptor=context.formFields.value[name];const inline=relationInlineCreate(descriptor);if(!inline.enabled||!inline.createOnNoMatch)continue;const label=context.layoutNodes.value.find(node=>node.kind==='field'&&node.name===name)?.label||descriptor?.string||name;const match=resolveRelationQuickFillOption(context.relationOptionsForField(name),keyword,inline.match)||resolveRelationQuickFillOption(await context.queryRelationOptions(name,keyword),keyword,inline.match);if(match){addRelationId(name,match);continue;}const rows=await context.queryRelationOptions(name,keyword);if(hasAmbiguousRelationMatches(rows,keyword,inline.match)){issues.push(`${label}存在多个匹配记录，请选择具体记录`);continue;}const before=context.validationErrors.value.slice();await quickCreateMany2manyTag(name);if(context.relationKeyword(name).trim()){issues.push(...(context.validationErrors.value.length?context.validationErrors.value:[context.relationUiLabel(descriptor,'inline_create_failed','保存时创建失败')]));context.validationErrors.value=before;}}return Array.from(new Set(issues)).slice(0,5);};
+  const quickCreateMany2manyTag=async(name:string,parentOwnsCurrent?:()=>boolean)=>{
+    const descriptor=context.formFields.value[name];
+    const entry=relationEntry(descriptor);
+    const relation=context.relationModel(name);
+    const label=context.relationKeyword(name).trim();
+    const inline=relationInlineCreate(descriptor);
+    if(entry?.canCreate!==true||!relation||!label||!inline.enabled||!inline.createOnNoMatch)return;
+    const ownsRequest=context.captureRelationRequest?.(`quick-create-m2m:${name}`) ?? (()=>true);
+    const contextEpoch=currentContextEpoch();
+    const recordKey=relationRecordKey();
+    const isCurrent=parentOwnsCurrent || (()=>ownsRequest() && currentContextEpoch()===contextEpoch
+      && relationRecordKey()===recordKey && context.relationModel(name)===relation
+      && context.relationKeyword(name).trim()===label && Array.isArray(context.formData[name]));
+    if(!isCurrent())return;
+    const existing=resolveRelationQuickFillOption(context.relationOptionsForField(name),label,inline.match);
+    if(existing){addRelationId(name,existing);return;}
+    try{
+      const created=await createContractFormRecord({model:relation,vals:{...(entry.defaultVals||{}),[inline.nameField]:label}});
+      if(!isCurrent())return;
+      const id=Number(created?.id||0);
+      if(id>0){addRelationId(name,{id:Math.trunc(id),label});await context.queryRelationOptions(name,'');}
+    }catch(error){
+      if(!isCurrent())return;
+      context.validationErrors.value=[sanitizeUiErrorMessage(error instanceof Error?error.message:error,context.relationUiLabel(descriptor,'quick_create_failed'))];
+    }
+  };
+  const resolvePendingMany2manyTagCreates=async()=>{
+    const issues:string[]=[];
+    for(const [name,raw] of Object.entries(context.relationKeywords)){
+      const keyword=String(raw||'').trim();
+      if(!keyword||!isFieldWritable(name)||!Array.isArray(context.formData[name])||!context.relationModel(name))continue;
+      const descriptor=context.formFields.value[name];
+      const inline=relationInlineCreate(descriptor);
+      if(!inline.enabled||!inline.createOnNoMatch)continue;
+      const label=context.layoutNodes.value.find(node=>node.kind==='field'&&node.name===name)?.label||descriptor?.string||name;
+      const ownsRequest=context.captureRelationRequest?.(`resolved-m2m-create:${name}`) ?? (()=>true);
+      const contextEpoch=currentContextEpoch();
+      const recordKey=relationRecordKey();
+      const isCurrent=()=>ownsRequest() && currentContextEpoch()===contextEpoch
+        && relationRecordKey()===recordKey && context.relationModel(name)===
+          String((descriptor as Record<string,unknown>|undefined)?.relation||'').trim()
+        && context.relationKeyword(name).trim()===keyword && Array.isArray(context.formData[name]);
+      let rows=context.relationOptionsForField(name);
+      let match=resolveRelationQuickFillOption(rows,keyword,inline.match);
+      if(!match){
+        rows=await context.queryRelationOptions(name,keyword);
+        if(!isCurrent())continue;
+        match=resolveRelationQuickFillOption(rows,keyword,inline.match);
+      }
+      if(match){addRelationId(name,match);continue;}
+      if(hasAmbiguousRelationMatches(rows,keyword,inline.match)){issues.push(`${label}存在多个匹配记录，请选择具体记录`);continue;}
+      const before=context.validationErrors.value.slice();
+      await quickCreateMany2manyTag(name,isCurrent);
+      if(!isCurrent())continue;
+      if(context.relationKeyword(name).trim()){
+        issues.push(...(context.validationErrors.value.length?context.validationErrors.value:[context.relationUiLabel(descriptor,'inline_create_failed','保存时创建失败')]));
+        context.validationErrors.value=before;
+      }
+    }
+    return Array.from(new Set(issues)).slice(0,5);
+  };
   const setSelectionField=(name:string,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;context.formData[name]=value||false;syncFieldDirty(name);};
   const setRelationMultiField=(name:string,target:HTMLSelectElement)=>setRelationIds(name,Array.from(target.selectedOptions).map(item=>Number(item.value)));
   const setTextField=(name:string,value:string,occurrenceKey?:string)=>{if(!isFieldWritable(name,occurrenceKey))return;context.formData[name]=value;syncFieldDirty(name);};

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { beginContextTransition } from '../src/app/contextEpoch';
 import {
   createRouteDefaultsFingerprint,
   loadAuthoritativeCreateDefaults,
@@ -815,3 +816,73 @@ assert.equal((hiddenCommands[0]![2] as Record<string, unknown>).row_kind, 'serve
 assert.equal(Object.hasOwn(hiddenCommands[0]![2] as object, 'computed_token'), false);
 assert.throws(() => one2manyDataColumnsFromSubview({tree: {...hiddenTreeSubview.tree, column_occurrences: []}}, () => null), {name: 'ContractGapError'});
 console.log('hidden tree dependency defaults/onchange, occurrence, force_save and edit boundary: passed');
+
+// A retained route must cancel in-flight one2many work when it loses activity
+// or its actor/company context rotates. Settled draft rows stay intact.
+{
+  let active = true;
+  let sharedGeneration = 0;
+  const createResolvers: Array<{
+    requestIsCurrent: () => boolean;
+    resolve: (value: Record<string, unknown>) => void;
+  }> = [];
+  let createCalls = 0;
+  let createErrors = 0;
+  const retained = useOne2manyRuntime({
+    model: () => 'x.parent', recordId: () => 7, originalValues: () => ({}), parentValues: () => ({}),
+    onchangeLinePatches: () => [], resolveColumns: () => interactionColumns,
+    resolvePrimaryColumn: () => 'name', resolveRelationOptions: () => [], markFieldChanged: () => {},
+    captureRequest: () => {
+      const generation = sharedGeneration;
+      return () => active && sharedGeneration === generation;
+    },
+    isActive: () => active,
+    loadDefaults: (_name, requestIsCurrent) => {
+      createCalls += 1;
+      return new Promise((resolve) => {
+        createResolvers.push({ requestIsCurrent, resolve });
+      });
+    },
+    onCreateError: () => { createErrors += 1; },
+  });
+  const pendingCreate = retained.addRow('lines');
+  assert.equal(retained.defaultsPending.value, true);
+  active = false;
+  sharedGeneration += 1;
+  retained.invalidatePendingRequests();
+  assert.equal(retained.defaultsPending.value, false, 'leaving the retained page releases create busy state');
+  assert.equal(createResolvers[0]!.requestIsCurrent(), false, 'retained page must report the in-flight default as stale');
+  createResolvers[0]!.resolve({ name: 'Late default' });
+  await pendingCreate;
+  assert.equal(retained.fieldRows('lines').length, 0, 'a late default cannot append after page deactivation');
+  assert.equal(createErrors, 0, 'a stale default failure cannot republish into the retained page');
+
+  active = true;
+  const replacementCreate = retained.addRow('lines');
+  assert.equal(createResolvers[1]!.requestIsCurrent(), true, 'reactivation owns a new default request');
+  createResolvers[1]!.resolve({ name: 'Current default' });
+  await replacementCreate;
+  const stable = retained.fieldRows('lines')[0]!;
+  assert.equal(createCalls, 2, 'reactivation starts a new owned default request');
+  assert.equal(stable.values.name, 'Current default', 'the replacement request publishes its own result');
+
+  let resolveRowChange!: (value: Record<string, unknown>) => void;
+  const rowChange = useOne2manyRuntime({
+    model: () => 'x.parent', recordId: () => 7, originalValues: () => ({ lines: [11] }),
+    parentValues: () => ({}), onchangeLinePatches: () => [], resolveColumns: () => interactionColumns,
+    resolvePrimaryColumn: () => 'name', resolveRelationOptions: () => [], markFieldChanged: () => {},
+    loadRowChange: async () => new Promise((resolve) => { resolveRowChange = resolve; }),
+  });
+  rowChange.initRows('lines', [11]);
+  rowChange.mergeHydratedRecords('lines', [{ id: 11, name: 'Stable', quantity: 1 }]);
+  const changedRow = rowChange.fieldRows('lines')[0]!;
+  const pendingChange = rowChange.setRowField('lines', changedRow.key, interactionColumns[1]!, 9);
+  assert.equal(rowChange.defaultsPending.value, true);
+  beginContextTransition();
+  resolveRowChange({ quantity: 99 });
+  await pendingChange;
+  assert.equal(changedRow.values.quantity, 9, 'an old-context row response cannot overwrite the edited value');
+  assert.equal(rowChange.defaultsPending.value, false, 'context rotation settles the stale row request');
+  assert.equal(rowChange.collectValidation().issues.length, 0, 'context rotation exposes no stale row error');
+}
+console.log('one2many shared request ownership, deactivation and context epoch: passed');

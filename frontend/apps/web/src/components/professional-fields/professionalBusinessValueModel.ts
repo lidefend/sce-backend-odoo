@@ -48,6 +48,10 @@ export function normalizeBusinessValueChoiceOptions(
   }));
 }
 
-export function formatPercentage(value: unknown, digits?: [number, number]): string {
-  return formatBusinessPercentage(value, FIELD_VALUE_EMPTY_TEXT, digits);
+export function formatPercentage(
+  value: unknown,
+  digits?: [number, number],
+  unit?: { kind: 'percent' | 'duration' | 'count' | 'quantity'; code: string; label: string },
+): string {
+  return formatBusinessPercentage(value, FIELD_VALUE_EMPTY_TEXT, digits, unit);
 }

@@ -295,7 +295,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
           setRelationKeyword(fieldName, '');
           return;
         }
-        const nameField = inline.nameField || 'name';
+        const nameField = inline.nameField;
         const created = await createContractFormRecord({
           model: relation,
           vals: { ...(entry.defaultVals || {}), [nameField]: keyword },
@@ -352,6 +352,7 @@ export function useRecordActionPresentation(dependencies: PresentationDependenci
     one2manyEffectiveColumn: dependencies.one2manyEffectiveColumn,
     one2manyColumnQueryScope,
     queryOne2manyColumnOptions: dependencies.queryOne2manyColumnOptions,
+    relationRuntimeGeneration: dependencies.relationRuntimeGeneration,
     setOne2manyRowField: (fieldName: string, rowKey: string, column: RelationFieldColumn, value: unknown) => {
       if (!one2manyCanInlineEdit(fieldName)) return;
       delete validationFieldErrors.value[businessRowErrorKey(fieldName, rowKey, column.name)];

@@ -51,6 +51,15 @@ export type DeclaredBusinessField = {
   currency_field?: string;
   currencyLabel?: string;
   relation?: string;
+  unit?: {
+    kind: 'percent' | 'duration' | 'count' | 'quantity';
+    code: string;
+    label: string;
+  };
+  temporal?: {
+    kind: 'date' | 'datetime';
+    timezoneAuthority: 'user' | 'record' | 'not_applicable';
+  };
 };
 
 export type DeclaredBusinessValuePresentation = {
@@ -91,34 +100,34 @@ export function resolveCurrencyDisplayLabel(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
-export function resolveMonetaryScale(digits?: [number, number], currencyLabel = ''): number | undefined {
-  if (digits) return digits[1];
-  const currencyCode = /^[A-Z]{3}$/.test(currencyLabel) ? currencyLabel : '';
-  if (!currencyCode) return undefined;
-  try {
-    return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: currencyCode })
-      .resolvedOptions().maximumFractionDigits;
-  } catch {
-    return undefined;
+export function resolveMonetaryScale(digits?: [number, number]): number | undefined {
+  const declaredDigits = normalizeDeclaredDigits(digits);
+  if (digits !== undefined && !declaredDigits) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'field.(monetary).digits',
+      requiredDeclarationLayer: 'P0:frontend:business_value_presentation',
+    }, '金额字段声明了非法精度 digits');
   }
+  return declaredDigits?.[1];
 }
 
-export function monetaryInputStep(digits?: [number, number], currencyLabel = ''): string {
-  const scale = resolveMonetaryScale(digits, currencyLabel);
-  if (!Number.isInteger(scale)) return 'any';
+export function monetaryInputStep(digits?: [number, number]): string {
+  const scale = resolveMonetaryScale(digits);
+  if (scale === undefined) return 'any';
   return scale === 0 ? '1' : `0.${'0'.repeat(Math.max(0, scale - 1))}1`;
 }
 
 export function formatMonetaryInputValue(
   value: unknown,
   digits?: [number, number],
-  currencyLabel = '',
 ): string | number {
   if (value === null || value === undefined || value === '') return '';
+  const scale = resolveMonetaryScale(digits);
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return String(value);
-  const scale = resolveMonetaryScale(digits, currencyLabel);
-  return Number.isInteger(scale) ? numeric.toFixed(scale) : value as string | number;
+  if (scale === undefined) return String(value);
+  return numeric.toFixed(scale);
 }
 
 export function formatMonetaryDisplayValue(
@@ -131,10 +140,15 @@ export function formatMonetaryDisplayValue(
   if (value === null || value === undefined || value === false || value === '') return emptyText;
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) return emptyText;
-  const scale = resolveMonetaryScale(digits, currencyLabel);
-  const options: Intl.NumberFormatOptions = Number.isInteger(scale)
-    ? { minimumFractionDigits: scale, maximumFractionDigits: scale }
-    : {};
+  const scale = resolveMonetaryScale(digits);
+  if (scale === undefined) {
+    const text = String(value);
+    return currencyLabel ? `${text} ${currencyLabel}` : text;
+  }
+  const options: Intl.NumberFormatOptions = {
+    minimumFractionDigits: scale,
+    maximumFractionDigits: scale,
+  };
   const currencyCode = /^[A-Z]{3}$/.test(currencyLabel) ? currencyLabel : '';
   if (currencyCode) {
     return new Intl.NumberFormat(locale, { ...options, style: 'currency', currency: currencyCode }).format(numeric);
@@ -159,49 +173,86 @@ export function formatBusinessPercentage(
   value: unknown,
   emptyText = FIELD_VALUE_EMPTY_TEXT,
   digits?: [number, number],
+  unit?: DeclaredBusinessField['unit'],
 ): string {
   const numeric = numericFieldValue(value);
   if (numeric === null) return emptyText;
   const scale = normalizeDeclaredDigits(digits)?.[1];
-  const options = Number.isInteger(scale)
-    ? { minimumFractionDigits: scale, maximumFractionDigits: scale }
-    : { maximumFractionDigits: 2 };
-  return `${new Intl.NumberFormat('zh-CN', options).format(numeric)}%`;
+  if (!Number.isInteger(scale)) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'field.(percentage).digits',
+      requiredDeclarationLayer: 'P0:smart_core:field_descriptor_digits_projection',
+    }, '百分比缺少契约声明精度 digits');
+  }
+  if (unit?.kind !== 'percent' || String(unit.code || '').trim() !== 'percent' || !String(unit.label || '').trim()) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'field.(percentage).unit',
+      requiredDeclarationLayer: 'P0:smart_core:field_descriptor_percent_unit_projection',
+    }, '百分比缺少契约声明 unit.kind=percent/code/label');
+  }
+  const options = { minimumFractionDigits: scale, maximumFractionDigits: scale };
+  return `${new Intl.NumberFormat('zh-CN', options).format(numeric)}${unit.label}`;
+}
+
+function requireDeclaredBusinessDigits(
+  field: DeclaredBusinessField,
+  semantic: 'money' | 'percentage' | 'duration',
+): [number, number] {
+  const digits = normalizeDeclaredDigits(field.digits);
+  if (digits) return digits;
+  throw contractGapError({
+    kind: 'contract_defect',
+    missing: `field.${field.name || field.componentKey || '(unknown)'}.digits`,
+    requiredDeclarationLayer: 'P0:smart_core:field_descriptor_digits_projection',
+  }, `${semantic} 字段 ${field.name || field.componentKey || '(unknown)'} 缺少契约声明精度 digits`);
+}
+
+function requireDeclaredBusinessUnit(
+  field: DeclaredBusinessField,
+  semantic: 'percentage' | 'duration',
+): NonNullable<DeclaredBusinessField['unit']> {
+  const unit = field.unit;
+  const valid = semantic === 'percentage'
+    ? unit?.kind === 'percent' && String(unit.code || '').trim() === 'percent' && Boolean(String(unit.label || '').trim())
+    : unit?.kind === 'duration' && Boolean(String(unit.code || '').trim()) && Boolean(String(unit.label || '').trim());
+  if (!valid) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${field.name || field.componentKey || '(unknown)'}.unit`,
+      requiredDeclarationLayer: 'P0:smart_core:field_descriptor_unit_projection',
+    }, `${semantic} 字段缺少匹配的 unit 声明`);
+  }
+  return unit;
 }
 
 /**
- * Format an Odoo float_time value with the platform's Chinese business copy.
- *
- * Rounding and carry follow Odoo 17's authoritative `formatFloatTime`:
- * - false/null/undefined are empty, never numeric zero;
- * - minutes use the rounded millisecond remainder;
- * - a rounded 60th minute carries into the next hour;
- * - the sign belongs to the whole duration.
- *
- * The contract's `float_time` widget selects this semantic. No frontend-only
- * precision declaration is introduced.
+ * Format a duration from its declared precision and unit. The frontend does not
+ * reinterpret decimal hours as a hard-coded hour/minute sentence.
  */
 export function formatBusinessDuration(
   value: unknown,
   emptyText = FIELD_VALUE_EMPTY_TEXT,
+  digits?: [number, number],
+  unit?: DeclaredBusinessField['unit'],
 ): string {
   if (value === false || value === null || value === undefined || value === '') return emptyText;
+  const scale = requireDeclaredBusinessDigits({ name: 'duration', digits }, 'duration')[1];
+  if (unit?.kind !== 'duration' || !String(unit.code || '').trim() || !String(unit.label || '').trim()) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'field.(duration).unit',
+      requiredDeclarationLayer: 'P0:smart_core:field_descriptor_duration_unit_projection',
+    }, '时长字段缺少契约声明 unit.kind=duration/code/label');
+  }
   const numeric = numericFieldValue(value);
   if (numeric === null) return emptyText;
-  const negative = numeric < 0;
-  const absolute = Math.abs(numeric);
-  let hours = Math.floor(absolute);
-  const milliSecondsWithinHour = Math.round(absolute * 3_600_000) - hours * 3_600_000;
-  let minutes = Math.round(milliSecondsWithinHour / 60_000);
-  if (minutes === 60) {
-    hours += 1;
-    minutes = 0;
-  }
-  const sign = negative ? '-' : '';
-  if (hours === 0 && minutes === 0) return '0 小时';
-  if (hours === 0) return `${sign}${minutes} 分钟`;
-  if (minutes === 0) return `${sign}${hours} 小时`;
-  return `${sign}${hours} 小时 ${minutes} 分钟`;
+  const formatted = new Intl.NumberFormat('zh-CN', {
+    minimumFractionDigits: scale,
+    maximumFractionDigits: scale,
+  }).format(numeric);
+  return `${formatted} ${unit.label}`;
 }
 
 function normalizedSelection(field: DeclaredBusinessField): Array<{ value: string; label: string }> {
@@ -266,6 +317,56 @@ function relationContractGap(
     missing: `field.${field.name || '(unknown)'}.${missing}`,
     requiredDeclarationLayer: 'P0:smart_core:relation_display_projection',
   }, message);
+}
+
+function presentDeclaredPlainValue(
+  field: DeclaredBusinessField,
+  value: unknown,
+  emptyText: string,
+  locale?: string,
+  fallbackLocales?: string[],
+): DeclaredBusinessValuePresentation {
+  if (Array.isArray(value)) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${field.name || '(unknown)'}.value_shape`,
+      requiredDeclarationLayer: 'P0:smart_core:field_value_projection',
+    }, `普通字段 ${field.name || '(unknown)'} 不能按数组外形推断业务文本`);
+  }
+  if (value && typeof value === 'object') {
+    const entries = Object.keys(value as Record<string, unknown>);
+    const localeMapping = entries.length > 0 && entries.every((key) => (
+      /^[a-z]{2,3}(?:[_-][a-z]{2,4})?$/i.test(key)
+    ));
+    if (!localeMapping) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: `field.${field.name || '(unknown)'}.value_shape`,
+        requiredDeclarationLayer: 'P0:smart_core:field_value_projection',
+      }, `普通字段 ${field.name || '(unknown)'} 不能按对象属性推断业务标签`);
+    }
+  }
+  const normalized = resolveLocalizedDisplayValue(value, {
+    emptyText,
+    locale,
+    fallbackLocales,
+  });
+  if (normalized === null || normalized === undefined || normalized === '') {
+    return Object.freeze({ kind: 'empty', text: emptyText, tone: 'neutral', badgeSemantic: 'default' });
+  }
+  if (typeof normalized !== 'string' && typeof normalized !== 'number') {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${field.name || '(unknown)'}.value_shape`,
+      requiredDeclarationLayer: 'P0:smart_core:field_value_projection',
+    }, `普通字段 ${field.name || '(unknown)'} 的契约值无法解析为文本`);
+  }
+  return Object.freeze({
+    kind: 'plain',
+    text: String(normalized),
+    tone: 'neutral',
+    badgeSemantic: 'default',
+  });
 }
 
 function presentDeclaredRelation(
@@ -367,6 +468,35 @@ function resolveDeclaredStatusContract(field: DeclaredBusinessField): {
   return { statusType, selection };
 }
 
+function resolveDeclaredTemporal(
+  field: DeclaredBusinessField,
+  kind: 'date' | 'datetime',
+): NonNullable<DeclaredBusinessField['temporal']> {
+  const temporal = field.temporal;
+  const valid = kind === 'date'
+    ? temporal?.kind === 'date' && temporal.timezoneAuthority === 'not_applicable'
+    : temporal?.kind === 'datetime'
+      && (temporal.timezoneAuthority === 'user' || temporal.timezoneAuthority === 'record');
+  if (!valid) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `field.${field.name || '(unknown)'}.temporal`,
+      requiredDeclarationLayer: 'P0:smart_core:temporal_kind_and_timezone_authority_projection',
+    }, `${kind} 字段缺少匹配的 temporal 声明`);
+  }
+  return temporal;
+}
+
+function resolveUserTimeZone(value: unknown): string {
+  const declared = String(value || '').trim();
+  if (declared) return declared;
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+}
+
 function declaredBusinessFieldType(field: DeclaredBusinessField): ReturnType<typeof normalizeFieldType> {
   const nativeType = normalizeFieldType(field);
   if (nativeType !== 'unknown') return nativeType;
@@ -403,19 +533,32 @@ export function presentDeclaredBusinessValue(input: {
   temporalProfile?: 'compact' | 'full';
   locale?: string;
   fallbackLocales?: string[];
+  timeZone?: string;
+  recordTimeZone?: string;
 }): DeclaredBusinessValuePresentation {
   const emptyText = input.emptyText ?? FIELD_VALUE_EMPTY_TEXT;
   const kind = declaredBusinessValueKind(input.field, input.status);
   const statusContract = kind === 'status'
     ? resolveDeclaredStatusContract(input.field)
     : null;
+  const temporal = kind === 'date' || kind === 'datetime'
+    ? resolveDeclaredTemporal(input.field, kind)
+    : null;
+  const declaredDigits = kind === 'percentage' || kind === 'duration'
+    ? requireDeclaredBusinessDigits(input.field, kind)
+    : kind === 'money'
+      ? normalizeDeclaredDigits(input.field.digits)
+      : undefined;
+  const declaredUnit = kind === 'percentage' || kind === 'duration'
+    ? requireDeclaredBusinessUnit(input.field, kind)
+    : undefined;
   if (isEmptyFieldValue(input.value)) {
     return Object.freeze({ kind: 'empty', text: emptyText, tone: 'neutral', badgeSemantic: 'default' });
   }
   if (kind === 'money') {
     const text = formatMonetaryDisplayValue(
       input.value,
-      input.field.digits,
+      declaredDigits,
       input.currencyLabel || input.field.currencyLabel || '',
       'zh-CN',
       emptyText,
@@ -430,13 +573,13 @@ export function presentDeclaredBusinessValue(input: {
   if (kind === 'percentage') {
     return Object.freeze({
       kind: 'percentage',
-      text: formatBusinessPercentage(input.value, emptyText, input.field.digits),
+      text: formatBusinessPercentage(input.value, emptyText, declaredDigits, declaredUnit),
       tone: 'neutral',
       badgeSemantic: 'default',
     });
   }
   if (kind === 'duration') {
-    const text = formatBusinessDuration(input.value, emptyText);
+    const text = formatBusinessDuration(input.value, emptyText, declaredDigits, declaredUnit);
     return Object.freeze({
       kind: text === emptyText ? 'empty' : 'duration',
       text,
@@ -485,12 +628,23 @@ export function presentDeclaredBusinessValue(input: {
   if (kind === 'date' || kind === 'datetime') {
     const temporalText = formatTemporalFieldValue(
       input.value,
+      temporal.kind,
       input.temporalProfile || (kind === 'date' ? 'compact' : 'full'),
+      temporal.timezoneAuthority === 'user'
+        ? resolveUserTimeZone(input.timeZone)
+        : temporal.timezoneAuthority === 'record'
+          ? input.recordTimeZone || (() => {
+              throw contractGapError({
+                kind: 'contract_defect',
+                missing: `field.${input.field.name || '(unknown)'}.temporal.recordTimeZone`,
+                requiredDeclarationLayer: 'P0:smart_core:record_timezone_authority',
+              }, '记录时区权威字段缺少 recordTimeZone');
+            })()
+          : '',
     );
-    const text = kind === 'date' ? temporalText.split(' ', 1)[0] : temporalText;
     return Object.freeze({
-      kind: text ? kind : 'empty',
-      text: text || emptyText,
+      kind: temporalText ? kind : 'empty',
+      text: temporalText || emptyText,
       tone: 'neutral',
       badgeSemantic: 'default',
     });
@@ -561,23 +715,14 @@ export function presentDeclaredBusinessValue(input: {
       badgeSemantic: 'default',
     });
   }
-  if (Array.isArray(input.value)) {
-    return Object.freeze({
-      kind: input.value.length ? 'plain' : 'empty',
-      text: input.value.length ? input.value.map((item) => String(item ?? '')).join(', ') : emptyText,
-      tone: 'neutral',
-      badgeSemantic: 'default',
-    });
-  }
-  if (typeof input.value === 'object') {
-    const row = input.value as Record<string, unknown>;
-    const text = String(row.display_name || row.label || row.name || '').trim();
-    return Object.freeze({
-      kind: text ? 'plain' : 'empty',
-      text: text || emptyText,
-      tone: 'neutral',
-      badgeSemantic: 'default',
-    });
+  if (Array.isArray(input.value) || (input.value && typeof input.value === 'object')) {
+    return presentDeclaredPlainValue(
+      input.field,
+      input.value,
+      emptyText,
+      input.locale,
+      input.fallbackLocales,
+    );
   }
   const fieldType = normalizeFieldType(input.field);
   if (fieldType === 'integer' || fieldType === 'float') {

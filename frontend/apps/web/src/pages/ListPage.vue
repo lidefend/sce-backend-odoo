@@ -337,6 +337,7 @@ import {
 } from '../app/presentation/collectionAggregatePresentation';
 import { resolveCollectionEmptyStateKind } from '../app/presentation/collectionEmptyStatePresentation';
 import { toneToBadgeSemantic } from '../app/presentation/businessValuePresentation';
+import { useRuntimeTimeZone } from '../app/runtimeTimeZone';
 import ScTable from '../components/design-system/ScTable.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
 import { resolveEmptyCopy, resolveErrorCopy, type StatusError } from '../composables/useStatus';
@@ -346,6 +347,7 @@ import {
   FIELD_VALUE_EMPTY_TEXT,
   containsAttachmentReference,
   formatNumericFieldValue,
+  hasDeclaredAttachmentIdentity,
   isNumericFieldType,
 } from '../utils/fieldSemantics.ts';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
@@ -386,7 +388,18 @@ type ColumnOption = {
   aggregationField?: string;
   dataType?: string;
   componentKey?: string;
+  relation?: string;
+  attachmentRole?: string;
   currencyField?: string;
+  unit?: {
+    kind: 'percent' | 'duration' | 'count' | 'quantity';
+    code: string;
+    label: string;
+  };
+  temporal?: {
+    kind: 'date' | 'datetime';
+    timezoneAuthority: 'user' | 'record' | 'not_applicable';
+  };
   digits?: [number, number];
   aggregate?: string;
   sortField?: string;
@@ -521,6 +534,7 @@ const props = defineProps<{
   hasActiveConditions?: boolean;
   onClearConditions?: () => void;
 }>();
+const timeZone = useRuntimeTimeZone();
 const emit = defineEmits<{
   'column-visibility-change': [payload: { visibility: Record<string, boolean> }];
   'column-order-change': [payload: { columnOrder: string[] }];
@@ -740,7 +754,8 @@ function semanticCell(field: string, value: unknown, relationItems: Array<{ id: 
     ? normalizeListRelationValue(value, row?.[valueField])
     : value;
   const rawText = typeof value === 'string' ? value : '';
-  const attachmentText = rawText && containsAttachmentReference(rawText)
+  const attachmentText = hasDeclaredAttachmentIdentity(columnSemanticInput(field))
+    && rawText && containsAttachmentReference(rawText)
     ? formatAttachmentReferenceValue(rawText)
     : '';
   const currencyLabel = option?.currencyField && row
@@ -769,8 +784,13 @@ function mobileRecordFacts(row: Record<string, unknown>): CollectionMobileRecord
     };
   });
 }
-function attachmentLinks(value: unknown) {
-  return parseAttachmentReferenceLinks(value);
+function attachmentLinks(field: string, value: unknown) {
+  return hasAttachmentIdentity(field)
+    ? parseAttachmentReferenceLinks(value)
+    : [];
+}
+function hasAttachmentIdentity(field: string) {
+  return hasDeclaredAttachmentIdentity(columnSemanticInput(field));
 }
 async function previewAttachmentLink(link: { name: string; url: string }, row: Record<string, unknown>) {
   attachmentPreviewError.value = '';
@@ -844,7 +864,7 @@ function collectionRowCellProps(row: Record<string, unknown>, field: string) {
   const value = columnValue(row, field);
   const relationItems = relationDisplayItems(row, field);
   const presentation = semanticCell(field, value, relationItems, row);
-  const links = attachmentLinks(value);
+  const links = attachmentLinks(field, value);
   let kind: CollectionRowCellKind = 'text';
   if (isFavoriteColumn(field)) kind = 'favorite';
   else if (isStatusLikeColumn(field)) kind = 'status';
@@ -1922,9 +1942,14 @@ function columnSemanticInput(field: string) {
     componentKey: option?.componentKey,
     widget: option?.widget,
     cellRole: option?.cellRole,
+    relation: option?.relation,
+    attachmentRole: option?.attachmentRole,
     selection: option?.selection,
     digits: option?.digits,
     currencyField: option?.currencyField,
+    unit: option?.unit,
+    temporal: option?.temporal,
+    timeZone: timeZone.value,
   };
 }
 

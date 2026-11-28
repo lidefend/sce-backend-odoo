@@ -43,11 +43,6 @@ const GENERIC_TITLES = new Set([
   '表单',
 ]);
 
-const DEFAULT_PRIMARY_FIELDS = [
-  'display_name',
-  'name',
-];
-
 function text(value: unknown): string {
   if (value === false) return '';
   if (Array.isArray(value)) return text(value.length > 1 ? value[1] : value[0]);
@@ -75,12 +70,9 @@ function recordIdentity(input: PageIdentityInput): string {
   const direct = productIdentityText(input.recordDisplayName);
   if (direct) return direct;
   const record = input.record || {};
-  const displayName = productIdentityText(record.display_name);
-  if (displayName) return displayName;
-  const primaryNames = Array.from(new Set([
-    ...(input.primaryFieldNames || []).map((name) => text(name)).filter(Boolean),
-    ...DEFAULT_PRIMARY_FIELDS,
-  ]));
+  const primaryNames = Array.from(new Set((input.primaryFieldNames || [])
+    .map((name) => text(name))
+    .filter(Boolean)));
   for (const name of primaryNames) {
     const value = productIdentityText(record[name]);
     if (value) return value;

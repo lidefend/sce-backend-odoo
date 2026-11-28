@@ -3,9 +3,6 @@ import {
   FIELD_VALUE_EMPTY_TEXT,
   FIELD_VALUE_FALSE_TEXT,
   FIELD_VALUE_TRUE_TEXT,
-  containsAttachmentReference,
-  containsAttachmentReferenceIn,
-  isEmptyFieldValue,
   normalizeFieldType,
 } from './fieldSemantics.ts';
 import {
@@ -16,6 +13,7 @@ import {
   resolveLocalizedDisplayValue,
   type LocalizedDisplayOptions,
 } from './localizedDisplay.ts';
+import { contractGapError } from '../app/contract/contractGap.ts';
 
 export { resolveLocalizedDisplayValue };
 
@@ -23,6 +21,7 @@ export type DisplayFormatOptions = LocalizedDisplayOptions & {
   booleanTrueText?: string;
   booleanFalseText?: string;
   currencyLabel?: string;
+  timeZone?: string;
 };
 
 const DEFAULT_OPTIONS: Required<DisplayFormatOptions> = {
@@ -32,6 +31,7 @@ const DEFAULT_OPTIONS: Required<DisplayFormatOptions> = {
   locale: '',
   fallbackLocales: ['zh_CN', 'en_US'],
   currencyLabel: '',
+  timeZone: '',
 };
 
 function normalizeOptions(options?: DisplayFormatOptions): Required<DisplayFormatOptions> {
@@ -42,17 +42,8 @@ function normalizeOptions(options?: DisplayFormatOptions): Required<DisplayForma
     locale: options?.locale ?? DEFAULT_OPTIONS.locale,
     fallbackLocales: options?.fallbackLocales ?? DEFAULT_OPTIONS.fallbackLocales,
     currencyLabel: options?.currencyLabel ?? DEFAULT_OPTIONS.currencyLabel,
+    timeZone: options?.timeZone ?? DEFAULT_OPTIONS.timeZone,
   };
-}
-
-function relationalTupleDisplayValue(
-  value: unknown,
-  options: Required<DisplayFormatOptions>,
-): string | null {
-  if (!Array.isArray(value) || value.length !== 2 || typeof value[0] !== 'number') return null;
-  const label = resolveLocalizedDisplayValue(value[1], options);
-  if (label === null || label === undefined || typeof label === 'object') return options.emptyText;
-  return String(label || value[0]);
 }
 
 export function formatAttachmentReferenceValue(value: unknown): string {
@@ -122,6 +113,8 @@ function formatDeclaredDisplayValue(
       cellRole: field.cellRole,
       selection: field.selection,
       digits: field.digits,
+      unit: field.unit,
+      temporal: field.temporal,
       currencyField: field.currencyField || field.currency_field,
       currencyLabel: field.currencyLabel,
       relation: field.relation,
@@ -130,39 +123,15 @@ function formatDeclaredDisplayValue(
     currencyLabel: options.currencyLabel,
     emptyText: options.emptyText,
     temporalProfile: 'full',
+    timeZone: options.timeZone,
     locale: options.locale,
     fallbackLocales: options.fallbackLocales,
   });
   if (presentation.kind === 'plain') {
     const text = stripInternalMigrationMetadata(presentation.text);
-    if (containsAttachmentReference(text)) return formatAttachmentReferenceValue(text) || text;
     return text || options.emptyText;
   }
   return presentation.text;
-}
-
-function formatUndeclaredDisplayValue(
-  value: unknown,
-  options: Required<DisplayFormatOptions>,
-): string {
-  value = resolveLocalizedDisplayValue(value, options);
-  if (isEmptyFieldValue(value)) return options.emptyText;
-  if (typeof value === 'boolean') return value ? String(value) : options.emptyText;
-  if (Array.isArray(value)) {
-    if (!value.length) return options.emptyText;
-    const relationalLabel = relationalTupleDisplayValue(value, options);
-    if (relationalLabel !== null) return relationalLabel;
-    const attachmentText = formatAttachmentReferenceValue(value);
-    if (attachmentText && containsAttachmentReferenceIn(value)) return attachmentText;
-    return value.map((item) => String(item)).join(', ');
-  }
-  if (typeof value === 'object') return options.emptyText;
-  const rawText = stripInternalMigrationMetadata(String(value));
-  if (!rawText) return options.emptyText;
-  if (containsAttachmentReference(rawText)) {
-    return formatAttachmentReferenceValue(rawText) || rawText;
-  }
-  return rawText;
 }
 
 export function formatDisplayValue(
@@ -171,7 +140,12 @@ export function formatDisplayValue(
   options?: DisplayFormatOptions,
 ): string {
   const normalized = normalizeOptions(options);
-  return field
-    ? formatDeclaredDisplayValue(value, field, normalized)
-    : formatUndeclaredDisplayValue(value, normalized);
+  if (!field) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'fieldDescriptor',
+      requiredDeclarationLayer: 'P0:smart_core:field_descriptor_projection',
+    }, '业务值缺少字段描述符，前端不得按值外形推断格式');
+  }
+  return formatDeclaredDisplayValue(value, field, normalized);
 }

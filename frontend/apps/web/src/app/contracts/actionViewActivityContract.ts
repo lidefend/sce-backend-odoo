@@ -94,14 +94,25 @@ function staticInvisible(attributes: Dict, modifiers: unknown): { hidden: boolea
   return { hidden: false, unsupported: true };
 }
 
-export function activityCellText(value: unknown, field?: ActivitySurfaceField, record: Dict = {}): string {
+export function activityCellText(
+  value: unknown,
+  field?: ActivitySurfaceField,
+  record: Dict = {},
+  timeZone = '',
+): string {
   if (value === null || value === undefined || value === false || value === '') return FIELD_VALUE_EMPTY_TEXT;
   if (field?.widget === 'monetary') {
     const currencyLabel = resolveCurrencyDisplayLabel(record[field.currencyField]);
     return formatMonetaryDisplayValue(value, field.digits, currencyLabel);
   }
   if (['date', 'datetime'].includes(normalizeFieldType(field?.fieldType))) {
-    return formatTemporalFieldValue(value, field?.fieldType === 'datetime' ? 'full' : 'compact') || FIELD_VALUE_EMPTY_TEXT;
+    const kind = field?.fieldType === 'datetime' ? 'datetime' : 'date';
+    return formatTemporalFieldValue(
+      value,
+      kind,
+      kind === 'datetime' ? 'full' : 'compact',
+      timeZone,
+    ) || FIELD_VALUE_EMPTY_TEXT;
   }
   if (Array.isArray(value) && isScalarRelationFieldType(normalizeFieldType(field?.fieldType))) {
     return value.length > 1

@@ -5,7 +5,7 @@ import { resolveContractV2SurfacePolicies } from '../contracts/v2/store';
 import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 
 type UseActionViewPageDisplayStateRuntimeOptions = {
-  routeSceneLabel: Ref<string>;
+  sceneLabel: ComputedRef<string>;
   menuTitle?: ComputedRef<string>;
   actionContract: Ref<ContractV2NormalizedStore | null>;
   injectedTitle: ComputedRef<string>;
@@ -25,7 +25,7 @@ function isTechnicalViewTitle(value: string) {
 
 export function useActionViewPageDisplayStateRuntime(options: UseActionViewPageDisplayStateRuntimeOptions) {
   const pageTitle = computed(() => {
-    if (options.routeSceneLabel.value) return options.routeSceneLabel.value;
+    if (options.sceneLabel.value) return options.sceneLabel.value;
     const menuTitle = String(options.menuTitle?.value || '').trim();
     if (menuTitle) return menuTitle;
     const contractTitle = String(options.actionContract.value?.snapshot.pageInfo.pageName || '').trim();

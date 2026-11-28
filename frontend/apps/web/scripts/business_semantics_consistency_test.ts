@@ -3,12 +3,19 @@ import {
   formatBusinessDuration,
   formatBusinessPercentage,
   formatMonetaryDisplayValue,
+  formatMonetaryInputValue,
+  monetaryInputStep,
   presentDeclaredBusinessValue,
   statusBadgeSemantic,
 } from '../src/app/presentation/businessValuePresentation';
 import { presentCollectionKanbanCell } from '../src/app/presentation/collectionKanbanPresentation';
+import { presentCollectionKanbanTitle } from '../src/app/presentation/collectionKanbanPresentation';
 import { formatProductMyWorkFact } from '../src/app/presentation/productMyWorkPresentation';
-import { FIELD_VALUE_EMPTY_TEXT } from '../src/utils/fieldSemantics';
+import {
+  FIELD_VALUE_EMPTY_TEXT,
+  formatNumericFieldValue,
+  hasDeclaredAttachmentIdentity,
+} from '../src/utils/fieldSemantics';
 import { isListAttachmentCountColumn, presentListCell } from '../src/pages/listPage/listCellPresentation';
 import { formatDisplayValue } from '../src/utils/display';
 
@@ -52,6 +59,32 @@ const amountNamedText = presentDeclaredBusinessValue({
 });
 assert.equal(amountNamedText.kind, 'plain');
 assert.equal(amountNamedText.text, '1234.5', 'field names never infer monetary identity');
+assert.equal(presentDeclaredBusinessValue({
+  field: { name: 'localized_title', type: 'char' },
+  value: { zh_CN: '合同甲', en_US: 'Contract A' },
+  locale: 'zh_CN',
+}).text, '合同甲', 'plain text consumes declared locale mappings');
+assert.equal(presentDeclaredBusinessValue({
+  field: { name: 'localized_title', type: 'char' },
+  value: { zh_CN: '合同甲', en_US: 'Contract A' },
+  locale: 'en_US',
+}).text, 'Contract A', 'plain text selects the requested locale');
+assert.throws(
+  () => presentDeclaredBusinessValue({
+    field: { name: 'plain_object', type: 'char' },
+    value: { display_name: '伪装成业务名称' },
+  }),
+  { name: 'ContractGapError' },
+  'plain text must not infer a business label from object shape',
+);
+assert.throws(
+  () => presentDeclaredBusinessValue({
+    field: { name: 'plain_array', type: 'char' },
+    value: ['伪装成业务列表'],
+  }),
+  { name: 'ContractGapError' },
+  'plain text must not infer a business list from array shape',
+);
 assert.equal(presentCollectionKanbanCell({
   field: 'amount_total_note',
   value: '1234.5',
@@ -60,26 +93,109 @@ assert.equal(presentCollectionKanbanCell({
 }).text, '1234.5', 'Kanban never infers money from a field name');
 
 const rateNamedFloat = presentDeclaredBusinessValue({
-  field: { name: 'conversion_rate', type: 'float', componentKey: 'sc.input.number' },
+  field: {
+    name: 'conversion_rate',
+    type: 'float',
+    componentKey: 'sc.input.number',
+    digits: [16, 2],
+  },
   value: 12.5,
 });
 assert.equal(rateNamedFloat.kind, 'plain');
-assert.equal(rateNamedFloat.text, '12.50', 'field names never infer percentage identity; plain floats share the authority default');
+assert.equal(rateNamedFloat.text, '12.50', 'field names never infer percentage identity; plain floats consume declared digits');
 assert.equal(presentCollectionKanbanCell({
   field: 'conversion_rate',
   value: 12.5,
   statusFields: [],
-  columnOptions: [{ name: 'conversion_rate', type: 'float', componentKey: 'sc.input.number' }],
-}).text, '12.50', 'Kanban never infers percentage from a field name; plain floats share the authority default');
+  columnOptions: [{
+    name: 'conversion_rate',
+    type: 'float',
+    componentKey: 'sc.input.number',
+    digits: [16, 2],
+  }],
+}).text, '12.50', 'Kanban never infers percentage from a field name; plain floats consume declared digits');
 
 const declaredPercentage = presentDeclaredBusinessValue({
-  field: { name: 'unrelated_ratio', type: 'float', componentKey: 'sc.value.percentage', digits: [16, 4] },
+  field: {
+    name: 'unrelated_ratio',
+    type: 'float',
+    componentKey: 'sc.value.percentage',
+    digits: [16, 4],
+    unit: { kind: 'percent', code: 'percent', label: '%' },
+  },
   value: 12.5,
 });
 assert.equal(declaredPercentage.kind, 'percentage');
 assert.equal(declaredPercentage.text, '12.5000%');
-assert.equal(formatBusinessPercentage(12.5, FIELD_VALUE_EMPTY_TEXT, [16, 4]), declaredPercentage.text);
-assert.equal(formatBusinessPercentage(12.5), '12.5%');
+assert.equal(formatBusinessPercentage(
+  12.5,
+  FIELD_VALUE_EMPTY_TEXT,
+  [16, 4],
+  { kind: 'percent', code: 'percent', label: '%' },
+), declaredPercentage.text);
+assert.throws(
+  () => formatBusinessPercentage(12.5),
+  { name: 'ContractGapError' },
+  'percentage precision must come from the field contract',
+);
+assert.throws(
+  () => formatBusinessPercentage(12.5, FIELD_VALUE_EMPTY_TEXT, [16, 4]),
+  { name: 'ContractGapError' },
+  'percentage unit must come from the field contract',
+);
+assert.throws(
+  () => presentDeclaredBusinessValue({
+    field: { name: 'undeclared_ratio', type: 'float', componentKey: 'sc.value.percentage' },
+    value: 12.5,
+  }),
+  { name: 'ContractGapError' },
+  'declared percentages cannot use a frontend precision fallback',
+);
+const moneyWithoutObservedPrecision = {
+  name: 'undeclared_money',
+  type: 'monetary',
+  componentKey: 'sc.value.money',
+  currencyField: 'currency_id',
+};
+assert.deepEqual(presentDeclaredBusinessValue({
+  field: moneyWithoutObservedPrecision,
+  value: 12.5,
+  currencyLabel: 'CNY',
+}), {
+  kind: 'money',
+  text: '12.5 CNY',
+  tone: 'neutral',
+  badgeSemantic: 'default',
+});
+assert.equal(
+  presentDeclaredBusinessValue({
+    field: moneyWithoutObservedPrecision,
+    value: '',
+    currencyLabel: 'CNY',
+  }).kind,
+  'empty',
+  'an unvalued create field needs no current-record currency precision',
+);
+assert.equal(
+  formatMonetaryDisplayValue(12.5, undefined, 'CNY'),
+  '12.5 CNY',
+  'money without an observed precision is displayed without inventing decimals',
+);
+assert.equal(
+  formatMonetaryInputValue(12.5, undefined),
+  '12.5',
+  'money input without an observed precision preserves the entered value',
+);
+assert.equal(
+  monetaryInputStep(undefined),
+  'any',
+  'money input without an observed precision imposes no frontend step',
+);
+assert.throws(
+  () => formatMonetaryDisplayValue(12.5, [16, 25] as [number, number], 'CNY'),
+  { name: 'ContractGapError' },
+  'a malformed declared money precision still fails closed',
+);
 assert.equal(presentDeclaredBusinessValue({
   field: { name: 'declared_quantity', type: 'float', componentKey: 'sc.input.number', digits: [16, 6] },
   value: 12.5,
@@ -93,6 +209,7 @@ assert.equal(presentCollectionKanbanCell({
     type: 'float',
     componentKey: 'sc.value.percentage',
     digits: [16, 4],
+    unit: { kind: 'percent', code: 'percent', label: '%' },
   }],
 }).text, '12.5000%', 'Kanban consumes percentage identity and declared precision');
 
@@ -101,15 +218,15 @@ const durationCases: Array<[unknown, string]> = [
   [undefined, FIELD_VALUE_EMPTY_TEXT],
   [false, FIELD_VALUE_EMPTY_TEXT],
   ['', FIELD_VALUE_EMPTY_TEXT],
-  [0, '0 小时'],
-  [1, '1 小时'],
-  [1.5, '1 小时 30 分钟'],
-  [1.999, '2 小时'],
-  [0.58, '35 分钟'],
-  [59 / 60, '59 分钟'],
-  [59.6 / 60, '1 小时'],
-  [-0.5, '-30 分钟'],
-  [-1.5, '-1 小时 30 分钟'],
+  [0, '0.000 小时'],
+  [1, '1.000 小时'],
+  [1.5, '1.500 小时'],
+  [1.999, '1.999 小时'],
+  [0.58, '0.580 小时'],
+  [59 / 60, '0.983 小时'],
+  [59.6 / 60, '0.993 小时'],
+  [-0.5, '-0.500 小时'],
+  [-1.5, '-1.500 小时'],
   ['not-a-duration', FIELD_VALUE_EMPTY_TEXT],
   [Number.NaN, FIELD_VALUE_EMPTY_TEXT],
   [Number.POSITIVE_INFINITY, FIELD_VALUE_EMPTY_TEXT],
@@ -119,9 +236,11 @@ const durationField = {
   type: 'float',
   widget: 'float_time',
   componentKey: 'sc.value.duration',
+  digits: [16, 3] as [number, number],
+  unit: { kind: 'duration', code: 'hour', label: '小时' },
 };
 for (const [value, expected] of durationCases) {
-  assert.equal(formatBusinessDuration(value), expected);
+  assert.equal(formatBusinessDuration(value, FIELD_VALUE_EMPTY_TEXT, durationField.digits, durationField.unit), expected);
   assert.equal(presentDeclaredBusinessValue({ field: durationField, value }).kind === 'empty'
     ? FIELD_VALUE_EMPTY_TEXT
     : presentDeclaredBusinessValue({ field: durationField, value }).text, expected);
@@ -133,6 +252,8 @@ for (const [value, expected] of durationCases) {
       type: 'float',
       widget: 'float_time',
       componentKey: 'sc.value.duration',
+      digits: durationField.digits,
+      unit: durationField.unit,
     },
   }).text, expected);
   assert.equal(presentCollectionKanbanCell({
@@ -143,9 +264,31 @@ for (const [value, expected] of durationCases) {
       type: 'float',
       widget: 'float_time',
       componentKey: 'sc.value.duration',
+      digits: durationField.digits,
+      unit: durationField.unit,
     }],
   }).text, expected);
 }
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'duration_without_unit',
+    type: 'float',
+    widget: 'float_time',
+    componentKey: 'sc.value.duration',
+    digits: [16, 3],
+  },
+  value: 1.5,
+}), { name: 'ContractGapError' }, 'duration unit must be declared');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'duration_without_digits',
+    type: 'float',
+    widget: 'float_time',
+    componentKey: 'sc.value.duration',
+    unit: { kind: 'duration', code: 'hour', label: '小时' },
+  },
+  value: 1.5,
+}), { name: 'ContractGapError' }, 'duration precision must be declared');
 
 const statusSelection = [
   { value: 'draft', label: '草稿' },
@@ -312,6 +455,27 @@ assert.deepEqual(presentDeclaredBusinessValue({
 }, 'a valid status declaration still renders the platform empty value');
 assert.equal(statusBadgeSemantic('approved'), 'success');
 assert.equal(statusBadgeSemantic('rejected'), 'danger');
+assert.equal(
+  formatNumericFieldValue(12.5, 'float', { digits: [16, 3] }),
+  '12.500',
+  'generic float values consume their declared scale',
+);
+assert.equal(formatNumericFieldValue(2.7, 'integer'), '3', 'integer precision follows the declared field type');
+assert.throws(
+  () => formatNumericFieldValue(12.5, 'float'),
+  { name: 'ContractGapError' },
+  'generic float values without declared digits must stop instead of defaulting to two places',
+);
+assert.throws(
+  () => formatNumericFieldValue(12.5, 'float', { digits: [16, 25] }),
+  { name: 'ContractGapError' },
+  'invalid generic float digits must stop instead of being rounded to a frontend default',
+);
+assert.throws(
+  () => formatNumericFieldValue(null, 'float'),
+  { name: 'ContractGapError' },
+  'an empty generic float still requires its declared display precision',
+);
 assert.equal(presentCollectionKanbanCell({
   field: 'opaque_state',
   value: 'pending',
@@ -326,19 +490,73 @@ assert.equal(presentCollectionKanbanCell({
 
 const dateValue = '2026-09-09T08:30:45Z';
 assert.equal(presentDeclaredBusinessValue({
-  field: { name: 'business_date', type: 'date' },
+  field: {
+    name: 'business_date',
+    type: 'date',
+    temporal: { kind: 'date', timezoneAuthority: 'not_applicable' },
+  },
   value: dateValue,
   temporalProfile: 'compact',
 }).text, '2026-09-09');
 assert.equal(presentDeclaredBusinessValue({
-  field: { name: 'business_datetime', type: 'datetime' },
+  field: {
+    name: 'business_datetime',
+    type: 'datetime',
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+  },
   value: dateValue,
   temporalProfile: 'full',
+  timeZone: 'UTC',
 }).text, '2026-09-09 08:30:45');
+assert.equal(presentDeclaredBusinessValue({
+  field: {
+    name: 'business_datetime',
+    type: 'datetime',
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+  },
+  value: dateValue,
+  temporalProfile: 'full',
+  timeZone: 'Asia/Shanghai',
+}).text, '2026-09-09 16:30:45');
+assert.equal(presentDeclaredBusinessValue({
+  field: {
+    name: 'midnight_datetime',
+    type: 'datetime',
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+  },
+  value: '2026-09-09T00:00:00Z',
+  temporalProfile: 'full',
+  timeZone: 'UTC',
+}).text, '2026-09-09 00:00:00', 'datetime never downgrades to a date at midnight');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: { name: 'missing_temporal', type: 'datetime' },
+  value: dateValue,
+}), { name: 'ContractGapError' }, 'datetime requires its declared temporal authority');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'mismatched_temporal',
+    type: 'date',
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+  },
+  value: '2026-09-09',
+}), { name: 'ContractGapError' }, 'temporal kind must match the declared field type');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'record_time_datetime',
+    type: 'datetime',
+    temporal: { kind: 'datetime', timezoneAuthority: 'record' },
+  },
+  value: dateValue,
+}), { name: 'ContractGapError' }, 'record timezone authority requires a declared record timezone');
 assert.equal(presentCollectionKanbanCell({
   field: 'business_datetime',
   value: dateValue,
-  columnOptions: [{ name: 'business_datetime', type: 'datetime' }],
+  columnOptions: [{
+    name: 'business_datetime',
+    type: 'datetime',
+    temporal: { kind: 'datetime', timezoneAuthority: 'user' },
+  }],
+  timeZone: 'UTC',
 }).text, '2026-09-09 08:30');
 
 assert.equal(presentDeclaredBusinessValue({
@@ -347,7 +565,13 @@ assert.equal(presentDeclaredBusinessValue({
 }).text, FIELD_VALUE_EMPTY_TEXT);
 assert.equal(presentListCell({
   raw: null,
-  column: { field: 'amount', label: '金额', type: 'monetary', cellRole: 'money' },
+  column: {
+    field: 'amount',
+    label: '金额',
+    type: 'monetary',
+    cellRole: 'money',
+    digits: [16, 2],
+  },
   numeric: true,
 }).text, FIELD_VALUE_EMPTY_TEXT, 'missing list amounts are not business zeroes');
 assert.equal(isListAttachmentCountColumn({
@@ -393,11 +617,57 @@ assert.throws(() => formatDisplayValue('missing', {
   type: 'selection',
   selection: [['pending', '待处理']],
 }), { name: 'ContractGapError' }, 'generic display delegates selection semantics to the authority');
+assert.throws(
+  () => formatDisplayValue('business text without a field descriptor'),
+  { name: 'ContractGapError' },
+  'business values without a field descriptor must stop instead of using an appearance-based formatter',
+);
+assert.equal(
+  formatDisplayValue('合同.pdf | /web/content/123', { type: 'char' }),
+  '合同.pdf | /web/content/123',
+  'ordinary character fields retain their complete text even when it resembles an attachment reference',
+);
 assert.equal(formatDisplayValue(12.5, {
   type: 'float',
   componentKey: 'sc.value.percentage',
   digits: [16, 4],
+  unit: { kind: 'percent', code: 'percent', label: '%' },
 }), '12.5000%', 'generic display delegates percentage identity and digits');
+
+const titleColumnOptions = [{
+  name: 'declared_title',
+  type: 'char',
+}];
+assert.equal(presentCollectionKanbanTitle({
+  titleField: 'declared_title',
+  value: '合同甲',
+  columnOptions: titleColumnOptions,
+}), '合同甲');
+assert.throws(
+  () => presentCollectionKanbanTitle({
+    titleField: '',
+    value: '合同甲',
+    columnOptions: titleColumnOptions,
+  }),
+  { name: 'ContractGapError' },
+  'Kanban cannot synthesize a title field',
+);
+assert.throws(
+  () => presentCollectionKanbanTitle({
+    titleField: 'missing_title',
+    value: '合同甲',
+    columnOptions: titleColumnOptions,
+  }),
+  { name: 'ContractGapError' },
+  'Kanban cannot format a title without its declared column option',
+);
+
+assert.equal(hasDeclaredAttachmentIdentity({
+  relation: 'ir.attachment',
+  attachmentRole: 'invoice_evidence',
+}), true);
+assert.equal(hasDeclaredAttachmentIdentity({ relation: 'ir.attachment' }), false);
+assert.equal(hasDeclaredAttachmentIdentity({ type: 'char', attachmentRole: 'invoice_evidence' }), false);
 
 const relationField = { name: 'project_id', type: 'many2one' };
 assert.deepEqual(presentDeclaredBusinessValue({

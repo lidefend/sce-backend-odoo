@@ -11,6 +11,36 @@ import { nativeAttachmentRefreshDecision } from '../src/pages/contractForm/useNa
 import { sanitizeUiErrorMessage } from '../src/pages/contractForm/fieldUtils.ts';
 import { useRecordFormState } from '../src/pages/contractForm/useRecordFormState.ts';
 import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormProgress.ts';
+import { useRecordRelationshipNavigation } from '../src/pages/contractForm/useRecordRelationshipNavigation.ts';
+import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime.ts';
+import {
+  resolveContractFormRouteModel,
+  resolveContractFormRouteRecordId,
+} from '../src/pages/contractForm/contractFormRouteIdentity.ts';
+
+assert.equal(resolveContractFormRouteModel({
+  routeModel: 'route.model',
+  queryModel: 'query.model',
+  contractModel: 'contract.model',
+}), 'route.model');
+assert.equal(resolveContractFormRouteModel({
+  queryModel: ['res.company'],
+  contractModel: 'contract.model',
+}), 'res.company');
+assert.equal(resolveContractFormRouteModel({
+  contractModel: 'contract.model',
+}), 'contract.model');
+assert.equal(resolveContractFormRouteRecordId({
+  routeRecordId: '12',
+  queryRecordId: '13',
+}), 12);
+assert.equal(resolveContractFormRouteRecordId({
+  queryRecordId: ['1'],
+}), 1);
+assert.equal(resolveContractFormRouteRecordId({
+  queryRecordId: 'new',
+}), null);
+console.log('[create-record-user-journey] embedded scene route identity PASS count=6');
 
 // A relation control can emit an unchanged value during hydration. Saving an
 // unrelated field must not clear or rewrite that relation; intentional clears remain writes.
@@ -33,7 +63,8 @@ console.log('[create_record_user_journey] unchanged relation payload: 4 cases PA
 // a deferred create request, even when the contract permits inline creation.
 {
 const relationDescriptor = { fieldType: 'many2one', relation: 'x.related', relationEntry: {
-  can_read: true, can_create: true, inline_create: { enabled: true, create_on_no_match: true },
+  can_read: true, can_create: true,
+  inline_create: { enabled: true, create_on_no_match: true, name_field: 'name', match: 'single_contains_or_exact' },
 } };
 const relationDraft: Record<string, unknown> = { owner_id: 17 };
 const relationKeywords: Record<string, string> = {};
@@ -103,7 +134,8 @@ console.log('[create-record-user-journey] PASS relation-intent-counterexamples=9
 // and it must be invalidated by an explicit relation write instead.
 {
 const relationDescriptor = { fieldType: 'many2one', relation: 'x.related', relationEntry: {
-  can_read: true, can_create: true, inline_create: { enabled: true, create_on_no_match: true },
+  can_read: true, can_create: true,
+  inline_create: { enabled: true, create_on_no_match: true, name_field: 'name', match: 'single_contains_or_exact' },
 } };
 const stagedDraft: Record<string, unknown> = { owner_id: 17 };
 const stagedKeywords: Record<string, string> = {};
@@ -149,6 +181,131 @@ console.log('[create-record-user-journey] PASS relation-create-intent-counterexa
 }
 
 {
+  const descriptor = { fieldType: 'many2one', relation: 'x.related', relationEntry: {
+    can_read: true, can_create: true,
+    inline_create: { enabled: true, create_on_no_match: true, name_field: 'name', match: 'single_contains_or_exact' },
+  } };
+  const relationRuntime = useRelationRuntime();
+  const formData = reactive<Record<string, unknown>>({ owner_id: false });
+  const validationErrors = ref<string[]>([]);
+  const selected: Array<{ id: number; label: string }> = [];
+  let createCalls = 0;
+  let resolveListing!: (rows: Array<{ id: number; label: string }>) => void;
+  const listing = new Promise<Array<{ id: number; label: string }>>((resolve) => { resolveListing = resolve; });
+  const navigation = useRecordRelationshipNavigation({
+    actionId: ref(1),
+    captureRelationRequest: relationRuntime.captureRelationRequest,
+    createContractFormRecord: async () => { createCalls += 1; return { id: 41 }; },
+    effectiveFieldDescriptor: () => descriptor,
+    fetchRelationOptions: () => listing,
+    formData,
+    loadModelContractV2: async () => ({ store: {} }),
+    model: ref('x.main'),
+    normalizeFieldValue: (value: unknown) => value,
+    one2manyRelationModel: () => '',
+    openRelationCreateDialog: () => undefined,
+    pickContractNavQuery: (_query: unknown, next: unknown) => next,
+    queryRelationOptions: async () => [],
+    relationCreateMode: () => 'quick',
+    relationEntry: (row: typeof descriptor | undefined) => row ? {
+      canRead: true,
+      canCreate: true,
+      canOpen: true,
+    } : undefined,
+    relationFieldDescriptors: ref({}),
+    relationIds: (name: string) => [Number(formData[name] || 0)],
+    relationInlineCreate: () => ({
+      enabled: true,
+      createOnNoMatch: true,
+      nameField: 'name',
+    }),
+    relationKeyword: () => '',
+    relationModel: () => 'x.related',
+    relationUiLabel: (_descriptor: unknown, _key: string, fallback: string) => fallback,
+    route: { query: {} },
+    router: {
+      push: async () => undefined,
+      replace: async () => undefined,
+      resolve: () => ({ href: '/x' }),
+    },
+    sanitizeUiErrorMessage: (error: unknown, fallback: string) => String(error || fallback),
+    setMany2oneOption: (name: string, option: { id: number; label: string }) => {
+      selected.push(option);
+      formData[name] = option.id;
+    },
+    validationErrors,
+  });
+
+  const staleListing = navigation.quickCreateRelation('owner_id', descriptor as never, 'Stale listing');
+  relationRuntime.invalidateRelationRequests();
+  resolveListing([]);
+  await staleListing;
+  assert.equal(createCalls, 0, 'a relation create superseded by page or context invalidation must not start');
+  assert.deepEqual(selected, []);
+  assert.deepEqual(validationErrors.value, []);
+
+  let resolveCreate!: (value: { id: number }) => void;
+  const creating = new Promise<{ id: number }>((resolve) => { resolveCreate = resolve; });
+  let markCreateStarted!: () => void;
+  const createStarted = new Promise<void>((resolve) => { markCreateStarted = resolve; });
+  const createRelationRuntime = useRelationRuntime();
+  const navigationWithCreate = useRecordRelationshipNavigation({
+    actionId: ref(1),
+    captureRelationRequest: createRelationRuntime.captureRelationRequest,
+    createContractFormRecord: () => {
+      createCalls += 1;
+      markCreateStarted();
+      return creating;
+    },
+    effectiveFieldDescriptor: () => descriptor,
+    fetchRelationOptions: async () => [],
+    formData,
+    loadModelContractV2: async () => ({ store: {} }),
+    model: ref('x.main'),
+    normalizeFieldValue: (value: unknown) => value,
+    one2manyRelationModel: () => '',
+    openRelationCreateDialog: () => undefined,
+    pickContractNavQuery: (_query: unknown, next: unknown) => next,
+    queryRelationOptions: async () => [],
+    relationCreateMode: () => 'quick',
+    relationEntry: (row: typeof descriptor | undefined) => row ? {
+      canRead: true,
+      canCreate: true,
+      canOpen: true,
+    } : undefined,
+    relationFieldDescriptors: ref({}),
+    relationIds: (name: string) => [Number(formData[name] || 0)],
+    relationInlineCreate: () => ({
+      enabled: true,
+      createOnNoMatch: true,
+      nameField: 'name',
+    }),
+    relationKeyword: () => '',
+    relationModel: () => 'x.related',
+    relationUiLabel: (_descriptor: unknown, _key: string, fallback: string) => fallback,
+    route: { query: {} },
+    router: {
+      push: async () => undefined,
+      replace: async () => undefined,
+      resolve: () => ({ href: '/x' }),
+    },
+    sanitizeUiErrorMessage: (error: unknown, fallback: string) => String(error || fallback),
+    setMany2oneOption: (name: string, option: { id: number; label: string }) => {
+      selected.push(option);
+      formData[name] = option.id;
+    },
+    validationErrors,
+  });
+  const staleCreate = navigationWithCreate.quickCreateRelation('owner_id', descriptor as never, 'Stale create');
+  await createStarted;
+  createRelationRuntime.invalidateRelationRequests();
+  resolveCreate({ id: 42 });
+  await staleCreate;
+  assert.equal(createCalls, 1);
+  assert.deepEqual(selected, [], 'a late create response must not bind to the stale page');
+}
+
+{
   const draft = reactive<Record<string, unknown>>({ owner_id: false });
   const keywords = reactive({ owner_id: '' });
   const pending = ref<string[]>([]);
@@ -170,6 +327,83 @@ console.log('[create-record-user-journey] PASS relation-create-intent-counterexa
   draft.owner_id = 20;
   assert.equal(progress.hasChanges.value, true);
   console.log('[create-record-user-journey] PASS relation-dirty-state=5');
+}
+
+{
+  const descriptor = { name: 'tags', fieldType: 'many2many', relation: 'x.tags', relationEntry: {
+    can_read: true, can_create: true,
+    inline_create: { enabled: true, create_on_no_match: true, name_field: 'name', match: 'single_contains_or_exact' },
+  } };
+  const relationRuntime = useRelationRuntime();
+  const formData = reactive<Record<string, unknown>>({ tags: [1] });
+  const relationKeywords = reactive<Record<string, string>>({ tags: 'New tag' });
+  const validationErrors = ref<string[]>([]);
+  let markQueryStarted!: () => void;
+  const queryStarted = new Promise<void>((resolve) => { markQueryStarted = resolve; });
+  let resolveRows!: (rows: Array<{ id: number; label: string }>) => void;
+  const rows = new Promise<Array<{ id: number; label: string }>>((resolve) => { resolveRows = resolve; });
+  const state = useRecordFormState({
+    pendingInlineCreateFields: ref<string[]>([]),
+    formFields: ref({ tags: descriptor }),
+    model: ref('x.main'),
+    recordId: ref(501),
+    formData,
+    originalValues: ref({ tags: [1] }),
+    submissionFeedback: ref(null),
+    relationKeywords,
+    invalidatedRelationKeywords: {},
+    clearedDynamicRelationFields: {},
+    relationQueryTimers: {},
+    relationOptions: ref({ tags: [{ id: 1, label: 'Existing' }] }),
+    validationErrors,
+    validationFieldErrors: ref({}),
+    onchangeModifiersPatch: ref({}),
+    onchangeWarnings: ref([]),
+    onchangeLinePatches: ref([]),
+    applyingOnchangePatch: ref(false),
+    changedFieldSet: new Set(['tags']),
+    dirtyFieldSet: new Set(['tags']),
+    getOnchangeTimer: () => null,
+    setOnchangeTimer: () => {},
+    contractV2ActionRules: ref([]),
+    layoutNodes: ref([{ kind: 'field', name: 'tags', label: '标签', descriptor, readonly: false }]),
+    nativeStatusbar: ref({}),
+    route: { query: {} },
+    isNativeFavoriteField: () => false,
+    clearDynamicRelationDependents: () => {},
+    openRelationCreateForm: async () => undefined,
+    openRelationSearchDialog: async () => undefined,
+    openRelationRecordForm: async () => undefined,
+    relationOptionsForField: () => [],
+    switchFormByRelationOption: async () => undefined,
+    queryRelationOptions: async () => {
+      markQueryStarted();
+      return rows;
+    },
+    setRelationKeyword: () => {},
+    setMany2oneOption: () => {},
+    relationKeyword: (name: string) => relationKeywords[name] || '',
+    quickCreateRelation: async () => undefined,
+    relationUiLabel: (_descriptor: unknown, _key: string, fallback: string) => fallback,
+    relationModel: () => 'x.tags',
+    relationIds: (name: string) => Array.isArray(formData[name]) ? formData[name] as number[] : [],
+    upsertRelationOption: () => {},
+    buildOne2manyCommandValue: () => undefined,
+    one2manyFieldRows: () => [],
+    initOne2manyRows: () => {},
+    prepareOne2manyOnchange: () => () => {},
+    applyOnchangeLinePatches: () => {},
+    isWritableFieldVisible: () => true,
+    canonicalFieldWritable: () => true,
+    captureRelationRequest: relationRuntime.captureRelationRequest,
+  } as never);
+  const pendingResolution = state.resolvePendingMany2manyTagCreates();
+  await queryStarted;
+  relationRuntime.invalidateRelationRequests();
+  resolveRows([{ id: 2, label: 'New tag' }]);
+  assert.deepEqual(await pendingResolution, []);
+  assert.deepEqual(formData.tags, [1], 'a superseded many2many lookup must not add its late match');
+  assert.deepEqual(validationErrors.value, []);
 }
 
 const fieldDescriptors = {

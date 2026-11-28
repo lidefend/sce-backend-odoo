@@ -1,5 +1,6 @@
 import { triggerOnchange } from '../../api/onchange';
 import { one2manyDataColumnsFromSubview, one2manyDataFieldNames } from './one2manyUtils';
+import { isContractGapError } from '../../app/contract/contractGap';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FieldDescriptor } from '@sc/schema';
 import { reactive, watch } from 'vue';
@@ -78,6 +79,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
         if (options.length) mergeRelationOptions(name, options);
       } catch (err) {
         if (!isCurrent()) return;
+        if (isContractGapError(err)) throw err;
         if (err instanceof ApiError) {
           const denied = err.status === 403 || String(err.reasonCode || '').toUpperCase() === 'PERMISSION_DENIED';
           if (denied) deniedRelationModels.add(relation);
@@ -180,7 +182,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
 
   async function loadOne2manyCreateDefaults(name: string, parent: {
     model: string; res_id: number | null; view_id?: unknown; values: Record<string, unknown>;
-  }): Promise<One2manyChildInteraction> {
+  }, requestIsCurrent: () => boolean = () => true): Promise<One2manyChildInteraction> {
     const model = one2manyRelationModel(name);
     if (!model || !one2manyCanCreate(name)) throw new Error('当前明细未开放新增');
     const fields = one2manyDataFieldNames(one2manyDataColumns(name));
@@ -193,6 +195,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
       ...(fieldContext as Record<string, unknown> | undefined) }));
     const parentSnapshot = JSON.parse(JSON.stringify(parent));
     const result = await (dependencies.fetchCreateDefaults || defaultContractFormRecord)({ model, fields, context });
+    if (!requestIsCurrent()) throw new Error('明细默认值请求已失效');
     if (!result?.record || typeof result.record !== 'object' || Array.isArray(result.record)) {
       throw new Error('未能取得明细默认值，请重试');
     }
@@ -201,6 +204,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
       ...parentSnapshot, changed_fields: [], context,
       child_initialization: { field: name, fields, values: defaults },
     }));
+    if (!requestIsCurrent()) throw new Error('明细默认值请求已失效');
     if (Object.keys(initialized.patch).some(field => !fields.includes(field))
       || Object.keys(initialized.modifiersPatch).some(field => !fields.includes(field))) {
       throw new Error('明细初始化返回字段与声明不一致');
@@ -217,7 +221,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
 
   async function loadOne2manyRowChange(name: string, row: { id: number; values: Record<string, unknown>; changed: string[] }, parent: {
     model: string; res_id: number | null; view_id?: unknown; values: Record<string, unknown>;
-  }): Promise<One2manyChildInteraction> {
+  }, requestIsCurrent: () => boolean = () => true): Promise<One2manyChildInteraction> {
     const fields = one2manyDataFieldNames(one2manyDataColumns(name));
     const fieldContext = (effectiveFieldDescriptor(name) as Record<string, unknown> | undefined)?.context;
     if (fieldContext != null && (typeof fieldContext !== 'object' || Array.isArray(fieldContext))) throw new Error('明细联动上下文尚未解析');
@@ -226,6 +230,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
         ...(fieldContext as Record<string, unknown> | undefined) },
       child_onchange: { field: name, fields, values: row.values, changed_fields: row.changed, record_id: row.id },
     }))));
+    if (!requestIsCurrent()) throw new Error('明细联动请求已失效');
     if (Object.keys(response.patch).some(field => !fields.includes(field))
       || Object.keys(response.modifiersPatch).some(field => !fields.includes(field))) {
       throw new Error('明细联动返回字段与声明不一致');

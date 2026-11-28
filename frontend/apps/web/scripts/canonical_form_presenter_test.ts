@@ -94,7 +94,12 @@ import { useRelationRuntime } from '../src/pages/contractForm/useRelationRuntime
 import { collectUnifiedPageContractV2FieldWidgets } from '../src/app/contracts/unifiedPageContractV2';
 import { computed, reactive, ref } from 'vue';
 import { useRecordFormProgress } from '../src/pages/contractForm/useRecordFormProgress';
-import { nativeNodeWidget, nativeNodeWidgetSemantics } from '../src/pages/contractForm/nativeLayoutUtils';
+import {
+  collectNativeFavoriteFieldNames,
+  nativeNodeFieldDescriptor,
+  nativeNodeWidget,
+  nativeNodeWidgetSemantics,
+} from '../src/pages/contractForm/nativeLayoutUtils';
 
 const relationRuntime = useRelationRuntime();
 
@@ -173,10 +178,10 @@ assert.equal(resolveCurrencyDisplayLabel([7, 'USD']), 'USD');
 assert.equal(resolveCurrencyDisplayLabel({ id: 7, symbol: '€', name: 'EUR' }), 'EUR');
 assert.equal(monetaryInputStep([16, 2]), '0.01');
 assert.equal(monetaryInputStep(undefined), 'any');
-assert.equal(monetaryInputStep(undefined, 'CNY'), '0.01');
-assert.equal(formatMonetaryInputValue(50, undefined, 'CNY'), '50.00');
+assert.equal(formatMonetaryInputValue(50, undefined), '50');
 assert.equal(formatMonetaryDisplayValue(1234.5, [16, 2], 'USD', 'en-US'), '$1,234.50');
-assert.equal(formatMonetaryDisplayValue(50, undefined, 'CNY'), '¥50.00');
+assert.equal(formatMonetaryDisplayValue(50, undefined, 'CNY'), '50 CNY');
+assert.throws(() => monetaryInputStep([16, 25]), { name: 'ContractGapError' });
 assert.equal(formatMonetaryDisplayValue(1234.5, [16, 1], '元', 'en-US'), '1,234.5 元');
 assert.equal(formatMonetaryDisplayValue('', [16, 2], 'USD', 'en-US'), '--');
 assert.equal(formatMonetaryDisplayValue('', [16, 2], 'USD', 'en-US', '尚未生成'), '尚未生成');
@@ -213,6 +218,14 @@ assert.equal(relationCreateMode({
     menu_id: 12,
   },
 } as never), 'dialog', 'a backend-authorized dialog create entry must remain in-page');
+assert.equal(relationCreateMode({
+  relation: 'sc.dictionary',
+  relationEntry: {
+    can_read: true,
+    can_create: true,
+    default_vals: { type: 'doc_type' },
+  },
+} as never), 'none', 'a model name or default values cannot invent a quick-create mode');
 
 for (const scenario of [
   { managed: false, decisionMode: false, label: '返回', semanticIdentity: 'return-list' },
@@ -515,13 +528,24 @@ function snapshot(): ContractV2Snapshot {
           children: [], widgetList: [{
             widgetId: 'field.name', widgetType: 'input', fieldCode: 'name', label: 'Name', span: 12,
             semanticType: 'text', capabilities: [], componentConfig: { fieldType: 'char' },
+            fieldDescriptor: {
+              schemaVersion: '1.0.0', fieldCode: 'name', label: 'Name', fieldType: 'char',
+              widgetType: 'input', semanticType: 'text',
+            },
             ownerContainerId: 'field.name',
           }],
         }, {
           containerId: 'field.state', containerType: 'field', type: 'field', name: 'state', title: '', span: 12,
           children: [], widgetList: [{
             widgetId: 'field.state', widgetType: 'select', fieldCode: 'state', label: 'State', span: 12,
-            semanticType: 'status', capabilities: [], componentConfig: { fieldType: 'selection' },
+            semanticType: 'status', capabilities: [], componentConfig: {
+              fieldType: 'selection', selection: [['draft', 'Draft'], ['done', 'Done']],
+            },
+            fieldDescriptor: {
+              schemaVersion: '1.0.0', fieldCode: 'state', label: 'State', fieldType: 'selection',
+              widgetType: 'select', semanticType: 'status',
+              selection: [['draft', 'Draft'], ['done', 'Done']],
+            },
             ownerContainerId: 'field.state',
           }],
         }, {
@@ -534,6 +558,10 @@ function snapshot(): ContractV2Snapshot {
             children: [], widgetList: [{
               widgetId: 'field.line_ids', widgetType: 'table', fieldCode: 'line_ids', label: 'Lines', span: 24,
               semanticType: 'detail_collection', capabilities: [], componentConfig: { fieldType: 'one2many' },
+              fieldDescriptor: {
+                schemaVersion: '1.0.0', fieldCode: 'line_ids', label: 'Lines', fieldType: 'one2many',
+                widgetType: 'table', semanticType: 'detail_collection', relation: 'x.line',
+              },
               ownerContainerId: 'field.line_ids',
             }],
           }], widgetList: [],
@@ -604,6 +632,18 @@ function collectFields(nodes: ReturnType<typeof presentContractV2Form>['zones'][
   return nodes.flatMap((node): typeof node.fields => [...node.fields, ...collectFields(node.children)]);
 }
 
+function findNativeFieldNode(
+  nodes: ReturnType<typeof buildCanonicalNativeFormBridge>['primaryNodes'],
+  name: string,
+): ReturnType<typeof buildCanonicalNativeFormBridge>['primaryNodes'][number] | undefined {
+  for (const node of nodes) {
+    if (node.type === 'field' && node.name === name) return node;
+    const nested = findNativeFieldNode(node.children || [], name);
+    if (nested) return nested;
+  }
+  return undefined;
+}
+
 function collectTexts(nodes: ReturnType<typeof presentContractV2Form>['zones']['primary']): string[] {
   return nodes.flatMap((node) => [node.text, ...collectTexts(node.children)]).filter(Boolean);
 }
@@ -640,6 +680,18 @@ function nativeButtonIdentity(name: string, nativeLocator: string, occurrenceInd
 const source = snapshot();
 const before = JSON.stringify(source);
 const store = createContractV2Store(decodeContractV2Snapshot(source));
+assert.deepEqual(
+  Object.fromEntries(Object.entries(resolveContractV2FieldDescriptorMap(store)).map(([fieldCode, descriptor]) => [
+    fieldCode,
+    [descriptor.fieldType, descriptor.semanticType],
+  ])),
+  {
+    name: ['char', 'text'],
+    state: ['selection', 'status'],
+    line_ids: ['one2many', 'detail_collection'],
+  },
+  'the normalized base fixture must expose complete canonical field semantics',
+);
 
 // The page used to carry its own `applyWorkflowAvailability` / `shouldShowWorkflowAction`
 // pair beside the presenter's decision.  No consumer ever read them, and the visibility
@@ -946,12 +998,23 @@ const dateRangeStartField = {
   ...nativeMonetaryField!,
   widgetId: 'field.date_start', fieldCode: 'date_start', fieldType: 'date', widgetType: 'date',
   value: '2026-09-01', label: '安排的日期',
-  componentConfig: { nativeWidget: 'daterange', widgetSemantics: { kind: 'date_range', start_field: 'date_start', end_field: 'date' } },
+  componentConfig: { nativeWidget: 'daterange' },
+  fieldDescriptor: {
+    schemaVersion: '1.0.0', fieldCode: 'date_start', label: '安排的日期', fieldType: 'date',
+    widgetType: 'daterange', semanticType: 'date',
+    temporal: { kind: 'date', timezoneAuthority: 'not_applicable' },
+    widgetOptions: { kind: 'date_range', start_field: 'date_start', end_field: 'date' },
+  },
 };
 const dateRangeEndField = {
   ...dateRangeStartField,
   widgetId: 'field.date', fieldCode: 'date', widgetType: 'date', value: '2026-09-30', label: '结束日期',
   componentConfig: { widget: 'date' },
+  fieldDescriptor: {
+    schemaVersion: '1.0.0', fieldCode: 'date', label: '结束日期', fieldType: 'date',
+    widgetType: 'date', semanticType: 'date',
+    temporal: { kind: 'date', timezoneAuthority: 'not_applicable' },
+  },
 };
 const dateRangeSchema = canonicalFieldToFormSection(
   dateRangeStartField,
@@ -973,8 +1036,11 @@ const readonlyEmptySchema = canonicalFieldToFormSection({
   widgetType: 'many2one',
   value: null,
   readonly: true,
-  componentConfig: {
-    widgetSemantics: { readonly_empty_text: '提交审批时生成' },
+  componentConfig: {},
+  fieldDescriptor: {
+    schemaVersion: '1.0.0', fieldCode: 'funding_baseline_id', label: '安排的日期',
+    fieldType: 'many2one', widgetType: 'many2one', semanticType: 'relation',
+    relation: 'x.contract', widgetOptions: { readonly_empty_text: '提交审批时生成' },
   },
 });
 assert.equal(
@@ -992,10 +1058,10 @@ const declaredOne2manySchema = canonicalFieldToFormSection({
   fieldType: 'one2many',
   widgetType: 'one2many',
   value: [],
-  componentConfig: { fieldType: 'one2many', relation: 'payment.request.line' },
+  componentConfig: {},
   fieldDescriptor: {
-    name: 'outflow_line_ids',
-    type: 'one2many',
+    schemaVersion: '1.0.0', fieldCode: 'outflow_line_ids', label: '明细',
+    fieldType: 'one2many', widgetType: 'one2many', semanticType: 'detail_collection',
     relation: 'payment.request.line',
     relationEntry: { page_size: 20, options_limit: 80, options_search_limit: 40 },
   },
@@ -1018,15 +1084,15 @@ const componentDeclaredOne2manySchema = canonicalFieldToFormSection({
     relationEntry: { page_size: 25, options_limit: 80, options_search_limit: 40 },
   },
   fieldDescriptor: {
-    name: 'outflow_line_ids',
-    type: 'one2many',
+    schemaVersion: '1.0.0', fieldCode: 'outflow_line_ids', label: '明细',
+    fieldType: 'one2many', widgetType: 'one2many', semanticType: 'detail_collection',
     relation: 'payment.request.line',
   },
 });
 assert.equal(
   componentDeclaredOne2manySchema.one2manyPageSize,
-  25,
-  'the canonical renderer must consume the producer relationEntry carrier',
+  undefined,
+  'componentConfig.relationEntry must not supply a second page-size authority',
 );
 const undeclaredOne2manySchema = canonicalFieldToFormSection({
   ...dateRangeStartField,
@@ -1035,8 +1101,12 @@ const undeclaredOne2manySchema = canonicalFieldToFormSection({
   fieldType: 'one2many',
   widgetType: 'one2many',
   value: [],
-  componentConfig: { fieldType: 'one2many', relation: 'payment.request.line' },
-  fieldDescriptor: { name: 'outflow_line_ids', type: 'one2many', relation: 'payment.request.line' },
+  componentConfig: {},
+  fieldDescriptor: {
+    schemaVersion: '1.0.0', fieldCode: 'outflow_line_ids', label: '明细',
+    fieldType: 'one2many', widgetType: 'one2many', semanticType: 'detail_collection',
+    relation: 'payment.request.line',
+  },
 });
 assert.equal(
   undeclaredOne2manySchema.one2manyPageSize,
@@ -1045,9 +1115,10 @@ assert.equal(
 );
 const nativeDateRangeNode = {
   type: 'field', name: 'date_start', widget: 'date',
-  componentConfig: {
-    nativeWidget: 'daterange',
-    widgetSemantics: { kind: 'date_range', start_field: 'date_start', end_field: 'date' },
+  fieldDescriptor: {
+    fieldCode: 'date_start',
+    widgetType: 'daterange',
+    widgetOptions: { kind: 'date_range', start_field: 'date_start', end_field: 'date' },
   },
 };
 assert.equal(nativeNodeWidget(nativeDateRangeNode), 'daterange');
@@ -1057,7 +1128,7 @@ assert.deepEqual(nativeNodeWidgetSemantics(nativeDateRangeNode), {
 assert.deepEqual(
   nativeNodeWidgetSemantics(
     { type: 'field', name: 'funding_baseline_id' },
-    { widgetSemantics: { readonly_empty_text: '提交审批时生成' } },
+    { widgetOptions: { readonly_empty_text: '提交审批时生成' } },
   ),
   { readonly_empty_text: '提交审批时生成' },
   'a native field node must inherit missing semantics from its same-identity strict widget',
@@ -1067,18 +1138,37 @@ assert.deepEqual(
     {
       type: 'field',
       name: 'funding_baseline_id',
-      componentConfig: { widgetSemantics: { readonly_empty_text: '节点声明' } },
+      fieldDescriptor: {
+        fieldCode: 'funding_baseline_id',
+        widgetOptions: { readonly_empty_text: '节点声明' },
+      },
     },
-    { widgetSemantics: { readonly_empty_text: '严格组件回退' } },
+    { widgetOptions: { readonly_empty_text: '严格组件回退' } },
   ),
   { readonly_empty_text: '节点声明' },
-  'an occurrence-level node declaration must win over the strict-widget fallback',
+  'an occurrence-level fieldDescriptor declaration must win over the strict-widget fallback',
 );
 assert.equal(nativeNodeWidget({
   type: 'field', name: 'date_start', widget: 'date',
   attributes: { widget: 'daterange' },
-  fieldInfo: { widget: 'date', widget_semantics: { kind: 'date_range', end_field: 'date' } },
+  fieldDescriptor: {
+    fieldCode: 'date_start',
+    widgetType: 'daterange',
+    widgetOptions: { kind: 'date_range', end_field: 'date' },
+  },
 }), 'daterange');
+const declaredFavoriteFields = new Set<string>();
+collectNativeFavoriteFieldNames([
+  { type: 'field', name: 'dashboard_visible', widget: 'checkbox', string: '仪表板' },
+  { type: 'field', name: 'component_favorite', widget: 'checkbox', componentConfig: { nativeWidget: 'boolean_favorite' } },
+  { type: 'field', name: 'favorite_flag', widget: 'boolean_favorite' },
+  { type: 'field', name: 'is_favorite', widget: 'checkbox' },
+], declaredFavoriteFields);
+assert.deepEqual(
+  [...declaredFavoriteFields],
+  ['favorite_flag'],
+  'favorite persistence is selected only by declared native widget identity, never by field name, label or componentConfig',
+);
 
 const nestedOne2manyRows = reactive({ responsibility_ids: [{ isNew: true, dirty: true, removed: false }] });
 const nestedProgress = useRecordFormProgress({
@@ -1675,8 +1765,50 @@ assert.equal(
   'field auth must reach the professional component adapter and semantic DOM carrier',
 );
 
+const stricterFieldStatusSnapshot = snapshot();
+const stricterNameWidget = stricterFieldStatusSnapshot.layoutContract.containerTree[0].children[0].widgetList[0];
+Object.assign(stricterNameWidget.fieldDescriptor!, { invisible: false, readonly: false, required: false });
+const stricterNameStatus = stricterFieldStatusSnapshot.statusContract.widgetStatus
+  .find((status) => status.widgetId === 'field.name')!;
+Object.assign(stricterNameStatus, { visible: false, readonly: true, required: true });
+const stricterFieldStatus = collectFields(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(stricterFieldStatusSnapshot)),
+  'edit',
+).zones.primary).find((field) => field.fieldCode === 'name')!;
+assert.deepEqual(
+  {
+    visible: stricterFieldStatus.visible,
+    readonly: stricterFieldStatus.readonly,
+    required: stricterFieldStatus.required,
+  },
+  { visible: false, readonly: true, required: true },
+  'effective widget status may be stricter than the static field descriptor',
+);
+
+for (const [key, descriptorValue, statusValue] of [
+  ['invisible', true, true],
+  ['readonly', true, false],
+  ['required', true, false],
+] as const) {
+  const inconsistent = snapshot();
+  const widget = inconsistent.layoutContract.containerTree[0].children[0].widgetList[0];
+  const status = inconsistent.statusContract.widgetStatus.find((row) => row.widgetId === 'field.name')!;
+  Object.assign(widget.fieldDescriptor!, { [key]: descriptorValue });
+  if (key === 'invisible') status.visible = statusValue;
+  else status[key] = statusValue;
+  assert.throws(
+    () => presentContractV2Form(
+      createContractV2Store(decodeContractV2Snapshot(inconsistent)),
+      'edit',
+    ),
+    new RegExp(`field\\.name\\.status_consistency\\.${key}`),
+    `effective widget status cannot relax descriptor ${key}`,
+  );
+}
+
 const widgetIdentitySnapshot = snapshot();
 widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].widgetType = 'radio';
+widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].fieldDescriptor!.widgetType = 'radio';
 widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].nativeLocator = '/form/sheet/group/field[1]';
 widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].occurrenceIndex = 1;
 widgetIdentitySnapshot.layoutContract.containerTree[0].children[0].widgetList[0].nativeIdentity = {
@@ -1776,19 +1908,61 @@ assert.deepEqual(resolveContractV2EffectiveFormCapabilities(store), {
 });
 assert.equal(store.snapshot.statusContract.globalStatus.effectiveRenderProfile, 'edit');
 const descriptorSelectionSnapshot = snapshot();
-descriptorSelectionSnapshot.layoutContract.containerTree[0].children[1].widgetList[0].fieldDescriptor = {
-  name: 'state', type: 'selection', widget: 'statusbar', selection: [['draft', 'Draft'], ['done', 'Done']],
+const descriptorSelectionWidget = descriptorSelectionSnapshot.layoutContract.containerTree[0].children[1].widgetList[0];
+delete descriptorSelectionWidget.componentConfig.selection;
+descriptorSelectionWidget.fieldDescriptor = {
+  schemaVersion: '1.0.0',
+  fieldCode: 'state',
+  label: 'State',
+  fieldType: 'selection',
+  widgetType: 'select',
+  semanticType: 'status',
+  selection: [['draft', 'Draft'], ['done', 'Done']],
 };
 assert.deepEqual(
   resolveContractV2FieldDescriptorMap(createContractV2Store(descriptorSelectionSnapshot)).state?.selection,
   [['draft', 'Draft'], ['done', 'Done']],
   'native fieldDescriptor selection must remain available to statusbar rendering',
 );
+descriptorSelectionSnapshot.statusContract.widgetStatus.find((status) => status.widgetId === 'field.state')!.visible = true;
+const descriptorSelectionModel = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(descriptorSelectionSnapshot)),
+  'edit',
+);
+const descriptorSelectionField = collectFields(descriptorSelectionModel.zones.primary)
+  .find((field) => field.fieldCode === 'state')!;
+assert.deepEqual(
+  canonicalFieldToFormSection(descriptorSelectionField).selectionOptions,
+  [{ value: 'draft', label: 'Draft' }, { value: 'done', label: 'Done' }],
+  'canonical form controls must consume selection projected by fieldDescriptor',
+);
+assert.deepEqual(
+  canonicalFieldToFormSection({
+    ...descriptorSelectionField,
+    componentConfig: {
+      ...descriptorSelectionField.componentConfig,
+      selection: [['draft', '']],
+    },
+  }).selectionOptions,
+  [{ value: 'draft', label: 'Draft' }, { value: 'done', label: 'Done' }],
+  'componentConfig selection is transport-only and cannot override or invalidate the canonical descriptor selection',
+);
+assert.throws(
+  () => canonicalFieldToFormSection({
+    ...descriptorSelectionField,
+    componentConfig: { fieldType: 'selection' },
+    fieldDescriptor: { type: 'selection' },
+  }),
+  { name: 'ContractGapError' },
+  'a selection field without a valid selection declaration must stop before rendering an empty control',
+);
 const descriptorWidgetOptionsSnapshot = snapshot();
 const relationScopeSnapshot = snapshot();
 const relationScopeWidget = relationScopeSnapshot.layoutContract.containerTree[0].children[0].widgetList[0];
 relationScopeWidget.fieldDescriptor = {
-  name: 'name', type: 'many2one', relation: 'x.source',
+  schemaVersion: '1.0.0', fieldCode: 'name', label: 'Name',
+  fieldType: 'many2one', widgetType: 'many2one', semanticType: 'relation',
+  relation: 'x.source',
   domain: "[('project_id', '=', project_id), ('state', '=', 'confirmed')]",
   context: { active_test: false },
 };
@@ -1800,10 +1974,18 @@ assert.deepEqual(declaredRelationScope.context, { active_test: false },
 relationScopeWidget.componentConfig.domain = [];
 relationScopeWidget.componentConfig.context = {};
 const overriddenRelationScope = resolveContractV2FieldDescriptorMap(createContractV2Store(relationScopeSnapshot)).name;
-assert.deepEqual(overriddenRelationScope.domain, [], 'explicit empty component domain retains precedence');
-assert.deepEqual(overriddenRelationScope.context, {}, 'explicit empty component context retains precedence');
+assert.equal(
+  overriddenRelationScope.domain,
+  relationScopeWidget.fieldDescriptor.domain,
+  'componentConfig domain is transport-only and cannot override the canonical descriptor',
+);
+assert.deepEqual(
+  overriddenRelationScope.context,
+  relationScopeWidget.fieldDescriptor.context,
+  'componentConfig context is transport-only and cannot override the canonical descriptor',
+);
 console.log('[canonical_form_presenter] relation descriptor domain/context projection PASS count=4');
-descriptorWidgetOptionsSnapshot.layoutContract.containerTree[0].children[0].widgetList[0].componentConfig.widgetOptions = {
+descriptorWidgetOptionsSnapshot.layoutContract.containerTree[0].children[0].widgetList[0].fieldDescriptor!.widgetOptions = {
   no_create: true,
   no_quick_create: true,
 };
@@ -1976,6 +2158,29 @@ assert.deepEqual(
   'canonical native title projection must decorate the textual title with favorite state instead of rendering the boolean as H1',
 );
 assert.deepEqual(
+  resolveCanonicalNativeFieldSchemas([
+    {
+      key: 'field.is_favorite', name: 'is_favorite', label: 'Favorite', type: 'boolean', widget: 'checkbox',
+      required: false, readonly: false, inputValue: false,
+    },
+    {
+      key: 'field.name', name: 'name', label: 'Name', type: 'char', required: true, readonly: true,
+      inputValue: 'Canonical record title',
+    },
+  ]),
+  [
+    {
+      key: 'field.is_favorite', name: 'is_favorite', label: 'Favorite', type: 'boolean', widget: 'checkbox',
+      required: false, readonly: false, inputValue: false,
+    },
+    {
+      key: 'field.name', name: 'name', label: 'Name', type: 'char', required: true, readonly: true,
+      inputValue: 'Canonical record title',
+    },
+  ],
+  'a field name alone cannot become favorite behavior without the declared boolean_favorite widget',
+);
+assert.deepEqual(
   nativeBridge.subordinateNodes.map((node) => node.type),
   ['container'],
   'canonical native bridge must keep the declared attachment structure while collaboration stays in its governed panel',
@@ -2089,6 +2294,115 @@ const compatibilityVisibilityModel = structuredClone(nativeVisibilityModel);
 compatibilityVisibilityModel.identity.bodyStructureAuthority = 'compatibility';
 assert.equal(buildCanonicalNativeFormBridge(compatibilityVisibilityModel).nodeVisible(semanticHiddenNode), false,
   'unmigrated compatibility consumers retain their semantic hiding behavior');
+const descriptorTechnicalModel = structuredClone(compatibilityVisibilityModel);
+const descriptorTechnicalField = collectFields([
+  ...descriptorTechnicalModel.zones.primary,
+  ...descriptorTechnicalModel.zones.subordinate,
+])[0]!;
+descriptorTechnicalField.fieldDescriptor = {
+  ...descriptorTechnicalField.fieldDescriptor,
+  technical: true,
+  surfaceRole: 'fact',
+};
+descriptorTechnicalField.componentConfig = {
+  ...descriptorTechnicalField.componentConfig,
+  technical: false,
+  surfaceRole: 'hidden',
+};
+const descriptorTechnicalBridge = buildCanonicalNativeFormBridge(descriptorTechnicalModel);
+const descriptorTechnicalNode = findNativeFieldNode(
+  descriptorTechnicalBridge.primaryNodes,
+  descriptorTechnicalField.fieldCode,
+);
+assert.ok(descriptorTechnicalNode, 'descriptor technical field must project to a native node');
+assert.deepEqual(
+  {
+    technical: descriptorTechnicalNode.attributes?.technical,
+    surfaceRole: descriptorTechnicalNode.attributes?.surfaceRole,
+    visible: descriptorTechnicalBridge.nodeVisible(descriptorTechnicalNode),
+  },
+  { technical: true, surfaceRole: 'fact', visible: false },
+  'native bridge semantic metadata comes from fieldDescriptor, not componentConfig',
+);
+const descriptorSurfaceModel = structuredClone(compatibilityVisibilityModel);
+const descriptorSurfaceField = collectFields([
+  ...descriptorSurfaceModel.zones.primary,
+  ...descriptorSurfaceModel.zones.subordinate,
+])[0]!;
+descriptorSurfaceField.fieldDescriptor = {
+  ...descriptorSurfaceField.fieldDescriptor,
+  technical: false,
+  surfaceRole: 'hidden',
+};
+descriptorSurfaceField.componentConfig = {
+  ...descriptorSurfaceField.componentConfig,
+  technical: true,
+  surfaceRole: 'fact',
+};
+const descriptorSurfaceBridge = buildCanonicalNativeFormBridge(descriptorSurfaceModel);
+const descriptorSurfaceNode = findNativeFieldNode(
+  descriptorSurfaceBridge.primaryNodes,
+  descriptorSurfaceField.fieldCode,
+);
+assert.ok(descriptorSurfaceNode, 'descriptor surface role must project to a native node');
+assert.deepEqual(
+  {
+    technical: descriptorSurfaceNode.attributes?.technical,
+    surfaceRole: descriptorSurfaceNode.attributes?.surfaceRole,
+    visible: descriptorSurfaceBridge.nodeVisible(descriptorSurfaceNode),
+  },
+  { technical: false, surfaceRole: 'hidden', visible: false },
+  'componentConfig cannot override descriptor technical or surface semantics',
+);
+const conflictingFieldInfoDescriptor = nativeNodeFieldDescriptor({
+  name: 'partner_id',
+  fieldDescriptor: {
+    fieldCode: 'partner_id',
+    label: 'Declared partner',
+    fieldType: 'many2one',
+    relation: 'res.partner',
+    readonly: false,
+    required: true,
+  },
+  fieldInfo: {
+    name: 'partner_id',
+    type: 'char',
+    relation: 'res.users',
+    readonly: true,
+    required: false,
+  },
+} as never, undefined, (name) => name);
+assert.deepEqual(
+  {
+    name: conflictingFieldInfoDescriptor?.name,
+    label: conflictingFieldInfoDescriptor?.string,
+    type: conflictingFieldInfoDescriptor?.type,
+    relation: conflictingFieldInfoDescriptor?.relation,
+    readonly: conflictingFieldInfoDescriptor?.readonly,
+    required: conflictingFieldInfoDescriptor?.required,
+  },
+  {
+    name: 'partner_id',
+    label: 'Declared partner',
+    type: 'many2one',
+    relation: 'res.partner',
+    readonly: false,
+    required: true,
+  },
+  'native layout field semantics come from fieldDescriptor, not conflicting fieldInfo',
+);
+assert.equal(
+  nativeNodeFieldDescriptor({
+    name: 'legacy_only',
+    fieldInfo: {
+      name: 'legacy_only',
+      type: 'char',
+      relation: 'res.partner',
+    },
+  } as never, undefined, (name) => name),
+  undefined,
+  'fieldInfo without a fieldDescriptor must remain an explicit contract gap',
+);
 const nativeClaimedVisibilityBridge = buildCanonicalNativeFormBridge(nativeVisibilityModel, undefined, '', 'field_fixture');
 assert.equal(nativeClaimedVisibilityBridge.nodeVisible(semanticHiddenNode), false,
   'native statusbar ownership still prevents duplicate body rendering');
@@ -2266,6 +2580,12 @@ const relationMappedField = canonicalFieldToFormSection({
   value: null,
   required: true,
   fieldDescriptor: {
+    schemaVersion: '1.0.0',
+    fieldCode: 'project_id',
+    label: 'Project',
+    fieldType: 'many2one',
+    widgetType: 'many2one',
+    semanticType: 'relation',
     relation: 'project.project',
     relationEntry: {
       can_read: true,
@@ -2517,6 +2837,10 @@ function addContextGroup(groupId: string, fieldCodes: string[]) {
     children: [], widgetList: [{
       widgetId: `field.${fieldCode}`, widgetType: 'input', fieldCode, label: fieldCode, span: 12,
       semanticType: 'readable_value', capabilities: [], componentConfig: { fieldType: 'char' },
+      fieldDescriptor: {
+        schemaVersion: '1.0.0', fieldCode, label: fieldCode, fieldType: 'char',
+        widgetType: 'input', semanticType: 'readable_value',
+      },
       ownerContainerId: `field.${fieldCode}`,
     }],
   }));
@@ -2647,6 +2971,10 @@ createFloorplanSnapshot.layoutContract.containerTree[0].children.push({
   children: [], widgetList: [{
     widgetId: 'field.empty_context', widgetType: 'input', fieldCode: 'empty_context', label: 'Empty context', span: 12,
     semanticType: 'readable_value', capabilities: [], componentConfig: { fieldType: 'char' },
+    fieldDescriptor: {
+      schemaVersion: '1.0.0', fieldCode: 'empty_context', label: 'Empty context',
+      fieldType: 'char', widgetType: 'input', semanticType: 'readable_value',
+    },
     ownerContainerId: 'field.empty_context',
   }],
 });
@@ -2777,6 +3105,10 @@ contextRailSnapshot.layoutContract.containerTree.splice(1, 0, {
     children: [], widgetList: [{
       widgetId: 'field.reference', widgetType: 'input', fieldCode: 'reference', label: 'Reference', span: 24,
       semanticType: 'readable_value', capabilities: [], componentConfig: { fieldType: 'char' },
+      fieldDescriptor: {
+        schemaVersion: '1.0.0', fieldCode: 'reference', label: 'Reference',
+        fieldType: 'char', widgetType: 'input', semanticType: 'readable_value',
+      },
       ownerContainerId: 'field.reference',
     }],
   }], widgetList: [],
@@ -2809,6 +3141,15 @@ relationSnapshot.layoutContract.containerTree[0].children.push({
     widgetId: 'field.project_id', widgetType: 'select', fieldCode: 'project_id', label: 'Project', span: 12,
     semanticType: 'relation', capabilities: [],
     componentConfig: { relation: 'project.project', fieldType: 'many2one' },
+    fieldDescriptor: {
+      schemaVersion: '1.0.0',
+      fieldCode: 'project_id',
+      label: 'Project',
+      fieldType: 'many2one',
+      widgetType: 'select',
+      semanticType: 'relation',
+      relation: 'project.project',
+    },
     ownerContainerId: 'field.project_id',
   }],
 });
@@ -2846,6 +3187,66 @@ assert.equal(
   }).text,
   'Road Project',
   'readonly presentation must retain the relation identity separately from its display text',
+);
+
+const conflictingRelationSnapshot = snapshot();
+conflictingRelationSnapshot.layoutContract.containerTree[0].children.push({
+  containerId: 'field.conflicting_project_id',
+  containerType: 'field',
+  type: 'field',
+  name: 'conflicting_project_id',
+  title: '',
+  span: 12,
+  children: [],
+  widgetList: [{
+    widgetId: 'field.conflicting_project_id',
+    widgetType: 'select',
+    fieldCode: 'conflicting_project_id',
+    label: 'Conflicting project',
+    span: 12,
+    semanticType: 'relation',
+    capabilities: [],
+    componentConfig: { relation: 'res.partner', fieldType: 'many2one' },
+    fieldDescriptor: {
+      schemaVersion: '1.0.0',
+      fieldCode: 'conflicting_project_id',
+      label: 'Conflicting project',
+      fieldType: 'many2one',
+      widgetType: 'select',
+      semanticType: 'relation',
+      relation: 'project.project',
+    },
+    ownerContainerId: 'field.conflicting_project_id',
+  }],
+});
+conflictingRelationSnapshot.statusContract.widgetStatus.push({
+  widgetId: 'field.conflicting_project_id',
+  visible: true,
+  readonly: false,
+  required: false,
+  disabled: false,
+});
+conflictingRelationSnapshot.dataContract.mainData.conflicting_project_id = [111, 'Descriptor project'];
+const conflictingRelationField = collectFields(presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(conflictingRelationSnapshot)),
+  'edit',
+).zones.primary).find((field) => field.fieldCode === 'conflicting_project_id');
+assert.equal(
+  conflictingRelationField?.value.model,
+  'project.project',
+  'componentConfig relation aliases must not override or branch the canonical field descriptor target',
+);
+
+const missingDescriptorRelationSnapshot = structuredClone(relationSnapshot);
+delete missingDescriptorRelationSnapshot.layoutContract.containerTree[0].children
+  .find((node) => node.containerId === 'field.project_id')!.widgetList[0].fieldDescriptor!.relation;
+assert.throws(
+  () => presentContractV2Form(
+    createContractV2Store(missingDescriptorRelationSnapshot),
+    'edit',
+  ),
+  /field\.project_id\.relation/,
+  'canonical presentation must not recover a relation target from componentConfig',
 );
 
 const emptySnapshot = snapshot();

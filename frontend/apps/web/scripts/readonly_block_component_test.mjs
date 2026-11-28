@@ -257,14 +257,27 @@ async function runMounted({ useRecordFormLayout, createContractV2Store, Componen
   }
   const preparedFields = [];
   const selected = ref([{ id: 15, label: '#15' }]);
+  const runtimeGeneration = ref(0);
+  const relationWrites = [];
   const attachmentProps = { field: { name: 'attachment_ids', type: 'many2many', readonly: true, descriptor: { relation: 'ir.attachment' } }, adapter: {
     selectedRelationOptions: () => selected.value, prepareOne2manyColumns: name => { preparedFields.push(name); return []; }, visibleOne2manyRows: () => [], one2manyColumns: () => [],
+    currentModel: 'project.project', currentRecordId: 91,
+    relationRuntimeGeneration: () => runtimeGeneration.value,
+    relationIds: () => [], setRelationIds: (name, ids) => relationWrites.push({ name, ids }),
   } };
   const props = ref(kind === 'attachment' ? attachmentProps : kind === 'grid' ? { intent: 'example.entry', sceneKey: 'scene.a' } : { block: { key: 'test', title: 'Test' }, zoneKey: 'main', dataset: {} });
   const app = renderer.createApp({ setup: () => () => h(Component, props.value) });
   app.mount(rootNode); await tick();
   if (kind === 'attachment') {
     equal(preparedFields, [], 'mounted many2many attachment does not request one2many metadata');
+    globalThis.FileReader = class {
+      readAsDataURL() {
+        setTimeout(() => {
+          this.result = 'data:text/plain;base64,QQ==';
+          this.onload?.();
+        }, 0);
+      }
+    };
     const attachmentName = () => {
       const search = n => n.props.class === 'attachment-name' ? n : n.children.map(search).find(Boolean);
       return search(rootNode)?.text;
@@ -290,8 +303,34 @@ async function runMounted({ useRecordFormLayout, createContractV2Store, Componen
     selected.value = [{ id: 18, label: '#18' }]; await waitCalls(4);
     calls[3].resolve({ records: [{ id: 19, name: 'Wrong record' }] }); await tick();
     equal(attachmentName(), '#18', 'unrelated metadata never supplies the name');
-    selected.value = [{ id: 20, label: '#20' }]; await waitCalls(5);
-    app.unmount(); calls[4].resolve({ records: [{ id: 20, name: 'Late' }] }); await tick();
+    selected.value = [{ id: 21, label: '#21' }]; await waitCalls(5);
+    runtimeGeneration.value += 1; await tick();
+    calls[4].resolve({ records: [{ id: 21, name: 'Old-context name' }] }); await tick();
+    equal(attachmentName(), '#21', 'old generation metadata cannot publish into the retained relation');
+
+    props.value = {
+      ...attachmentProps,
+      field: { ...attachmentProps.field, readonly: false },
+    };
+    await tick();
+    const uploadNode = (() => {
+      const search = n => n.props.class === 'attachment-upload' ? n : n.children.map(search).find(Boolean);
+      return search(rootNode);
+    })();
+    const uploadStart = calls.length;
+    uploadNode.props.onChange([{ name: 'late.txt', type: 'text/plain' }]);
+    await new Promise(resolve => setTimeout(resolve, 5));
+    await tick();
+    await waitCalls(uploadStart + 1);
+    equal(calls[uploadStart].request.intent, 'file.upload', 'attachment upload uses the governed file intent');
+    runtimeGeneration.value += 1; await tick();
+    calls[uploadStart].resolve({ id: 102, name: 'late.txt' }); await tick();
+    equal(relationWrites, [], 'old record/generation upload cannot mutate the new relation value');
+
+    props.value = attachmentProps;
+    await tick();
+    selected.value = [{ id: 20, label: '#20' }]; await waitCalls(uploadStart + 2);
+    app.unmount(); calls[uploadStart + 1].resolve({ records: [{ id: 20, name: 'Late' }] }); await tick();
     equal(rootNode.children.length, 0, 'unmounted metadata response publishes nothing');
 
     // Actual one2many renderer: keep the declared-visible blank row and use

@@ -89,6 +89,7 @@ export type RelationFieldAdapter = {
   one2manyEffectiveColumn: (name: string, row: RelationFieldRow, column: RelationFieldColumn) => RelationFieldColumn;
   one2manyColumnQueryScope: (name: string, rowKey: string, column: RelationFieldColumn) => string;
   queryOne2manyColumnOptions: (name: string, rowKey: string, column: RelationFieldColumn, keyword?: string) => Promise<RelationFieldOption[]>;
+  relationRuntimeGeneration?: () => number;
   setOne2manyRowField: (name: string, rowKey: string, column: RelationFieldColumn, value: unknown) => void;
   removeOne2manyRow: (name: string, rowKey: string) => void;
   one2manyRowErrors: (name: string, rowKey: string) => string[];

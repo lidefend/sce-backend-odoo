@@ -36,13 +36,14 @@ export function buildActionViewFieldFilter(payload: ActionViewFieldFilterPayload
   const field = text(payload.field);
   const operator = text(payload.operator);
   const type = text(payload.type);
-  const queryMode = text(payload.queryMode || 'domain');
+  const label = text(payload.label);
+  const queryMode = text(payload.queryMode);
   const value = payload.value;
-  if (!field || !operator || !type || !validValue(value)) {
+  if (!field || !label || !operator || !type || !queryMode || !validValue(value)) {
     throw contractGapError(
       {
         kind: 'contract_defect',
-        missing: 'searchContract.fields[].field/operator/type/value',
+        missing: 'searchContract.fields[].field/label/operator/type/query_mode/value',
         requiredDeclarationLayer: 'P0:smart_core:app_search_config native field projection',
       },
       '字段查询声明不完整，前端不允许猜测查询语义',
@@ -62,7 +63,7 @@ export function buildActionViewFieldFilter(payload: ActionViewFieldFilterPayload
   return {
     identity,
     field,
-    label: text(payload.label) || field,
+    label,
     type,
     relation: text(payload.relation),
     operator,
@@ -82,6 +83,7 @@ export function serializeActionViewFieldFilter(filter: ActionViewFieldFilter | n
     relation: filter.relation,
     operator: filter.operator,
     value: filter.value,
+    queryMode: filter.queryMode,
   });
 }
 
@@ -105,6 +107,7 @@ export function parseActionViewFieldFilter(raw: unknown): ActionViewFieldFilter 
       relation: text(parsed.relation),
       operator: text(parsed.operator),
       value: parsed.value,
+      queryMode: text(parsed.queryMode),
     });
   } catch {
     return null;

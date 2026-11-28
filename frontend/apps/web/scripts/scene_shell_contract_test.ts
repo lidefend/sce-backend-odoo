@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {
+  declaredSceneRecordEntry,
   getSceneByKey,
   setSceneRegistryFromSceneReadyContract,
 } from '../src/app/resolvers/sceneRegistry.ts';
@@ -9,6 +10,14 @@ import {
 } from '../src/app/sceneActionTarget.ts';
 
 const sceneKey = 'entry.smart_construction_core.menu_sc_project_project';
+const recordEntry = {
+  model: 'res.company',
+  record_id: 1,
+  entry_intent: 'explicit_readonly',
+  model_write_authority: true,
+  action_id: 966,
+  menu_id: 719,
+};
 setSceneRegistryFromSceneReadyContract({
   scenes: [{
     scene: { key: sceneKey, title: '项目台账' },
@@ -26,6 +35,7 @@ setSceneRegistryFromSceneReadyContract({
       model: 'project.project',
       view_mode: 'list,form',
       entry_intent: 'ui.contract',
+      record_entry: recordEntry,
     },
     permission_surface: {
       visible: true,
@@ -56,6 +66,8 @@ assert.equal(scene.target.action_id, 506);
 assert.equal(scene.target.menu_id, 379);
 assert.equal(scene.target.model, 'project.project');
 assert.equal(scene.target.route, `/s/${sceneKey}`);
+assert.deepEqual(scene.target.record_entry, recordEntry);
+assert.deepEqual(declaredSceneRecordEntry(scene.target), recordEntry);
 assert.equal(scene.scene_ready?.permission_surface?.allowed, true);
 
 const menuTree = [{
@@ -117,4 +129,4 @@ assert.deepEqual(
   'the shared resolver gives explicit child identity priority over route context',
 );
 
-console.log('scene_shell_contract_test PASS native_delegate=1 entry_priority=5');
+console.log('scene_shell_contract_test PASS native_delegate=1 entry_priority=5 record_entry=1');

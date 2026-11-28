@@ -180,6 +180,8 @@ export function one2manyColumnsFromSubview(
           required: businessColumn?.required === undefined ? descriptorSemantics.required : Boolean(businessColumn.required),
           readonly: businessColumn?.readonly === undefined ? descriptorSemantics.readonly : Boolean(businessColumn.readonly),
           selection: one2manySelectionOptions(businessColumn?.selection) || descriptorSemantics.selection,
+          ...(descriptor?.temporal ? { temporal: descriptor.temporal } : {}),
+          ...(descriptor?.unit ? { unit: descriptor.unit } : {}),
         });
         return;
       }
@@ -237,6 +239,8 @@ export function one2manyColumnsFromSubview(
         occurrenceIndex: occurrenceIndex > 0 ? occurrenceIndex : undefined,
         modifiers: Object.keys(modifiers).length ? modifiers : undefined,
         selection: one2manySelectionOptions(row.selection || businessColumn.selection || descriptor?.selection),
+        ...(descriptor?.temporal ? { temporal: descriptor.temporal } : {}),
+        ...(descriptor?.unit ? { unit: descriptor.unit } : {}),
       });
     });
   }
@@ -923,14 +927,14 @@ export function one2manyColumnInputType(column: One2ManyColumn): 'text' | 'numbe
 export function one2manyColumnInputValue(column: One2ManyColumn, value: unknown): string | number {
   const ttype = String(column.ttype || '').trim().toLowerCase();
   if (value === null || value === undefined || (value === false && ttype !== 'boolean')) return '';
-  if (ttype === 'monetary') return formatMonetaryInputValue(value, column.digits, column.currencyLabel || '');
+  if (ttype === 'monetary') return formatMonetaryInputValue(value, column.digits);
   if (ttype === 'date') return toDateInputValue(value);
   if (ttype === 'datetime') return toDatetimeInputValue(value);
   if (typeof value === 'number' || typeof value === 'string') return value;
   return String(value);
 }
 
-export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknown) {
+export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknown, timeZone = '') {
   const ttype = String(column.ttype || '').trim().toLowerCase();
   if (value === null || value === undefined || (value === false && ttype !== 'boolean')) return '';
   if (ttype === 'json') return formatDisplayValue(value, { ttype }, { emptyText: '' });
@@ -968,11 +972,14 @@ export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknow
       componentKey: column.componentKey,
       widget: column.widget,
       digits: column.digits,
+      unit: column.unit,
       currencyField: column.currencyField,
       currencyLabel: column.currencyLabel,
       selection: column.selection,
+      temporal: column.temporal,
     },
     value,
+    timeZone,
     currencyLabel: column.currencyLabel,
     emptyText: '',
     temporalProfile: 'compact',

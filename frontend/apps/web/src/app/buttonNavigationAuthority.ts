@@ -17,6 +17,14 @@ const MAX_PENDING = 32;
 
 const pending: ButtonNavigationGrant[] = [];
 
+function routeKey(route: string): string {
+  try {
+    return new URL(route, 'http://sc.local').pathname;
+  } catch {
+    return String(route || '').split('?', 1)[0];
+  }
+}
+
 function pruneExpired(now: number): void {
   for (let index = pending.length - 1; index >= 0; index -= 1) {
     if (pending[index].expiresAt < now) pending.splice(index, 1);
@@ -26,7 +34,7 @@ function pruneExpired(now: number): void {
 export function grantButtonNavigationAuthority(actionId: number, route: string): void {
   if (!Number.isSafeInteger(actionId) || actionId <= 0 || !route) return;
   pruneExpired(Date.now());
-  pending.push({ actionId, route, expiresAt: Date.now() + GRANT_TTL_MS });
+  pending.push({ actionId, route: routeKey(route), expiresAt: Date.now() + GRANT_TTL_MS });
   if (pending.length > MAX_PENDING) pending.splice(0, pending.length - MAX_PENDING);
 }
 
@@ -35,7 +43,7 @@ export function consumeButtonNavigationAuthority(actionId: number, route: string
   const now = Date.now();
   for (let index = 0; index < pending.length; index += 1) {
     const grant = pending[index];
-    if (grant.actionId !== actionId || grant.route !== route) continue;
+    if (grant.actionId !== actionId || grant.route !== routeKey(route)) continue;
     pending.splice(index, 1);
     return now <= grant.expiresAt;
   }

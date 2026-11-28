@@ -7,7 +7,7 @@ export interface RetainedActivityPageLike {
   menu_id?: number;
   record_id?: string;
   record_context?: {
-    selected?: { id?: number | null } | null;
+    selected?: { id?: number | null; company_id?: number | null } | null;
     company_id?: number | null;
   } | null;
   dirty?: boolean;
@@ -48,6 +48,17 @@ export function normalizeRetainedActivityPageIdentity<T extends RetainedActivity
     };
   }
   return page;
+}
+
+export function activityPageBelongsToCompany(
+  page: RetainedActivityPageLike,
+  companyId: unknown,
+): boolean {
+  const currentCompanyId = positiveInteger(companyId);
+  const pageCompanyId = positiveInteger(
+    page.record_context?.company_id || page.record_context?.selected?.company_id,
+  );
+  return currentCompanyId > 0 && pageCompanyId === currentCompanyId;
 }
 
 export function activityPageCacheRouteKey(key: string): string {

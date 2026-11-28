@@ -258,11 +258,15 @@ assert.deepEqual(dynamicRelationDomainFromDescriptor({
 }), [['id', '=', -1]], 'an unresolved parent record identity remains fail-closed');
 assert.equal((nativeNodeFieldDescriptor({
   name: 'award_opening_id',
-  attributes: { domain: "[('bid_id','=',id),('result','=','won')]" },
-  fieldInfo: { name: 'award_opening_id', type: 'many2one', domain: [] },
+  fieldDescriptor: {
+    fieldCode: 'award_opening_id',
+    label: 'award_opening_id',
+    fieldType: 'many2one',
+    domain: "[('bid_id','=',id),('result','=','won')]",
+  },
 } as never, undefined, (name) => name) as Record<string, unknown>).domain,
 "[('bid_id','=',id),('result','=','won')]",
-'the native field occurrence domain must override an empty model-level domain');
+'the native field occurrence domain must come from fieldDescriptor');
 assert.equal(resolveRelationDomainDependencyValue({
   dependency: 'id',
   recordId: 98,
@@ -325,6 +329,7 @@ console.log(`[professional_detail_collection_model_test] PASS matrix=${matrix} r
 
 // The actual inline query runtime must refuse before any transport/cache fetch.
 const { createOne2manyColumnOptionsRuntime } = await import('../src/pages/contractForm/one2manyColumnOptionsRuntime');
+const { currentContextEpoch, invalidateContextRequests } = await import('../src/app/contextEpoch');
 const relationFunctions = await import('../src/pages/contractForm/relationDescriptor');
 let networkCalls = 0;
 const queryRuntime = createOne2manyColumnOptionsRuntime({
@@ -401,3 +406,48 @@ compiledRaw = nativeFixture.parentRaw; compiledExpression = nativeFixture.parent
 await positiveRuntime.queryOne2manyColumnOptions('lines', 'draft-1', { name: 'account_id' });
 assert.deepEqual(queriedDomain, expectedDomain(1), 'explicit parent.company_id consumes the parent field type');
 console.log('[professional_detail_collection] row/parent missingness and type PASS');
+
+// A retained row/cell cannot publish candidates after its shared page owner or
+// company context has changed.
+{
+  const recordResolvers: Array<(value: { records: Array<Record<string, unknown>> }) => void> = [];
+  let sharedGeneration = 0;
+  const guardedRuntime = createOne2manyColumnOptionsRuntime({
+    ...relationFunctions,
+    relationModelFromDescriptor: relationFunctions.relationModel,
+    ensureRelationFieldDescriptors: async () => {},
+    one2manyRelationFieldDescriptor: () => ({
+      type: 'many2one',
+      relation: 'res.company',
+      relationEntry: { can_read: true, options_limit: 80, options_search_limit: 20 },
+    }),
+    one2manyFieldRows: () => [{ key: 'draft-1', values: {} }],
+    formData: {}, route: { query: {} }, pickContractNavQuery: () => ({}),
+    captureRelationRequest: () => {
+      const generation = sharedGeneration;
+      return () => sharedGeneration === generation;
+    },
+    fetchRelationOptionsFromRuntime: async (request: { fetchOptions: (search: string, limit: number) => Promise<unknown> }) =>
+      request.fetchOptions('', 80),
+    listContractFormRecords: () => new Promise((resolve) => {
+      recordResolvers.push(resolve);
+    }),
+  } as never);
+
+  const staleOwnerQuery = guardedRuntime.queryOne2manyColumnOptions('lines', 'draft-1', { name: 'company_id' });
+  for (let turn = 0; turn < 8 && !recordResolvers.length; turn += 1) await Promise.resolve();
+  assert.equal(recordResolvers.length, 1, 'the owner-guarded query reaches its owned transport');
+  sharedGeneration += 1;
+  recordResolvers[0]!({ records: [{ id: 11, display_name: 'Old company' }] });
+  assert.deepEqual(await staleOwnerQuery, [], 'a superseded page owner cannot publish row candidates');
+
+  const previousEpoch = currentContextEpoch();
+  const staleContextQuery = guardedRuntime.queryOne2manyColumnOptions('lines', 'draft-1', { name: 'company_id' });
+  for (let turn = 0; turn < 8 && recordResolvers.length < 2; turn += 1) await Promise.resolve();
+  assert.equal(recordResolvers.length, 2, 'the context-guarded query reaches its owned transport');
+  invalidateContextRequests();
+  assert.notEqual(currentContextEpoch(), previousEpoch);
+  recordResolvers[1]!({ records: [{ id: 12, display_name: 'Old-context company' }] });
+  assert.deepEqual(await staleContextQuery, [], 'an old context epoch cannot publish row candidates');
+}
+console.log('[professional_detail_collection] row candidate owner/context epoch PASS');

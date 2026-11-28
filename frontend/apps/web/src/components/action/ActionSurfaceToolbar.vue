@@ -559,11 +559,9 @@ const allGroupChips = computed(() => [...menuGroupChips.value, ...props.customGr
 const activeCustomFilterField = computed(() =>
   props.customFilterFields.find((field) => field.identity === customFilterField.value) || null,
 );
-const activeCustomFilterOperators = computed<CustomOperator[]>(() => {
-  const operators = activeCustomFilterField.value?.operators || [];
-  if (operators.length) return operators;
-  return [{ value: '=', label: '等于', needs_value: true }];
-});
+const activeCustomFilterOperators = computed<CustomOperator[]>(() =>
+  activeCustomFilterField.value?.operators || [],
+);
 const activeCustomFilterChoices = computed(() => activeCustomFilterField.value?.choices || []);
 const customFilterInputType = computed(() => {
   const type = activeCustomFilterField.value?.type;
@@ -694,7 +692,7 @@ function applyCustomFilter() {
     operator: customFilterOperator.value,
     value,
     domain,
-    queryMode: field.queryMode || 'domain',
+    queryMode: field.queryMode,
   });
 }
 
@@ -709,8 +707,9 @@ function applyCustomGroup() {
   const key = String(customGroupField.value || '').trim();
   if (!key) return;
   const found = props.customGroupFields.find((chip) => chip.key === key);
+  if (!found?.label) return;
   searchMenuOpen.value = false;
-  emit('custom-group', { key, label: found?.label || key });
+  emit('custom-group', { key, label: found.label });
 }
 
 async function saveFavorite() {
@@ -759,7 +758,7 @@ watch(() => props.favoriteSharedEnabled, (enabled) => {
 });
 
 watch(activeCustomFilterField, (field) => {
-  customFilterOperator.value = field?.operators?.[0]?.value || '=';
+  customFilterOperator.value = String(field?.operators?.[0]?.value || '').trim();
   customFilterValue.value = field?.type === 'boolean' ? 'true' : '';
 });
 

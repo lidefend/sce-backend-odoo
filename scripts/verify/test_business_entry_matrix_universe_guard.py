@@ -30,7 +30,7 @@ def _row(menu, action="smart_construction_core.action_demo", status="pending"):
 
 
 class BusinessEntryAcceptanceUniverseGuardTest(unittest.TestCase):
-    def _documents(self, count=132):
+    def _documents(self, count=guard.EXPECTED_PAGES):
         menu_keys = [f"demo.menu_{index:03d}" for index in range(count - 1)]
         scenario = {
             "scenarios": [{
@@ -52,8 +52,8 @@ class BusinessEntryAcceptanceUniverseGuardTest(unittest.TestCase):
         }
         policy = {
             "policy_strategy": {
-                "effective_menu_count_per_product": 132,
-                "menu_count_by_product": {"construction.standard": 132},
+                "effective_menu_count_per_product": guard.EXPECTED_PAGES,
+                "menu_count_by_product": {"construction.standard": guard.EXPECTED_PAGES},
             },
         }
         return scenario, matrix, exposure, policy
@@ -61,11 +61,11 @@ class BusinessEntryAcceptanceUniverseGuardTest(unittest.TestCase):
     def test_current_documents_are_complete(self):
         report = guard.build_report()
         self.assertTrue(report["ok"], report["errors"])
-        self.assertEqual(report["counts"]["scenario_pages"], 132)
-        self.assertEqual(report["counts"]["matrix_action_rows"], 131)
+        self.assertEqual(report["counts"]["scenario_pages"], guard.EXPECTED_PAGES)
+        self.assertEqual(report["counts"]["matrix_action_rows"], guard.EXPECTED_ACTION_ROWS)
         self.assertEqual(report["counts"]["scene_rows"], 1)
-        self.assertEqual(report["counts"]["declared_units"], 132)
-        self.assertEqual(report["counts"]["fixture_scenarios"], 46)
+        self.assertEqual(report["counts"]["declared_units"], guard.EXPECTED_PAGES)
+        self.assertEqual(report["counts"]["fixture_scenarios"], 48)
 
     def test_complete_fixture_is_accepted(self):
         scenario, matrix, exposure, policy = self._documents()
@@ -77,7 +77,7 @@ class BusinessEntryAcceptanceUniverseGuardTest(unittest.TestCase):
             fixture_scenarios=[row["key"] for row in scenario["scenarios"]],
         )
         self.assertTrue(report["ok"], report["errors"])
-        self.assertEqual(report["counts"]["declared_units"], 132)
+        self.assertEqual(report["counts"]["declared_units"], guard.EXPECTED_PAGES)
 
     def test_missing_action_row_fails_closed(self):
         scenario, matrix, exposure, policy = self._documents()
@@ -89,8 +89,11 @@ class BusinessEntryAcceptanceUniverseGuardTest(unittest.TestCase):
             fixture_scenarios=[row["key"] for row in scenario["scenarios"]],
         )
         self.assertFalse(report["ok"])
-        self.assertIn("matrix action rows=130 expected=131", report["errors"])
-        self.assertEqual(report["missing"], ["demo.menu_130"])
+        self.assertIn(
+            f"matrix action rows={guard.EXPECTED_ACTION_ROWS - 1} expected={guard.EXPECTED_ACTION_ROWS}",
+            report["errors"],
+        )
+        self.assertEqual(report["missing"], [f"demo.menu_{guard.EXPECTED_ACTION_ROWS - 1:03d}"])
 
     def test_duplicate_or_actionless_row_fails_closed(self):
         scenario, matrix, exposure, policy = self._documents()

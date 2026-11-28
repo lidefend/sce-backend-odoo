@@ -16,7 +16,7 @@ import { mapDescriptorSelectionOptions, mapRelationOptions } from '../../compone
 import {
   applyReadonlyFieldValues, buildLegacyLayoutNodes, buildNativeFieldSchemas, nativeFieldPresentation,
   isStaticTruthyModifier,
-  nativeNodeFieldDescriptor as nativeNodeFieldDescriptorFromNode, nativeNodeWidget, nativeNodeWidgetSemantics,
+  nativeNodeFieldDescriptor as nativeNodeFieldDescriptorFromNode,
   type NativeLayoutLikeNode,
 } from './nativeLayoutUtils';
 import { selectFieldErrorsForTarget, type BusinessFieldError } from '../../app/businessValidationError';
@@ -25,6 +25,21 @@ import { fieldType } from './fieldUtils';
 // 由 relationDescriptor 原样投影，渲染层严格消费，前端不再自造默认值。
 import { relationEntry } from './relationDescriptor';
 import type { LayoutNode, LowCodeFieldSize } from './types';
+
+export function resolveRecordFormFieldWidget(descriptor: FieldDescriptor): string {
+  const canonical = String(descriptor.widgetType || '').trim().toLowerCase();
+  if (canonical) return canonical;
+  return String((descriptor as Record<string, unknown>).widget || '').trim().toLowerCase();
+}
+
+export function resolveRecordFormFieldWidgetSemantics(
+  descriptor: FieldDescriptor,
+): Record<string, unknown> {
+  const value = (descriptor as Record<string, unknown>).widgetOptions;
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+}
 
 export function useRecordFormFieldSchemas(context: {
   contract: Ref<unknown>; v2ContractStore: Ref<ContractV2NormalizedStore|null>;
@@ -70,8 +85,8 @@ export function useRecordFormFieldSchemas(context: {
     context.rememberFormConfigFieldLabel(name,presentation.label);
     return {key:widgetId||`native_field_${name}_${index}`,kind:'field',name,label:presentation.label,
       readonly:Boolean(nativeReadonly||descriptor.readonly||state.readonly||(context.recordId.value?!context.rights.value.write:!context.rights.value.create)),
-      required:Boolean(nativeRequired||state.required||descriptor.required),widget:nativeNodeWidget(source),
-      widgetSemantics:nativeNodeWidgetSemantics(source,strictWidget?.componentConfig),span:presentation.span,descriptor};
+      required:Boolean(nativeRequired||state.required||descriptor.required),widget:resolveRecordFormFieldWidget(descriptor),
+      widgetSemantics:resolveRecordFormFieldWidgetSemantics(descriptor),span:presentation.span,descriptor};
   };
   const v2FieldValue=(name:string)=>{const key=String(name||'').trim();if(!key||!context.v2ContractStore.value?.widgetsByFieldCode.has(key))return{found:false,value:undefined};
     const source=resolveContractV2ValueSource(context.v2ContractStore.value).values;if(!Object.prototype.hasOwnProperty.call(source,key))return{found:false,value:undefined};return{found:true,value:source[key]};};

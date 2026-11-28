@@ -23,11 +23,23 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
     def test_kanban_field_name_inference_fails(self):
         failures = guard.validate(lambda path: source(
             path,
-            ("presentCollectionKanbanCell", "semanticValueByField")
+            ("function rowTitle(", "const semanticValueByField = true;\nfunction rowTitle(")
             if path == "pages/KanbanPage.vue"
             else None,
         ))
         self.assertTrue(any("field names" in failure for failure in failures))
+
+    def test_kanban_undeclared_title_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "return presentCollectionKanbanTitle({",
+                "return formatValue(row.name, 'name'); presentCollectionKanbanTitle({",
+            )
+            if path == "pages/KanbanPage.vue"
+            else None,
+        ))
+        self.assertTrue(any("undeclared fallback" in failure for failure in failures))
 
     def test_local_status_tone_table_fails(self):
         failures = guard.validate(lambda path: source(
@@ -123,6 +135,208 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
             else None,
         ))
         self.assertTrue(any("[CFG-001]" in failure for failure in failures))
+
+    def test_generic_display_undeclared_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "missing: 'fieldDescriptor'",
+                "missing: 'legacyValue'",
+            )
+            if path == "utils/display.ts"
+            else None,
+        ))
+        self.assertTrue(any("undeclared value-formatting fallback" in failure for failure in failures))
+
+    def test_field_value_attachment_appearance_inference_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "hasDeclaredAttachmentIdentity(props.field)",
+                "true",
+            )
+            if path == "components/FieldValue.vue"
+            else None,
+        ))
+        self.assertTrue(any("[CFG-010]" in failure for failure in failures))
+
+    def test_list_attachment_appearance_inference_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "return hasDeclaredAttachmentIdentity(columnSemanticInput(field));",
+                "return true;",
+            )
+            if path == "pages/ListPage.vue"
+            else None,
+        ))
+        self.assertTrue(any("[CFG-010]" in failure for failure in failures))
+
+    def test_percentage_precision_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "function requireDeclaredBusinessDigits(",
+                "function legacyDeclaredDigits(",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("require declared precision" in failure for failure in failures))
+
+    def test_currency_code_precision_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "return declaredDigits?.[1];",
+                "return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).resolvedOptions().maximumFractionDigits;",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("currency-code metadata" in failure for failure in failures))
+
+    def test_missing_current_currency_precision_disables_frontend_step(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "if (scale === undefined) return 'any';",
+                "",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("invents a frontend step" in failure for failure in failures))
+
+    def test_declared_unit_consumption_drop_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "function requireDeclaredBusinessUnit(",
+                "function legacyDeclaredUnit(",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("declared units" in failure for failure in failures))
+
+    def test_list_duration_unit_propagation_drop_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            ("unit: column.unit,", "unit: undefined,")
+            if path == "pages/listPage/listCellPresentation.ts"
+            else None,
+        ))
+        self.assertTrue(any("declared field unit" in failure for failure in failures))
+
+    def test_partial_component_identity_allowlist_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "const componentKey = declaredComponentKey;",
+                "const componentKey = ['sc.value.duration', 'sc.value.percentage'].includes(declaredComponentKey) ? declaredComponentKey : '';",
+            )
+            if path == "app/action_runtime/useActionViewContractShapeRuntime.ts"
+            else None,
+        ))
+        self.assertTrue(any("partial component identity allowlist" in failure for failure in failures))
+
+    def test_canonical_selection_descriptor_drop_fails(self):
+        failures = guard.validate(lambda path: (
+            "\n".join((
+                "function declaredSelectionOptions(field: CanonicalFormField): TemplateSelectOption[]",
+                "const selection = declaredSelectionOptions(field);",
+                "selectionOptions: selectionOptions(config.selection),",
+                "label: String(item[1] ?? item[0] ?? ''),",
+            ))
+            if path == "pages/contractForm/canonicalFormRenderer.ts"
+            else source(path)
+        ))
+        self.assertTrue(any("declared selection projection" in failure for failure in failures))
+        self.assertTrue(any("component selection" in failure for failure in failures))
+        self.assertTrue(any("selection label from its storage key" in failure for failure in failures))
+
+    def test_relation_target_conflict_detection_drop_fails(self):
+        failures = guard.validate(lambda path: (
+            "export function relationModel(descriptor?: FieldDescriptor) {\n"
+            "  return String((descriptor as Record<string, unknown> | undefined)?.relation || '').trim();\n"
+            "}"
+            if path == "pages/contractForm/relationDescriptor.ts"
+            else source(path)
+        ))
+        self.assertTrue(any("conflicting relation and relationEntry models" in failure for failure in failures))
+        self.assertTrue(any("compare both declared carriers" in failure for failure in failures))
+
+    def test_relation_label_synthesis_fails(self):
+        failures = guard.validate(lambda path: (
+            "export function relationOptionFromRow() { return { label: `#${id}` }; }"
+            if path == "pages/contractForm/relationDescriptor.ts"
+            else source(path)
+        ))
+        self.assertTrue(any("#id label" in failure for failure in failures))
+
+    def test_hard_coded_duration_rounding_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "function formatBusinessDuration(",
+                "function formatBusinessDuration( value: unknown, emptyText = FIELD_VALUE_EMPTY_TEXT, ) { const absolute = Math.abs(Number(value)); Math.round(absolute * 3_600_000);",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("hard-coded hour/minute" in failure for failure in failures))
+
+    def test_generic_float_precision_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            ("field.(float).digits", "field.(float).legacy_default"),
+        ) if path == "utils/fieldSemantics.ts" else source(path))
+        self.assertTrue(any("generic float formatting" in failure for failure in failures))
+
+    def test_plain_object_label_inference_fails(self):
+        failures = guard.validate(lambda path: (
+            "const text = String(row.display_name || row.label || row.name || '').trim();"
+            if path == guard.AUTHORITY
+            else source(path)
+        ))
+        self.assertTrue(any("object shape" in failure for failure in failures))
+
+    def test_temporal_authority_consumption_drop_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "function resolveDeclaredTemporal(",
+                "function legacyDeclaredTemporal(",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("declared temporal authority" in failure for failure in failures))
+
+    def test_midnight_datetime_shape_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "if (kind === 'date') return date;",
+                "if (`${hour}:${minute}:${second}` === '00:00:00') return date;",
+            )
+            if path == "utils/fieldSemantics.ts"
+            else None,
+        ))
+        self.assertTrue(any("midnight values" in failure for failure in failures))
+
+    def test_my_work_money_precision_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "normalizeDeclaredDigits([20, Number(value)])",
+                "normalizeDeclaredDigits([20, 2])",
+            )
+            if path == "app/presentation/productMyWorkPresentation.ts"
+            else None,
+        ))
+        self.assertTrue(any("my-work money facts do not require declared digits" in failure for failure in failures))
 
     def test_list_selection_raw_fallback_fails(self):
         failures = guard.validate(lambda path: source(

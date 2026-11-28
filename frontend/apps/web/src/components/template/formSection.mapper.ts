@@ -178,6 +178,8 @@ export function buildFormSectionFieldSchemas(
       widgetSemantics: semantics,
       readonlyEmptyText: readonlyEmptyText || undefined,
       digits,
+      unit: field.descriptor?.unit,
+      temporal: field.descriptor?.temporal,
       currencyField: currencyField || undefined,
       currencyLabel: currencyLabel || undefined,
       required: options.resolveRequired(field),

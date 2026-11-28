@@ -124,6 +124,10 @@ export function captureReleasedNavigation(page) {
   return {
     nav: () => current,
     payload: () => currentPayload,
+    async ready(timeoutMs = 45000) {
+      await page.locator('.nav-shell[data-navigation-state="ready"]')
+        .waitFor({ state: 'visible', timeout: timeoutMs });
+    },
     async target(actionXmlid, timeoutMs = 45000) {
       const started = Date.now();
       while (Date.now() - started < timeoutMs) {

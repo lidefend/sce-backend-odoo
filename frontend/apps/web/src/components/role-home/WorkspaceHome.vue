@@ -167,11 +167,13 @@ import {
   productMyWorkTaskFacts,
 } from '../../app/presentation/productMyWorkPresentation';
 import { capabilityStatusLabel } from '../../app/productCapabilityCatalogProjection';
+import { useRuntimeTimeZone } from '../../app/runtimeTimeZone';
 
-const formatFact = (fact: ProductMyWorkFact) => formatProductMyWorkFact(fact);
+const timeZone = useRuntimeTimeZone();
+const formatFact = (fact: ProductMyWorkFact) => formatProductMyWorkFact(fact, timeZone.value);
 
 const taskIdentity = (task: { label: string; amount?: ProductMyWorkFact }) =>
-  productMyWorkIdentityDisplay(task.label, task.amount);
+  productMyWorkIdentityDisplay(task.label, task.amount, timeZone.value);
 
 /** The heading chip already presents the amount; keep identity and facts from repeating it. */
 const taskFacts = (task: { facts: ProductMyWorkFact[]; amount?: ProductMyWorkFact }) =>

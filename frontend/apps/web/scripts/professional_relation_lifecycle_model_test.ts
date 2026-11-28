@@ -342,7 +342,7 @@ await disposeLabels;
 await new Promise(resolve => setTimeout(resolve, 5));
 equal([timerCalls, guarded.deniedRelationModels.size, guarded.relationOptions.value], [0, 0, {}], 'dispose cancels timers and suppresses hydration errors');
 const pageSource = fs.readFileSync('frontend/apps/web/src/pages/ContractFormPage.vue', 'utf8');
-assert.match(pageSource, /isComponentActive\.value\], invalidateRelationRequests, \{ flush: 'sync' \}/);
+assert.match(pageSource, /isComponentActive\.value\], \(\) => \{[\s\S]*invalidateRelationRequests\(\);[\s\S]*invalidateOne2manyRequests\(\);[\s\S]*\}, \{ flush: 'sync' \}/);
 lifetimeChecks += 1;
 console.log(`[professional_relation_lifecycle_model_test] PASS shared-record-lifetime=${lifetimeChecks}`);
 

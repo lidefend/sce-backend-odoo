@@ -1,5 +1,14 @@
 import assert from 'node:assert/strict';
-import { normalizeEmbeddedSceneQuery } from '../src/app/routeQuery';
+import {
+  buildCanonicalSceneRouteTarget,
+  normalizeEmbeddedSceneQuery,
+  stripCanonicalSceneIdentityQuery,
+} from '../src/app/routeQuery';
+import {
+  buildBusinessCategoryCreateNavQuery,
+  pickContractNavQuery,
+} from '../src/app/navigationContext';
+import { resolveRoutePresetAppliedLabel } from '../src/app/runtime/actionViewRoutePresetRuntime';
 
 const malformedActionQuery = normalizeEmbeddedSceneQuery({
   menu_id: '379&action_id=506&view_mode=tree',
@@ -42,5 +51,105 @@ assert.deepEqual(canonicalQuery.query, {
   action_id: '506',
   view_mode: 'tree',
 });
+
+const canonicalSceneRoute = buildCanonicalSceneRouteTarget('workspace.home', {
+  scene: {
+    label: 'Role home',
+    target: { menu_id: 3, action_id: 4 },
+  },
+  query: {
+    scene: 'workspace.home',
+    scene_key: 'workspace.home',
+    scene_label: 'Role home',
+    search: 'risk',
+  },
+});
+assert.deepEqual(canonicalSceneRoute, {
+  path: '/s/workspace.home',
+  query: {
+    search: 'risk',
+    menu_id: 3,
+    action_id: 4,
+  },
+});
+assert.deepEqual(stripCanonicalSceneIdentityQuery({
+  scene_key: 'workspace.home',
+  scene_label: 'Role home',
+  menu_id: '3',
+}), { menu_id: '3' });
+assert.deepEqual(pickContractNavQuery({
+  scene: 'workspace.home',
+  scene_key: 'workspace.home',
+  scene_label: 'Role home',
+  menu_id: '3',
+  action_id: '4',
+  domain_raw: '[]',
+  context_raw: '{}',
+  return_url: '/s/projects.ledger',
+}), {
+  menu_id: '3',
+  action_id: '4',
+  domain_raw: '[]',
+  context_raw: '{}',
+  return_url: '/s/projects.ledger',
+});
+assert.deepEqual(buildBusinessCategoryCreateNavQuery({
+  categoryCode: 'finance.payment.apply.pay',
+  option: {
+    label: 'Payment request',
+    categoryId: 7,
+    defaultValues: { project_id: 9 },
+  },
+}), {
+  current_business_category_code: 'finance.payment.apply.pay',
+  default_business_category_code: 'finance.payment.apply.pay',
+  ctx_source: 'business_category_create_picker',
+  default_business_category_id: '7',
+  default_project_id: '9',
+});
+
+const pageText = (_key: string, fallback: string) => fallback;
+assert.equal(
+  resolveRoutePresetAppliedLabel({
+    preset: '',
+    presetFilter: 'filter_draft',
+    presetFilterLabel: '草稿',
+    savedFilter: '',
+    text: pageText,
+  }),
+  '配置筛选: 草稿',
+  'contract filter identity is presented through its declared label',
+);
+assert.equal(
+  resolveRoutePresetAppliedLabel({
+    preset: '',
+    presetFilter: '',
+    savedFilter: 'saved-a',
+    savedFilterLabel: '本月项目',
+    text: pageText,
+  }),
+  '保存筛选: 本月项目',
+  'saved-filter identity is presented through its declared label',
+);
+assert.equal(
+  resolveRoutePresetAppliedLabel({
+    preset: '',
+    presetFilter: 'technical_filter_key',
+    savedFilter: '',
+    text: pageText,
+  }),
+  '已应用配置筛选',
+  'an unresolved contract label never exposes the technical key',
+);
+assert.equal(
+  resolveRoutePresetAppliedLabel({
+    preset: '',
+    presetFilter: '',
+    savedFilter: 'technical_saved_key',
+    text: pageText,
+  }),
+  '已应用保存筛选',
+  'an unresolved saved-filter label never exposes the technical key',
+);
 
 console.log('[route-query-normalization] PASS');

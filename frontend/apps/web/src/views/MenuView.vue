@@ -103,8 +103,9 @@ async function resolve() {
     }
     const result = resolveMenuAction(session.menuTree, menuId);
     if (result.kind === 'leaf') {
-      const entryTarget = result.meta?.entry_target && typeof result.meta.entry_target === 'object'
-        ? result.meta.entry_target as Record<string, unknown>
+      const nodeEntryTarget = (result.node as unknown as { entry_target?: unknown } | null)?.entry_target;
+      const entryTarget = nodeEntryTarget && typeof nodeEntryTarget === 'object'
+        ? nodeEntryTarget as Record<string, unknown>
         : null;
       const policy = evaluateCapabilityPolicy({ source: result.node?.meta, available: session.capabilities, catalog: session.capabilityCatalog });
       if (policy.state !== 'enabled') {

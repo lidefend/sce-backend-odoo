@@ -134,7 +134,7 @@ class PrIdentityTests(unittest.TestCase):
             with self.subTest(live=live), patch.object(delivery.subprocess, 'run', side_effect=[
                     subprocess.CompletedProcess([], 0, json.dumps(self.identity())),
                     subprocess.CompletedProcess([], 0, live)]):
-                with self.assertRaisesRegex(delivery.binding.BindingError, 'live main'):
+                with self.assertRaisesRegex(delivery.binding.BindingError, 'live target'):
                     delivery.pr_identity('7', 'a' * 40)
 
     def test_current_pr_base_and_live_main_are_accepted(self):
@@ -144,6 +144,23 @@ class PrIdentityTests(unittest.TestCase):
              patch.object(delivery.runs, 'git', return_value='a' * 40):
             self.assertEqual(delivery.pr_identity('7', 'a' * 40), self.identity())
             self.assertIn('repos/{owner}/{repo}/git/ref/heads/main', run.call_args.args[0])
+
+    def test_explicit_stack_base_is_accepted_without_weakening_main_default(self):
+        stack = self.identity()
+        stack['baseRefName'] = 'fix/fe-consumption-closeout-20261126'
+        with patch.object(delivery.subprocess, 'run', side_effect=[
+                subprocess.CompletedProcess([], 0, json.dumps(stack)),
+                subprocess.CompletedProcess([], 0, 'b' * 40 + '\n')]) as run, \
+             patch.object(delivery.runs, 'git', return_value='a' * 40):
+            self.assertEqual(
+                delivery.pr_identity('7', 'a' * 40, stack['baseRefName']),
+                stack,
+            )
+            self.assertIn('heads/fix%2Ffe-consumption-closeout-20261126', ' '.join(run.call_args.args[0]))
+        with patch.object(delivery.subprocess, 'run', return_value=subprocess.CompletedProcess(
+                [], 0, json.dumps(stack), '')):
+            with self.assertRaises(delivery.binding.BindingError):
+                delivery.pr_identity('7', 'a' * 40)
 
     def test_injected_environment_cannot_override_pr_baseline(self):
         with tempfile.TemporaryDirectory() as tmp, \

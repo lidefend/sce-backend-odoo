@@ -210,7 +210,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1475
+        1476
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -250,7 +250,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        655
+        668
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -373,7 +373,7 @@
       "literal": "scene",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1464
+        1465
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -430,7 +430,7 @@
       "path": "frontend/apps/web/src/views/MenuView.vue",
       "lines": [
         101,
-        248
+        249
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",
@@ -543,7 +543,7 @@
       "literal": "error",
       "path": "frontend/apps/web/src/app/activityPageTitle.ts",
       "lines": [
-        82
+        79
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -557,7 +557,7 @@
       "literal": "loading",
       "path": "frontend/apps/web/src/app/activityPageTitle.ts",
       "lines": [
-        82
+        79
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -774,9 +774,9 @@
       "literal": "denied",
       "path": "frontend/apps/web/src/app/pageIdentity.ts",
       "lines": [
-        135,
-        172,
-        176
+        127,
+        164,
+        168
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",
@@ -790,7 +790,7 @@
       "literal": "empty",
       "path": "frontend/apps/web/src/app/pageIdentity.ts",
       "lines": [
-        166
+        158
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -804,7 +804,7 @@
       "literal": "loading",
       "path": "frontend/apps/web/src/app/pageIdentity.ts",
       "lines": [
-        166
+        158
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -818,9 +818,9 @@
       "literal": "not-found",
       "path": "frontend/apps/web/src/app/pageIdentity.ts",
       "lines": [
-        135,
-        168,
-        176
+        127,
+        160,
+        168
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",
@@ -834,8 +834,8 @@
       "literal": "editing",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        95,
-        102
+        90,
+        97
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",
@@ -849,8 +849,8 @@
       "literal": "empty",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        104,
-        132
+        99,
+        125
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",
@@ -864,9 +864,9 @@
       "literal": "error",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        81,
-        104,
-        132
+        76,
+        99,
+        125
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",
@@ -880,7 +880,7 @@
       "literal": "idle",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        104
+        99
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -894,8 +894,8 @@
       "literal": "loading",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        81,
-        104
+        76,
+        99
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",
@@ -909,7 +909,7 @@
       "literal": "ok",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        132
+        125
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -923,7 +923,7 @@
       "literal": "saving",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        95
+        90
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1124,7 +1124,7 @@
       "literal": "empty",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        1391
+        1403
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1140,7 +1140,7 @@
       "lines": [
         84,
         90,
-        1391
+        1403
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",
@@ -1157,7 +1157,7 @@
         42,
         92,
         94,
-        1391
+        1403
       ],
       "occurrences": 4,
       "classification": "excluded-render-interaction",
@@ -1171,7 +1171,7 @@
       "literal": "success",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        1391
+        1403
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1437,7 +1437,7 @@
       "literal": "saved",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        3109
+        3132
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1677,7 +1677,7 @@
       "literal": "disabled_permission",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        1049
+        1061
       ],
       "occurrences": 1,
       "classification": "contract-derived",

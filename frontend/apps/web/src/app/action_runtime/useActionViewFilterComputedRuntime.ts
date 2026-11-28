@@ -1,5 +1,6 @@
 import { resolveSavedSearchDeleteAction } from '../runtime/savedSearchSubmission';
 import { computed, type Ref } from 'vue';
+import { resolveDeclaredSurfaceBudget } from '../runtime/actionViewSurfacePolicyBudget';
 import {
   resolveContractV2SearchContract,
   resolveContractV2SelectorStatus,
@@ -8,6 +9,15 @@ import {
 import type { ContractV2NormalizedStore } from '../contracts/v2/types';
 
 type Dict = Record<string, unknown>;
+
+export function resolveDeclaredSavedFilterIdentity(value: unknown): string {
+  const row = value && typeof value === 'object' && !Array.isArray(value) ? value as Dict : {};
+  const id = row.id;
+  if (typeof id === 'number') {
+    return Number.isInteger(id) && id > 0 ? String(id) : '';
+  }
+  return typeof id === 'string' ? id.trim() : '';
+}
 
 /** Consume explicit saved-search authority; an absent grant is never a grant. */
 export function resolveSavedSearchMutationCapability(value: unknown) {
@@ -41,6 +51,32 @@ type UseActionViewFilterComputedRuntimeOptions = {
   hasActionViewNoiseMarker: (key: unknown, label: unknown, domainRaw: unknown, contextRaw: unknown) => boolean;
 };
 
+export function resolveDeclaredFilterBudget(
+  surfacePolicies: Dict,
+  key: 'filters_primary_max' | 'filters_max',
+): number {
+  return resolveDeclaredSurfaceBudget(surfacePolicies, key);
+}
+
+export function resolveDeclaredPrimaryFilterBudget(surfacePolicies: Dict): number {
+  return resolveDeclaredFilterBudget(surfacePolicies, 'filters_primary_max');
+}
+
+export function resolveLoadedPrimaryFilterBudget(store: ContractV2NormalizedStore | null): number {
+  if (!store) return 0;
+  return resolveDeclaredPrimaryFilterBudget(resolveContractV2SurfacePolicies(store));
+}
+
+export function resolveDeclaredGroupByLabel(rows: unknown, field: unknown): string {
+  const normalizedField = String(field || '').trim();
+  if (!normalizedField || !Array.isArray(rows)) return '';
+  const found = rows.find((row) => (
+    row && typeof row === 'object' && !Array.isArray(row)
+    && String((row as Dict).field || '').trim() === normalizedField
+  )) as Dict | undefined;
+  return String(found?.label || '').trim();
+}
+
 function resolveGroupByFromContextRaw(value: unknown): string {
   const text = String(value || '').trim();
   if (!text) return '';
@@ -54,7 +90,6 @@ function resolveGroupByField(
   row: Record<string, unknown>,
   context: Dict,
   contextRaw: unknown,
-  options?: { allowKeyFallback?: boolean },
 ): string {
   const direct = String(row.field || row.group_by || row.groupBy || row.group || '').trim();
   if (direct) return direct;
@@ -63,7 +98,6 @@ function resolveGroupByField(
   if (Array.isArray(fromContext)) return String(fromContext[0] || '').trim();
   const fromContextRaw = resolveGroupByFromContextRaw(contextRaw);
   if (fromContextRaw) return fromContextRaw;
-  if (options?.allowKeyFallback) return String(row.key || row.name || '').trim();
   return '';
 }
 
@@ -90,10 +124,14 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
   const contractFilterChips = computed(() => {
     const rows = resolveContractV2SearchContract(options.actionContract.value).filters;
     if (!Array.isArray(rows)) return [];
+    const max = resolveDeclaredFilterBudget(
+      resolveContractV2SurfacePolicies(options.actionContract.value),
+      'filters_max',
+    );
     return rows
       .map((row) => {
         const key = String(row?.key || '').trim();
-        const label = String(row?.label || row?.key || '').trim();
+        const label = String(row?.label || '').trim();
         if (!key || !label) return null;
         if (options.isActionViewNumericToken(key) || options.isActionViewNumericToken(label)) return null;
         if (options.hasActionViewNoiseMarker(key, label, row?.domain_raw, row?.context_raw)) return null;
@@ -106,14 +144,11 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
         return { key, label, domain, domainRaw, context, contextRaw };
       })
       .filter(Boolean)
-      .slice(0, 8);
+      .slice(0, max);
   });
 
   const filterPrimaryBudget = computed(() => {
-    const surfacePolicies = resolveContractV2SurfacePolicies(options.actionContract.value);
-    const raw = Number(surfacePolicies.filters_primary_max ?? 5);
-    if (!Number.isFinite(raw) || raw < 0) return 5;
-    return Math.floor(raw);
+    return resolveLoadedPrimaryFilterBudget(options.actionContract.value);
   });
 
   const contractPrimaryFilterChips = computed(() =>
@@ -128,10 +163,10 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
     const rows = resolveContractV2SearchContract(options.actionContract.value).saved_filters;
     if (!Array.isArray(rows)) return [];
     return rows
-      .map((row, idx) => {
+      .map((row) => {
         const raw = row as Record<string, unknown>;
-        const key = String(raw.key || raw.name || raw.xmlid || raw.xml_id || `saved_${idx + 1}`).trim();
-        const label = String(raw.label || raw.name || key).trim();
+        const key = resolveDeclaredSavedFilterIdentity(raw);
+        const label = String(raw.label || raw.name || '').trim();
         if (!key || !label) return null;
         if (options.isActionViewNumericToken(key) || options.isActionViewNumericToken(label)) return null;
         if (options.hasActionViewNoiseMarker(key, label, raw.domain_raw, raw.context_raw)) return null;
@@ -170,8 +205,8 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
         const raw = entry.row as Record<string, unknown>;
         const contextRaw = String(raw.context_raw || '').trim();
         const context = options.parseContractContextRaw(contextRaw);
-        const field = resolveGroupByField(raw, context, contextRaw, { allowKeyFallback: entry.source === 'group' });
-        const label = String(raw.label || raw.string || raw.name || field).trim();
+        const field = resolveGroupByField(raw, context, contextRaw);
+        const label = String(raw.label || raw.string || raw.name || '').trim();
         if (!field || !label) return null;
         if (seen.has(field)) return null;
         if (options.isActionViewNumericToken(field) || options.isActionViewNumericToken(label)) return null;
@@ -191,10 +226,11 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
       .map((row) => {
         const raw = row as Dict;
         const field = String(raw.field || raw.name || '').trim();
-        const label = String(raw.label || raw.string || field).trim();
+        const label = String(raw.label || raw.string || '').trim();
         const type = String(raw.type || '').trim();
         const occurrenceKey = String(raw.occurrence_key || raw.occurrenceKey || '').trim();
-        if (!field || !label || !type || !occurrenceKey) return null;
+        const queryMode = String(raw.query_mode || raw.queryMode || '').trim();
+        if (!field || !label || !type || !occurrenceKey || !queryMode) return null;
         if (options.isActionViewNumericToken(field) || options.isActionViewNumericToken(label)) return null;
         if (!isSelectorEnabled(selectorTokens(`custom_filter.${occurrenceKey}`, `filter.${field}`, field))) return null;
         return {
@@ -207,7 +243,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
           operator: String(raw.operator || '').trim(),
           operators: Array.isArray(raw.operators) ? raw.operators : [],
           choices: Array.isArray(raw.choices) ? raw.choices : [],
-          queryMode: String(raw.query_mode || raw.queryMode || '').trim(),
+          queryMode,
           native: true,
         };
       })
@@ -224,12 +260,13 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
       .map((row) => {
         const raw = row as Dict;
         const field = String(raw.field || '').trim();
-        const label = String(raw.label || field).trim();
-        const type = String(raw.type || 'char').trim();
-        if (!field || !label || nativeFields.has(field)) return null;
+        const label = String(raw.label || '').trim();
+        const type = String(raw.type || '').trim();
+        const operators = Array.isArray(raw.operators) ? raw.operators : [];
+        const operator = String((operators[0] as Dict | undefined)?.value || '').trim();
+        if (!field || !label || !type || !operator || nativeFields.has(field)) return null;
         if (options.isActionViewNumericToken(field) || options.isActionViewNumericToken(label)) return null;
         if (!isSelectorEnabled(selectorTokens(`custom_filter.${field}`, `filter.${field}`, field))) return null;
-        const operators = Array.isArray(raw.operators) ? raw.operators : [];
         const choices = Array.isArray(raw.choices) ? raw.choices : [];
         return {
           identity: `custom:${field}`,
@@ -238,7 +275,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
           label,
           type,
           relation: String(raw.relation || '').trim(),
-          operator: String(operators[0]?.value || '=').trim(),
+          operator,
           operators,
           choices,
           queryMode: 'domain',
@@ -259,7 +296,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
       .map((row) => {
         const raw = row as Dict;
         const field = String(raw.field || '').trim();
-        const label = String(raw.label || field).trim();
+        const label = String(raw.label || '').trim();
         if (!field || !label || seen.has(field)) return null;
         if (options.isActionViewNumericToken(field) || options.isActionViewNumericToken(label)) return null;
         if (!isSelectorEnabled(selectorTokens(`custom_group.${field}`, `group.${field}`, field))) return null;
@@ -318,8 +355,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
   const activeGroupByLabel = computed(() => {
     const field = options.activeGroupByField.value;
     if (!field) return '';
-    const found = routeGroupByChips.value.find((chip) => String((chip as Dict).field || '') === field) as Dict | undefined;
-    return String(found?.label || field);
+    return resolveDeclaredGroupByLabel(routeGroupByChips.value, field);
   });
 
   return {

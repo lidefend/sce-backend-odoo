@@ -629,17 +629,40 @@ export interface ContractV2FormFieldDescriptor extends ContractV2Dictionary {
   type: string;
   ttype: string;
   widget: string;
+  componentKey?: string;
+  semanticType?: string;
   required?: boolean;
   readonly?: boolean;
   invisible?: boolean;
   relation?: string;
   relation_field?: string;
+  referenceModelField?: string;
   selection?: Array<[string, string]>;
   relationEntry?: ContractV2Dictionary;
   relationActiveActions?: ContractV2RelationActiveActions;
   widgetOptions?: ContractV2Dictionary;
   subview?: ContractV2Dictionary;
   filename?: string;
+  digits?: [number, number];
+  unit?: ContractV2FieldDescriptor['unit'];
+  temporal?: ContractV2FieldDescriptor['temporal'];
+  currencyField?: string;
+  attachmentRole?: string;
+  help?: string;
+  uiUsage?: 'fact' | 'interaction';
+  changeDefault?: boolean;
+  definitionRecord?: string;
+  definitionRecordField?: string;
+  groupOperator?: string;
+  searchable?: boolean;
+  sortable?: boolean;
+  store?: boolean;
+  translate?: boolean;
+  trim?: boolean;
+  related?: string[];
+  size?: number;
+  technical?: boolean;
+  formStructureRole?: ContractV2FormStructureRole;
 }
 
 export interface ContractV2Container {

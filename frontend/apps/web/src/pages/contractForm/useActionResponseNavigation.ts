@@ -85,6 +85,12 @@ export function useActionResponseNavigation(params: {
     const entryTarget = entryTargetSource && typeof entryTargetSource === 'object'
       ? entryTargetSource as Record<string, unknown>
       : null;
+    const nextActionId = (
+      toPositiveInt(resultRecord?.action_id)
+      || toPositiveInt(resultRecord?.window_action_id)
+      || toPositiveInt(rawAction?.id)
+      || toPositiveInt(resultRecord?.raw_action_id)
+    );
     // A plain refresh stays on the current record. When the gateway also
     // supplies an authoritative entry target, the target is the model
     // method's returned action (for example a transient form) and must win.
@@ -102,12 +108,11 @@ export function useActionResponseNavigation(params: {
       // no-op, so let the caller refresh the current contract and record.
       if (params.router.resolve(target as never).fullPath === params.router.currentRoute.value.fullPath) return false;
       grantButtonNavigationAuthority(
-        toPositiveInt(resultRecord?.action_id),
+        nextActionId,
         params.router.resolve(target as never).fullPath,
       );
       return await pushResultTarget(target as never, result, owner) ? true : 'invalidated';
     }
-    const nextActionId = toPositiveInt(resultRecord?.action_id);
     if (nextActionId) {
       const target = {
         name: 'action',

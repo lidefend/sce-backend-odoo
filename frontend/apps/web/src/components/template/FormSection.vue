@@ -378,7 +378,7 @@
                     :status="field.invalid ? 'error' : 'default'"
                     :described-by="fieldDescribedBy(field)"
                     type="number"
-                    :step="monetaryInputStep(field.digits, field.currencyLabel)"
+                    :step="monetaryInputStep(field.digits)"
                     :placeholder="field.inputPlaceholder || inputPlaceholderText(field)"
                     @update:model-value="emitFieldChange(field, $event)"
                   >
@@ -461,6 +461,7 @@ import {
   monetaryInputStep,
   presentDeclaredBusinessValue,
 } from '../../app/presentation/businessValuePresentation';
+import { useRuntimeTimeZone } from '../../app/runtimeTimeZone';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -543,6 +544,7 @@ const props = withDefaults(defineProps<{
 });
 
 const sceneUiKit = useOptionalSceneUiKit();
+const timeZone = useRuntimeTimeZone();
 const standardFormComposition = useOptionalStandardFormComposition();
 const standardDetailComposition = useOptionalStandardDetailComposition();
 const sectionFormRef = ref<unknown>(null);
@@ -962,12 +964,14 @@ function readonlyText(field: FormSectionFieldSchema) {
       widget: field.widget,
       selection: field.descriptor?.selection,
       digits: field.digits,
+      unit: field.unit,
       currencyField: field.currencyField,
       currencyLabel: field.currencyLabel,
     },
     value: relationValue,
     currencyLabel: field.currencyLabel,
     emptyText: resolveReadonlyEmptyText(field),
+    timeZone: timeZone.value,
     temporalProfile: 'full',
   }).text;
 }

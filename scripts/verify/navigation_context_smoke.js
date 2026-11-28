@@ -52,8 +52,6 @@ function main() {
     {
       current_business_category_code: 'project',
       default_business_category_code: 'project',
-      current_business_category_label: '项目办理',
-      default_business_category_label: '项目办理',
       ctx_source: 'business_category_create_picker',
       default_business_category_id: '18',
       default_project_id: '7',
@@ -66,6 +64,27 @@ function main() {
     runtime.buildBusinessCategoryCreateNavQuery({ categoryCode: '  ', fallbackLabel: 'fallback' }),
     undefined,
     'empty category code',
+  );
+
+  assertDeepEqual(
+    runtime.pickContractNavQuery({
+      scene: 'projects.ledger',
+      scene_key: 'projects.ledger',
+      scene_label: '项目台账',
+      menu_id: '12',
+      action_id: '34',
+      domain_raw: '[]',
+      context_raw: '{}',
+      return_url: '/s/projects.ledger',
+    }),
+    {
+      menu_id: '12',
+      action_id: '34',
+      domain_raw: '[]',
+      context_raw: '{}',
+      return_url: '/s/projects.ledger',
+    },
+    'scene identity stays in the route path while execution context is carried',
   );
 
   console.log('[navigation_context_smoke] PASS');

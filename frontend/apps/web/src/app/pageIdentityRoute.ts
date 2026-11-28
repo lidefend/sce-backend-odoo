@@ -1,10 +1,36 @@
 import type { RouteLocationNormalizedLoaded, RouteLocationNormalized } from 'vue-router';
 import type { NavNode } from '@sc/schema';
+import { contractGapError } from './contract/contractGap';
 import { findActionMeta, findActionMetaByMenu, findMenuNode } from './menu';
 import { getSceneByKey } from './resolvers/sceneRegistry';
 import type { PageBreadcrumb, PageIdentityInput } from './pageIdentity';
 
 type RouteLike = RouteLocationNormalized | RouteLocationNormalizedLoaded;
+type DeclaredPageContract = {
+  texts?: Record<string, unknown>;
+  page_orchestration?: { page?: Record<string, unknown> };
+};
+type PageContracts = Record<string, DeclaredPageContract | undefined>;
+
+const PAGE_CONTRACT_KEY_BY_ROUTE: Record<string, string> = {
+  login: 'login',
+  'platform-admin-login': 'login',
+  'account-activation': 'account_activation',
+  'password-recovery': 'password_recovery',
+  home: 'home',
+  'scene-home': 'home',
+  'my-work': 'my_work',
+  'scene-my-work': 'my_work',
+  workbench: 'workbench',
+  'scene-health': 'scene_health',
+  'scene-packages': 'scene_packages',
+  'usage-analytics': 'usage_analytics',
+  'release-operator': 'release_operator',
+  'capability-explorer': 'platform_capability_explorer',
+  'business-config': 'business_config',
+  'menu-config': 'menu_config',
+  'form-field-config': 'action',
+};
 
 function positiveInteger(value: unknown): number {
   const parsed = Number(Array.isArray(value) ? value[0] : value || 0);
@@ -13,6 +39,27 @@ function positiveInteger(value: unknown): number {
 
 function routeText(value: unknown): string {
   return String(Array.isArray(value) ? value[0] || '' : value || '').trim();
+}
+
+export function resolveRouteContractTitle(routeName: unknown, pageContracts?: PageContracts): string {
+  const name = String(routeName || '').trim();
+  const pageKey = PAGE_CONTRACT_KEY_BY_ROUTE[name];
+  if (!pageKey) return '';
+  const contract = pageContracts?.[pageKey];
+  return routeText(contract?.texts?.title || contract?.page_orchestration?.page?.title);
+}
+
+function requireRouteContractTitle(name: string, pageContracts: PageContracts): string {
+  const pageKey = PAGE_CONTRACT_KEY_BY_ROUTE[name];
+  const title = resolveRouteContractTitle(name, pageContracts);
+  if (title) return title;
+  const missing = `page_contracts.pages.${pageKey || name}.texts.title`;
+  throw contractGapError({
+    kind: 'contract_defect',
+    failureClass: 'contract_missing',
+    missing,
+    requiredDeclarationLayer: 'P0:smart_core:page_contracts_builder',
+  }, `ContractGapError: ${missing}`);
 }
 
 function menuLabel(node: NavNode | null): string {
@@ -37,9 +84,18 @@ function menuBreadcrumbs(nodes: NavNode[], menuId: number): PageBreadcrumb[] {
   });
 }
 
-export function resolveRoutePageIdentity(route: RouteLike, menuTree: NavNode[]): PageIdentityInput {
+export function resolveRoutePageIdentity(
+  route: RouteLike,
+  menuTree: NavNode[],
+  pageContracts: PageContracts = {},
+): PageIdentityInput {
   const name = String(route.name || '').trim();
-  if (name === 'login' || name === 'platform-admin-login') return { fallbackTitle: '登录' };
+  if (name === 'login' || name === 'platform-admin-login') {
+    return { fallbackTitle: resolveRouteContractTitle(name, pageContracts) || '登录' };
+  }
+  if (name === 'account-activation' || name === 'password-recovery') {
+    return { fallbackTitle: requireRouteContractTitle(name, pageContracts) };
+  }
   if (name === 'access-denied') {
     const from = routeText(route.query.from);
     let targetAction = 0;
@@ -63,8 +119,10 @@ export function resolveRoutePageIdentity(route: RouteLike, menuTree: NavNode[]):
     };
   }
   if (name === 'not-found') return { fallbackTitle: '记录不存在', state: 'not-found' };
-  if (name === 'home' || name === 'scene-home') return { fallbackTitle: '角色首页', breadcrumbs: [{ label: '角色首页' }] };
-  if (name === 'my-work' || name === 'scene-my-work') return { fallbackTitle: '我的工作', breadcrumbs: [{ label: '我的工作' }] };
+  if (name === 'home' || name === 'scene-home' || name === 'my-work' || name === 'scene-my-work') {
+    const title = requireRouteContractTitle(name, pageContracts);
+    return { fallbackTitle: title, breadcrumbs: [{ label: title }] };
+  }
 
   const menuId = positiveInteger(route.params.menuId || route.query.menu_id);
   const actionId = positiveInteger(route.params.actionId || route.query.action_id);
@@ -97,21 +155,13 @@ export function resolveRoutePageIdentity(route: RouteLike, menuTree: NavNode[]):
     };
   }
   if (name === 'scene' || name.startsWith('scene-')) {
-    const sceneKey = routeText(route.params.sceneKey || route.meta?.sceneKey || route.query.scene_key || route.query.scene);
+    const sceneKey = routeText(route.params.sceneKey || route.meta?.sceneKey);
     const scene = sceneKey ? getSceneByKey(sceneKey) : null;
     return { menuName: scene?.label, fallbackTitle: scene?.label || '业务场景', breadcrumbs: crumbs };
   }
 
-  const configured: Record<string, string> = {
-    'business-config': '配置工作台',
-    'menu-config': '菜单配置',
-    'form-field-config': '表单字段配置',
-    'scene-health': '场景健康',
-    'scene-packages': '场景发布包',
-    'usage-analytics': '使用分析',
-    'release-operator': '产品发布',
-    workbench: '导航异常',
-  };
-  const title = configured[name] || '工作台';
+  const title = PAGE_CONTRACT_KEY_BY_ROUTE[name]
+    ? requireRouteContractTitle(name, pageContracts)
+    : '工作台';
   return { fallbackTitle: title, breadcrumbs: [{ label: title }] };
 }

@@ -491,6 +491,8 @@ RULES = (
     Rule((
         "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
         "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "frontend/apps/web/src/pages/contractForm/relationDescriptor.ts",
+        "frontend/apps/web/scripts/relation_entry_option_limits_test.ts",
     ), ("verify.frontend.professional_relation_field.unit",)),
     Rule((
         "addons/smart_core/core/platform_minimum_nav_contract.py",
@@ -519,6 +521,37 @@ RULES = (
         "frontend/apps/web/scripts/record_form_return_navigation_test.ts",
     ), (
         "verify.frontend.record_form_return.unit",
+    )),
+    Rule((
+        "frontend/apps/web/src/app/routeQuery.ts",
+        "frontend/apps/web/src/app/runtime/actionViewRoutePresetRuntime.ts",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/scripts/record_entry_contract_test.ts",
+        "frontend/apps/web/scripts/route_query_normalization_test.ts",
+    ), (
+        "verify.frontend.route_query.unit",
+    )),
+    Rule((
+        "frontend/apps/web/src/app/activityPageRetention.ts",
+        "frontend/apps/web/src/composables/shared-surface/useWorkspaceHome.ts",
+        "frontend/apps/web/scripts/activity_page_retention_test.ts",
+    ), (
+        "verify.frontend.state_dashboard.unit",
+        "verify.frontend.session_persistence.snapshot.unit",
+        "verify.frontend.session_persistence.recovery.unit",
+    )),
+    Rule((
+        "frontend/apps/web/src/app/pageIdentity.ts",
+        "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+        "frontend/apps/web/src/app/pageIdentityRoute.ts",
+        "frontend/apps/web/src/app/pageIdentityCoordinator.ts",
+        "frontend/apps/web/src/app/pageIdentityRuntime.ts",
+        "frontend/apps/web/src/app/usePublishedPageIdentity.ts",
+        "scripts/verify/frontend_page_identity_smoke.js",
+        "scripts/verify/frontend_page_identity_lifecycle_smoke.js",
+        "scripts/verify/frontend_page_identity_guard.py",
+    ), (
+        "verify.frontend.page_identity",
     )),
     Rule((
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
@@ -1310,7 +1343,15 @@ RULES = (
         "/components/professional-fields/professionalBusinessValueModel.ts",
         "/components/professional-fields/ProfessionalBusinessValueControl.vue",
         "/components/professional-fields/professionalBaseFieldModel.ts",
+        "/components/professional-fields/ProfessionalBaseFieldControl.vue",
+        "/components/template/FormSection.vue",
         "/components/business/MyWorkApprovalWorkspace.vue",
+        "/components/role-home/WorkspaceHome.vue",
+        "/components/page/blocks/BlockMetricRow.vue",
+        "/app/runtimeTimeZone.ts",
+        "/app/contracts/actionViewActivityContract.ts",
+        "/pages/ActivityTemplateNode.vue",
+        "/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
         "/app/presentation/productMyWorkPresentation.ts",
         "/app/presentation/boqImportPreview.ts",
         "/components/boq/BoqImportPreviewPanel.vue",
@@ -1318,6 +1359,9 @@ RULES = (
         "/pages/contractForm/ContractFormNativeCanvas.vue",
         "/pages/contractForm/RelationSearchDialog.vue",
         "frontend/apps/web/scripts/boq_import_preview_model_test.ts",
+        "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
+        "frontend/apps/web/scripts/list_surface_component_test.mjs",
+        "frontend/apps/web/scripts/professional_business_value_model_test.ts",
         "scripts/verify/frontend_business_semantics_guard.py",
         "scripts/verify/test_frontend_business_semantics_guard.py",
         "scripts/verify/frontend_localized_display_contract_test.ts",
@@ -1327,6 +1371,16 @@ RULES = (
     ), (
         "verify.frontend.business_semantics.unit",
         "verify.frontend.boq_import_preview.unit",
+        "verify.frontend.professional_business_value.unit",
+        "verify.frontend.canonical_form_presenter.unit",
+        "verify.frontend.my_work_approval.guard",
+        "verify.frontend.payment_settlement_introduce.amount.unit",
+        "verify.frontend.hierarchical_worksheet.unit",
+        "verify.frontend.action_surface_renderer_registry.unit",
+        "verify.frontend.collection_view_semantics.unit",
+        "verify.frontend.collection_kanban_record_card.unit",
+        "verify.frontend.collection_row_cell.unit",
+        "verify.frontend.standard_collection_composition.unit",
     )),
     Rule((
         "/components/template/FormSection.vue",
@@ -1356,6 +1410,8 @@ RULES = (
         "/components/template/FormSection.vue",
         "/components/template/formSection.mapper.ts",
         "/components/template/formSection.types.ts",
+        "/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
     ), (
         "verify.frontend.canonical_form_presenter.unit",
         "verify.frontend.contract_v2_occurrence_authority.unit",
@@ -1447,6 +1503,28 @@ RULES = (
         "scripts/verify/test_local_dev_product_release_prepare.py",
         "scripts/verify/test_local_platform_control.py",
     ), (
+        "verify.local.development_lifecycle.unit",
+    )),
+    Rule((
+        "scripts/dev/local_clean_finance_pages_probe.mjs",
+        "scripts/dev/local_clean_quality_tax_pages_probe.mjs",
+        "scripts/dev/local_clean_enterprise_setup_probe.mjs",
+        "scripts/dev/local_clean_finance_approval_configure_probe.mjs",
+        "scripts/dev/local_clean_finance_approval_journey_probe.mjs",
+        "scripts/dev/local_clean_finance_data_permission_probe.mjs",
+        "scripts/dev/local_clean_finance_payment_journey_probe.mjs",
+        "scripts/dev/local_clean_finance_e2e.sh",
+        "scripts/dev/local_clean_finance_fixture.sh",
+    ), (
+        "verify.local.development_lifecycle.unit",
+        "verify.frontend.playwright_vendor_coupling.guard",
+    )),
+    Rule((
+        "scripts/common/env.sh",
+        "scripts/verify/test_common_env_explicit_path.py",
+        "scripts/verify/test_env_external_topology_precedence.sh",
+    ), (
+        "verify.frontend.runtime_environment.unit",
         "verify.local.development_lifecycle.unit",
     )),
     Rule((
@@ -2166,7 +2244,7 @@ RULES = (
     ), (
         "verify.daily_dev.acceptance_fixture.unit",
     )),
-    Rule(("/pages/contractForm/", "/components/template/"), (
+    Rule(("/pages/contractForm/", "/components/template/", "/app/presentation/contractFormPresenter.ts"), (
         "verify.frontend.canonical_form_presenter.unit",
         "verify.frontend.primitive_adapter.unit",
         "verify.frontend.product_page_pattern.unit",
@@ -2653,8 +2731,10 @@ RULES = (
     Rule((
         "frontend/apps/web/scripts/cross_model_action_navigation_test.ts",
         "frontend/apps/web/src/app/navigationContext.ts",
+        "scripts/verify/navigation_context_smoke.js",
     ), (
         "verify.frontend.cross_model_action_navigation.unit",
+        "verify.action_view_runtime_smoke.behavior",
     )),
     Rule((
         "addons/smart_core/core/native_advisory.py",

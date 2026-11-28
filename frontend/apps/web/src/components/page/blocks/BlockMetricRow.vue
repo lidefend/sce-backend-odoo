@@ -82,15 +82,18 @@ const metrics = computed<MetricItem[]>(() => {
             componentKey: valueField.componentKey,
             widget: valueField.widgetType,
             digits: valueField.digits,
+            unit: valueField.unit,
             currencyField: valueField.currencyField,
             currencyLabel: pageBlockData
               ? resolvePageBlockCurrencyLabel(pageBlockData, valueField.currencyField)
               : '',
             selection: valueField.selection,
             relation: valueField.relation,
+            temporal: valueField.temporal,
           },
           value: rawValue,
           emptyText: FIELD_VALUE_EMPTY_TEXT,
+          timeZone: pageBlockData?.context.timezone || '',
         }).text
         : String(rawValue ?? FIELD_VALUE_EMPTY_TEXT);
       return {

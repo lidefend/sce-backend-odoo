@@ -15,6 +15,8 @@ WEB_CONTRACT_CLIENT = ROOT / "frontend/apps/web/src/app/contracts/v2/client.ts"
 WEB_CONTRACT_V2 = ROOT / "frontend/apps/web/src/app/contracts/unifiedPageContractV2.ts"
 WEB_ACTION_SHAPE = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts"
 WEB_FILTER_COMPUTED = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts"
+WEB_FIELD_FILTER = ROOT / "frontend/apps/web/src/app/runtime/actionViewFieldFilterRuntime.ts"
+WEB_ACTION_TOOLBAR = ROOT / "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue"
 WEB_ACTION_PRESENTATION = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts"
 WEB_ACTION_RUNTIME = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewActionRuntime.ts"
 WEB_ACTION_NAV = ROOT / "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts"
@@ -125,6 +127,8 @@ def main() -> int:
     v2_source = WEB_CONTRACT_V2.read_text(encoding="utf-8") if WEB_CONTRACT_V2.exists() else ""
     shape_source = WEB_ACTION_SHAPE.read_text(encoding="utf-8") if WEB_ACTION_SHAPE.exists() else ""
     filter_source = WEB_FILTER_COMPUTED.read_text(encoding="utf-8") if WEB_FILTER_COMPUTED.exists() else ""
+    field_filter_source = WEB_FIELD_FILTER.read_text(encoding="utf-8") if WEB_FIELD_FILTER.exists() else ""
+    action_toolbar_source = WEB_ACTION_TOOLBAR.read_text(encoding="utf-8") if WEB_ACTION_TOOLBAR.exists() else ""
     action_presentation_source = WEB_ACTION_PRESENTATION.read_text(encoding="utf-8") if WEB_ACTION_PRESENTATION.exists() else ""
     action_runtime_source = WEB_ACTION_RUNTIME.read_text(encoding="utf-8") if WEB_ACTION_RUNTIME.exists() else ""
     nav_source = WEB_ACTION_NAV.read_text(encoding="utf-8") if WEB_ACTION_NAV.exists() else ""
@@ -143,6 +147,21 @@ def main() -> int:
         errors.append("strict web contract client must request ui.contract.v2")
     if "intent: 'ui.contract'," in source or 'intent: "ui.contract",' in source:
         errors.append("web contract API must not request legacy ui.contract directly")
+    if "row.fieldDescriptor || row.field_descriptor" not in v2_source:
+        errors.append("web v2 widget synthesis must read semantic identity from fieldDescriptor")
+    for secondary_authority in (
+        "componentConfig.relationEntry",
+        "componentConfig.relation_entry",
+        "componentConfig.widgetOptions",
+        "componentConfig.widget_options",
+        "componentConfig.subview",
+        "componentConfig.subView",
+    ):
+        if secondary_authority in v2_source:
+            errors.append(
+                "web v2 widget synthesis must not use componentConfig as a semantic fallback: "
+                f"{secondary_authority}"
+            )
     for token in (
         "loadActionContractV2",
         "loadModelContractV2",
@@ -192,6 +211,69 @@ def main() -> int:
         errors.append("web list shape runtime must honor v2 widget status for default column visibility")
     if "resolveContractV2SelectorStatus" not in filter_source or "isSelectorEnabled" not in filter_source:
         errors.append("web filter runtime must honor v2 selectorStatus for search/filter/group controls")
+    if "found?.label || field" in filter_source:
+        errors.append("web filter runtime must not expose an undeclared technical group field as a label")
+    for forbidden in (
+        "row?.label || row?.key",
+        "raw.label || raw.string || field",
+        "raw.label || field",
+        "raw.key || raw.name || raw.xmlid",
+        "saved_${idx + 1}",
+    ):
+        if forbidden in filter_source:
+            errors.append(
+                "web filter runtime must not derive display or saved-filter identity from undeclared text: "
+                f"{forbidden}"
+            )
+    if (
+        "resolveDeclaredSavedFilterIdentity" not in filter_source
+        or "resolveDeclaredSavedFilterIdentity" not in preflight_source
+    ):
+        errors.append("web filter and load preflight runtimes must share the declared saved-filter id consumer")
+    for forbidden in ("raw.key || raw.name || raw.xmlid", "saved_${idx + 1}"):
+        if forbidden in preflight_source:
+            errors.append(
+                "web load preflight must not derive saved-filter route identity from display text: "
+                f"{forbidden}"
+            )
+    for forbidden in (
+        "contractSavedFilterChips.length ? contractSavedFilterChips : options.contractSavedFilterChips",
+        "contractGroupByChips.length ? contractGroupByChips : options.contractGroupByChips",
+    ):
+        if forbidden in preflight_source:
+            errors.append(
+                "web load preflight must use the current contract chip set without stale-option fallback: "
+                f"{forbidden}"
+            )
+    if "row.key || row.name" in filter_source or "raw.key || raw.name" in preflight_source:
+        errors.append("web grouping must not infer field semantics from declaration key or name")
+    for forbidden in ("raw.type || 'char'", "operators[0]?.value || '='"):
+        if forbidden in filter_source:
+            errors.append(
+                "web custom filter fields must not synthesize type or operator declarations: "
+                f"{forbidden}"
+            )
+    for forbidden in ("label: text(payload.label) || field", "text(payload.queryMode || 'domain')"):
+        if forbidden in field_filter_source:
+            errors.append(
+                "web field-filter execution must not synthesize a label or query mode: "
+                f"{forbidden}"
+            )
+    if "queryMode: filter.queryMode" not in field_filter_source:
+        errors.append("web serialized field filters must retain the declared query mode")
+    for forbidden in (
+        "queryMode: field.queryMode || 'domain'",
+        "found?.label || key",
+        "operators?.[0]?.value || '='",
+        "return [{ value: '=', label: '等于', needs_value: true }]",
+    ):
+        if forbidden in action_toolbar_source:
+            errors.append(
+                "web action toolbar must not synthesize query mode or custom group labels: "
+                f"{forbidden}"
+            )
+    if "search.sort_options" in shape_source or "sort_options" in shape_source:
+        errors.append("web list shape runtime must not consume the retired search sort_options carrier")
     if "snapshot.pageInfo.model" not in shape_source:
         errors.append("web model resolver must read canonical pageInfo.model")
     if not has_contract_page_info_view_type_access(surface_source) or "resolveContractV2ListProfile" not in surface_source:

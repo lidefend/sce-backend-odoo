@@ -1,0 +1,247 @@
+{
+  "schema_version": 2,
+  "id": "FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127",
+  "status": "pending_merge_decision",
+  "branch": "fix/fe-import-lifecycle-closeout-20261127-r4",
+  "baseline_sha": "e4a4df12cf65137c298863f576390ca3684076c6",
+  "stack_parent_head": "e4a4df12cf65137c298863f576390ca3684076c6",
+  "originally_validated_head": "a7f60de29d8d634e01cab7b7e637e314ae62eeca",
+  "accepted_mainline_sha": "bfc954c0b6fe2bbaa5a94c017ef8c69ec983d9a5",
+  "goal": ".agent/goals/FE-CONSUMPTION-CLOSEOUT-20261126.yaml",
+  "record": "docs/ops/iterations/frontend_convergence_next_20261126.md",
+  "independent_evidence": ".agent/runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/independent_evidence.md",
+  "current_batch": "FE-S06/FE-S07 native import lifecycle and old-flow consumer closure",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/run.json",
+    ".agent/runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/independent_evidence.md",
+    "frontend/apps/web/src/api/data.ts",
+    "frontend/apps/web/src/app/action_runtime/nativeImportLifecycle.ts",
+    "frontend/apps/web/src/app/runtime/actionViewCollectionCapabilityRuntime.ts",
+    "frontend/apps/web/src/components/business/NativeImportWizard.vue",
+    "frontend/apps/web/scripts/native_import_lifecycle_test.ts",
+    "make/frontend.mk",
+    "make/codex.mk",
+    "scripts/ops/validation_delivery_plan.py",
+    "scripts/verify/test_validation_delivery_plan.py",
+    "scripts/verify/test_branch_governance_consistency_guard.py",
+    "scripts/ops/integration_cycle.py",
+    "scripts/ops/test_integration_cycle.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database, service, browser or external write"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Affected import lifecycle unit, lint, strict typecheck and production build checks with non-zero tests."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI after stack publication",
+      "reason": "The import lifecycle stack must be integrated against the current target base before merge qualification."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "This slice does not qualify a mainline release; release qualification is evaluated separately on exact main."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "The slice consumes the existing native_import.v1 contract and changes no backend declaration."
+    }
+  },
+  "checks": {
+    "native_import_lifecycle": {
+      "target": "verify.frontend.collection_action_capability.unit",
+      "inputs": [
+        "frontend/apps/web/src/api/data.ts",
+        "frontend/apps/web/src/app/action_runtime/nativeImportLifecycle.ts",
+        "frontend/apps/web/src/components/business/NativeImportWizard.vue",
+        "frontend/apps/web/scripts/native_import_lifecycle_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "stack_merge_delivery": {
+      "target": "verify.validation.delivery.unit",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/validation_delivery_plan.py",
+        "scripts/verify/test_validation_delivery_plan.py",
+        "scripts/verify/test_branch_governance_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "stack_merge_integration": {
+      "target": "verify.integration.cycle.unit",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/integration_cycle.py",
+        "scripts/ops/test_integration_cycle.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "evidence": {
+    "dirty_candidate_validation": {
+      "status": "passed",
+      "candidate_base_head": "ca2e773dfebe0d9e60d366ed3a1bc8f240bf9cca",
+      "runtime_tree_sha256": "19c7f30ace810bd0f57f1fddb3940c85cab67eb6bca6eaab820410ceda2d4d5e",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T052455Z-3878868-543476883/receipt.json",
+      "receipt_sha256": "0383e28aca5c4d28675e8e37cce70cb35dedaa23f220944cad621d2711711aa6",
+      "executed_targets": 8,
+      "test_targets": 2,
+      "executed_test_count": 323,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "facts_verified": [
+        "native import lifecycle owner invalidates superseded, closed, context-changed and unmounted request tickets",
+        "late results from invalidated import chains cannot mutate state",
+        "record import/export API calls forward the lifecycle AbortSignal",
+        "the obsolete direct pick/preview-confirm import flow has no remaining consumer or export",
+        "lint, strict typecheck and systemic convergence checks pass"
+      ]
+    },
+    "dirty_candidate_frontend_build": {
+      "status": "passed",
+      "candidate_base_head": "ca2e773dfebe0d9e60d366ed3a1bc8f240bf9cca",
+      "command": "make verify.frontend.build ENV=dev ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev",
+      "log": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/frontend-build-dirty.log",
+      "log_sha256": "348ecf36a37b0260e7a34dee807e2ad2ebce52be84ea914e1ec61857a716c567",
+      "build_info_sha256": "5710bbefbb12d07dcf11e22bdae78da1bbfcafed528ea0fa9a1209608ea81447",
+      "frontend_build_fingerprint": "b44677c3a7d062d914c24e04e4a6380f54f19c2705c6573bf256b8fac1cc53b9",
+      "source_revision": "ca2e773dfebe0d9e60d366ed3a1bc8f240bf9cca",
+      "limit": "Build ran from pending candidate content over the exact stack base; it is not browser evidence."
+    },
+    "old_flow_consumer_proof": {
+      "status": "passed_static",
+      "method": "repository-wide reference search plus removal guard in verify.frontend.collection_action_capability.unit",
+      "removed_symbols": [
+        "pickImportFile",
+        "executeActionViewCollectionImport",
+        "CollectionImportSummary"
+      ],
+      "remaining_production_surface": "NativeImportWizard through useActionViewCollectionActionRuntime"
+    },
+    "exact_head_validation": {
+      "status": "passed",
+      "head": "f8fcce8616c30780e07b87a8815fa4a19fd91356",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T052846Z-3934058-580796211/receipt.json",
+      "receipt_sha256": "fa37b1e6405cec9ac93cce07dd6dfcf840e343ad96ceec8d4a0233b5bb5f2142",
+      "executed_targets": 7,
+      "reused_targets": 2,
+      "test_targets": 1,
+      "executed_test_count": 42,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "worktree_clean": true
+    },
+    "exact_head_frontend_build": {
+      "status": "passed",
+      "head": "f8fcce8616c30780e07b87a8815fa4a19fd91356",
+      "command": "make verify.frontend.build ENV=dev ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev",
+      "log": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/frontend-build-exact-head.log",
+      "log_sha256": "8a0240c8ea919d7f5262f5106cdf0697513b09a3667a5e7d990fb4adb33d3438",
+      "build_info_sha256": "2e6a4818a92fe6c0311893bab4c5276e40240468cd74c294462a3dc4cd1996bf",
+      "frontend_build_fingerprint": "cd2a673e7e21a7ee3ab6b3555fc76c15c190cd925916725d415dabc4c67f8a74",
+      "source_revision": "f8fcce8616c30780e07b87a8815fa4a19fd91356"
+    },
+    "r4_stack": {
+      "status": "validated",
+      "source_head": "a7f60de29d8d634e01cab7b7e637e314ae62eeca",
+      "destination_base_head": "e4a4df12cf65137c298863f576390ca3684076c6",
+      "method": "new branch directly from the latest PR full head plus import-only patch; no source-history rewrite",
+      "conflict": "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json"
+    },
+    "r4_exact_head_validation": {
+      "status": "passed",
+      "head": "0de4566d293796e6589d6e36eccb58e35097ba59",
+      "command": "make ci.local.iteration",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261127T060703Z-130062-586445514/receipt.json",
+      "receipt_sha256": "0f307f00e1ee93a73f75d1d3f5db48fa61daf9c001e678e9522a03a00b6668ab",
+      "executed_targets": 6,
+      "reused_targets": 3,
+      "executed_test_count": 24,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "not_run_targets": 0,
+      "blocked_targets": 0,
+      "worktree_clean": true
+    },
+    "r4_exact_head_frontend_build": {
+      "status": "passed",
+      "head": "0de4566d293796e6589d6e36eccb58e35097ba59",
+      "command": "make verify.frontend.build ENV=dev ENV_FILE=/home/lidefend/workspace/sce-backend-odoo/.env.dev",
+      "log": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/frontend-build-r4-exact-head.log",
+      "log_sha256": "df3422b7edb57dd5f0c85da610aaa6240ff6ea731ba7eea3f330be3b15efd8b9",
+      "build_info_sha256": "14baaa4b3196ca9b3dacf828a04f28714df6236c0a7bffaa503fc36575b2efce",
+      "frontend_build_fingerprint": "80828eab2f196b83053f1655b19cb18489825a4db2090e6c294f2b9e02ba3219",
+      "source_revision": "0de4566d293796e6589d6e36eccb58e35097ba59"
+    },
+    "p4_check_binding_correction": {
+      "status": "passed",
+      "head": "7fcd2b29c7df28059940c3c6483b5b0f7f7b0816",
+      "classification": "validation_tooling_false_positive",
+      "root_cause": "the run declared the native import check but had no canonical .runtime/agent-runs receipt, so agent.run.resume reported not_run even though the exact-head frontend receipt passed",
+      "command": "make agent.run.begin AGENT_CHECK=native_import_lifecycle && make verify.frontend.collection_action_capability.unit && make agent.run.record AGENT_CHECK=native_import_lifecycle AGENT_CHECK_STATUS=passed AGENT_TEST_COUNT=60 AGENT_TEST_LOG=.runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/native-import-lifecycle-canonical.log",
+      "receipt": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/native_import_lifecycle.json",
+      "log": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/native-import-lifecycle-canonical.log",
+      "log_sha256": "4da102ec68f6b37581d8046d7f649fc9befff77c0e96e6c9d7361c2267156bba",
+      "test_count": 60,
+      "facts_verified": [
+        "collection action capability contract cases pass",
+        "detail collection pagination cases pass",
+        "native import lifecycle owner, wizard wiring and old-flow removal pass",
+        "agent.run.resume now reports the check as reusable at the exact branch head"
+      ],
+      "coverage_limit": "This repairs P4 check reuse bookkeeping only; browser role/company journeys and FC-06 closure remain incomplete."
+    },
+    "p4_stack_merge_gate_correction": {
+      "status": "passed",
+      "classification": "validation_tooling_false_positive",
+      "root_cause": "pr.merge.preflight hard-coded main as the only legal PR target and integration.cycle required main-only remote checks, so the explicitly declared #1025 -> #1019 stack was rejected",
+      "repair": [
+        "validation_delivery_plan accepts an explicit expected base and verifies the live branch ref at that exact name",
+        "integration_cycle stack mode accepts a clean mergeable PR with no remote checks, but rejects failed or pending checks when present",
+        "make pr.merge.preflight/pr.merge pass PR_STACK=1 and PR_BASE explicitly and keep default main behavior unchanged",
+        "backend main closure remains skipped only in explicit stack mode"
+      ],
+      "validation": [
+        "PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.test_validation_delivery_plan: 20 tests passed",
+        "make verify.integration.cycle.unit: 29 tests passed",
+        "make -n pr.merge.preflight PR=1025 EXPECTED_HEAD=a29e0c4548444a80b13ee283acaf187456c3d78d PR_STACK=1 PR_BASE=fix/fe-consumption-closeout-20261126: exact stack preflight expands with the expected base and skips backend main closure"
+      ],
+      "receipts": {
+        "stack_merge_delivery": {
+          "receipt": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/stack_merge_delivery.json",
+          "log": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/stack-merge-delivery-final.log",
+          "log_sha256": "496d2610b81d6c3064e56bf771be127becfc50a061b617cf62ca21ec94c90502",
+          "test_count": 105,
+          "status": "reusable"
+        },
+        "stack_merge_integration": {
+          "receipt": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/stack_merge_integration.json",
+          "log": ".runtime/agent-runs/FE-IMPORT-LIFECYCLE-CLOSEOUT-20261127/stack-merge-integration-final.log",
+          "log_sha256": "b83234af094b232539c42cce72bb5bf28d21f99c1f8ad8e8d09b87196c99ec1e",
+          "test_count": 29,
+          "status": "reusable"
+        }
+      },
+      "coverage_limit": "This changes only P4 merge tooling. It does not establish browser role/company journeys or FC-06 completion."
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit and publish this P4 correction, then merge PR #1025 into PR #1019 through the protected PR flow after exact-head rebind."
+}

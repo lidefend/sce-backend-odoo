@@ -21,7 +21,6 @@ type CanonicalSceneRouteOptions = {
   query?: QueryLike;
   menuId?: unknown;
   actionId?: unknown;
-  sceneLabel?: unknown;
   order?: unknown;
 };
 
@@ -34,6 +33,7 @@ type EntryTargetRouteOptions = {
 };
 
 const SCENE_QUERY_KEYS = ['scene', 'scene_key', 'sceneKey'] as const;
+const SCENE_PRESENTATION_QUERY_KEYS = ['scene_label'] as const;
 const LEGACY_EMBEDDED_QUERY_KEYS = ['menu_id', 'action_id', 'view_id'] as const;
 const WORKBENCH_PATH = '/workbench';
 
@@ -152,6 +152,14 @@ function compactQuery(query: QueryLike): LocationQueryRaw {
   return next;
 }
 
+export function stripCanonicalSceneIdentityQuery(query: QueryLike): LocationQueryRaw {
+  const next: LocationQueryRaw = { ...query };
+  for (const key of [...SCENE_QUERY_KEYS, ...SCENE_PRESENTATION_QUERY_KEYS]) {
+    delete next[key];
+  }
+  return compactQuery(next);
+}
+
 function entryTargetRefs(entryTarget: Record<string, unknown> | null | undefined): Record<string, unknown> {
   const refs = entryTarget?.compatibility_refs;
   return refs && typeof refs === 'object' && !Array.isArray(refs)
@@ -164,12 +172,6 @@ function entryTargetRecordEntry(entryTarget: Record<string, unknown> | null | un
   return recordEntry && typeof recordEntry === 'object' && !Array.isArray(recordEntry)
     ? recordEntry as Record<string, unknown>
     : {};
-}
-
-function entryTargetPresentationTitle(entryTarget: Record<string, unknown> | null | undefined): string {
-  const presentation = entryTarget?.presentation;
-  if (!presentation || typeof presentation !== 'object' || Array.isArray(presentation)) return '';
-  return String((presentation as Record<string, unknown>).title || '').trim();
 }
 
 export function entryTargetType(entryTarget: Record<string, unknown> | null | undefined): string {
@@ -209,14 +211,10 @@ export function resolveSceneDefaultOrder(sceneKey: string, scene?: SceneRouteSou
 export function buildCanonicalSceneRouteTarget(sceneKey: string, options: CanonicalSceneRouteOptions = {}) {
   const key = String(sceneKey || '').trim();
   const normalizedQuery = normalizeEmbeddedSceneQuery(options.query || {}).query;
-  const query: LocationQueryRaw = { ...normalizedQuery };
-  for (const queryKey of SCENE_QUERY_KEYS) {
-    delete query[queryKey];
-  }
+  const query = stripCanonicalSceneIdentityQuery(normalizedQuery);
   const scene = options.scene || null;
   const menuId = positiveInteger(options.menuId) ?? positiveInteger(scene?.target?.menu_id);
   const actionId = positiveInteger(options.actionId) ?? positiveInteger(scene?.target?.action_id);
-  const sceneLabel = String(options.sceneLabel || scene?.label || '').trim();
   const explicitOrder = firstQueryValue(query.order) || firstQueryValue(query.sort);
   const order = String(options.order || explicitOrder || resolveSceneDefaultOrder(key, scene)).trim();
 
@@ -224,10 +222,8 @@ export function buildCanonicalSceneRouteTarget(sceneKey: string, options: Canoni
     path: resolveCanonicalScenePath(key, scene),
     query: compactQuery({
       ...query,
-      scene_key: key || undefined,
       menu_id: menuId,
       action_id: actionId,
-      scene_label: sceneLabel || undefined,
       order: order || undefined,
     }),
   };
@@ -245,14 +241,12 @@ export function buildEntryTargetRouteTarget(
   const viewId = positiveInteger(refs.view_id) ?? positiveInteger(normalizedQuery.view_id);
   const domainRaw = firstQueryValue(normalizedQuery.domain_raw) || firstQueryValue(refs.domain_raw);
   const contextRaw = firstQueryValue(normalizedQuery.context_raw) || firstQueryValue(refs.context_raw);
-  const entryTitle = entryTargetPresentationTitle(entryTarget);
   if (type === 'scene') {
     const sceneKey = entryTargetSceneKey(entryTarget);
     return buildCanonicalSceneRouteTarget(sceneKey, {
       query: normalizedQuery,
       menuId,
       actionId,
-      sceneLabel: entryTarget?.scene_label,
     });
   }
   const query = compactQuery({
@@ -262,8 +256,8 @@ export function buildEntryTargetRouteTarget(
     view_id: viewId,
     domain_raw: domainRaw || undefined,
     context_raw: contextRaw || undefined,
-    entry_title: entryTitle || firstQueryValue(normalizedQuery.entry_title) || undefined,
   });
+  delete query.entry_title;
   const route = String(entryTarget?.route || '').trim();
   if (type === 'admin_surface') {
     const surface = String(entryTarget?.surface || '').trim();

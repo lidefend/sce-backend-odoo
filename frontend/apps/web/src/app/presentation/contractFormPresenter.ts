@@ -39,6 +39,7 @@ import { resolveContractSemanticComponent } from './professionalComponentRegistr
 import { NODE_COMPONENT_REGISTRY } from './semantic_registry.generated';
 import { resolveWorkflowActionAvailability } from '../contracts/v2/workflowActionAvailability';
 import { declaredActionAuthorityDenial } from '../contracts/v2/actionRuleAuthority';
+import { contractGapError, requireDeclaredText } from '../contract/contractGap';
 
 function asDict(value: unknown): ContractV2Dictionary {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as ContractV2Dictionary : {};
@@ -193,10 +194,30 @@ function declaredContainerColumns(container: ContractV2Container): number | unde
 }
 
 function relationModel(widget: ContractV2Widget): string {
-  return text(widget.componentConfig.relation
-    || widget.componentConfig.relationModel
-    || widget.componentConfig.relation_model
-    || widget.fieldDescriptor?.relation);
+  return requireDeclaredText(widget.fieldDescriptor?.relation, {
+    missing: `field.${widget.fieldCode}.relation`,
+    requiredDeclarationLayer: 'P0:smart_core:relation_target_projection',
+  });
+}
+
+function validateDeclaredFieldStatus(
+  widget: ContractV2Widget,
+  status: ContractV2WidgetStatus | undefined,
+) {
+  if (!status) return;
+  const descriptor = widget.fieldDescriptor || {};
+  const conflicts = [
+    descriptor.invisible === true && status.visible !== false ? 'invisible' : '',
+    descriptor.readonly === true && status.readonly !== true ? 'readonly' : '',
+    descriptor.required === true && status.required !== true ? 'required' : '',
+  ].filter(Boolean);
+  if (!conflicts.length) return;
+  const missing = `field.${widget.fieldCode}.status_consistency.${conflicts.join('|')}`;
+  throw contractGapError({
+    kind: 'contract_defect',
+    missing,
+    requiredDeclarationLayer: 'P0:smart_core:field_status_projection',
+  }, `字段 ${widget.fieldCode} 的有效状态放宽了字段描述符约束: ${conflicts.join(', ')} (${missing})`);
 }
 
 function relationParts(value: unknown): { id: string | number; displayName: string } | null {
@@ -216,10 +237,9 @@ function presentFieldValue(
   contractValue: unknown,
   runtimeValue: unknown,
   hasRuntimeValue: boolean,
+  declaredRelationModel: string,
 ): unknown | CanonicalRelationValue {
-  const fieldType = text(
-    widget.componentConfig.fieldType || widget.fieldDescriptor?.fieldType,
-  ).toLowerCase();
+  const fieldType = text(widget.fieldDescriptor?.fieldType).toLowerCase();
   const selected = hasRuntimeValue ? runtimeValue : contractValue;
   if (fieldType === 'many2one') {
     const runtimeRelation = relationParts(runtimeValue);
@@ -242,7 +262,7 @@ function presentFieldValue(
     const displayName = runtimeRelation?.displayName
       || (String(runtimeId) === String(contractRelation?.id ?? '') ? contractRelation?.displayName : '')
       || '';
-    return Object.freeze({ id: runtimeId, displayName, model: relationModel(widget) });
+    return Object.freeze({ id: runtimeId, displayName, model: declaredRelationModel });
   }
   if (fieldType !== 'boolean' && (selected === false || selected === null || selected === undefined)) return null;
   if (['date', 'datetime'].includes(fieldType) && text(selected).toLowerCase() === 'false') return null;
@@ -269,10 +289,10 @@ function fieldFromWidget(
   store: ContractV2NormalizedStore,
 ): CanonicalFormField {
   const statusResolved = Boolean(status);
-  const fieldType = text(
-    widget.componentConfig.fieldType || widget.fieldDescriptor?.fieldType,
-  );
-  const semanticType = text(widget.fieldDescriptor?.semanticType || widget.semanticType);
+  validateDeclaredFieldStatus(widget, status);
+  const fieldType = text(widget.fieldDescriptor?.fieldType);
+  const declaredRelationModel = fieldType.toLowerCase() === 'many2one' ? relationModel(widget) : '';
+  const semanticType = text(widget.fieldDescriptor?.semanticType);
   const componentResolution = resolveContractSemanticComponent({
     semanticType,
     fieldType,
@@ -296,20 +316,17 @@ function fieldFromWidget(
     : false;
   const fieldAuth = text(status?.auth);
   const componentConfig = { ...widget.componentConfig };
-  const currencyField = text(
-    componentConfig.currencyField
-    || widget.fieldDescriptor?.currencyField,
-  );
+  const currencyField = text(widget.fieldDescriptor?.currencyField);
   if (semanticType === 'money' && currencyField) {
     const runtimeCurrencyValue = runtimeValues?.[currencyField];
     componentConfig.currencyValue = hasCurrencyDisplayLabel(runtimeCurrencyValue)
       ? runtimeCurrencyValue
       : contractValues[currencyField];
   }
-  const widgetSemantics = componentConfig.widgetSemantics
-    && typeof componentConfig.widgetSemantics === 'object'
-    && !Array.isArray(componentConfig.widgetSemantics)
-    ? componentConfig.widgetSemantics as ContractV2Dictionary
+  const widgetSemantics = widget.fieldDescriptor?.widgetOptions
+    && typeof widget.fieldDescriptor.widgetOptions === 'object'
+    && !Array.isArray(widget.fieldDescriptor.widgetOptions)
+    ? widget.fieldDescriptor.widgetOptions as ContractV2Dictionary
     : {};
   const dateRangeEndField = text(widgetSemantics.end_field);
   if (fieldType === 'date' && dateRangeEndField) {
@@ -323,14 +340,17 @@ function fieldFromWidget(
   return {
     widgetId: widget.widgetId,
     fieldCode: widget.fieldCode,
-    widgetType: widget.widgetType,
-    label: text(authoritativeFieldLabels[widget.fieldCode]) || widget.label,
+    widgetType: text(widget.fieldDescriptor?.widgetType),
+    label: text(authoritativeFieldLabels[widget.fieldCode])
+      || text(widget.fieldDescriptor?.label)
+      || widget.fieldCode,
     hideLabel: container.nolabel === true,
     value: presentFieldValue(
       widget,
       contractValues[widget.fieldCode],
       runtimeValues?.[widget.fieldCode],
       hasRuntimeValue,
+      declaredRelationModel,
     ),
     fieldType,
     componentKey: componentResolution.componentKey,

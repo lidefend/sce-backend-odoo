@@ -931,11 +931,19 @@ export interface FieldDescriptor {
   string?: string;
   type?: string;
   ttype?: string;
+  fieldType?: string;
+  widgetType?: string;
+  componentKey?: string;
+  semanticType?: string;
   required?: boolean;
   readonly?: boolean;
+  invisible?: boolean;
   selection?: Array<[string, string]>;
   relation?: string;
   relation_field?: string;
+  relationField?: string;
+  referenceModelField?: string;
+  attachmentRole?: string;
   relationActiveActions?: {
     create?: boolean | object;
     write?: boolean | object;
@@ -943,7 +951,18 @@ export interface FieldDescriptor {
   editable?: boolean;
   filename?: string;
   digits?: [number, number];
+  unit?: {
+    kind: 'percent' | 'duration' | 'count' | 'quantity';
+    code: string;
+    label: string;
+  };
+  temporal?: {
+    kind: 'date' | 'datetime';
+    timezoneAuthority: 'user' | 'record' | 'not_applicable';
+  };
   currency_field?: string;
+  currencyField?: string;
+  help?: string;
 }
 
 export interface FormLayout {

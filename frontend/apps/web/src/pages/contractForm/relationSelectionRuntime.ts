@@ -79,8 +79,6 @@ export async function switchRelationOptionContext(params: {
   for (const key of switchContext.defaultClearFields || []) delete query[`default_${key}`];
   query.current_business_category_code = nextCode;
   query.default_business_category_code = nextCode;
-  query.current_business_category_label = params.option.switchContext?.label || params.option.label;
-  query.default_business_category_label = params.option.switchContext?.label || params.option.label;
   query.default_business_category_id = String(params.option.id);
   query.ctx_source = 'business_category_relation_switch';
   Object.entries(params.option.switchContext?.defaultValues || {}).forEach(([key, value]) => {

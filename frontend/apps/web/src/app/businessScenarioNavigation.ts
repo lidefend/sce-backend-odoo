@@ -33,7 +33,6 @@ export function buildBusinessScenarioMaintenanceTarget(
       action_id: actionId,
       ...(entry.menu.id > 0 ? { menu_id: String(entry.menu.id) } : {}),
       return_url: returnPathForProduct(returnPath, returnProductKey),
-      return_label: '返回发布控制台',
       return_product_key: returnProductKey,
     },
   };

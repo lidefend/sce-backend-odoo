@@ -620,8 +620,9 @@ class ShardCompositionTests(unittest.TestCase):
                 with mock.patch.object(evidence.scan_group, "available_bytes", return_value=None):
                     receipt = evidence.run_default(self.root, shards=2, jobs=None,
                                                    popen=self._shard_job([]))
+                    expected_jobs = evidence.scan_group.resolve_jobs(None, 2)
         assert receipt is not None
-        self.assertEqual(seen, [evidence.scan_group.resolve_jobs(None, 2)])
+        self.assertEqual(seen, [expected_jobs])
         self.assertLessEqual(seen[0], 2)
 
     def _shard_job(self, calls, failing: int | None = None):

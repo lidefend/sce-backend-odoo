@@ -34,12 +34,24 @@ assert.equal(matrix, 24);
 assert.equal(isProfessionalBusinessValueField({ componentKey: 'sc.value.money', type: 'char' } as never), false);
 assert.equal(isProfessionalBusinessValueField({ componentKey: 'sc.input.number', type: 'monetary' } as never), false);
 assert.throws(() => businessValueKind({ componentKey: 'sc.value.money', type: 'char' } as never), /PROFESSIONAL_BUSINESS_VALUE_UNSUPPORTED/);
-assert.equal(formatPercentage(12.5), '12.5%');
-assert.equal(formatBusinessDuration(1.5), '1 小时 30 分钟');
-assert.equal(formatBusinessDuration(null), '--');
-assert.equal(formatBusinessDuration(false), '--');
-assert.equal(formatBusinessDuration(0), '0 小时');
-assert.equal(formatBusinessDuration(1.999), '2 小时');
+assert.throws(
+  () => formatPercentage(12.5),
+  { name: 'ContractGapError' },
+  'percentage precision must be declared by the field contract',
+);
+const percentUnit = { kind: 'percent' as const, code: 'percent', label: '%' };
+const durationUnit = { kind: 'duration' as const, code: 'hour', label: '小时' };
+assert.equal(formatPercentage(12.5, [16, 4], percentUnit), '12.5000%');
+assert.throws(
+  () => formatPercentage(12.5, [16, 4]),
+  { name: 'ContractGapError' },
+  'percentage unit must be declared by the field contract',
+);
+assert.equal(formatBusinessDuration(1.5, '--', [16, 3], durationUnit), '1.500 小时');
+assert.equal(formatBusinessDuration(null, '--', [16, 3], durationUnit), '--');
+assert.equal(formatBusinessDuration(false, '--', [16, 3], durationUnit), '--');
+assert.equal(formatBusinessDuration(0, '--', [16, 3], durationUnit), '0.000 小时');
+assert.equal(formatBusinessDuration(1.999, '--', [16, 3], durationUnit), '1.999 小时');
 assert.equal(statusBadgeSemantic('approved'), 'success');
 assert.equal(statusBadgeSemantic('rejected'), 'danger');
 assert.deepEqual(
