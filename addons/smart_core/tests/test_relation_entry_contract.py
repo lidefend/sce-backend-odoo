@@ -281,6 +281,94 @@ class TestRelationEntryContract(unittest.TestCase):
         self.assertTrue(entry.get("can_read"))
         self.assertEqual(entry.get("reason_code"), "PAGE_ENTRY_READY")
 
+    def test_relation_contract_uses_native_field_target_and_access_metadata(self):
+        child = types.SimpleNamespace(
+            _fields={
+                "parent_id": types.SimpleNamespace(
+                    type="many2one",
+                    comodel_name="x.parent",
+                )
+            },
+            check_field_access_rights=lambda operation, names: True,
+        )
+        parent = types.SimpleNamespace(
+            _rec_name="title",
+            check_access_rights=lambda operation, raise_exception=False: True,
+        )
+        self.assembler.env = {"x.child": child, "x.parent": parent}
+        entry = self.assembler._build_relation_entry_for_field(
+            "parent_id",
+            {"relation": "x.parent", "domain": []},
+            {"model": "x.parent", "can_read": True, "can_create": True, "can_open": True},
+            model_name="x.child",
+            include_search_dialog=False,
+        )
+        self.assertEqual(entry["relation_model"], "x.parent")
+        self.assertEqual(entry["display_field"], "title")
+        self.assertTrue(entry["can_read"])
+        self.assertTrue(entry["can_create"])
+        self.assertTrue(entry["can_open"])
+        authority = entry["source_authority"]
+        self.assertEqual(authority["kind"], "odoo_native_relation")
+        self.assertEqual(authority["display_field"], "title")
+        self.assertTrue(authority["target_access"]["read"])
+        self.assertEqual(authority["record_rule_policy"], "runtime_orm")
+
+    def test_relation_contract_rejects_descriptor_model_mismatch(self):
+        child = types.SimpleNamespace(
+            _fields={
+                "parent_id": types.SimpleNamespace(
+                    type="many2one",
+                    comodel_name="x.parent",
+                )
+            },
+            check_field_access_rights=lambda operation, names: True,
+        )
+        parent = types.SimpleNamespace(
+            _rec_name="name",
+            check_access_rights=lambda operation, raise_exception=False: True,
+        )
+        self.assembler.env = {"x.child": child, "x.parent": parent}
+        entry = self.assembler._build_relation_entry_for_field(
+            "parent_id",
+            {"relation": "x.wrong", "domain": []},
+            {"model": "x.wrong", "can_read": True, "can_create": True, "can_open": True},
+            model_name="x.child",
+            include_search_dialog=False,
+        )
+        self.assertFalse(entry["can_read"])
+        self.assertFalse(entry["can_create"])
+        self.assertFalse(entry["can_open"])
+        self.assertEqual(entry["reason_code"], "RELATION_FIELD_MODEL_MISMATCH")
+        self.assertFalse(entry["inline_create"]["enabled"])
+
+    def test_relation_contract_rejects_unreadable_native_field(self):
+        child = types.SimpleNamespace(
+            _fields={
+                "parent_id": types.SimpleNamespace(
+                    type="many2one",
+                    comodel_name="x.parent",
+                )
+            },
+            check_field_access_rights=lambda operation, names: False,
+        )
+        parent = types.SimpleNamespace(
+            _rec_name="name",
+            check_access_rights=lambda operation, raise_exception=False: True,
+        )
+        self.assembler.env = {"x.child": child, "x.parent": parent}
+        entry = self.assembler._build_relation_entry_for_field(
+            "parent_id",
+            {"relation": "x.parent", "domain": []},
+            {"model": "x.parent", "can_read": True, "can_create": True, "can_open": True},
+            model_name="x.child",
+            include_search_dialog=False,
+        )
+        self.assertFalse(entry["can_read"])
+        self.assertFalse(entry["can_create"])
+        self.assertFalse(entry["can_open"])
+        self.assertEqual(entry["reason_code"], "RELATION_FIELD_READ_FORBIDDEN")
+
     def test_build_relation_entry_page_mode_for_dictionary_keeps_type_default(self):
         descriptor = {"relation": "sc.dictionary", "domain": "[('type','=','project_type')]"}
         base_entry = {"model": "sc.dictionary", "action_id": 101, "menu_id": 11, "can_read": True, "can_create": True}
@@ -326,7 +414,7 @@ class TestRelationEntryContract(unittest.TestCase):
         descriptor = {"relation": "sc.dictionary", "domain": "[('type','=','project_type')]"}
         base_entry = {"model": "sc.dictionary", "action_id": None, "menu_id": None, "can_read": True, "can_create": True}
         entry = self.assembler._build_relation_entry_for_field("project_type_id", descriptor, base_entry)
-        self.assertEqual(entry.get("create_mode"), "quick")
+        self.assertEqual(entry.get("create_mode"), "quick", entry)
         self.assertEqual(entry.get("default_vals", {}).get("type"), "project_type")
         self.assertTrue(entry.get("can_read"))
         self.assertEqual(entry.get("reason_code"), "QUICK_CREATE_READY")
@@ -358,13 +446,25 @@ class TestRelationEntryContract(unittest.TestCase):
                 self.assertEqual(requested, [rec_name, "display_name"])
 
     def test_build_relation_entry_dictionary_domain_hint_from_model_field(self):
-        class _Field:
-            domain = [("type", "=", "project_type")]
-
         class _Model:
-            _fields = {"project_type_id": _Field()}
+            _fields = {
+                "project_type_id": types.SimpleNamespace(
+                    type="many2one",
+                    comodel_name="sc.dictionary",
+                    domain=[("type", "=", "project_type")],
+                )
+            }
+            check_field_access_rights = lambda self, operation, names: True
 
-        self.assembler.env = {"project.project": _Model()}
+        dictionary = types.SimpleNamespace(
+            _rec_name="name",
+            check_access_rights=lambda operation, raise_exception=False: True,
+        )
+
+        self.assembler.env = {
+            "project.project": _Model(),
+            "sc.dictionary": dictionary,
+        }
         descriptor = {"relation": "sc.dictionary", "domain": []}
         base_entry = {"model": "sc.dictionary", "action_id": None, "menu_id": None, "can_read": True, "can_create": True}
         entry = self.assembler._build_relation_entry_for_field(
@@ -373,7 +473,7 @@ class TestRelationEntryContract(unittest.TestCase):
             base_entry,
             model_name="project.project",
         )
-        self.assertEqual(entry.get("create_mode"), "quick")
+        self.assertEqual(entry.get("create_mode"), "quick", entry)
         self.assertEqual(entry.get("default_vals", {}).get("type"), "project_type")
 
     def test_build_relation_entry_disabled_when_relation_read_forbidden(self):
