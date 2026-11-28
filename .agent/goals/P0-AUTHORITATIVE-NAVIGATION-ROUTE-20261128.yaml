@@ -1,0 +1,32 @@
+schema_version: 1
+goal:
+  id: P0-AUTHORITATIVE-NAVIGATION-ROUTE-20261128
+  title: Publish one authoritative route across navigation consumers
+  status: active
+  formal_product_layer: P0 platform contract projection
+  layer_target: delivery navigation normalization and final scenario surface
+  module:
+    - smart_core
+    - smart_construction_core
+    - smart_construction_scene
+  standard_vs_user_specific: standard_platform_mechanism
+  objective: >-
+    Ensure the node route, entry_target route, scenario-surface tree and final
+    published navigation all carry the same final scene route after projection.
+  why_here: >-
+    smart_core owns navigation contract compilation and final route projection.
+    A downstream frontend cannot choose between contradictory route carriers.
+  why_not_elsewhere:
+    - Do not add frontend route preference or action-id special cases.
+    - Do not change ACLs, roles, record rules or authorization.
+    - Do not introduce a second navigation compiler.
+  blast_radius:
+    behavior:
+      - top-level route follows the resolved entry target during delivery normalization
+      - scenario-surface entries are synchronized from the final published navigation
+      - enterprise initialization resolves to its final scene route
+    exclusions:
+      - workflow state changes
+      - database schema or data migration
+      - deployment
+  rollback: Revert the route synchronization and its focused contract tests; no data migration is required.
