@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `5418`
 - Files requiring split plan: `89`
-- Files above warning threshold: `173`
+- Files above warning threshold: `174`
 
 ## Split Plan Required
 
@@ -14,12 +14,12 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- |
 | 7090 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 6739 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 6607 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 6610 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 6086 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 5958 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
-| 5489 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 5959 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 5490 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
-| 5197 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 5225 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 5028 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4856 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4615 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
@@ -180,17 +180,17 @@ Generated from repository source files. This report is informational during the 
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1086 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
+| 1081 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1073 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 1064 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 1063 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 1062 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 1060 | Python source | `scripts/ops/agent_run_context.py` |
 | 1053 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
-| 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1019 | Python source | `scripts/contract/snapshot_export.py` |
 | 1016 | Python source | `addons/smart_core/tests/test_platform_capability_explorer.py` |
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
-| 1015 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
+| 1016 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
 | 1010 | TypeScript source | `frontend/apps/web/src/app/pageOrchestration.ts` |
 | 1009 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
@@ -260,6 +260,7 @@ Generated from repository source files. This report is informational during the 
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
 | 807 | Python source | `scripts/verify/test_frontend_acceptance_runtime_profile.py` |
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
+| 806 | Vue source | `frontend/apps/web/src/components/action/HierarchicalWorksheet.vue` |
 | 804 | Python source | `addons/smart_construction_core/tests/test_patch_b_read_aggregate_security.py` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 800 | Python source | `scripts/ci/backend_iteration_lanes.py` |
@@ -286,12 +287,12 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- | --- |
 | 7090 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 6739 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 6607 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 6610 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 6086 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
-| 5958 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
-| 5489 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 5959 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 5490 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
-| 5197 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 5225 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 5028 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4856 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4615 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
