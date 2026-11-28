@@ -1899,6 +1899,65 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(wizard.model_id.model, "res.partner")
         self.assertEqual(str(wizard.field_name or ""), "custom_field")
 
+    def test_native_object_button_contract_carries_execution_verdict(self):
+        view = self.env["ir.ui.view"].create({
+            "name": "native.action.permission.contract.form",
+            "model": "res.partner",
+            "type": "form",
+            "arch": """
+                <form string="Partner">
+                    <header>
+                        <button name="open_commercial_entity" type="object" string="Open Commercial Entity"/>
+                    </header>
+                    <sheet>
+                        <field name="name"/>
+                    </sheet>
+                </form>
+            """,
+        })
+        action = self.env["ir.actions.act_window"].create({
+            "name": "Native action permission contract",
+            "res_model": "res.partner",
+            "view_mode": "form",
+            "view_id": view.id,
+        })
+        result = UiContractV2Handler(
+            self.env,
+            su_env=self.env["ir.model"].sudo().env,
+        ).handle({
+            "model": "res.partner",
+            "view_type": "form",
+            "action_id": action.id,
+            "render_profile": "edit",
+            "client_type": "web_pc",
+            "accepted_contract_versions": ["2.7.x"],
+            "client_contract_capabilities": [
+                "view.form.v1",
+                "container_tree.v2",
+                "data_source.v2",
+                "action_rule.v2",
+            ],
+        })
+        envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
+        self.assertTrue(envelope.get("ok", True), envelope)
+        contract = envelope["data"]
+        rule = next(
+            row for row in contract["actionContract"]["actionRuleList"]
+            if (row.get("button") or {}).get("name") == "open_commercial_entity"
+            and (row.get("button") or {}).get("type") == "object"
+        )
+        self.assertIs(rule["entitlementEvaluated"], True)
+        self.assertIs(rule["authorizationAllowed"], True)
+        self.assertIs(rule["allowed"], True)
+        self.assertIs(rule["enabled"], True)
+        self.assertIs(rule["disabled"], False)
+        status = next(
+            row for row in contract["statusContract"]["buttonStatus"]
+            if row.get("backendIdentity") == rule.get("backendIdentity")
+            or row.get("btnId") == "btn.%s" % rule.get("actionKey")
+        )
+        self.assertIs(status["disabled"], False)
+
     def test_ui_overlay_and_asset_models_do_not_claim_business_fact_authority(self):
         self.assertEqual(AppViewFragment.SOURCE_KIND, "ui_contract_fragment_overlay")
         self.assertEqual(AppViewVariant.SOURCE_KIND, "ui_contract_variant_overlay")

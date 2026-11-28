@@ -186,6 +186,7 @@
     "fix/verify-system-closeout-01-r2a-clean-20261127": ".agent/runs/VERIFY-SYSTEM-CLOSEOUT-01-R2A/run.json",
     "fix/main-push-history-scope-20261127": ".agent/runs/MAIN-PUSH-HISTORY-SCOPE-20261127/run.json",
     "fix/enterprise-initialization-route-authority-20261128": ".agent/runs/ENTERPRISE-INITIALIZATION-ROUTE-AUTHORITY-20261128/run.json",
-    "fix/finance-role-data-read-default-20261128": ".agent/runs/FINANCE-ROLE-DATA-READ-DEFAULT-20261128/run.json"
+    "fix/finance-role-data-read-default-20261128": ".agent/runs/FINANCE-ROLE-DATA-READ-DEFAULT-20261128/run.json",
+    "fix/p0-native-action-permission-contract-20261128": ".agent/runs/P0-NATIVE-ACTION-PERMISSION-CONTRACT-20261128/run.json"
   }
 }

@@ -4077,6 +4077,13 @@ class PageAssembler:
     ):
         entry = dict(base_entry or {})
         relation = str(descriptor.get("relation") or "").strip()
+        native_relation = self._native_relation_field_authority(
+            model_name,
+            field_name,
+            relation,
+        )
+        if native_relation:
+            relation = native_relation["relation_model"] or relation
         can_read = bool(entry.get("can_read", True))
         can_create = bool(entry.get("can_create"))
         has_page = bool(entry.get("action_id"))
@@ -4092,9 +4099,20 @@ class PageAssembler:
             if dict_type:
                 default_vals = {"type": dict_type}
         relation_domain = []
-        display_field = ""
+        display_field = str((native_relation or {}).get("display_field") or "")
         relation_order = ""
         can_open = bool(entry.get("can_open", True))
+        if native_relation:
+            authority_error = str(native_relation.get("reason_code") or "").strip()
+            if authority_error:
+                can_read = False
+                can_create = False
+                can_open = False
+                reason_code = authority_error
+            else:
+                can_read = can_read and native_relation["can_read"]
+                can_create = can_create and native_relation["can_create"]
+                can_open = can_open and can_read
         switch_context = {}
         ui_labels_extra = {}
         is_contract_tax_field = False
@@ -4270,7 +4288,7 @@ class PageAssembler:
             reason_code = override_authority_error
         elif not can_read:
             create_mode = "disabled"
-            reason_code = "RELATION_READ_FORBIDDEN"
+            reason_code = reason_code or "RELATION_READ_FORBIDDEN"
         elif has_page:
             create_mode = "dialog" if override_create_mode == "dialog" else "page"
             if can_create:
@@ -4301,6 +4319,8 @@ class PageAssembler:
                 "switch_context": switch_context,
                 "can_read": can_read,
                 "can_create": can_create,
+                "relation_model": relation,
+                **({"source_authority": native_relation["source_authority"]} if native_relation.get("source_authority") else {}),
                 "reason_code": reason_code,
                 "inline_create": inline_create,
                 # P0 声明：关系字段候选取数规模（空关键字 / 有关键字）。
@@ -4341,6 +4361,107 @@ class PageAssembler:
         if include_search_dialog and can_read:
             entry["search_dialog"] = search_dialog
         return entry
+
+    def _native_relation_field_authority(self, model_name, field_name, declared_relation):
+        """Project relation authority from ORM/model/view facts.
+
+        The returned verdict can only reduce an already-declared capability. It
+        never invents create/open access and never treats a descriptor relation
+        spelling as a second model registry.
+        """
+        model_name = str(model_name or "").strip()
+        field_name = str(field_name or "").strip()
+        declared_relation = str(declared_relation or "").strip()
+        if not model_name or not field_name:
+            return {}
+        try:
+            source_model = self.env[model_name]
+        except Exception:
+            return {}
+        field = getattr(source_model, "_fields", {}).get(field_name)
+        if not field:
+            return {
+                "relation_model": declared_relation,
+                "can_read": False,
+                "can_create": False,
+                "reason_code": "RELATION_FIELD_NOT_FOUND",
+            }
+        relation_model = str(getattr(field, "comodel_name", "") or "").strip()
+        if str(getattr(field, "type", "") or "").strip() not in {
+            "many2one", "one2many", "many2many",
+        } or not relation_model:
+            return {
+                "relation_model": relation_model or declared_relation,
+                "can_read": False,
+                "can_create": False,
+                "reason_code": "RELATION_FIELD_TYPE_INVALID",
+            }
+        if declared_relation and declared_relation != relation_model:
+            return {
+                "relation_model": relation_model,
+                "can_read": False,
+                "can_create": False,
+                "reason_code": "RELATION_FIELD_MODEL_MISMATCH",
+            }
+        try:
+            field_readable = source_model.check_field_access_rights(
+                "read", [field_name]
+            ) is not False
+        except Exception:
+            field_readable = False
+        try:
+            target_model = self.env[relation_model]
+            target_rights = {
+                operation: bool(
+                    target_model.check_access_rights(operation, raise_exception=False)
+                )
+                for operation in ("read", "create", "write", "unlink")
+            }
+            display_field = str(getattr(target_model, "_rec_name", "") or "").strip()
+        except Exception:
+            target_model = None
+            target_rights = {
+                "read": False,
+                "create": False,
+                "write": False,
+                "unlink": False,
+            }
+            display_field = ""
+        return {
+            "relation_model": relation_model,
+            "display_field": display_field,
+            "can_read": bool(field_readable and target_model is not None and target_rights["read"]),
+            "can_create": bool(
+                field_readable
+                and target_model is not None
+                and target_rights["create"]
+            ),
+            "reason_code": (
+                ""
+                if field_readable and target_model is not None and target_rights["read"]
+                else "RELATION_FIELD_READ_FORBIDDEN"
+                if not field_readable
+                else "RELATION_TARGET_READ_FORBIDDEN"
+            ),
+            "source_authority": {
+                "kind": "odoo_native_relation",
+                "authorities": [
+                    "ir.model.fields",
+                    "get_view",
+                    "ir.model.access",
+                    "ir.rule",
+                    "ir.ui.menu",
+                    "ir.actions.act_window",
+                ],
+                "model": model_name,
+                "field": field_name,
+                "relation_model": relation_model,
+                "display_field": display_field,
+                "field_readable": field_readable,
+                "target_access": target_rights,
+                "record_rule_policy": "runtime_orm",
+            },
+        }
 
     def _relation_entry_authority_pair_error(self, action_id, menu_id, relation):
         try:

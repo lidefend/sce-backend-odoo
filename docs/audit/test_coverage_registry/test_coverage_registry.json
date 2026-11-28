@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 238,
+    "odoo_tags": 239,
     "gated": 5,
     "on_demand": 99,
-    "unwired": 134,
-    "odoo_tag_declarations": 476,
+    "unwired": 135,
+    "odoo_tag_declarations": 477,
     "gated_declarations": 107,
-    "uncovered_declarations": 369,
+    "uncovered_declarations": 370,
     "ci_unit_scripts": 25,
     "ci_unit_scripts_wired": 25,
     "ci_unit_scripts_unwired": 0
@@ -1716,6 +1716,18 @@
       "evidence": [
         "make:verify.native_action.contract.orm :: native_action_contract"
       ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "native_action_permission_contract",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_native_action_permission_contract.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
       "disposition": "class-selected"
     },
     {

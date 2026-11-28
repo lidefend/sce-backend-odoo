@@ -25,7 +25,7 @@
     "addons/smart_core/core/unified_page_contract_v2_action.py": "b93b4d9ed0f372e5f69e80722d3f62416c0cfca37ac99c6be5476603540a5082",
     "addons/smart_core/core/unified_page_contract_v2_permissions.py": "8cb51efb86be1268d02cef9e4ee73b6a7556d2fa123e7c8d7e1740c6ba1aaa3a",
     "addons/smart_core/core/unified_page_contract_v2_status.py": "880639609f653adf483068ae8d1ab26d3cf5fbbc42f3471ee29e70f4fea29987",
-    "addons/smart_core/handlers/ui_contract_v2.py": "5915f5465fbf3001ce352c6cba52b9b26e426663803d820bb5493ed9d3455ad4",
+    "addons/smart_core/handlers/ui_contract_v2.py": "8e56f0b332099f22d1baff64dac29c5aadfb2c767c6231362c31e766e87d1b64",
     "addons/smart_core/core/action_target_schema.py": "663eafe686f61edefc469d4398a48483953c2f00a01ae3993c0cf86d1fd93290",
     "addons/smart_core/core/page_block_action_contract.py": "003ec09ab068f00a29e7dc8c0a785b3016c8e1e8d9f03d4889a1017dccf23fc5",
     "addons/smart_core/security/intent_permission.py": "a6ac717590551525bdd4fb0d4ab42062e39572209196460724130dc6f5ebe8f3",

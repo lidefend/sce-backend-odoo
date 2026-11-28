@@ -1,0 +1,61 @@
+schema_version: 1
+goal:
+  id: P0-NATIVE-ACTION-PERMISSION-CONTRACT-20261128
+  title: Publish authoritative native action and relation contract verdicts
+  status: active
+  execution_status: implementation
+  implementation_authorized: true
+  formal_product_layer: P0
+  layer_target: generic native action contract production and frontend consumption
+  module:
+    - smart_core
+    - frontend
+  standard_vs_user_specific: platform_standard
+  objective: >
+    Every native object, action and server button delivered in the runtime
+    action contract must carry one explicit per-user authorization verdict that
+    matches the execution authority. Missing authority must fail closed, while
+    allowed read-only navigation and ordinary write buttons must remain usable.
+    Relation fields must project Odoo field metadata, effective view facts,
+    target-model access, native display metadata and native action/menu authority
+    without inventing a parallel relation permission engine.
+  why_here: >
+    The defect is the platform contract producer losing native execution
+    authority between parsing, assembly, schema decoding and frontend
+    presentation. It is generic and cannot be repaired with product-specific
+    ACLs or frontend defaults.
+  why_not_elsewhere:
+    - P1 must not grant write access to make an incorrectly published button executable.
+    - The frontend must not infer permission from a button name or caption.
+    - The parser alone does not own final contract identity, status and precedence.
+    - ACL and record rules remain the execution authority rather than being weakened.
+  blast_radius: >
+    Native actionRuleList and buttonStatus verdicts for all contracts. Product
+    ACLs, record rules, business states and action identity remain unchanged.
+  exclusions:
+    - role composition and product ACL changes
+    - deployment or persistent database migration
+    - frontend fallback permission rules
+    - unrelated relation or layout redesign
+  tasks:
+    - id: NAPC-01
+      status: active
+      outcome: >
+        Reuse the execute-button access-mode authority to seal native action
+        permission verdicts in the runtime contract and verify producer,
+        decoder, presenter and execution parity.
+  acceptance:
+    - Every delivered native object/action/server button has explicit entitlementEvaluated and authorizationAllowed.
+    - allowed, enabled and disabled are consistent with authorizationAllowed and business state.
+    - Denied buttons retain a stable reasonCode and readable reason.
+    - Declared business-action verdicts are never overwritten by the generic native fallback.
+    - Read-only navigation methods use read authority.
+    - Missing or invalid authority fails closed in the runtime contract.
+    - Relation descriptors match the ORM field comodel.
+    - Relation readability is bounded by source-field and target-model read access.
+    - Relation display/opening metadata uses native _rec_name and native menu/action authority.
+    - Record rules remain runtime ORM authority and are not guessed from view metadata.
+    - Frontend decoding and presentation preserve the verdict.
+    - The executed button path revalidates the same authority.
+  run: .agent/runs/P0-NATIVE-ACTION-PERMISSION-CONTRACT-20261128/run.json
+  record: docs/ops/iterations/p0_native_action_permission_contract_20261128.md

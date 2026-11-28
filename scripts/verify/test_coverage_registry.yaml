@@ -796,6 +796,15 @@ entries:
   gate: 'make:verify.native_action.contract.orm :: native_action_contract'
   reason: Selects the Odoo integration carrier that publishes the resolved Action View Set, Search identity
     and readiness axes into the public Unified Page Contract V2.
+- group: native_action_permission_contract
+  kind: odoo_tag
+  status: unwired
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.changed_tests.orm :: /smart_core:TestNativeActionPermissionContract'
+  reason: Dynamic changed-test selection includes this class and remote owning-module coverage remains
+    required. Static tag discovery cannot attest dynamic selection; no ORM execution is claimed.
+  review_by: '2026-12-31'
 - group: native_action_search_view
   kind: odoo_tag
   status: on-demand
@@ -924,8 +933,8 @@ entries:
   owner: platform-contract
   dispose: class-selected
   gate: 'make:verify.contract.relation_active_actions.integration :: p0_relation_active_actions_evidence'
-  reason: Real assembler output is decoded and consumed by the generic frontend contract closure;
-    the target enforces a non-zero isolated local.test receipt before TypeScript validation.
+  reason: Real assembler output is decoded and consumed by the generic frontend contract closure; the
+    target enforces a non-zero isolated local.test receipt before TypeScript validation.
   review_by: '2026-12-31'
 - group: p0_state
   kind: odoo_tag
