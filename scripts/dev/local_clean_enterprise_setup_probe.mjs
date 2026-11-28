@@ -217,6 +217,10 @@ try {
   });
   if (await enterpriseEntry.count()) {
     await enterpriseEntry.click();
+    await page.waitForURL(
+      (url) => url.pathname.includes(releasedRoute),
+      { timeout: 45000 },
+    );
     check(new URL(page.url()).pathname.includes(releasedRoute), 'product entry consumes the released scene route', {
       expected_route: releasedRoute,
       url: page.url(),
