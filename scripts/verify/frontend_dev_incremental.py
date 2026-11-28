@@ -148,6 +148,7 @@ TARGET_LAYER_ORDER = ("frontend", "backend", "contract", "docs", "governance")
 class Rule:
     fragments: tuple[str, ...]
     targets: tuple[str, ...]
+    exact_paths: bool = False
 
 
 # Existing Make owners for audited test producers, including aggregate recipes.
@@ -236,7 +237,7 @@ RULES = (
          ("verify.page_contract_gate_wiring.unit",)),
     Rule(("scripts/ci/lane_telemetry.py",),
          ("verify.lane.telemetry.unit",)),
-    *(Rule(tuple(producers), (target,))
+    *(Rule(tuple(producers), (target,), exact_paths=True)
       for target, producers in AUDITED_TEST_PRODUCER_OWNERS.items()),
     # Stable projection guards read these producer and consumer facts together.
     Rule((
@@ -3651,7 +3652,8 @@ def select_targets(paths: list[str]) -> list[str]:
         normalized = path.replace("\\", "/")
         path_targets: set[str] = set()
         for rule in RULES:
-            if any(fragment in normalized for fragment in rule.fragments):
+            if (normalized in rule.fragments if rule.exact_paths else
+                    any(fragment in normalized for fragment in rule.fragments)):
                 path_targets.update(rule.targets)
         # A mapped backend/tool path must not mask an unmapped frontend path
         # in the same change set. Resolve the fallback per path, then union.

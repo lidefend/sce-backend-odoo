@@ -87,7 +87,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit combined candidate, update Draft #1037 and verify new exact HEAD four required workflows; no merge/deployment/R3 dispatch.",
+  "next_exact_step": "Push final exact-path correction to Draft #1037; verify final HEAD required remote checks. No merge, deployment or R3 dispatch.",
   "id": "VERIFY-SYSTEM-CLOSEOUT-01-R2C-ARCHIVE",
   "branch": "fix/verify-system-closeout-01-r2c-archive-20261128",
   "status": "verification_pending",
@@ -106,7 +106,7 @@
   "local_iteration": {
     "status": "passed",
     "executed_targets": 17,
-    "log": ".runtime/verify-system-closeout-resume-20261128/combined-local-final.log"
+    "log": ".runtime/verify-system-closeout-resume-20261128/exact-path-local.log"
   },
   "scan_budget_validation": {
     "target": "security.trusted_scan_group.unit",
@@ -126,7 +126,7 @@
     "scanned_blobs": 40775,
     "scope": "public_refs + secrets + personal data; unchanged policy"
   },
-  "authorization": "2026-11-28 owner: \u4fdd\u6301\u8349\u7a3f\uff0c\u672cpr\u6b21\u5f7b\u5e95\u6536\u53e3. Consolidate independently recorded repairs into #1037; no merge authorization.",
+  "authorization": "2026-11-28 owner: 保持草稿，本pr次彻底收口. Consolidate independently recorded repairs into #1037; no merge authorization.",
   "producer_evidence": {
     "matrix": "docs/audit/verify_system_closeout_01_r2bc/producer_execution_matrix.json",
     "producer_edges": 84,
@@ -142,5 +142,12 @@
     "status": "passed",
     "tests": 77,
     "log": ".runtime/verify-system-closeout-resume-20261128/coverage-final-verified.log"
+  },
+  "exact_producer_path_validation": {
+    "status": "passed",
+    "tests": 300,
+    "log": ".runtime/verify-system-closeout-resume-20261128/exact-producer-paths-final.log",
+    "sha256": "5e0aa40a560a8cb2e5f273b17c73a6d45dc9efebc6c12df8420222c441992e0b",
+    "scope": "Exact audited producer paths; unknown lookalike paths blocked by real executor; positive 84-edge mapping preserved"
   }
 }

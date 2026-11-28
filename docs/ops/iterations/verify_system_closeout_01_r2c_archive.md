@@ -49,3 +49,5 @@ The former 22 missing-asset targets were checked individually. Nineteen were par
 Coverage baseline was reduced only: zero-reference maximum 666 → 648; missing runnable assets 22 → 0. No maximum increased. This is structural governance, not proof of all business browser journeys. Current execution chains and focused producer results remain separately evidenced.
 
 Combined candidate local iteration PASS: 17 targets executed; `.runtime/verify-system-closeout-resume-20261128/combined-local-final.log`. Coverage auditor: 77 tests PASS. Producer matrix: 84 edges / 77 current owners all PASSED; no reuse authorization asserted. All evidence remains subordinate to new exact-HEAD PR integration and later exact-main R3 qualification.
+
+Final producer-path correction: audited producers use exact path matching. Unknown suffix/prefix lookalikes cannot borrow a registered owner; the real executor rejects them as blocked with no target results. All 300 executor tests PASS (`.runtime/verify-system-closeout-resume-20261128/exact-producer-paths-final.log`). Existing family rules remain unchanged.

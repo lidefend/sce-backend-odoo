@@ -69,6 +69,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     self.assertIn(target, implicitly_registered_offline_targets(selected))
                     self.assertFalse(any(t.endswith((".orm", ".module_baseline")) for t in selected))
 
+    def test_unknown_similarly_named_producer_cannot_borrow_audited_owner(self):
+        for path in ("scripts/ci/test_lane_telemetry.py.unregistered", "backup/scripts/ci/test_lane_telemetry.py"):
+            with self.subTest(path=path):
+                self.assertNotIn("verify.lane.telemetry.unit", select_iteration_targets([path]))
+                self.assertEqual(select_iteration_targets([path]), [])
+
     def test_release_tool_tests_remain_in_full_lane_without_selecting_full_lane(self):
         from scripts.audit.verification_lane_coverage import parse_make
         _targets, _recipes, prerequisites, _phony = parse_make(Path(__file__).resolve().parents[2])
@@ -4872,6 +4878,15 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(receipt["status"], "not_run")
         self.assertFalse(receipt["testsRun"])
+        self.assertFalse(receipt["verificationPassed"])
+
+    def test_unknown_producer_alias_is_blocked_by_real_executor(self) -> None:
+        path = "scripts/ci/test_lane_telemetry.py.unregistered"
+        code, receipt = self.execute(registered={"verify.lane.telemetry.unit"}, paths=[path])
+        self.assertEqual(code, 2)
+        self.assertEqual(receipt["status"], "blocked")
+        self.assertEqual(receipt["unmappedPaths"], [path])
+        self.assertEqual(receipt["targetResults"], [])
         self.assertFalse(receipt["verificationPassed"])
 
     def test_pure_unmapped_source_is_blocked_with_nonzero_exit(self) -> None:
