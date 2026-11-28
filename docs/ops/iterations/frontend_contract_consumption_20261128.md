@@ -82,6 +82,11 @@ projection file was a production P0 field-semantics input but had no path rule,
 so `ci.local.iteration` stopped as unmapped. The field-semantics path family now
 selects its cross-page executor and the planner test locks that mapping.
 
+Publication preflight also found the contract-basis ledger still bound Kanban
+titles to the superseded nested `kanban_profile.title_field` and temporal
+authority to an old inline declaration. The ledger now points to
+`listProfile.primary_field` and the shared temporal projection helper.
+
 ## Exclusions
 
 - No permission, role, company or data-rule change.
