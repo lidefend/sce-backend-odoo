@@ -417,9 +417,7 @@ verify.business_system.usability_readiness.prod: guard.prod.readonly check-compo
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) MIGRATION_ARTIFACT_ROOT="$(MIGRATION_ARTIFACT_ROOT)" BUSINESS_SYSTEM_READINESS_PROD_READONLY=1 BUSINESS_SYSTEM_READINESS_INCLUDE_P1=0 BUSINESS_SYSTEM_READINESS_ARTIFACT_DIR="$(BUSINESS_SYSTEM_READINESS_ARTIFACT_DIR)" bash scripts/ops/validate_business_system_usability_readiness.sh
 
 verify.productization.system_closure.topic_guard: guard.prod.forbid
-	@python3 -m py_compile scripts/verify/productization_system_closure_topic_guard.py scripts/verify/test_productization_system_closure_topic_guard.py
-	@cd scripts/verify && python3 test_productization_system_closure_topic_guard.py
-	@python3 scripts/verify/productization_system_closure_topic_guard.py
+	@echo "[DENY] retired verification entry: verify.productization.system_closure.topic_guard. Historical topic guard and its tests were never present in this tree. See docs/ops/iterations/verify_system_closeout_01_r2c_archive.md" >&2; exit 2
 
 verify.system_user_experience.coverage_guard: guard.prod.forbid
 	@python3 scripts/verify/system_user_experience_coverage_guard.py
@@ -708,7 +706,7 @@ history.material_product.projection.probe: guard.prod.forbid check-compose-proje
 .PHONY: online.capture.preflight
 
 online.capture.preflight: guard.prod.forbid
-	@python3 scripts/verify/online_capture_security.py --system "$${ONLINE_CAPTURE_SYSTEM:-both}" $${ONLINE_CAPTURE_REQUIRE_ONLINE:+--require-online}
+	@echo "[DENY] retired verification entry: online.capture.preflight. Historical online-capture implementation was never present in this tree. See docs/ops/iterations/verify_system_closeout_01_r2c_archive.md" >&2; exit 2
 .PHONY: bsi.create bsi.verify
 bsi.create: ## Create/update Business Service Identity user (system-bound)
 	@DB_NAME=$(DB_NAME) SERVICE_LOGIN=$(SERVICE_LOGIN) SERVICE_PASSWORD=$(SERVICE_PASSWORD) GROUP_XMLIDS="$(GROUP_XMLIDS)" \

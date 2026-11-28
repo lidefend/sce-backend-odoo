@@ -39,3 +39,13 @@ The unknown-memory test passed `memory=None`, which requests actual host detecti
 Follow-up result: `make verify.repository.clean_history` PASS. Secret, personal-data and public-ref history members all exited zero; history scanned 40,775 blobs. No rule or exception changes. Log `.runtime/verify-system-closeout-resume-20261128/history-after-budget-fix.log`, SHA-256 `43b738dead49e7ad1b93f26e8c35545ea4503006ac2e4ab426d4240ee9bed10e`. This supersedes the earlier blocked attempt as the current result, without deleting its evidence.
 
 Post-fix local iteration PASS: 13 targets actually executed; log `.runtime/verify-system-closeout-resume-20261128/r2c-local-budget-registered.log`.
+
+## Combined Draft PR and coverage governance
+
+Owner requires #1037 to remain Draft and contain this round's complete CI-tool repair. R2-B commit was transferred into this branch; no merge or deployment is authorized. 298 executor tests passed before final combined verification.
+
+The former 22 missing-asset targets were checked individually. Nineteen were parser mistakes (literal recipe working directory or truncated data/archive suffix). Three had no implementation in this tree/history: `online.capture.preflight`, `verify.output_invoice.source_gap_audit`, `verify.productization.system_closure.topic_guard`. None is reachable from the declared CI/runtime/deployment lane anchors. Their names remain, but invocation explicitly returns DENY/exit 2; a real Make regression proves they cannot mint success. The historical `verify.system_user_experience.quick` aggregate still fails at its retired dependency, so it cannot silently bypass that old requirement. No unavailable function was reimplemented or silently substituted.
+
+Coverage baseline was reduced only: zero-reference maximum 666 → 648; missing runnable assets 22 → 0. No maximum increased. This is structural governance, not proof of all business browser journeys. Current execution chains and focused producer results remain separately evidenced.
+
+Combined candidate local iteration PASS: 17 targets executed; `.runtime/verify-system-closeout-resume-20261128/combined-local-final.log`. Coverage auditor: 77 tests PASS. Producer matrix: 84 edges / 77 current owners all PASSED; no reuse authorization asserted. All evidence remains subordinate to new exact-HEAD PR integration and later exact-main R3 qualification.

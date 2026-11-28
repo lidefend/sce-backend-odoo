@@ -68,8 +68,8 @@ Generated from repository source files. This report is informational during the 
 | 1870 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1866 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
+| 1830 | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1825 | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
-| 1819 | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1811 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1805 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1796 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
@@ -209,11 +209,11 @@ Generated from repository source files. This report is informational during the 
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
 | 945 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
+| 942 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
 | 940 | Python source | `scripts/verify/test_local_quick_evidence.py` |
 | 939 | Python source | `scripts/ci/test_backend_test_suite_dispatch_contract.py` |
 | 920 | Python source | `scripts/ci/backend_suite_plan.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
-| 914 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
 | 914 | Python source | `scripts/verify/test_contract_fidelity_plan_guard.py` |
 | 911 | Python source | `addons/smart_construction_core/tests/test_business_role.py` |
 | 910 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
@@ -340,8 +340,8 @@ Generated from repository source files. This report is informational during the 
 | 1870 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
 | 1866 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
+| 1830 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1825 | split_plan_required | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
-| 1819 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1811 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1805 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1796 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |

@@ -11,7 +11,23 @@
     "docs/ops/iterations/verify_system_closeout_01_r2c_archive.md",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/audit/verification_lane_dispositions.json",
-    "scripts/ci/test_trusted_scan_group.py"
+    "scripts/ci/test_trusted_scan_group.py",
+    ".agent/runs/VERIFY-SYSTEM-CLOSEOUT-01-R2B/run.json",
+    ".agent/goals/VERIFY-SYSTEM-CLOSEOUT-01-R2B.yaml",
+    "docs/ops/iterations/verify_system_closeout_01_r2b.md",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_incremental_environment.py",
+    "make/frontend.mk",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "scripts/ci/test_lane_telemetry.py",
+    "scripts/verify/list_surface_clean_guard.py",
+    "scripts/verify/test_page_contract_gate_wiring.py",
+    "make/runtime_ops.mk",
+    "scripts/audit/verification_lane_coverage.py",
+    "scripts/audit/test_verification_lane_coverage.py",
+    "make/ci.mk",
+    "scripts/audit/verification_lane_baseline.json",
+    "docs/audit/verify_system_closeout_01_r2bc/"
   ],
   "environment": {
     "kind": "offline",
@@ -21,7 +37,7 @@
     "local_targeted": {
       "status": "required",
       "entrypoint": "make ci.local.iteration",
-      "reason": "P4 archive identity and recovery checks"
+      "reason": "Combined P4 receipt/execution/producer and archive-governance fixes; targeted nonzero tests and coverage proof."
     },
     "remote_integration": {
       "status": "required",
@@ -50,10 +66,28 @@
         "scripts/ops/retire_historical_branch_refs.py"
       ],
       "kind": "offline"
+    },
+    "executor": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/verify/test_incremental_environment.py"
+      ],
+      "kind": "offline"
+    },
+    "coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_dispositions.json"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish exact clean R2-C candidate as Draft; check its four required PR workflows. R2-B remains separately preserved and R3 follows integration.",
+  "next_exact_step": "Commit combined candidate, update Draft #1037 and verify new exact HEAD four required workflows; no merge/deployment/R3 dispatch.",
   "id": "VERIFY-SYSTEM-CLOSEOUT-01-R2C-ARCHIVE",
   "branch": "fix/verify-system-closeout-01-r2c-archive-20261128",
   "status": "verification_pending",
@@ -71,8 +105,8 @@
   },
   "local_iteration": {
     "status": "passed",
-    "log": ".runtime/verify-system-closeout-resume-20261128/r2c-local-budget-registered.log",
-    "executed_targets": 13
+    "executed_targets": 17,
+    "log": ".runtime/verify-system-closeout-resume-20261128/combined-local-final.log"
   },
   "scan_budget_validation": {
     "target": "security.trusted_scan_group.unit",
@@ -91,5 +125,22 @@
     "sha256": "43b738dead49e7ad1b93f26e8c35545ea4503006ac2e4ab426d4240ee9bed10e",
     "scanned_blobs": 40775,
     "scope": "public_refs + secrets + personal data; unchanged policy"
+  },
+  "authorization": "2026-11-28 owner: \u4fdd\u6301\u8349\u7a3f\uff0c\u672cpr\u6b21\u5f7b\u5e95\u6536\u53e3. Consolidate independently recorded repairs into #1037; no merge authorization.",
+  "producer_evidence": {
+    "matrix": "docs/audit/verify_system_closeout_01_r2bc/producer_execution_matrix.json",
+    "producer_edges": 84,
+    "distinct_make_owners": 77,
+    "status": "stage_local_passed_not_remote_qualification"
+  },
+  "retired_asset_evidence": {
+    "matrix": "docs/audit/verify_system_closeout_01_r2bc/missing_asset_disposition_matrix.json",
+    "false_positives": 19,
+    "explicit_deny": 3
+  },
+  "coverage_validation": {
+    "status": "passed",
+    "tests": 77,
+    "log": ".runtime/verify-system-closeout-resume-20261128/coverage-final-verified.log"
   }
 }
