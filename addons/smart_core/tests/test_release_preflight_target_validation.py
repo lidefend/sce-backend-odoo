@@ -62,6 +62,22 @@ def _install_stubs():
     policy_stub.ProductPolicyService = type("ProductPolicyService", (), {"__init__": lambda self, env: None})
     sys.modules["odoo.addons.smart_core.delivery.product_policy_service"] = policy_stub
 
+    published_scene_stub = types.ModuleType("odoo.addons.smart_core.delivery.published_scene_surface_service")
+    published_scene_stub.PublishedSceneSurfaceService = type(
+        "PublishedSceneSurfaceService",
+        (),
+        {
+            "__init__": lambda self, env: None,
+            "build": lambda self, delivery, **kwargs: {
+                "nav": deepcopy(delivery.get("nav") or []),
+                "route_authority": deepcopy(delivery.get("route_authority") or {}),
+                "navigation": {},
+                "scene_shells": [],
+            },
+        },
+    )
+    sys.modules["odoo.addons.smart_core.delivery.published_scene_surface_service"] = published_scene_stub
+
 
 _install_stubs()
 TARGET = _load_module(
@@ -242,6 +258,14 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
                 "base_product_key": "construction",
                 "edition_key": "standard",
                 "nav": [],
+                "route_authority": {
+                    "primary_actions": [],
+                    "role_home_actions": [],
+                    "contextual_actions": [],
+                    "admin_actions": [],
+                    "denied_actions": [],
+                    "menu_containers": [],
+                },
                 "capabilities": [],
                 "scenes": [],
                 "meta": {},
@@ -381,6 +405,14 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
                 "base_product_key": "construction",
                 "edition_key": "standard",
                 "nav": [],
+                "route_authority": {
+                    "primary_actions": [],
+                    "role_home_actions": [],
+                    "contextual_actions": [],
+                    "admin_actions": [],
+                    "denied_actions": [],
+                    "menu_containers": [],
+                },
                 "capabilities": [],
                 "scenes": [],
                 "meta": {},

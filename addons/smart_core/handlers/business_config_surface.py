@@ -808,7 +808,7 @@ class BusinessConfigCoverageScanHandler(_BusinessConfigSurfaceBase):
                 return
             label = _to_text(node.get("label") or node.get("name") or node.get("title"))
             meta = node.get("meta") or {}
-            target = meta.get("entry_target") or {}
+            target = node.get("entry_target") or {}
             refs = target.get("compatibility_refs") or {}
             action_id = _to_int(meta.get("action_id")) or _to_int(refs.get("action_id")) or _to_int(node.get("action_id"))
             menu_id = _to_int(node.get("menu_id")) or _to_int(meta.get("menu_id")) or _to_int(refs.get("menu_id"))
@@ -840,7 +840,7 @@ class BusinessConfigCoverageScanHandler(_BusinessConfigSurfaceBase):
             if not isinstance(node, dict):
                 return
             meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-            entry_target = meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {}
+            entry_target = node.get("entry_target") if isinstance(node.get("entry_target"), dict) else {}
             refs = entry_target.get("compatibility_refs") if isinstance(entry_target.get("compatibility_refs"), dict) else {}
             action_id = _to_int(meta.get("action_id")) or _to_int(refs.get("action_id")) or _to_int(node.get("action_id"))
             if action_id:

@@ -179,8 +179,6 @@ def build_delivery_menu_child(menu: Dict[str, Any]) -> Dict[str, Any] | None:
         model=model,
         view_modes=view_modes,
     )
-    if entry_target:
-        meta["entry_target"] = entry_target
     source_authority = menu.get("source_authority")
     if isinstance(source_authority, dict) and source_authority:
         meta["source_authority"] = source_authority
@@ -192,6 +190,8 @@ def build_delivery_menu_child(menu: Dict[str, Any]) -> Dict[str, Any] | None:
         "children": [],
         "meta": meta,
     }
+    if entry_target:
+        node["entry_target"] = entry_target
     if isinstance(menu_id, int) and menu_id > 0:
         node["config_menu_id"] = int(menu_id)
         node["configurable"] = True

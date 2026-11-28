@@ -134,13 +134,7 @@ class EntryPublicationTest(unittest.TestCase):
             "route_authority = self._merge_execution_targets(",
             source,
         )
-        self.assertIn(
-            "nav = self.menu_service.filter_nav_by_route_authority(\n"
-            "                nav,\n"
-            "                product_authority,\n"
-            "            )",
-            source,
-        )
+        self.assertNotIn("NavigationContractCompiler(", source)
 
     def test_native_discovery_receives_acl_and_role_filtered_navigation(self):
         path = ROOT / "delivery" / "delivery_engine.py"
@@ -213,7 +207,7 @@ class EntryPublicationTest(unittest.TestCase):
             seen.extend(nodes)
             return self.filter_nodes(nodes)
         self.project(self.authority, filter_nodes=inspect)
-        self.assertEqual(seen[1]["meta"]["entry_target"], {"type": "scene"})
+        self.assertEqual(seen[1]["entry_target"], {"type": "scene"})
         self.assertEqual(seen[1]["meta"]["scene_key"], "published.page")
 
     def handler(self, action_id, fail_closed=False, *, params=None, env=None, contracts=None):
@@ -536,6 +530,7 @@ class EntryPublicationTest(unittest.TestCase):
         scope = {
             "_text": lambda v: str(v or "").strip(),
             "_to_int": lambda v: int(v or 0),
+            "call_extension_hook_first": lambda *args, **kwargs: None,
             "build_web_surface_entry_target": target_api.build_web_surface_entry_target,
             "derive_entry_route": target_api.derive_entry_route,
             "target_route": target_api.target_route,
@@ -544,22 +539,29 @@ class EntryPublicationTest(unittest.TestCase):
         tree = ast.fix_missing_locations(ast.Module(body=[target_class], type_ignores=[]))
         exec(compile(tree, str(path), "exec"), scope)
         normalizer = scope["Normalizer"]()
+        normalizer.env = {}
         records = {"product.menu": SimpleNamespace(id=42, active=True),
                    "product.action": SimpleNamespace(id=775, _name="ir.actions.act_window", res_model="test.document", view_mode="tree,form")}
         normalizer._resolve_xmlid_record = lambda xmlid, **kwargs: records.get(xmlid)
         for route in ("/a/1", "/s/published.page"):
-            node = {"meta": {"menu_xmlid": "product.menu", "action_xmlid": "product.action",
-                    "menu_id": 1, "action_id": 1, "route": route,
-                    "entry_target": {"type": "scene", "scene_key": "published.page"}}}
+            node = {
+                "entry_target": {"type": "scene", "scene_key": "published.page"},
+                "meta": {
+                    "menu_xmlid": "product.menu",
+                    "action_xmlid": "product.action",
+                    "menu_id": 1,
+                    "action_id": 1,
+                    "route": route,
+                },
+            }
             result = normalizer._normalize_delivery_nav_refs([node])[0]
             self.assertEqual(result["menu_id"], 42)
             self.assertEqual(result["meta"]["action_id"], 775)
             # A resolved scene target owns the final route even when the incoming
             # node still carries a stale action route.
             self.assertEqual(result["meta"]["route"], "/s/published.page")
-            self.assertEqual(result["meta"]["entry_target"]["scene_key"], "published.page")
-            self.assertEqual(result["meta"]["entry_target"]["compatibility_refs"]["model"], "test.document")
-            self.assertEqual(result["entry_target"], result["meta"]["entry_target"])
+            self.assertEqual(result["entry_target"]["scene_key"], "published.page")
+            self.assertEqual(result["entry_target"]["compatibility_refs"]["model"], "test.document")
 
     def test_shared_normalizer_syncs_declared_admin_surface_to_node_target(self):
         path = ROOT / "delivery/delivery_engine.py"
@@ -570,6 +572,7 @@ class EntryPublicationTest(unittest.TestCase):
         scope = {
             "_text": lambda v: str(v or "").strip(),
             "_to_int": lambda v: int(v or 0),
+            "call_extension_hook_first": lambda *args, **kwargs: None,
             "build_web_surface_entry_target": target_api.build_web_surface_entry_target,
             "derive_entry_route": target_api.derive_entry_route,
             "target_route": target_api.target_route,
@@ -578,6 +581,7 @@ class EntryPublicationTest(unittest.TestCase):
         tree = ast.fix_missing_locations(ast.Module(body=[target_class], type_ignores=[]))
         exec(compile(tree, str(path), "exec"), scope)
         normalizer = scope["Normalizer"]()
+        normalizer.env = {}
         records = {
             "config.menu": SimpleNamespace(id=431, active=True),
             "config.action": SimpleNamespace(
@@ -591,10 +595,8 @@ class EntryPublicationTest(unittest.TestCase):
                  "compatibility_refs": {"menu_id": 431, "action_id": 806}}
         node = {"menu_id": 431, "route": "/a/806?menu_id=431", "entry_target": dict(stale),
                 "meta": {"menu_xmlid": "config.menu", "action_xmlid": "config.action",
-                         "menu_id": 431, "action_id": 806, "route": "/a/806?menu_id=431",
-                         "entry_target": dict(stale)}}
+                         "menu_id": 431, "action_id": 806, "route": "/a/806?menu_id=431"}}
         result = normalizer._normalize_delivery_nav_refs([node])[0]
-        self.assertEqual(result["entry_target"], result["meta"]["entry_target"])
         self.assertEqual(result["entry_target"]["type"], "admin_surface")
         self.assertEqual(result["entry_target"]["surface"], "business_config")
         self.assertEqual(result["entry_target"]["route"], "/admin/business-config")
@@ -608,6 +610,7 @@ class EntryPublicationTest(unittest.TestCase):
         scope = {
             "_text": lambda v: str(v or "").strip(),
             "_to_int": lambda v: int(v or 0),
+            "call_extension_hook_first": lambda *args, **kwargs: None,
             "build_web_surface_entry_target": target_api.build_web_surface_entry_target,
             "derive_entry_route": target_api.derive_entry_route,
             "target_route": target_api.target_route,
@@ -617,6 +620,7 @@ class EntryPublicationTest(unittest.TestCase):
         tree = ast.fix_missing_locations(ast.Module(body=[target_class], type_ignores=[]))
         exec(compile(tree, str(path), "exec"), scope)
         normalizer = scope["Normalizer"]()
+        normalizer.env = {}
         records = {
             "setup.menu": SimpleNamespace(id=719, active=True),
             "setup.action": SimpleNamespace(
@@ -652,12 +656,10 @@ class EntryPublicationTest(unittest.TestCase):
                 "menu_id": 719,
                 "action_id": 966,
                 "route": "/r/res.company/1",
-                "entry_target": dict(target),
             },
         }
         result = normalizer._normalize_delivery_nav_refs([node])[0]
         self.assertEqual(result["entry_target"]["record_entry"], record_entry)
-        self.assertEqual(result["meta"]["entry_target"]["record_entry"], record_entry)
 
     def test_runtime_validator_obeys_failed_publication_authority(self):
         result, _ = self.handler(775, fail_closed=True)

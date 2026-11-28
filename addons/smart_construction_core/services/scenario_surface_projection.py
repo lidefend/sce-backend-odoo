@@ -527,7 +527,7 @@ def flatten_authorized_nav_leaves(
                     "route": route,
                     "label": label,
                     "delivery_bucket": _text(node.get("delivery_bucket") or meta.get("delivery_bucket")),
-                    "entry_target": entry.get("entry_target") or meta.get("entry_target") or {},
+                    "entry_target": node.get("entry_target") or {},
                     "parent_menu_xmlid": leaf_parent,
                     "policy_group_key": group_key,
                     "policy_group_label": effective_group_label,
@@ -1349,7 +1349,7 @@ def _apply_scene_target_projection(
     if not scene_key:
         return
     leaf["scene_key"] = scene_key
-    leaf["entry_target"] = {
+    next_target = {
         "type": "scene",
         "scene_key": scene_key,
         "compatibility_refs": {
@@ -1363,6 +1363,10 @@ def _apply_scene_target_projection(
             if value not in (None, "", [])
         },
     }
+    for keep in ("record_entry", "delivery_scope", "root_menu_xmlid", "presentation"):
+        if existing_target.get(keep) not in (None, "", [], {}):
+            next_target[keep] = existing_target[keep]
+    leaf["entry_target"] = next_target
     leaf["route"] = ""
 
 
@@ -1460,6 +1464,13 @@ def project_authorized_nav_with_env(
     """
     leaves = flatten_authorized_nav_leaves(nav, route_authority=route_authority)
     workspace_center = resolve_horizontal_work_center(env)
+    if not workspace_center and any(is_workspace_home_leaf(leaf) for leaf in leaves):
+        workspace_center = {
+            "key": WORKBENCH_GROUP_KEY,
+            "name": "工作台",
+            "sequence": 10,
+            "canonical_group_key": WORKBENCH_GROUP_KEY,
+        }
     native_primary_center_sequences = _native_primary_center_sequences(env)
     # Execution-only contextual/admin rows are not navigation declarations.
     # Group authorized navigation candidates by menu before supplementing leaves.

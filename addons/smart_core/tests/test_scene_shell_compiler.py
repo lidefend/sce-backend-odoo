@@ -128,7 +128,7 @@ class SceneShellCompilerTests(unittest.TestCase):
             "action_id": 966,
             "menu_id": 719,
         }
-        leaf["meta"]["entry_target"] = {
+        leaf["entry_target"] = {
             "type": "compatibility",
             "route": "/r/res.company/1",
             "record_entry": record_entry,
@@ -147,6 +147,49 @@ class SceneShellCompilerTests(unittest.TestCase):
             result.scene_shell_rows[0]["target"]["record_entry"],
             record_entry,
         )
+
+    def test_consumer_contract_keeps_one_target_carrier_per_surface(self):
+        entry_target = {"type": "scene", "scene_key": "entry.test"}
+        scene_target = {"route": "/s/entry.test", "record_entry": {"record_id": 1}}
+        nav, scene_ready = self.compiler.normalize_consumer_target_carriers(
+            [{
+                "menu_id": 719,
+                "entry_target": entry_target,
+                "meta": {"entry_target": entry_target},
+            }],
+            {
+                "scenes": [{
+                    "scene": {"key": "entry.test"},
+                    "target": scene_target,
+                    "meta": {"target": scene_target},
+                }],
+            },
+        )
+        self.assertEqual(nav[0]["entry_target"], entry_target)
+        self.assertNotIn("entry_target", nav[0]["meta"])
+        self.assertEqual(scene_ready["scenes"][0]["target"], scene_target)
+        self.assertNotIn("target", scene_ready["scenes"][0]["meta"])
+
+    def test_consumer_contract_rejects_conflicting_target_carriers(self):
+        with self.assertRaisesRegex(ValueError, "conflicting entry_target carriers"):
+            self.compiler.normalize_consumer_target_carriers(
+                [{
+                    "menu_id": 719,
+                    "entry_target": {"type": "scene", "scene_key": "entry.one"},
+                    "meta": {"entry_target": {"type": "scene", "scene_key": "entry.two"}},
+                }],
+                {},
+            )
+        with self.assertRaisesRegex(ValueError, "conflicting target carriers"):
+            self.compiler.normalize_consumer_target_carriers(
+                [],
+                {
+                    "scenes": [{
+                        "target": {"route": "/s/entry.one"},
+                        "meta": {"target": {"route": "/s/entry.two"}},
+                    }],
+                },
+            )
 
     def test_directory_has_no_published_path(self):
         nav = [{

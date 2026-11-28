@@ -603,7 +603,7 @@ class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
                                 "required_fields": ["name"],
                                 "field_rules": [{"field": "name", "rule": "required"}],
                             },
-                            "meta": {"target": {"route": "/my-work"}},
+                            "target": {"route": "/my-work"},
                         }
                     ],
                     "meta": {"generated_by": "test"},
@@ -615,10 +615,10 @@ class TestSystemInitPayloadBuilderSemantics(unittest.TestCase):
         self.assertEqual(((payload.get("default_route") or {}).get("entry_target") or {}).get("scene_key"), "workspace.home")
         self.assertEqual(((payload.get("role_surface") or {}).get("landing_entry_target") or {}).get("scene_key"), "workspace.home")
         nav_leaf = ((payload.get("nav") or [])[0] or {})
-        self.assertEqual((((nav_leaf.get("meta") or {}).get("entry_target") or {}).get("scene_key")), "projects.list")
-        self.assertEqual(((((nav_leaf.get("meta") or {}).get("entry_target") or {}).get("compatibility_refs") or {}).get("action_id")), 502)
-        self.assertEqual(((((nav_leaf.get("meta") or {}).get("entry_target") or {}).get("record_entry") or {}).get("model")), "project.project")
-        self.assertEqual(((((nav_leaf.get("meta") or {}).get("entry_target") or {}).get("record_entry") or {}).get("record_id")), 42)
+        self.assertEqual(((nav_leaf.get("entry_target") or {}).get("scene_key")), "projects.list")
+        self.assertEqual((((nav_leaf.get("entry_target") or {}).get("compatibility_refs") or {}).get("action_id")), 502)
+        self.assertEqual((((nav_leaf.get("entry_target") or {}).get("record_entry") or {}).get("model")), "project.project")
+        self.assertEqual((((nav_leaf.get("entry_target") or {}).get("record_entry") or {}).get("record_id")), 42)
         self.assertEqual(((payload.get("semantic_runtime") or {}).get("search_surface") or {}).get("mode"), "faceted")
         self.assertEqual(((((payload.get("semantic_runtime") or {}).get("search_surface") or {}).get("default_state") or {}).get("filters") or [])[0].get("key"), "mine")
         self.assertEqual(((payload.get("semantic_runtime") or {}).get("permission_surface") or {}).get("reason_code"), "missing_capability")

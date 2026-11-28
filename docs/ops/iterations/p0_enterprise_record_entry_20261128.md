@@ -21,6 +21,16 @@ navigation, route authority and the native delegate target, so the frontend can 
 the exact authenticated company record instead of constructing `/new` from an absent
 record identity.
 
+The final consumer response also collapses duplicate carriers after checking equality:
+navigation exposes only the node-level `entry_target`, and scene-ready rows expose only
+the row-level `target`. Conflicting copies fail closed before reaching the frontend.
+
+Sceneization ownership is now a separate stage. `DeliveryEngine` produces candidate
+published entries and route authority; `PublishedSceneSurfaceService` compiles those
+entries into the only scene navigation surface and scene shell rows; the release
+snapshot freezes that result; effective delivery applies enterprise/user authorization
+without recompiling it; `system.init` only serializes the resulting contract.
+
 ## Validation
 
 - `make verify.navigation.publication_consumers.unit`: PASS
@@ -28,13 +38,13 @@ record identity.
 - `make verify.product.entry_publication.unit`: PASS
 - `make verify.extension.hook_contracts.unit`: PASS
 - `make verify.scene.company_route_scope_cache.orm`: PASS, 11 ORM tests
-- `make ci.local.iteration`: PASS, 20 targets, 614 tests, 3 static checks, 0
+- `make ci.local.iteration`: PASS, 36 targets, 975 tests, 5 static checks, 0
   unmapped paths
 
 Receipt:
-`.runtime/frontend-dev-validation/executions/20261128T024119Z-2257973-304822757/receipt.json`
+`.runtime/frontend-dev-validation/executions/20261128T044614Z-3281662-824149276/receipt.json`
 
 SHA256:
-`8066bebd19f3858fd3dd91769ff08755cd87084f34d2e742f8bbbb2a92f53494`
+`0f97c0e59c5f3d376db94c3106091ff2cf81cef1c692a710f48371348b3c8a0d`
 
 PR integration, deployment and complete frontend user acceptance are not claimed.

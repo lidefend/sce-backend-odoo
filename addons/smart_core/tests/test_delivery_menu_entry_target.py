@@ -992,7 +992,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         meta = node["meta"]
         self.assertEqual(meta["scene_key"], "projects.list")
         self.assertEqual(
-            meta["entry_target"],
+            node["entry_target"],
             {
                 "type": "scene",
                 "scene_key": "projects.list",
@@ -1022,7 +1022,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
             }
         )
 
-        self.assertEqual(node["meta"]["entry_target"], entry_target)
+        self.assertEqual(node["entry_target"], entry_target)
 
     def test_zero_sequence_is_an_explicit_navigation_order(self):
         child = delivery_menu_defaults.build_delivery_menu_child(
@@ -1099,7 +1099,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         )
 
         self.assertEqual(
-            node["meta"]["entry_target"],
+            node["entry_target"],
             {
                 "type": "compatibility",
                 "route": "/a/600",
@@ -1480,7 +1480,7 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         self.assertEqual([group.get("label") for group in groups], ["财务中心"])
         child = groups[0]["children"][0]
         self.assertEqual(child["label"], "财务综合办理")
-        self.assertEqual(child["meta"]["entry_target"]["scene_key"], "finance.workspace")
+        self.assertEqual(child["entry_target"]["scene_key"], "finance.workspace")
 
     def test_user_acceptance_container_is_not_used_as_native_preview_group(self):
         self._register_acceptance_menu_labels()

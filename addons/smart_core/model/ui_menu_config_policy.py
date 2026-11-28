@@ -1037,7 +1037,6 @@ class UiMenuConfigPolicy(models.Model):
                 meta = dict(node.get("meta") if isinstance(node.get("meta"), dict) else {})
                 meta["scene_key"] = scene_key or None
                 meta["route"] = scene_route or route
-                meta["entry_target"] = node["entry_target"]
                 node["meta"] = meta
                 node["availability_status"] = "ok"
                 node["reason_code"] = ""

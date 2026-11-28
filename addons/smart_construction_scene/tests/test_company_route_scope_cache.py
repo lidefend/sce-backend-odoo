@@ -181,6 +181,7 @@ class TestCompanyRouteScopeCache(TransactionCase):
         self.assertEqual(
             ((initialize_rows[0].get("entry_target") or {}).get("record_entry") or {}).get("model"),
             "res.company",
+            initialize_rows,
         )
         self.assertEqual(
             ((initialize_rows[0].get("entry_target") or {}).get("record_entry") or {}).get("record_id"),
@@ -198,7 +199,7 @@ class TestCompanyRouteScopeCache(TransactionCase):
         ]
         self.assertEqual(len(initialize_nodes), 1)
         self.assertEqual(
-            (((initialize_nodes[0].get("meta") or {}).get("entry_target") or {})
+            ((initialize_nodes[0].get("entry_target") or {})
              .get("record_entry") or {}).get("record_id"),
             self.env.company.id,
         )
@@ -220,6 +221,7 @@ class TestCompanyRouteScopeCache(TransactionCase):
 
     def test_imported_handling_override_reaches_page_authority_and_direct_gate(self):
         from odoo.addons.smart_core.delivery import effective_delivery_service as delivery
+        from odoo.addons.smart_core.delivery import published_scene_surface_service as published_surface
         from odoo.addons.smart_core.delivery.menu_service import MenuService
         from odoo.addons.smart_core.delivery.runtime_route_authority import published_route_authority, published_pairs
         from odoo.addons.smart_core.handlers.route_authority_validate import RouteAuthorityValidateHandler
@@ -256,12 +258,19 @@ class TestCompanyRouteScopeCache(TransactionCase):
                     enabled={"effective": True}, entries=[original], menu_xmlids_by_id={menu.id: menu_xmlid},
                     company_id=env.company.id)
             return real_hook(env, name, *args, **kwargs)
-        with patch.object(scene_registry, "_load_scene_registry_content_entries_with_timings", side_effect=lambda: ([deepcopy(original)], {})), \
+        with patch.object(scene_registry, "_load_scene_registry_content_entries_with_timings", side_effect=lambda: ([
+                deepcopy(original),
+                {"code": "workspace.home", "name": "角色首页", "target": {"route": "/s/workspace.home"}},
+            ], {})), \
                 patch.object(delivery.DeliveryEngine, "build", side_effect=lambda **kwargs: deepcopy(seed)), \
                 patch.object(delivery, "_load_platform_release_gate", return_value={}), \
-                patch.object(delivery, "call_extension_hook_first", side_effect=hook):
+                patch.object(delivery, "call_extension_hook_first", side_effect=hook), \
+                patch.object(published_surface, "call_extension_hook_first", side_effect=hook):
             self.env.registry.clear_cache()
-            self.assertIn((0, old_action.id), published_pairs(published_route_authority(self.env)))
+            self.assertIn(
+                (0, old_action.id),
+                published_pairs(delivery.EffectiveDeliveryService(self.env).resolve().route_authority),
+            )
             package_service = ScenePackageService(self.env)
             package = {"package_name": "effective-import-test", "package_version": "1.0.0", "schema_version": "v2",
                        "scene_version": "v2", "scenes": [imported], "profiles": {}, "defaults": {"scene_channel": "stable"},

@@ -2664,7 +2664,7 @@ class TestUserFeedbackBusinessViews(BusinessTransactionCase):
         walk(payload.get("nav") or [])
         self.assertTrue(certificate_node, {"role": result.role_surface.get("role_code"), "nav_roots": len(payload.get("nav") or []), "release": result.release_gate.get("reason")})
         certificate_meta = certificate_node.get("meta") or {}
-        certificate_entry = certificate_meta.get("entry_target") or {}
+        certificate_entry = certificate_node.get("entry_target") or {}
         menu = self.env.ref("smart_construction_core.menu_sc_tax_certificate_registration_user")
         action = self.env.ref("smart_construction_core.action_sc_tax_certificate_registration_user")
         expected_route = "/a/%s?menu_id=%s" % (action.id, menu.id)

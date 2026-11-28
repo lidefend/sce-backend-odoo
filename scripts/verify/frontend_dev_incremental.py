@@ -1044,10 +1044,18 @@ RULES = (
         "addons/smart_core/tests/test_native_config_menu_projection.py",
         "addons/smart_core/tests/test_relation_entry_contract.py",
         "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+        "addons/smart_core/delivery/final_menu_navigation_service.py",
+        "addons/smart_core/delivery/published_scene_surface_service.py",
+        "addons/smart_core/delivery/release_runtime_user_probe_service.py",
     ), (
         "verify.backend.navigation_delivery.unit",
         "verify.system_init.menu_boundary.guard",
         "verify.scenario.center_projection.guard",
+    )),
+    Rule((
+        "addons/smart_core/model/ui_menu_config_policy.py",
+    ), (
+        "verify.business_config.unit",
     )),
     Rule((
         "addons/smart_core/tests/test_platform_admin_duty_contract.py",

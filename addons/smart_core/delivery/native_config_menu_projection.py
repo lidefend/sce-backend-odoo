@@ -173,7 +173,6 @@ def _build_config_node(env, menu: Any, visible_ids: set[int]) -> dict[str, Any] 
         "menu_id": menu_id,
         "menu_xmlid": _xmlid(menu),
         "open": target,
-        "entry_target": target,
         "route": target.get("route"),
         "source": SOURCE_KIND,
         "source_authority": source_authority_contract(),
@@ -200,6 +199,15 @@ def _build_config_node(env, menu: Any, visible_ids: set[int]) -> dict[str, Any] 
         node["route"] = target.get("route")
     if target.get("action_id"):
         node["action_id"] = target.get("action_id")
+    entry_target = (
+        target.get("entry_target")
+        if isinstance(target.get("entry_target"), dict)
+        else target
+        if str(target.get("type") or "").strip()
+        else {}
+    )
+    if isinstance(entry_target, dict) and entry_target:
+        node["entry_target"] = dict(entry_target)
     return node
 
 
@@ -237,6 +245,7 @@ def _node_to_delivery_menu(
     route = _text(node.get("route") or meta.get("route"))
     action_id = meta.get("action_id") or node.get("action_id")
     model = _text(meta.get("model"))
+    entry_target = node.get("entry_target") if isinstance(node.get("entry_target"), dict) else {}
     if not action_id and not model:
         return None
     visible_path_parts = [_text(item) for item in (path_labels or []) if _text(item)]
@@ -246,7 +255,7 @@ def _node_to_delivery_menu(
         "label": label,
         "menu_id": menu_id,
         "route": route,
-        "scene_key": "",
+        "scene_key": _text(entry_target.get("scene_key")),
         "product_key": "",
         "capability_key": "",
         "menu_xmlid": menu_xmlid,
@@ -254,7 +263,7 @@ def _node_to_delivery_menu(
         "action_id": action_id,
         "action_xmlid": _text(meta.get("action_xmlid")),
         "model": model,
-        "entry_target": meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {},
+        "entry_target": entry_target,
         "view_modes": meta.get("view_modes") if isinstance(meta.get("view_modes"), list) else [],
         "delivery_bucket": "delivery_business_config",
         "visible_menu_path": " / ".join(visible_path_parts),

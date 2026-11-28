@@ -14,7 +14,7 @@ from odoo.addons.smart_core.security.platform_admin import (
     user_is_platform_control_admin,
     user_is_tenant_config_admin,
 )
-
+from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 from .capability_service import CapabilityService
 from .menu_service import MenuService
 from .product_policy_service import ProductPolicyService
@@ -190,8 +190,16 @@ class DeliveryEngine:
         if view_modes:
             meta["view_modes"] = view_modes
 
-        existing_target = meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {}
-        declared_surface = (
+        existing_target = node.get("entry_target") if isinstance(node.get("entry_target"), dict) else {}
+        declared_surface = call_extension_hook_first(
+            self.env,
+            "smart_core_native_config_action_entry_target",
+            self.env,
+            action,
+            menu_id,
+        ) if action and menu_id else None
+        if not isinstance(declared_surface, dict):
+            declared_surface = (
             {}
             if _text(existing_target.get("type")) == "scene"
             or isinstance(existing_target.get("record_entry"), dict)
@@ -202,7 +210,7 @@ class DeliveryEngine:
                 model=model,
                 view_modes=view_modes,
             )
-        )
+            )
         route = (
             target_route(existing_target)
             or target_route(declared_surface)
@@ -216,7 +224,7 @@ class DeliveryEngine:
         if route:
             meta["route"] = route
         if declared_surface:
-            meta["entry_target"] = self._normalize_entry_target_refs(
+            node["entry_target"] = self._normalize_entry_target_refs(
                 entry_target=declared_surface,
                 menu_id=menu_id,
                 action_id=action_id,
@@ -225,7 +233,7 @@ class DeliveryEngine:
                 route=declared_surface.get("route") or route,
             )
         else:
-            meta["entry_target"] = self._normalize_entry_target_refs(
+            node["entry_target"] = self._normalize_entry_target_refs(
                 entry_target=existing_target,
                 menu_id=menu_id,
                 action_id=action_id,
@@ -234,10 +242,6 @@ class DeliveryEngine:
                 route=route,
             )
         node["meta"] = meta
-        # ``_nav_target_index`` reads the node-level target first, so a stale
-        # node copy would overwrite the declared projection when the route
-        # authority index is rebuilt. Keep both carriers on one identity.
-        node["entry_target"] = meta["entry_target"]
 
     def _normalize_delivery_nav_refs(self, nav: list[dict]) -> list[dict]:
         for node in nav or []:
@@ -306,6 +310,7 @@ class DeliveryEngine:
         native_nav: list[dict] | None = None,
         use_published_policy: bool = True,
         policy_override: dict | None = None,
+        request_context: dict | None = None,
     ) -> dict:
         runtime = data if isinstance(data, dict) else {}
         role_surface = self._runtime_role_surface(runtime)
@@ -355,16 +360,6 @@ class DeliveryEngine:
         route_authority["business_scene_composition"] = deepcopy(
             business_scene_composition
         )
-        principal_scope = (
-            route_authority.get("principal_scope")
-            if isinstance(route_authority.get("principal_scope"), dict)
-            else {}
-        )
-        if int(principal_scope.get("user_id") or 0) > 0:
-            nav = self.menu_service.filter_nav_by_route_authority(
-                nav,
-                product_authority,
-            )
         scenes = self.scene_service.build_entries(policy=policy, scenes=runtime.get("scenes") or [])
         capabilities = self.capability_service.build_entries(policy=policy, capabilities=runtime.get("capabilities") or [])
         nav_meta = self.menu_service.describe_nav(nav)
