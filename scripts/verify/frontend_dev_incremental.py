@@ -2473,11 +2473,13 @@ RULES = (
         "addons/smart_construction_scene/data/sc_scene_orchestration.xml",
         "addons/smart_construction_scene/data/sc_scene_tiles.xml",
         "addons/smart_construction_scene/models/__init__.py",
+        "addons/smart_construction_scene/models/product_scenario_activation.py",
         "addons/smart_construction_scene/profiles/project_dashboard_scene_content.py",
         "addons/smart_construction_scene/profiles/scene_registry_content.py",
         "addons/smart_construction_scene/scene_registry.py",
         "addons/smart_construction_scene/services/business_scene_enablement.py",
         "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+        "addons/smart_construction_scene/views/enterprise_scenario_activation_views.xml",
     ), (
         "verify.daily.permission_truth.capability.orm",
         "verify.navigation.publication_consumers.unit",

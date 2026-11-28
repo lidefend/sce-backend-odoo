@@ -114,6 +114,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn('verify.business_capability.authorization.orm', targets)
                 self.assertIn('verify.smart_construction_core.module_baseline', targets)
 
+    def test_enterprise_scenario_configuration_fact_paths_select_scene_contracts(self):
+        for path in (
+            'addons/smart_construction_scene/models/product_scenario_activation.py',
+            'addons/smart_construction_scene/views/enterprise_scenario_activation_views.xml',
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), [
+                    'verify.daily.permission_truth.capability.orm',
+                    'verify.navigation.publication_consumers.unit',
+                    'verify.scenario.center_projection.guard',
+                ])
+
     def test_channel_targets_partition_without_losing_shared_or_union_members(self):
         targets = {
             "verify.frontend.lint.src",

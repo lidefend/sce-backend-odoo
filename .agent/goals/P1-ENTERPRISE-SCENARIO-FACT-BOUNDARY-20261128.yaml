@@ -1,0 +1,50 @@
+schema_version: 1
+goal:
+  id: P1-ENTERPRISE-SCENARIO-FACT-BOUNDARY-20261128
+  title: Separate enterprise scenario enablement facts from scene delivery composition
+  status: active
+  implementation_authorized: true
+  formal_product_layer: P1
+  layer_target: >-
+    Native construction fact actions and views for company-scoped business
+    scenario enablement, consumed by the enterprise initialization page and
+    scenario delivery layer.
+  module:
+    - smart_construction_core
+    - smart_construction_scene
+  standard_vs_user_specific: construction_standard
+  objective: >-
+    Make the enterprise initialization "business scenario configuration"
+    button execute a canonical native window action for company-scoped scenario
+    enablement instead of opening the global product scenario-definition list.
+    Preserve scenario definitions and tenant enablement as separate facts while
+    keeping scene delivery as a read-only composition consumer.
+  why_here: >-
+    Product scenario definitions, enterprise-initiated configuration and scene
+    composition are all P1 construction product responsibilities. The button
+    must execute an Odoo action/view fact; a delivery scene URL is not a product
+    fact and must not become the action target.
+  why_not_elsewhere:
+    - The frontend must not infer a destination from button labels.
+    - P0 platform code must not encode construction scenario semantics.
+    - P3 runtime configuration must not repair a missing standard action/view.
+    - PR #1019 and the independent enterprise-route PR #1029 are out of scope.
+  blast_radius: >-
+    The enterprise initialization scenario group and its native action/view.
+    Scenario definition records, role permissions, model ACLs, published menus,
+    scene delivery routes and persistent data remain unchanged.
+  exclusions:
+    - frontend source changes
+    - PR #1019 changes
+    - PR #1029 changes
+    - role, group or ACL changes
+    - schema-changing migration
+    - persistent database writes
+  acceptance:
+    - The enterprise initialization page no longer references the global scenario-definition action for company enablement.
+    - The visible business-scenario button executes a native window action backed by a native view and object action.
+    - Enabling and disabling uses the existing company-scoped scenario enablement authority and rejects unreleased scenarios.
+    - Scenario delivery code only consumes the resulting facts and does not own the configuration UI.
+    - Focused tests are non-zero and the owning module baselines are registered for exact-head CI.
+  run: .agent/runs/P1-ENTERPRISE-SCENARIO-FACT-BOUNDARY-20261128/run.json
+  record: docs/ops/iterations/p1_enterprise_scenario_fact_boundary_20261128.md

@@ -1,6 +1,8 @@
 """Real company initialization, including Scene-owned activation authority."""
+from unittest.mock import patch
+
 from odoo.tests.common import tagged
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 from odoo.addons.smart_construction_core.tests.business_case import BusinessTransactionCase
 
 
@@ -46,6 +48,52 @@ class TestEnterpriseInitializationJourney(BusinessTransactionCase):
             self.assertTrue(model.check_access_rights(operation, raise_exception=False))
         self.assertFalse(self.manager.has_group('base.group_system'))
 
+    def test_enterprise_scenario_enablement_is_a_native_configuration_fact(self):
+        scenario = self.env['sc.product.scenario'].search([('active', '=', True)], limit=1)
+        self.assertTrue(scenario, 'The product scenario fact must be seeded before initialization.')
+        action = self.env.ref('smart_construction_scene.action_sc_enterprise_scenario_activation')
+        self.assertEqual(action._name, 'ir.actions.act_window')
+        self.assertEqual(action.res_model, 'sc.product.scenario')
+        self.assertNotIn(
+            'smart_construction_core.action_sc_product_scenario',
+            str(action.view_id.arch),
+        )
+        combined = self.env.ref(
+            'smart_construction_core.view_sc_enterprise_initialization_form'
+        )._get_combined_arch()
+        group = combined.find(".//group[@name='enterprise_scenario_configuration']")
+        self.assertIsNotNone(group)
+        button = group.find("button")
+        self.assertIsNotNone(button)
+        self.assertEqual(button.get('name'), str(action.id))
+        manager_scenario = scenario.with_user(self.manager)
+        service = (
+            'odoo.addons.smart_construction_scene.models.'
+            'product_scenario_activation.resolve_product_released'
+        )
+        with patch(service, return_value=True):
+            self.assertEqual(manager_scenario.action_enable_for_company(), {
+                'type': 'ir.actions.client',
+                'tag': 'reload',
+            })
+            self.assertTrue(manager_scenario.sc_company_enabled)
+            self.assertEqual(manager_scenario.action_disable_for_company(), {
+                'type': 'ir.actions.client',
+                'tag': 'reload',
+            })
+            self.assertFalse(manager_scenario.sc_company_enabled)
+        with patch(service, return_value=False), self.assertRaises(UserError):
+            manager_scenario.action_enable_for_company()
+        ordinary = self.env['res.users'].with_context(no_reset_password=True).create({
+            'name': 'Synthetic scenario reader',
+            'login': 'synthetic_scenario_reader',
+            'company_id': self.env.company.id,
+            'company_ids': [(6, 0, self.env.company.ids)],
+            'groups_id': [(6, 0, (self.internal | self._group('general_user')).ids)],
+        })
+        with patch(service, return_value=True), self.assertRaises(AccessError):
+            scenario.with_user(ordinary).action_enable_for_company()
+
     def test_enterprise_initialization_configuration_journey(self):
         import secrets
         from odoo.addons.smart_construction_scene.handlers.enterprise_readiness import EnterpriseReadinessDiagnosisGetHandler
@@ -65,10 +113,13 @@ class TestEnterpriseInitializationJourney(BusinessTransactionCase):
                      if row['menu_xmlid'] == menu_xmlid]
         self.assertEqual(len(projected), 1)
         target = projected[0]['entry_target']
-        self.assertEqual(target['route'], f'/a/{menu.action.id}?menu_id={menu.id}')
-        self.assertEqual(target['subject'], 'action')
-        self.assertEqual(target['action_id'], menu.action.id)
-        self.assertEqual(target['model'], menu.action.res_model)
+        self.assertEqual(target['route'], f'/r/res.company/{company.id}')
+        self.assertEqual(target['record_entry']['model'], 'res.company')
+        self.assertEqual(target['record_entry']['record_id'], company.id)
+        self.assertEqual(target['record_entry']['action_id'], menu.action.id)
+        self.assertEqual(target['record_entry']['menu_id'], menu.id)
+        self.assertEqual(target['compatibility_refs']['action_id'], menu.action.id)
+        self.assertEqual(target['compatibility_refs']['menu_id'], menu.id)
         from odoo.addons.smart_core.delivery.runtime_route_authority import published_route_authority, menu_publication_decision
         self.assertTrue(menu_publication_decision(published_route_authority(actor), menu.id, menu.action.id))
         ordinary_actor = actor(user=self._subject('general_user').id)
