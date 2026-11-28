@@ -129,16 +129,34 @@ try {
   });
   await navigation.ready();
 
-  const dataPermissionTarget = await navigation.targetByMenuXmlid(
-    'smart_construction_core.menu_sc_product_data_permission_v1',
+  const enterpriseTarget = await navigation.targetByMenuXmlid(
+    'smart_construction_core.menu_sc_enterprise_initialization',
     '',
     60000,
   );
-  report.runtime.data_permission_target = dataPermissionTarget;
-  await page.goto(
-    `${BASE}/a/${dataPermissionTarget.action_id}?menu_id=${dataPermissionTarget.menu_id}`,
-    { waitUntil: 'networkidle' },
+  const enterpriseRoute = String(enterpriseTarget.entry_target?.route || enterpriseTarget.route || '').trim();
+  check(enterpriseRoute.startsWith('/s/'), 'enterprise initialization route is released as a scene', {
+    route: enterpriseRoute,
+  });
+  await page.goto(`${BASE}${enterpriseRoute}`, { waitUntil: 'networkidle' });
+  await page.getByRole('heading', { name: /^企业初始化/ }).first()
+    .waitFor({ state: 'visible', timeout: 45000 });
+  await page.waitForFunction(
+    () => !/企业初始化 · 加载中|正在读取页面契约与业务数据/.test(document.body.innerText),
+    null,
+    { timeout: 45000 },
   );
+  const dataPermissionEntry = page.getByRole('button', { name: '业务权限分配', exact: true }).first();
+  await dataPermissionEntry.waitFor({ state: 'visible', timeout: 45000 });
+  await dataPermissionEntry.click();
+  await page.waitForURL((url) => !url.pathname.includes('/s/entry.smart_construction_core.menu_sc_enterprise_initialization'), {
+    timeout: 45000,
+  });
+  report.runtime.data_permission_target = {
+    label: '业务权限分配',
+    route: page.url(),
+    enterprise_scene: enterpriseRoute,
+  };
   await page.locator('[data-product-page-mode="list"]').first()
     .waitFor({ state: 'visible', timeout: 45000 });
   const search = page.locator('input[placeholder*="搜索"]:visible').first();

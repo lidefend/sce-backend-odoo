@@ -257,58 +257,75 @@ try {
       },
     );
   }
-  await page.getByRole('heading', { name: '企业初始化', exact: true }).first()
+  await page.getByRole('heading', { name: /^企业初始化/ }).first()
     .waitFor({ state: 'visible', timeout: 45000 });
-  await page.getByRole('button', { name: '启用所选业务中心', exact: true })
-    .waitFor({ state: 'visible', timeout: 45000 });
+  await page.waitForFunction(
+    () => !/企业初始化 · 加载中|正在读取页面契约与业务数据/.test(document.body.innerText),
+    null,
+    { timeout: 45000 },
+  );
   const initialBody = String(await page.locator('#main-content').innerText());
-  const selected = initialBody.match(/已选择业务中心：(\d+) 个业务中心 · (\d+) 个业务场景/);
-  check(selected && Number(selected[1]) >= 6 && Number(selected[2]) >= 22,
-    'recommended enterprise centers and scenes are selected before submission', {
-      selected: selected ? selected.slice(1) : null,
-    });
+  const requiredSections = [
+    '企业基础初始化',
+    '业务基础配置',
+    '角色与权限初始化',
+    '审批规则',
+    '场景配置',
+  ];
+  const requiredActions = [
+    '企业信息',
+    '组织架构',
+    '岗位管理',
+    '人员与账号',
+    '业务分类',
+    '业务字典',
+    '预算类型',
+    '阶段要求',
+    '企业角色配置',
+    '企业角色分配',
+    '业务权限分配',
+    '审批岗位人员',
+    '审批策略',
+    '业务场景配置',
+  ];
+  const missingSections = requiredSections.filter((label) => !initialBody.includes(label));
+  const missingActions = requiredActions.filter((label) => !initialBody.includes(label));
+  check(!missingSections.length, 'enterprise initialization exposes every declared configuration section', {
+    missing_sections: missingSections,
+  });
+  check(!missingActions.length, 'enterprise initialization exposes every declared configuration action', {
+    missing_actions: missingActions,
+  });
+  report.readback = {
+    page: 'enterprise_initialization',
+    sections: requiredSections,
+    actions: requiredActions,
+    readonly_record_id: page.url().includes('record_id=1') ? 1 : null,
+  };
   await shot(page, '01-enterprise-setup-ready');
 
-  const responsePromise = page.waitForResponse((response) => {
-    try {
-      return JSON.parse(response.request().postData() || '{}')?.intent
-        === 'scenario.activation.centers.set';
-    } catch {
-      return false;
-    }
-  }, { timeout: 45000 });
-  await page.getByRole('button', { name: '启用所选业务中心', exact: true }).click();
-  const response = await responsePromise;
-  const body = await response.json().catch(() => ({}));
-  const data = envelopeData(body);
-  report.readback = data;
-  report.responses.push({
-    status: response.status(),
-    ok: body?.ok,
-    error: body?.error || null,
+  await page.getByRole('button', { name: '企业信息', exact: true }).click();
+  await page.waitForURL((url) => !url.pathname.includes('/s/entry.smart_construction_core.menu_sc_enterprise_initialization'), {
+    timeout: 45000,
   });
-  check(response.status() === 200 && body?.ok === true, 'business centers are enabled by the product action', {
-    status: response.status(),
-    body,
+  const companyNameField = page.locator('input[name="name"], textarea[name="name"], [data-field-name="name"] input').first();
+  await companyNameField.waitFor({ state: 'visible', timeout: 45000 });
+  check(await companyNameField.isEditable(), 'enterprise company information opens an editable maintenance form', {
+    url: page.url(),
   });
-  check(data?.readback?.write_committed === true, 'enterprise center scope is committed', {
-    readback: data?.readback,
-  });
-  check(Array.isArray(data?.center_keys) && data.center_keys.length >= 6,
-    'committed center scope contains all selected business centers', {
-      center_keys: data?.center_keys,
-    });
-  check(Array.isArray(data?.scene_keys) && data.scene_keys.length >= 22,
-    'committed enterprise scope contains the declared business scenes', {
-      scene_keys: data?.scene_keys,
-    });
+  report.readback.maintenance_entry = {
+    label: '企业信息',
+    route: page.url(),
+    editable_field: 'name',
+  };
+  await shot(page, '02-enterprise-company-maintenance');
 
   await page.waitForFunction(
     () => !/正在加载场景/.test(document.body.innerText),
     null,
     { timeout: 45000 },
   );
-  await shot(page, '02-enterprise-setup-complete');
+  await shot(page, '03-enterprise-setup-complete');
   check(report.console_errors.length === 0, 'enterprise setup journey has no browser errors', {
     errors: report.console_errors,
   });
