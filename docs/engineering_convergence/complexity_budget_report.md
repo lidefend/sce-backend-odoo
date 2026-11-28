@@ -212,10 +212,10 @@ Generated from repository source files. This report is informational during the 
 | 942 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
 | 940 | Python source | `scripts/verify/test_local_quick_evidence.py` |
 | 939 | Python source | `scripts/ci/test_backend_test_suite_dispatch_contract.py` |
+| 920 | Python source | `addons/smart_construction_core/tests/test_business_role.py` |
 | 920 | Python source | `scripts/ci/backend_suite_plan.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 914 | Python source | `scripts/verify/test_contract_fidelity_plan_guard.py` |
-| 911 | Python source | `addons/smart_construction_core/tests/test_business_role.py` |
 | 910 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 905 | Python source | `addons/smart_construction_core/tests/test_capability_registry_service.py` |

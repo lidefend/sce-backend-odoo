@@ -27,11 +27,14 @@
     "scripts/audit/test_verification_lane_coverage.py",
     "make/ci.mk",
     "scripts/audit/verification_lane_baseline.json",
-    "docs/audit/verify_system_closeout_01_r2bc/"
+    "docs/audit/verify_system_closeout_01_r2bc/",
+    "addons/smart_construction_core/tests/test_project_ledger_runtime_contract.py",
+    "addons/smart_construction_core/tests/test_business_role.py",
+    "addons/smart_construction_core/tests/test_experience_role_surface.py"
   ],
   "environment": {
-    "kind": "offline",
-    "authority": "existing local Make tools; no database or service access"
+    "kind": "runtime",
+    "authority": "standing AGENTS isolated synthetic tests authorization; no persistent database writes"
   },
   "verification_responsibility": {
     "local_targeted": {
@@ -87,7 +90,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Push final exact-path correction to Draft #1037; verify final HEAD required remote checks. No merge, deployment or R3 dispatch.",
+  "next_exact_step": "Publish test-only correction and verify final Draft #1037 HEAD four required CI. No merge/deployment/R3 dispatch.",
   "id": "VERIFY-SYSTEM-CLOSEOUT-01-R2C-ARCHIVE",
   "branch": "fix/verify-system-closeout-01-r2c-archive-20261128",
   "status": "verification_pending",
@@ -105,8 +108,8 @@
   },
   "local_iteration": {
     "status": "passed",
-    "executed_targets": 17,
-    "log": ".runtime/verify-system-closeout-resume-20261128/exact-path-local.log"
+    "executed_targets": 18,
+    "log": ".runtime/verify-system-closeout-resume-20261128/stale-orm-local-iteration.log"
   },
   "scan_budget_validation": {
     "target": "security.trusted_scan_group.unit",
@@ -149,5 +152,22 @@
     "log": ".runtime/verify-system-closeout-resume-20261128/exact-producer-paths-final.log",
     "sha256": "5e0aa40a560a8cb2e5f273b17c73a6d45dc9efebc6c12df8420222c441992e0b",
     "scope": "Exact audited producer paths; unknown lookalike paths blocked by real executor; positive 84-edge mapping preserved"
+  },
+  "remote_failure": {
+    "head": "f16ad054e7c0960be7886a073ddf8737825505d4",
+    "status": "failed",
+    "log": ".runtime/verify-system-closeout-resume-20261128/final-shard2.log",
+    "failed_tests": 3,
+    "total_tests": 1855,
+    "sha256": "1c24efe6d32010feca3bac1f6c8184e712a723bc68ee9213f6680d4e17729f5c",
+    "classification": "stale ORM expectations after existing main product declarations changed in #1030 and #1036; product sources unchanged by this PR"
+  },
+  "orm_stale_expectation_validation": {
+    "status": "passed",
+    "classes": 5,
+    "tests": 60,
+    "receipt": ".runtime/test-baseline/1795865200383342379/receipt.json",
+    "log": ".runtime/verify-system-closeout-resume-20261128/stale-orm-tests-stable-source.log",
+    "prior_attempt": "1795864954744641836: assertion pass but source changed; receipt correctly denied"
   }
 }

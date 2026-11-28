@@ -233,10 +233,12 @@ class TestProjectLedgerRuntimeContract(TransactionCase):
             "the declared group authority must actually deliver 提交立项 to its members",
         )
         self.assertIn(
-            "action_sc_start",
+            "action_view_stage_requirements",
             outsider_buttons,
             "the outsider contract must still resolve its ungrouped buttons (negative control)",
         )
+        self.assertNotIn("action_sc_start", outsider_buttons,
+                         "read-only users must not receive the project-start command")
         self.assertNotIn(
             "action_sc_submit",
             outsider_buttons,
