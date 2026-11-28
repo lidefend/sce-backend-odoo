@@ -7,6 +7,7 @@ import { buildContractActionRouteTarget } from '../src/app/runtime/actionViewCon
 import { useActionResponseNavigation } from '../src/pages/contractForm/useActionResponseNavigation';
 import { buildContractFormPageIdentity } from '../src/app/pageIdentityAdapters';
 import { resolveProductPageIdentity } from '../src/app/pageIdentity';
+import { consumeButtonNavigationAuthority } from '../src/app/buttonNavigationAuthority';
 
 const sourceQuery = {
   menu_id: '501',
@@ -212,5 +213,39 @@ assert.equal(await rawOnlyNavigation.navigateActionResponseResult({
   },
 }), true, 'a normalized raw action remains a backend navigation authority');
 assert.equal((rawOnlyTargets[0].query as Record<string, unknown>).current_business_category_code, undefined, 'raw-action targets receive the same cross-model reset');
+
+const windowActionTargets: Array<Record<string, unknown>> = [];
+const windowActionNavigation = useActionResponseNavigation({
+  router: {
+    currentRoute: { value: { fullPath: '/r/x.source/7?action_id=502' } },
+    resolve: () => ({ fullPath: '/a/628?action_id=628' }),
+    push: async (target: unknown) => { windowActionTargets.push(target as Record<string, unknown>); },
+  } as never,
+  currentQuery: () => sourceQuery,
+  currentModel: () => 'x.source',
+});
+assert.equal(await windowActionNavigation.navigateActionResponseResult({
+  type: 'refresh',
+  window_action_id: 628,
+  raw_action: {
+    id: 628,
+    type: 'ir.actions.act_window',
+    entry_target: {
+      type: 'compatibility',
+      route: '/a/628',
+      compatibility_refs: { action_id: 628, menu_id: 627 },
+    },
+  },
+  entry_target: {
+    type: 'compatibility',
+    route: '/a/628',
+    compatibility_refs: { action_id: 628, menu_id: 627 },
+  },
+}), true, 'a window-action result grants navigation from window_action_id');
+assert.equal(
+  consumeButtonNavigationAuthority(628, '/a/628?action_id=628'),
+  true,
+  'the granted action identity reaches the router guard',
+);
 
 console.log('cross-model action navigation tests passed');
