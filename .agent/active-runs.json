@@ -126,7 +126,6 @@
     "fix/fepc-11-relation-empty-titles": ".agent/runs/FEPC-11/run.json",
     "fix/fepc-12-follower-density": ".agent/runs/FEPC-12/run.json",
     "fix/finance-role-data-read-default-20261128": ".agent/runs/FINANCE-ROLE-DATA-READ-DEFAULT-20261128/run.json",
-    "fix/frontend-contract-consumption-20261128": ".agent/runs/FE-CONTRACT-CONSUMPTION-20261128/run.json",
     "fix/frontend-contract-consumption-20261128-r2": ".agent/runs/FE-CONTRACT-CONSUMPTION-20261128/run.json",
     "fix/formal-ci-parity-20261118": ".agent/runs/FORMAL-RELEASE-CI-PARITY-20261118/run.json",
     "fix/frontend-evidence-truth-recovery-20261118": ".agent/runs/FE-EVIDENCE-TRUTH-RECOVERY-20261118/run.json",
