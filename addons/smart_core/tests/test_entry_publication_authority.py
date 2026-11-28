@@ -559,6 +559,7 @@ class EntryPublicationTest(unittest.TestCase):
             self.assertEqual(result["meta"]["action_id"], 775)
             # A resolved scene target owns the final route even when the incoming
             # node still carries a stale action route.
+            self.assertEqual(result["route"], "/s/published.page")
             self.assertEqual(result["meta"]["route"], "/s/published.page")
             self.assertEqual(result["entry_target"]["scene_key"], "published.page")
             self.assertEqual(result["entry_target"]["compatibility_refs"]["model"], "test.document")

@@ -32,6 +32,154 @@ def _authority_pairs(authority: dict) -> set[tuple[int, int]]:
     return pairs
 
 
+def _reconcile_route_carriers(nav: list[dict]) -> None:
+    """Keep every route carrier on the final node route."""
+    for node in nav or []:
+        if not isinstance(node, dict):
+            continue
+        meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+        entry_target = (
+            node.get("entry_target")
+            if isinstance(node.get("entry_target"), dict)
+            else {}
+        )
+        route = str(
+            node.get("route")
+            or meta.get("route")
+            or entry_target.get("route")
+            or ""
+        ).strip()
+        scene_key = str(
+            node.get("scene_key")
+            or meta.get("scene_key")
+            or entry_target.get("scene_key")
+            or ""
+        ).strip()
+        if route:
+            node["route"] = route
+            meta["route"] = route
+            if entry_target:
+                next_target = dict(entry_target)
+                next_target["route"] = route
+                if scene_key:
+                    next_target["scene_key"] = scene_key
+                node["entry_target"] = next_target
+        if scene_key:
+            node["scene_key"] = scene_key
+            meta["scene_key"] = scene_key
+        if meta:
+            node["meta"] = meta
+        _reconcile_route_carriers(
+            node.get("children") if isinstance(node.get("children"), list) else []
+        )
+
+
+def _final_target_index(nav: list[dict]) -> tuple[dict[tuple[int, int], dict], dict[str, dict]]:
+    by_pair: dict[tuple[int, int], dict] = {}
+    by_scene: dict[str, dict] = {}
+
+    def remember(index: dict, key, row: dict, label: str) -> None:
+        existing = index.get(key)
+        if existing is not None and existing["route"] != row["route"]:
+            raise RuntimeError(
+                "conflicting final routes for %s %s: %s != %s"
+                % (label, key, existing["route"], row["route"])
+            )
+        index[key] = row
+
+    pending = list(nav or [])
+    index = 0
+    while index < len(pending):
+        node = pending[index]
+        index += 1
+        if not isinstance(node, dict):
+            continue
+        meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+        entry_target = (
+            node.get("entry_target")
+            if isinstance(node.get("entry_target"), dict)
+            else {}
+        )
+        try:
+            pair = (
+                int(node.get("menu_id") or meta.get("menu_id") or 0),
+                int(node.get("action_id") or meta.get("action_id") or 0),
+            )
+        except (TypeError, ValueError):
+            pair = (0, 0)
+        scene_key = str(
+            node.get("scene_key")
+            or meta.get("scene_key")
+            or entry_target.get("scene_key")
+            or ""
+        ).strip()
+        row = {
+            "route": str(
+                node.get("route")
+                or meta.get("route")
+                or entry_target.get("route")
+                or ""
+            ).strip(),
+            "scene_key": scene_key,
+            "entry_target": deepcopy(entry_target),
+        }
+        if pair != (0, 0) and row["route"]:
+            remember(by_pair, pair, row, "menu/action")
+        if scene_key and row["route"]:
+            remember(by_scene, scene_key, row, "scene")
+        pending.extend(
+            node.get("children") if isinstance(node.get("children"), list) else []
+        )
+    return by_pair, by_scene
+
+
+def _sync_scenario_surface_routes(surface: dict, nav: list[dict]) -> None:
+    """Project final routes onto the presentation-only scenario tree."""
+    by_pair, by_scene = _final_target_index(nav)
+    surface["nav"] = deepcopy(nav)
+    seen: set[int] = set()
+
+    def visit(value) -> None:
+        if isinstance(value, list):
+            marker = id(value)
+            if marker in seen:
+                return
+            seen.add(marker)
+            for item in value:
+                visit(item)
+            return
+        if not isinstance(value, dict):
+            return
+        marker = id(value)
+        if marker in seen:
+            return
+        seen.add(marker)
+        try:
+            pair = (
+                int(value.get("menu_id") or 0),
+                int(value.get("action_id") or 0),
+            )
+        except (TypeError, ValueError):
+            pair = (0, 0)
+        scene_key = str(value.get("scene_key") or "").strip()
+        target = by_pair.get(pair) if pair != (0, 0) else None
+        target = target or (by_scene.get(scene_key) if scene_key else None)
+        if target:
+            value["route"] = target["route"]
+            if target["scene_key"]:
+                value["scene_key"] = target["scene_key"]
+            if target["entry_target"]:
+                value["entry_target"] = deepcopy(target["entry_target"])
+        for key, child in value.items():
+            if key == "entry_target":
+                continue
+            visit(child)
+
+    tree = surface.get("tree")
+    if isinstance(tree, dict):
+        visit(tree)
+
+
 @dataclass(frozen=True)
 class NavigationContractCompilation:
     nav: list[dict]
@@ -147,6 +295,12 @@ class NavigationContractCompiler:
                 authority,
             )
         )
+        _reconcile_route_carriers(scenarioized_nav)
+        if isinstance(navigation.get("scenario_surface"), dict):
+            _sync_scenario_surface_routes(
+                navigation["scenario_surface"],
+                scenarioized_nav,
+            )
         navigation["product_policy"] = (
             self.menu_service.project_navigation_product_policy(
                 scenarioized_nav,
