@@ -94,8 +94,15 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("monetary input without a declared precision invents a frontend step")
     if "if (scale === undefined) {" not in authority:
         failures.append("monetary value without a declared precision does not preserve the unrounded value")
-    if "field.(float).digits" not in field_semantics:
-        failures.append("generic float formatting does not require declared digits")
+    if not re.search(
+        r"const hasDeclaredDigits\s*=\s*options\?\.digits\s*!==\s*undefined;",
+        field_semantics,
+    ):
+        failures.append("generic float formatting does not distinguish absent from invalid digits")
+    if "type === 'float' && hasDeclaredDigits && !validDeclaredScale" not in field_semantics:
+        failures.append("generic float formatting treats optional absent digits as a contract gap")
+    if re.search(r"fractionDigits[\s\S]{0,160}?:\s*2\s*;", field_semantics):
+        failures.append("generic float formatting still invents a fixed two-decimal precision")
     if "const text = String(row.display_name || row.label || row.name || '').trim();" in authority:
         failures.append("plain text still infers a business label from object shape")
     if "presentDeclaredBusinessValue" not in kanban_adapter:
@@ -108,6 +115,16 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("collection projection does not validate declared component identity through the semantic registry")
     if "['sc.value.duration', 'sc.value.percentage'].includes(declaredComponentKey)" in shape_runtime:
         failures.append("collection projection still hard-codes a partial component identity allowlist")
+    if "titleField: String(listProfile.primary_field || '').trim()" not in shape_runtime:
+        failures.append("Kanban title does not consume listProfile.primary_field")
+    if "titleField: String(profile.title_field || '').trim()" in shape_runtime:
+        failures.append("Kanban title still reads the superseded nested title_field")
+
+    worksheet = _read("components/action/HierarchicalWorksheet.vue", read_text)
+    if "temporal: field.temporal" not in worksheet:
+        failures.append("HierarchicalWorksheet drops the declared temporal authority")
+    if "digits: field.digits" not in worksheet:
+        failures.append("HierarchicalWorksheet drops the declared numeric precision")
 
     canonical_form = _read("pages/contractForm/canonicalFormRenderer.ts", read_text)
     if "function declaredSelectionOptions(field: CanonicalFormField)" not in canonical_form:

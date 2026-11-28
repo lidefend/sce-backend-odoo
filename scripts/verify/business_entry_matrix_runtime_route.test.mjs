@@ -136,6 +136,14 @@ check(
 check(
   sceneNavigationMatchesUrl(
     contextualScene,
+    'http://fixture.invalid/s/project.management?project_id=130&entry_intent=project.dashboard.enter',
+  ),
+  true,
+  'a declared tenant route is sufficient when the product route does not duplicate scene_key in the query',
+);
+check(
+  sceneNavigationMatchesUrl(
+    contextualScene,
     'http://fixture.invalid/t/demo/s/project.management?scene_key=project.management&project_id=130&entry_intent=project.dashboard.enter',
     'http://fixture.invalid/t/demo',
   ),

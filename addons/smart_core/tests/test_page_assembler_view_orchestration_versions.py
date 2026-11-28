@@ -684,7 +684,7 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assembler._inject_native_collection_presentation(data, context)
 
         presentation = data["views"]["tree"]["collection_presentation"]
-        self.assertTrue(presentation["enabled"])
+        self.assertTrue(presentation["enabled"], presentation.get("reason_code"))
         self.assertEqual(presentation["source"], "native_view_derived")
         config = presentation["config"]
         self.assertEqual(config["create"], {"enabled": True, "label": "新增定额项"})
@@ -859,6 +859,14 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
                 "currency_id": {"type": "many2one", "string": "Currency"},
                 "description": {"type": "char", "string": "Description"},
                 "row_kind": {"type": "selection", "string": "Row kind"},
+                "business_date": {
+                    "type": "date",
+                    "string": "Business date",
+                },
+                "occurred_at": {
+                    "type": "datetime",
+                    "string": "Occurred at",
+                },
             },
             "views": {
                 "tree": {
@@ -867,6 +875,8 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
                         {"name": "code", "label": "Code"},
                         {"name": "name", "label": "Name"},
                         {"name": "amount", "label": "Amount"},
+                        {"name": "business_date", "label": "Business date"},
+                        {"name": "occurred_at", "label": "Occurred at"},
                     ],
                     "toolbar": {"header": []},
                     "order": "code asc",
@@ -892,7 +902,11 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
                 "variance_field": "amount",
                 "variance_tolerance": 0.005,
                 "sheet_order": "source_index, sequence, id",
-                "tabs": [{"key": "detail", "label": "Detail", "fields": ["description", "amount"]}],
+                "tabs": [{
+                    "key": "detail",
+                    "label": "Detail",
+                    "fields": ["description", "amount", "business_date", "occurred_at"],
+                }],
                 "sheet_domain_tabs": [
                     {"key": "published", "label": "Published", "domain": [("state", "=", "published")]},
                     {"key": "editing", "domain": "not-a-list"},
@@ -901,16 +915,28 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
             },
         }
 
+        data["fields"] = self.assembler._to_fields_map([
+            {"name": name, **descriptor}
+            for name, descriptor in data["fields"].items()
+        ])
         self.assembler._inject_native_collection_presentation(data, context)
 
         presentation = data["views"]["tree"]["collection_presentation"]
-        self.assertTrue(presentation["enabled"])
+        self.assertTrue(presentation["enabled"], presentation.get("reason_code"))
         self.assertEqual(presentation["config"]["hierarchy"]["model"], "generic.hierarchy")
         self.assertEqual(presentation["config"]["sheet"]["binding_field"], "binding_id")
         self.assertEqual(presentation["config"]["sheet"]["columns"][2]["align"], "right")
         self.assertEqual(presentation["config"]["sheet"]["columns"][2]["precision"], 2)
         self.assertEqual(presentation["config"]["sheet"]["columns"][2]["digits"], [16, 2])
         self.assertEqual(presentation["config"]["sheet"]["columns"][2]["currency_field"], "currency_id")
+        self.assertEqual(
+            presentation["config"]["sheet"]["columns"][3]["temporal"],
+            {"kind": "date", "timezoneAuthority": "not_applicable"},
+        )
+        self.assertEqual(
+            presentation["config"]["sheet"]["columns"][4]["temporal"],
+            {"kind": "datetime", "timezoneAuthority": "user"},
+        )
         self.assertIn("currency_id", presentation["config"]["sheet"]["fields"])
         self.assertEqual(presentation["config"]["sheet"]["presentation_mode"], "source_order")
         self.assertEqual(presentation["config"]["sheet"]["row_kind_field"], "row_kind")
@@ -959,6 +985,14 @@ class PageAssemblerViewOrchestrationVersionTests(unittest.TestCase):
         self.assertEqual(detail_amount["precision"], 2)
         self.assertEqual(detail_amount["digits"], [16, 2])
         self.assertEqual(detail_amount["currency_field"], "currency_id")
+        self.assertEqual(
+            presentation["config"]["detail"]["tabs"][0]["fields"][2]["temporal"],
+            {"kind": "date", "timezoneAuthority": "not_applicable"},
+        )
+        self.assertEqual(
+            presentation["config"]["detail"]["tabs"][0]["fields"][3]["temporal"],
+            {"kind": "datetime", "timezoneAuthority": "user"},
+        )
         # sheet_domain_tabs（G7.3）：非法条目（key 缺失 / domain 非列表）剔除，label 缺省回退 key
         domain_tabs = presentation["config"]["sheet"]["domain_tabs"]
         self.assertEqual(len(domain_tabs), 2)

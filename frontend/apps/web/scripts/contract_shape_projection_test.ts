@@ -679,6 +679,22 @@ check(
   '',
   'non-Kanban views do not invent a title field',
 );
+const primaryFieldContract = {
+  snapshot: {
+    layoutContract: {
+      listProfile: {
+        primary_field: 'project_name',
+        kanban_profile: { primary_fields: ['manager_id'] },
+      },
+    },
+    actionContract: { surfacePolicies: {} },
+  },
+} as unknown as ContractV2NormalizedStore;
+check(
+  runtime.extractKanbanProfile(primaryFieldContract).titleField,
+  'project_name',
+  'Kanban title consumes the declared list-profile primary field',
+);
 for (const [hint, fields] of [
   ['', ['name', 'display_name']],
   ['missing_title', ['name', 'display_name']],
@@ -686,7 +702,7 @@ for (const [hint, fields] of [
   assert.throws(
     () => resolveDeclaredKanbanTitleField(hint, fields),
     (error: unknown) => isContractGapError(error)
-      && error.defect.missing === 'list_profile.kanban_profile.title_field',
+      && error.defect.missing === 'list_profile.primary_field',
     'Kanban must stop instead of falling back to name/display_name/first field/id',
   );
 }

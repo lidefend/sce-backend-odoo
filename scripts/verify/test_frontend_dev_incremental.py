@@ -1602,6 +1602,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
             "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
             "scripts/verify/frontend_business_semantics_guard.py",
+            "addons/smart_core/utils/contract_governance_field_semantics.py",
             "scripts/verify/frontend_localized_display_contract_test.ts",
             "scripts/verify/frontend_collection_status_presentation.test.mjs",
         ):

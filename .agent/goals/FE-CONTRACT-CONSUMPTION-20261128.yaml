@@ -1,0 +1,42 @@
+schema_version: 1
+goal:
+  id: FE-CONTRACT-CONSUMPTION-20261128
+  status: active
+  title: Align frontend presentation with the current runtime contract
+  objective: >-
+    Remove three proven frontend contract-consumption mismatches found in the
+    persisted mainline walkthrough: generic float fields must not acquire a
+    synthetic required precision, hierarchical worksheets must transport and
+    consume the declared temporal semantics, and Kanban titles must consume
+    listProfile.primary_field.
+  formal_product_layer: P0
+  layer_target: ui.contract.v2 field projection and generic frontend presentation consumers
+  module:
+    - smart_core
+    - frontend
+  standard_vs_user_specific: platform mechanism
+  why_here: >-
+    The field descriptor schema and page assembler own contract projection;
+    the generic presentation runtime owns faithful frontend consumption.
+  why_not_elsewhere: >-
+    The defects are not P1 industry data, acceptance fixtures, role data,
+    permissions, or customer configuration. Changing those layers would hide
+    the consumer defects instead of repairing the owning mechanism.
+  blast_radius:
+    - generic float display in collection and record presentation
+    - hierarchical worksheet sheet columns and detail-tab fields
+    - date and datetime display semantics
+    - Kanban card title selection
+  exclusions:
+    - permission, ACL, role, company or data-rule changes
+    - business data, fixture data or initialization writes
+    - acceptance matrix timeout tuning
+    - P1/P2 business semantics or customer configuration
+    - direct main mutation or deployment authorization expansion
+  acceptance:
+    - A generic float with no digits renders without claiming a contract gap and without inventing a fixed two-decimal precision.
+    - Percentage and duration precision requirements remain fail-closed.
+    - Worksheet columns and detail fields receive temporal descriptors from the page assembler.
+    - Worksheet date and datetime values consume temporal kind and timezone authority.
+    - Kanban title selection consumes listProfile.primary_field and does not infer a field from display position or common field names.
+    - Focused tests are non-zero and pass before affected browser revalidation.
