@@ -1,0 +1,95 @@
+{
+  "schema_version": 2,
+  "id": "P0-ENTERPRISE-RECORD-ENTRY-20261128",
+  "branch": "fix/p0-enterprise-record-entry-20261128",
+  "status": "active",
+  "baseline_sha": "92016d60251f94a9048daf7cd8fe834e00f97574",
+  "goal": ".agent/goals/P0-ENTERPRISE-RECORD-ENTRY-20261128.yaml",
+  "record": "docs/ops/iterations/p0_enterprise_record_entry_20261128.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P0-ENTERPRISE-RECORD-ENTRY-20261128.yaml",
+    ".agent/runs/P0-ENTERPRISE-RECORD-ENTRY-20261128/run.json",
+    "addons/smart_core/core/extension_hook_contracts.py",
+    "addons/smart_core/delivery/native_config_menu_projection.py",
+    "addons/smart_construction_scene/__init__.py",
+    "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_scene/scene_registry.py",
+    "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+    "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/p0_enterprise_record_entry_20261128.md",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no persistent data or deployment write"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Affected scene projection and enterprise initialization contract tests"
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The producer change must be integrated separately from frontend PR 1019"
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "release full audit",
+      "reason": "No deployment or release is requested by this batch"
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "The frontend must consume the explicit record_entry produced by this backend contract."
+    }
+  },
+  "checks": {
+    "scene_action_supply": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "inputs": [
+        "addons/smart_construction_scene/scene_registry.py",
+        "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py"
+      ],
+      "kind": "offline"
+    },
+    "company_route_scope": {
+      "target": "verify.scene.company_route_scope_cache.orm",
+      "inputs": [
+        "addons/smart_construction_scene/scene_registry.py",
+        "addons/smart_construction_scene/tests/test_company_route_scope_cache.py"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the P0/P1 producer candidate and publish it as an independent PR; then provide its exact-handoff receipt to the frontend run.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "evidence": {
+    "local_iteration": {
+      "status": "passed",
+      "head": "92016d60251f94a9048daf7cd8fe834e00f97574",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261128T014323Z-1789915-255425642/receipt.json",
+      "receipt_sha256": "d766ea3c8ec975165c85e04a9cab2a0a11e21d22c29e34b17b998ae74e1bc253",
+      "executed_targets": 15,
+      "test_count": 535,
+      "static_checks": 3,
+      "unmapped_paths": 0,
+      "channel_handoff_required": false
+    },
+    "facts_verified": [
+      "enterprise initialization scopes its target to env.company.id",
+      "system.init nav and route authority publish entry_target.record_entry model=res.company for the authenticated current company",
+      "normal business scene targets without record_id remain unchanged",
+      "the native config action hook is declared under the extension hook contract and passes authority/lifecycle tests"
+    ]
+  }
+}

@@ -121,6 +121,10 @@ class TestCompanyRouteScopeCache(TransactionCase):
         row = scene_registry._derive_native_config_scene(self.env)
         self.assertEqual(row.get("code"), "enterprise.setup")
         self.assertEqual(
+            row.get("target", {}).get("record_id"),
+            self.env.company.id,
+        )
+        self.assertEqual(
             row.get("enablement_scope"),
             "enterprise_initialization",
         )
@@ -165,16 +169,30 @@ class TestCompanyRouteScopeCache(TransactionCase):
             and row.get("action_xmlid") == action_xmlid
         ]
         self.assertEqual(len(initialize_rows), 1)
+        self.assertEqual(
+            ((initialize_rows[0].get("entry_target") or {}).get("record_entry") or {}).get("model"),
+            "res.company",
+        )
+        self.assertEqual(
+            ((initialize_rows[0].get("entry_target") or {}).get("record_entry") or {}).get("record_id"),
+            self.env.company.id,
+        )
         nav_rows = []
         pending = list(admitted.payload["nav"] or [])
         while pending:
             node = pending.pop(0)
             nav_rows.append(node)
             pending.extend(node.get("children") or [])
-        self.assertTrue(any(
-            (node.get("meta") or {}).get("menu_xmlid") == menu_xmlid
-            for node in nav_rows
-        ))
+        initialize_nodes = [
+            node for node in nav_rows
+            if (node.get("meta") or {}).get("menu_xmlid") == menu_xmlid
+        ]
+        self.assertEqual(len(initialize_nodes), 1)
+        self.assertEqual(
+            (((initialize_nodes[0].get("meta") or {}).get("entry_target") or {})
+             .get("record_entry") or {}).get("record_id"),
+            self.env.company.id,
+        )
 
         ordinary = self.env["res.users"].with_context(no_reset_password=True).create({
             "name": "Initialization route ordinary user",

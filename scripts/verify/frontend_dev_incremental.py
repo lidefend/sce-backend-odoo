@@ -1039,6 +1039,7 @@ RULES = (
         "addons/smart_core/tests/test_system_init_payload_builder_semantics.py",
         "addons/smart_core/tests/test_navigation_entry_target.py",
         "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_core/delivery/native_config_menu_projection.py",
         "addons/smart_core/tests/test_navigation_contract_compiler.py",
         "addons/smart_core/tests/test_native_config_menu_projection.py",
         "addons/smart_core/tests/test_relation_entry_contract.py",

@@ -6,6 +6,7 @@ from typing import Any
 from odoo.addons.smart_construction_scene import scene_registry
 from odoo.addons.smart_construction_core.services import role_surface_contract as _role_surface_contract
 from odoo.addons.smart_construction_core.services import role_catalog_contract as _role_catalog_contract
+from odoo.addons.smart_core.core.navigation_entry_target import build_scene_entry_target
 
 ROLE_SURFACE_OVERRIDES = {
     "business_config_admin": {
@@ -615,6 +616,29 @@ def smart_core_critical_scene_target_overrides(env):
 def smart_core_critical_scene_target_route_overrides(env):
     del env
     return dict(CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES)
+
+
+def smart_core_native_config_action_entry_target(env, action, menu_id):
+    """Bind enterprise initialization to the authenticated company record."""
+    expected = env.ref(
+        "smart_construction_core.action_sc_enterprise_initialization",
+        raise_if_not_found=False,
+    )
+    if not expected or int(getattr(action, "id", 0) or 0) != int(expected.id):
+        return None
+    model = str(getattr(action, "res_model", "") or "").strip()
+    if model != "res.company":
+        return None
+    return build_scene_entry_target(
+        env=env,
+        scene_key="enterprise.setup",
+        menu_id=menu_id,
+        action_id=action.id,
+        model=model,
+        view_modes=["form"],
+        record_id=env.company.id,
+        entry_intent="explicit_readonly",
+    )
 
 
 def smart_core_delivery_scene_declarations(env, *, request_context=None):

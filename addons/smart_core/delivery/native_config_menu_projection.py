@@ -107,7 +107,7 @@ def _subtree_menu_ids(root) -> set[int]:
     return ids
 
 
-def _action_payload(menu: Any) -> dict[str, Any]:
+def _action_payload(env, menu: Any) -> dict[str, Any]:
     action = getattr(menu, "action", None)
     # The menu has already passed current-user visibility filtering. Action
     # metadata is projection input, so reading a concrete subtype must not
@@ -141,19 +141,28 @@ def _action_payload(menu: Any) -> dict[str, Any]:
         )
         if declared_target:
             payload.update(declared_target)
+        declared_record_target = call_extension_hook_first(
+            env,
+            "smart_core_native_config_action_entry_target",
+            env,
+            action,
+            menu_id,
+        )
+        if isinstance(declared_record_target, dict):
+            payload.update(declared_record_target)
     return payload
 
 
-def _build_config_node(menu: Any, visible_ids: set[int]) -> dict[str, Any] | None:
+def _build_config_node(env, menu: Any, visible_ids: set[int]) -> dict[str, Any] | None:
     menu_id = int(getattr(menu, "id", 0) or 0)
     if menu_id not in visible_ids:
         return None
     children = []
     for child in menu.child_id.sorted(lambda row: (row.sequence or 10, row.name or "")):
-        node = _build_config_node(child, visible_ids)
+        node = _build_config_node(env, child, visible_ids)
         if node:
             children.append(node)
-    target = _action_payload(menu)
+    target = _action_payload(env, menu)
     if not children and not target.get("action_id"):
         return None
     meta = {
@@ -203,7 +212,7 @@ def native_config_app_children(env) -> list[dict[str, Any]]:
         visible_ids.update(_subtree_menu_ids(root))
     rows = []
     for child in root.child_id.sorted(lambda row: (row.sequence or 10, row.name or "")):
-        node = _build_config_node(child, visible_ids)
+        node = _build_config_node(env, child, visible_ids)
         if node:
             rows.append(node)
     return rows
