@@ -2664,13 +2664,16 @@ class TestUserFeedbackBusinessViews(BusinessTransactionCase):
         walk(payload.get("nav") or [])
         self.assertTrue(certificate_node, {"role": result.role_surface.get("role_code"), "nav_roots": len(payload.get("nav") or []), "release": result.release_gate.get("reason")})
         certificate_meta = certificate_node.get("meta") or {}
-        certificate_entry = certificate_meta.get("entry_target") or {}
+        certificate_entry = certificate_node.get("entry_target") or {}
         menu = self.env.ref("smart_construction_core.menu_sc_tax_certificate_registration_user")
-        action = self.env.ref("smart_construction_core.action_sc_tax_certificate_registration_user")
-        expected_route = "/a/%s?menu_id=%s" % (action.id, menu.id)
+        expected_scene_key = "entry.%s" % menu.get_external_id()[menu.id]
+        expected_route = "/s/%s" % expected_scene_key
+        self.assertEqual(certificate_node.get("scene_key"), expected_scene_key)
         self.assertEqual(certificate_node.get("route"), expected_route)
         self.assertEqual(certificate_meta.get("route"), expected_route)
         self.assertEqual(certificate_meta.get("menu_id"), menu.id)
+        self.assertEqual(certificate_entry.get("type"), "scene")
+        self.assertEqual(certificate_entry.get("scene_key"), expected_scene_key)
         self.assertEqual((certificate_entry.get("compatibility_refs") or {}).get("menu_id"), menu.id)
 
     def test_product_menu_business_domains_are_released_as_formal_capabilities(self):

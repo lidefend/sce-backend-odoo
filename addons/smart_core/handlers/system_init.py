@@ -94,9 +94,6 @@ from odoo.addons.smart_core.core.ui_base_contract_asset_repository import bind_s
 from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
 from odoo.addons.smart_core.delivery.effective_delivery_service import EffectiveDeliveryService
 from odoo.addons.smart_core.delivery.menu_service import MenuService
-from odoo.addons.smart_core.delivery.navigation_contract_compiler import (
-    NavigationContractCompiler,
-)
 from odoo.addons.smart_core.delivery.scene_shell_compiler import SceneShellCompiler
 from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
 from odoo.addons.smart_core.delivery.release_audit_trail_service import ReleaseAuditTrailService
@@ -1854,58 +1851,33 @@ class SystemInitHandler(BaseIntentHandler):
             pass
         data = _normalize_access_suggested_action(data)
         data["record_context"] = build_record_context_contract(env, params)
-        _route_company_id = int(
-            (data.get("record_context") or {}).get("company_id")
-            or env.company.id
-        )
-        _designed_scene_keys = {
-            _text(row.get("code") or row.get("key"))
-            for row in (data.get("scenes") or [])
-            if isinstance(row, dict) and _text(row.get("code") or row.get("key"))
-        }
-        _scene_ready_before_shell = (
-            data.get("scene_ready_contract")
-            if isinstance(data.get("scene_ready_contract"), dict)
+        _compiled_navigation = (
+            delivery_payload.get("navigation")
+            if isinstance(delivery_payload.get("navigation"), dict)
             else {}
         )
-        _designed_scene_keys.update(
-            _text(
-                (row.get("scene") or {}).get("key")
-                if isinstance(row.get("scene"), dict)
-                else ""
-            )
-            for row in (_scene_ready_before_shell.get("scenes") or [])
-            if isinstance(row, dict)
-            and _text(
-                (row.get("scene") or {}).get("key")
-                if isinstance(row.get("scene"), dict)
-                else ""
-            )
+        _compiled_nav = _compiled_navigation.get("nav")
+        if not isinstance(_compiled_nav, list):
+            raise RuntimeError("canonical navigation is unavailable")
+        _scene_shells = (
+            delivery_payload.get("scene_shells")
+            if isinstance(delivery_payload.get("scene_shells"), list)
+            else []
         )
-        _compiled_navigation = NavigationContractCompiler(
-            delivery_engine.menu_service,
-            scenario_surface_provider=lambda current_nav, current_authority: call_extension_hook_first(
-                env,
-                "smart_core_scenario_surface_projection",
-                env,
-                current_nav,
-                current_authority,
-                request_context=request_context,
-            ),
-            action_pair_walker=MenuService._walk_nav_action_refs,
-        ).compile(
-            nav=data.get("nav"),
-            delivery_payload=delivery_payload,
-            company_id=_route_company_id,
-            designed_scene_keys=_designed_scene_keys,
-            effective_authority=effective_delivery.route_authority,
-        )
-        data["nav"] = _compiled_navigation.nav
-        data["navigation"] = _compiled_navigation.navigation
+        data["nav"] = _compiled_nav
+        data["navigation"] = _compiled_navigation
         data["scene_ready_contract"] = SceneShellCompiler.merge_scene_ready_contract(
             data.get("scene_ready_contract"),
-            _compiled_navigation.scene_shells,
+            _scene_shells,
         )
+        _consumer_nav, _consumer_scene_ready = SceneShellCompiler.normalize_consumer_target_carriers(
+            data["nav"],
+            data["scene_ready_contract"],
+        )
+        data["nav"] = _consumer_nav
+        if isinstance(data["navigation"], dict):
+            data["navigation"]["nav"] = _consumer_nav
+        data["scene_ready_contract"] = _consumer_scene_ready
         for _removed_navigation_carrier in (
             "nav",
             "nav_role_surface",

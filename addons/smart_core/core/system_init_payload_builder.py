@@ -156,7 +156,7 @@ class SystemInitPayloadBuilder:
                 record_id=meta.get("record_id") if isinstance(meta.get("record_id"), int) else None,
             )
             if entry_target:
-                meta["entry_target"] = entry_target
+                row["entry_target"] = entry_target
             row["meta"] = meta
             normalized.append(row)
         return normalized

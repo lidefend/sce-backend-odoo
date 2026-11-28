@@ -1,0 +1,32 @@
+schema_version: 1
+goal:
+  id: P0-ENTERPRISE-RECORD-ENTRY-20261128
+  title: Bind enterprise initialization to the authenticated company record
+  status: active
+  formal_product_layer: P0 generic record-entry publication; P1 construction enterprise initialization default
+  layer_target: enterprise initialization scene target and formal entry_target.record_entry projection
+  module:
+    - smart_core
+    - smart_construction_scene
+  standard_vs_user_specific: standard_platform_mechanism_and_construction_product_default
+  objective: >-
+    Publish the current authenticated company record identity and formal record entry
+    for the enterprise-initialization navigation target so the frontend can route to
+    the exact record without evaluating a domain or inventing a create route.
+  why_here: >-
+    The generic record-entry carrier is owned by P0, while the decision that enterprise
+    initialization targets the current company is a standard construction product default.
+  why_not_elsewhere:
+    - Do not add frontend domain evaluation or company-ID special cases.
+    - Do not change ACLs, record rules, roles, or initialization business operations.
+    - Do not add a parallel navigation or contract engine.
+  blast_radius:
+    behavior:
+      - enterprise initialization navigation target carries record_id=env.company.id
+      - system.init projects the existing record_entry carrier
+      - ordinary scene targets without record_id remain unchanged
+    exclusions:
+      - payment and approval transactions
+      - frontend contract caching
+      - deployment
+  rollback: Revert the target record_id and its focused tests; no persistent data migration.

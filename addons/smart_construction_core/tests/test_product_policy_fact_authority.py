@@ -33,7 +33,13 @@ class TestProductPolicyFactAuthority(TransactionCase):
         for gate in ({}, {"fail_closed": True, "reason": "TEST_RELEASE_DENIED"}):
             with self.subTest(gate=gate), patch.object(effective_delivery_service, "_load_platform_release_gate", return_value=gate):
                 result = service.resolve()
-                self.assertTrue(result.payload["nav"])
+                self.assertTrue(
+                    result.payload["nav"],
+                    {
+                        "route_authority": result.route_authority,
+                        "navigation": result.payload.get("navigation"),
+                    },
+                )
                 self.assertTrue(published_pairs(result.route_authority))
                 self.assertFalse(any(action for _, action in published_pairs(result.route_authority)))
                 self.assertTrue(any(row.get("entry_target", {}).get("scene_key") == "workspace.home"

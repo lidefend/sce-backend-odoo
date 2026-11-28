@@ -130,7 +130,10 @@ class NavigationContractCompiler:
             navigation["scenario_surface"] = scenario_surface
             provided_nav = scenario_surface.get("nav")
             if isinstance(provided_nav, list):
-                scenarioized_nav = provided_nav
+                # Business composition may have no centers for a restricted
+                # principal, but it must not erase an already-authorized
+                # platform landing leaf from the final scene surface.
+                scenarioized_nav = provided_nav or nav
 
         scene_shells = self.scene_shell_compiler.compile(
             scenarioized_nav,

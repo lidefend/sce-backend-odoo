@@ -107,7 +107,7 @@ def _subtree_menu_ids(root) -> set[int]:
     return ids
 
 
-def _action_payload(menu: Any) -> dict[str, Any]:
+def _action_payload(env, menu: Any) -> dict[str, Any]:
     action = getattr(menu, "action", None)
     # The menu has already passed current-user visibility filtering. Action
     # metadata is projection input, so reading a concrete subtype must not
@@ -141,19 +141,28 @@ def _action_payload(menu: Any) -> dict[str, Any]:
         )
         if declared_target:
             payload.update(declared_target)
+        declared_record_target = call_extension_hook_first(
+            env,
+            "smart_core_native_config_action_entry_target",
+            env,
+            action,
+            menu_id,
+        )
+        if isinstance(declared_record_target, dict):
+            payload.update(declared_record_target)
     return payload
 
 
-def _build_config_node(menu: Any, visible_ids: set[int]) -> dict[str, Any] | None:
+def _build_config_node(env, menu: Any, visible_ids: set[int]) -> dict[str, Any] | None:
     menu_id = int(getattr(menu, "id", 0) or 0)
     if menu_id not in visible_ids:
         return None
     children = []
     for child in menu.child_id.sorted(lambda row: (row.sequence or 10, row.name or "")):
-        node = _build_config_node(child, visible_ids)
+        node = _build_config_node(env, child, visible_ids)
         if node:
             children.append(node)
-    target = _action_payload(menu)
+    target = _action_payload(env, menu)
     if not children and not target.get("action_id"):
         return None
     meta = {
@@ -164,7 +173,6 @@ def _build_config_node(menu: Any, visible_ids: set[int]) -> dict[str, Any] | Non
         "menu_id": menu_id,
         "menu_xmlid": _xmlid(menu),
         "open": target,
-        "entry_target": target,
         "route": target.get("route"),
         "source": SOURCE_KIND,
         "source_authority": source_authority_contract(),
@@ -191,6 +199,15 @@ def _build_config_node(menu: Any, visible_ids: set[int]) -> dict[str, Any] | Non
         node["route"] = target.get("route")
     if target.get("action_id"):
         node["action_id"] = target.get("action_id")
+    entry_target = (
+        target.get("entry_target")
+        if isinstance(target.get("entry_target"), dict)
+        else target
+        if str(target.get("type") or "").strip()
+        else {}
+    )
+    if isinstance(entry_target, dict) and entry_target:
+        node["entry_target"] = dict(entry_target)
     return node
 
 
@@ -203,7 +220,7 @@ def native_config_app_children(env) -> list[dict[str, Any]]:
         visible_ids.update(_subtree_menu_ids(root))
     rows = []
     for child in root.child_id.sorted(lambda row: (row.sequence or 10, row.name or "")):
-        node = _build_config_node(child, visible_ids)
+        node = _build_config_node(env, child, visible_ids)
         if node:
             rows.append(node)
     return rows
@@ -228,6 +245,7 @@ def _node_to_delivery_menu(
     route = _text(node.get("route") or meta.get("route"))
     action_id = meta.get("action_id") or node.get("action_id")
     model = _text(meta.get("model"))
+    entry_target = node.get("entry_target") if isinstance(node.get("entry_target"), dict) else {}
     if not action_id and not model:
         return None
     visible_path_parts = [_text(item) for item in (path_labels or []) if _text(item)]
@@ -237,7 +255,7 @@ def _node_to_delivery_menu(
         "label": label,
         "menu_id": menu_id,
         "route": route,
-        "scene_key": "",
+        "scene_key": _text(entry_target.get("scene_key")),
         "product_key": "",
         "capability_key": "",
         "menu_xmlid": menu_xmlid,
@@ -245,7 +263,7 @@ def _node_to_delivery_menu(
         "action_id": action_id,
         "action_xmlid": _text(meta.get("action_xmlid")),
         "model": model,
-        "entry_target": meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {},
+        "entry_target": entry_target,
         "view_modes": meta.get("view_modes") if isinstance(meta.get("view_modes"), list) else [],
         "delivery_bucket": "delivery_business_config",
         "visible_menu_path": " / ".join(visible_path_parts),

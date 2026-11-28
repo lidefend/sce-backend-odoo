@@ -568,12 +568,16 @@ class MenuService:
             "context_requirements": {},
             "source": source,
         }
-        declared_target = build_web_surface_entry_target(
-            action_meta.get("context"),
-            menu_id=menu_id,
-            action_id=action_id,
-            model=model_name,
-            view_modes=view_modes,
+        declared_target = (
+            row.get("entry_target")
+            if isinstance(row.get("entry_target"), dict)
+            else build_web_surface_entry_target(
+                action_meta.get("context"),
+                menu_id=menu_id,
+                action_id=action_id,
+                model=model_name,
+                view_modes=view_modes,
+            )
         )
         if declared_target:
             entry["entry_target"] = declared_target
@@ -640,12 +644,16 @@ class MenuService:
             "context_requirements": dict(row.get("context_requirements") or {}),
             "source": str(row.get("source") or "role_surface.route_authority").strip(),
         }
-        declared_target = build_web_surface_entry_target(
-            action.context,
-            menu_id=menu_id,
-            action_id=int(action.id),
-            model=str(action.res_model or "").strip(),
-            view_modes=view_modes,
+        declared_target = (
+            row.get("entry_target")
+            if isinstance(row.get("entry_target"), dict)
+            else build_web_surface_entry_target(
+                action.context,
+                menu_id=menu_id,
+                action_id=int(action.id),
+                model=str(action.res_model or "").strip(),
+                view_modes=view_modes,
+            )
         )
         if declared_target:
             entry["entry_target"] = declared_target
@@ -741,6 +749,11 @@ class MenuService:
                     "allowed_operation": "read",
                     "required_capability": str(meta.get("capability_key") or "menu_action_read").strip(),
                     "context_requirements": {},
+                    "entry_target": (
+                        dict(node["entry_target"])
+                        if isinstance(node.get("entry_target"), dict)
+                        else {}
+                    ),
                     "source": "delivery_engine.released_policy_nav",
                 }
             yield from MenuService._walk_nav_action_specs(node.get("children") or [])
@@ -771,11 +784,7 @@ class MenuService:
             except (TypeError, ValueError):
                 pair = (0, 0)
             if pair[1] > 0:
-                entry_target = (
-                    node.get("entry_target") if isinstance(node.get("entry_target"), dict)
-                    else meta.get("entry_target") if isinstance(meta.get("entry_target"), dict)
-                    else {}
-                )
+                entry_target = node.get("entry_target") if isinstance(node.get("entry_target"), dict) else {}
                 scene_key = str(
                     node.get("scene_key")
                     or meta.get("scene_key")
@@ -809,7 +818,16 @@ class MenuService:
             for index, entry in enumerate(authority.get(bucket) or []):
                 key = f"route-publication:{bucket}:{index}"
                 originals[key] = (bucket, entry)
-                nodes.append({"key": key, "menu_id": entry.get("menu_id"), "meta": dict(entry)})
+                nodes.append({
+                    "key": key,
+                    "menu_id": entry.get("menu_id"),
+                    "entry_target": (
+                        dict(entry["entry_target"])
+                        if isinstance(entry.get("entry_target"), dict)
+                        else {}
+                    ),
+                    "meta": dict(entry),
+                })
         retained = {node["key"] for node in filter_nodes(nodes)}
         result = {**authority, **{bucket: [] for bucket in buckets},
                   "denied_actions": list(authority.get("denied_actions") or [])}
@@ -904,13 +922,7 @@ class MenuService:
             if not isinstance(node, dict):
                 return None
             meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-            entry_target = (
-                node.get("entry_target")
-                if isinstance(node.get("entry_target"), dict)
-                else meta.get("entry_target")
-                if isinstance(meta.get("entry_target"), dict)
-                else {}
-            )
+            entry_target = node.get("entry_target") if isinstance(node.get("entry_target"), dict) else {}
             try:
                 menu_id = MenuService._node_route_menu_id(node)
                 action_id = int(node.get("action_id") or meta.get("action_id") or 0)
@@ -937,7 +949,6 @@ class MenuService:
                     target_payload = authorized_target.get("entry_target")
                     if isinstance(target_payload, dict) and target_payload:
                         candidate["entry_target"] = dict(target_payload)
-                        candidate_meta["entry_target"] = dict(target_payload)
                     target_route = str(authorized_target.get("route") or "").strip()
                     if target_route:
                         candidate["route"] = target_route
@@ -1152,6 +1163,7 @@ class MenuService:
         """
         authority = route_authority if isinstance(route_authority, dict) else {}
         targets: dict[tuple[int, int], dict] = {}
+        action_authority_by_pair: dict[tuple[int, int], dict] = {}
         container_authority_by_menu: dict[int, dict] = {}
         declared_authority_by_menu: dict[int, dict] = {}
         for row in authority.get("menu_containers") or []:
@@ -1184,26 +1196,27 @@ class MenuService:
                     and row.get("entry_target")
                 ):
                     declared_authority_by_menu.setdefault(menu_id, row)
+                elif menu_id > 0 and action_id > 0:
+                    action_authority_by_pair.setdefault((menu_id, action_id), row)
 
         def walk(node: dict) -> dict:
             candidate = dict(node)
             meta = dict(candidate.get("meta") if isinstance(candidate.get("meta"), dict) else {})
-            entry_target = (
-                candidate.get("entry_target")
-                if isinstance(candidate.get("entry_target"), dict)
-                else meta.get("entry_target")
-                if isinstance(meta.get("entry_target"), dict)
-                else {}
-            )
+            entry_target = candidate.get("entry_target") if isinstance(candidate.get("entry_target"), dict) else {}
             try:
                 menu_id = MenuService._node_route_menu_id(candidate)
                 action_id = int(candidate.get("action_id") or meta.get("action_id") or 0)
             except (TypeError, ValueError):
                 menu_id, action_id = 0, 0
+            authority_target = action_authority_by_pair.get((menu_id, action_id)) or {}
+            if not entry_target and isinstance(authority_target.get("entry_target"), dict):
+                entry_target = authority_target["entry_target"]
+                candidate["entry_target"] = dict(entry_target)
             scene_key = str(
                 candidate.get("scene_key")
                 or meta.get("scene_key")
                 or entry_target.get("scene_key")
+                or authority_target.get("scene_key")
                 or ""
             ).strip()
             surface = str(entry_target.get("surface") or "").strip()
@@ -1249,7 +1262,6 @@ class MenuService:
                 next_target = dict(entry_target)
                 next_target["route"] = route
                 candidate["entry_target"] = next_target
-                meta["entry_target"] = next_target
             elif scene_key:
                 next_target = build_scene_entry_target(
                     scene_key=scene_key,
@@ -1268,12 +1280,10 @@ class MenuService:
                     if entry_target.get(keep) not in (None, "", [], {}):
                         next_target[keep] = entry_target[keep]
                 candidate["entry_target"] = next_target
-                meta["entry_target"] = next_target
             elif surface and entry_target:
                 next_target = dict(entry_target)
                 next_target["route"] = route
                 candidate["entry_target"] = next_target
-                meta["entry_target"] = next_target
             if route:
                 candidate["route"] = route
                 meta["route"] = route
@@ -1294,7 +1304,6 @@ class MenuService:
                         for key, value in candidate["entry_target"].items()
                         if key != "route"
                     }
-                    meta["entry_target"] = dict(candidate["entry_target"])
                 canonical = (
                     dict(candidate.get("canonical_navigation"))
                     if isinstance(candidate.get("canonical_navigation"), dict)
@@ -1377,13 +1386,7 @@ class MenuService:
                     action_id = int(node.get("action_id") or meta.get("action_id") or 0)
                 except (TypeError, ValueError):
                     action_id = 0
-                entry_target = (
-                    node.get("entry_target")
-                    if isinstance(node.get("entry_target"), dict)
-                    else meta.get("entry_target")
-                    if isinstance(meta.get("entry_target"), dict)
-                    else {}
-                )
+                entry_target = node.get("entry_target") if isinstance(node.get("entry_target"), dict) else {}
                 scene_key = str(
                     node.get("scene_key")
                     or meta.get("scene_key")
@@ -1826,13 +1829,7 @@ class MenuService:
             if not isinstance(node, dict):
                 return
             meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-            entry_target = (
-                node.get("entry_target")
-                if isinstance(node.get("entry_target"), dict)
-                else meta.get("entry_target")
-                if isinstance(meta.get("entry_target"), dict)
-                else {}
-            )
+            entry_target = node.get("entry_target") if isinstance(node.get("entry_target"), dict) else {}
             children = [child for child in node.get("children") or [] if isinstance(child, dict)]
             scene_key = str(
                 node.get("scene_key") or meta.get("scene_key") or entry_target.get("scene_key") or ""
@@ -2851,12 +2848,12 @@ class MenuService:
                 "source": "delivery_engine",
                 "source_authority": self.source_authority_contract(),
             }
-            for field in ("action_id", "action_xmlid", "model", "view_modes", "entry_target"):
+            for field in ("action_id", "action_xmlid", "model", "view_modes"):
                 value = integration_meta.get(field)
                 if value not in (None, "", []):
                     group_meta[field] = value
             route = ""
-            entry_target = group_meta.get("entry_target") if isinstance(group_meta.get("entry_target"), dict) else {}
+            entry_target = integration_meta.get("entry_target") if isinstance(integration_meta.get("entry_target"), dict) else {}
             if entry_target:
                 route = str(entry_target.get("route") or "").strip()
                 if route:
@@ -2870,10 +2867,12 @@ class MenuService:
                 "meta": group_meta,
                 "configurable": False,
             }
-            for field in ("action_id", "action_xmlid", "model", "view_modes", "entry_target", "route"):
+            for field in ("action_id", "action_xmlid", "model", "view_modes", "route"):
                 value = group_meta.get(field)
                 if value not in (None, "", []):
                     node[field] = value
+            if entry_target:
+                node["entry_target"] = dict(entry_target)
             if sequence > 0:
                 node["sequence"] = sequence
                 group_meta["sequence"] = sequence
@@ -3024,7 +3023,7 @@ class MenuService:
                     "action_xmlid": str(meta.get("action_xmlid") or leaf.get("action_xmlid") or ""),
                     "model": str(meta.get("model") or leaf.get("model") or ""),
                     "sequence": self._positive_int(leaf.get("sequence") or meta.get("sequence")),
-                    "entry_target": meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {},
+                    "entry_target": leaf.get("entry_target") if isinstance(leaf.get("entry_target"), dict) else {},
                     "view_modes": (
                         meta.get("view_modes")
                         if isinstance(meta.get("view_modes"), list)

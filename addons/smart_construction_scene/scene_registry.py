@@ -316,6 +316,7 @@ def _derive_native_config_scene(env):
             "action_xmlid": "smart_construction_core.action_sc_enterprise_initialization",
             "model": str(action.res_model or "").strip(),
             "view_type": "form",
+            "record_id": int(getattr(env.company, "id", 0) or 0),
         },
         "extensions": {
             "native_handling_entry_source": {

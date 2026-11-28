@@ -289,7 +289,7 @@ def _load_platform_release_gate(env, *, product_key: str) -> dict:
 
 def _node_release_gate_keys(node: dict) -> set[str]:
     meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-    entry_target = meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {}
+    entry_target = node.get("entry_target") if isinstance(node.get("entry_target"), dict) else {}
     compatibility_refs = entry_target.get("compatibility_refs") if isinstance(entry_target.get("compatibility_refs"), dict) else {}
     values = {
         _text(node.get("key")),
@@ -330,7 +330,7 @@ def _node_is_user_acceptance_surface(node: dict, *, acceptance_matchers: dict | 
     surface_menu_ids = matchers.get("menu_ids") if isinstance(matchers.get("menu_ids"), set) else set()
     surface_action_ids = matchers.get("action_ids") if isinstance(matchers.get("action_ids"), set) else set()
     meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-    entry_target = meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {}
+    entry_target = node.get("entry_target") if isinstance(node.get("entry_target"), dict) else {}
     compatibility_refs = entry_target.get("compatibility_refs") if isinstance(entry_target.get("compatibility_refs"), dict) else {}
     menu_id = node.get("menu_id") or meta.get("menu_id") or compatibility_refs.get("menu_id")
     action_id = meta.get("action_id") or compatibility_refs.get("action_id")
@@ -416,7 +416,7 @@ def _node_is_protected_runtime_business_config_menu(node: dict, protected_refs: 
     if not protected_menu_ids and not protected_xmlids:
         return False
     meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-    entry_target = meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {}
+    entry_target = node.get("entry_target") if isinstance(node.get("entry_target"), dict) else {}
     compatibility_refs = entry_target.get("compatibility_refs") if isinstance(entry_target.get("compatibility_refs"), dict) else {}
     menu_id = node.get("menu_id") or meta.get("menu_id") or compatibility_refs.get("menu_id")
     try:
@@ -477,7 +477,7 @@ def _filter_nav_by_release_gate(nav: list[dict], gate: dict, *, env=None) -> tup
 
     def _node_has_entry_target(node: dict) -> bool:
         meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-        entry_target = meta.get("entry_target") if isinstance(meta.get("entry_target"), dict) else {}
+        entry_target = node.get("entry_target") if isinstance(node.get("entry_target"), dict) else {}
         route = _text(node.get("route") or meta.get("route") or entry_target.get("route"))
         target_type = _text(entry_target.get("type"))
         return bool(

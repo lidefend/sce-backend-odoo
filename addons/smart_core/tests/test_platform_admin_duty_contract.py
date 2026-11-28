@@ -343,7 +343,11 @@ class ProjectionAndRouteTests(unittest.TestCase):
         source = (ROOT / "handlers" / "system_init.py").read_text(encoding="utf-8")
         # Startup consumes the same qualified authority as direct validation.
         # The merger belongs to the shared solver, not the startup handler.
-        self.assertIn("effective_authority=effective_delivery.route_authority", source)
+        published_scene_surface = (
+            ROOT / "delivery" / "published_scene_surface_service.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("effective_authority=deepcopy(authority)", published_scene_surface)
+        self.assertIn('delivery_payload.get("navigation")', source)
         self.assertNotIn("merge_platform_duty_route_authority", source)
         solver = (ROOT / "delivery" / "effective_delivery_service.py").read_text(encoding="utf-8")
         self.assertIn("authority = merge_platform_duty_route_authority(authority, env=env, surface=duty)", solver)

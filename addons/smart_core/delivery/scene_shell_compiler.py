@@ -31,13 +31,7 @@ def _slug(value: Any) -> str:
 
 def _target(node: dict) -> dict:
     meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
-    entry_target = (
-        node.get("entry_target")
-        if isinstance(node.get("entry_target"), dict)
-        else meta.get("entry_target")
-        if isinstance(meta.get("entry_target"), dict)
-        else {}
-    )
+    entry_target = node.get("entry_target") if isinstance(node.get("entry_target"), dict) else {}
     refs = (
         entry_target.get("compatibility_refs")
         if isinstance(entry_target.get("compatibility_refs"), dict)
@@ -120,7 +114,7 @@ def _native_scene_key(target: dict) -> str:
 
 def _native_target(node: dict, scene_key: str) -> dict:
     target = _target(node)
-    return {
+    native_target = {
         "type": "action",
         "route": "/s/%s" % scene_key,
         "menu_id": target["menu_id"],
@@ -133,6 +127,10 @@ def _native_target(node: dict, scene_key: str) -> dict:
             **({"model": target["model"]} if target["model"] else {}),
         },
     }
+    record_entry = target["entry_target"].get("record_entry")
+    if isinstance(record_entry, dict) and record_entry:
+        native_target["record_entry"] = deepcopy(record_entry)
+    return native_target
 
 
 @dataclass(frozen=True)
@@ -148,6 +146,41 @@ class SceneShellCompiler:
     """Create scene shells without creating menu/action/view facts."""
 
     SOURCE_KIND = "scene_shell_final_contract_projection"
+
+    @staticmethod
+    def _collapse_target_carrier(container: dict, key: str) -> None:
+        meta = container.get("meta")
+        if not isinstance(meta, dict):
+            return
+        meta_target = meta.pop(key, None)
+        top_target = container.get(key)
+        if meta_target is not None and top_target is not None and meta_target != top_target:
+            raise ValueError("conflicting %s carriers" % key)
+        target = top_target if top_target is not None else meta_target
+        if target is not None:
+            container[key] = deepcopy(target)
+
+    @classmethod
+    def normalize_consumer_target_carriers(
+        cls,
+        nav: list[dict] | None,
+        scene_ready_contract: dict | None,
+    ) -> tuple[list[dict], dict]:
+        normalized_nav = deepcopy(nav) if isinstance(nav, list) else []
+
+        def visit(nodes: list[dict]) -> None:
+            for node in nodes:
+                if not isinstance(node, dict):
+                    continue
+                cls._collapse_target_carrier(node, "entry_target")
+                visit(node.get("children") if isinstance(node.get("children"), list) else [])
+
+        visit(normalized_nav)
+        normalized_scene_ready = deepcopy(scene_ready_contract) if isinstance(scene_ready_contract, dict) else {}
+        for row in normalized_scene_ready.get("scenes") or []:
+            if isinstance(row, dict):
+                cls._collapse_target_carrier(row, "target")
+        return normalized_nav, normalized_scene_ready
 
     def compile(
         self,
@@ -206,7 +239,6 @@ class SceneShellCompiler:
                 candidate.pop("scene_key", None)
                 meta.pop("scene_key", None)
                 meta["route"] = route
-                meta["entry_target"] = deepcopy(target["entry_target"])
                 candidate["meta"] = meta
                 return candidate
             scene_key = target["scene_key"]
@@ -255,11 +287,14 @@ class SceneShellCompiler:
                 "content_kind": CONTENT_NATIVE_DELEGATE,
                 "native_target": native_target,
             }
+            if isinstance(native_target.get("record_entry"), dict):
+                candidate["entry_target"]["record_entry"] = deepcopy(
+                    native_target["record_entry"]
+                )
             meta.update({
                 "scene_key": scene_key,
                 "route": candidate["route"],
                 "content_kind": CONTENT_NATIVE_DELEGATE,
-                "entry_target": deepcopy(candidate["entry_target"]),
             })
             candidate["meta"] = meta
             if new_shell:
@@ -308,6 +343,11 @@ class SceneShellCompiler:
             "menu_id": native_target.get("menu_id"),
             "model": native_target.get("model"),
             "view_mode": ",".join(native_target.get("view_modes") or []),
+            **(
+                {"record_entry": deepcopy(native_target["record_entry"])}
+                if isinstance(native_target.get("record_entry"), dict)
+                else {}
+            ),
         }
         return {
             "scene": {
@@ -333,7 +373,6 @@ class SceneShellCompiler:
                 "content_kind": CONTENT_NATIVE_DELEGATE,
                 "designed": False,
                 "sequence": sequence,
-                "target": deepcopy(target),
                 "source_authority": {
                     "kind": SceneShellCompiler.SOURCE_KIND,
                     "projection_only": True,

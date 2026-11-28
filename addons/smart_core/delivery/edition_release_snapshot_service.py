@@ -18,6 +18,7 @@ from .delivery_engine import DeliveryEngine
 from .edition_release_snapshot_promotion_service import EditionReleaseSnapshotPromotionService
 from .product_policy_service import ProductPolicyService
 from .product_scene_composition import compose_product_policy
+from .published_scene_surface_service import PublishedSceneSurfaceService
 
 
 FREEZE_SURFACE_CONTRACT_VERSION = "edition_freeze_surface_v1"
@@ -201,6 +202,8 @@ class EditionReleaseSnapshotService:
             use_published_policy=False,
             policy_override=policy,
         )
+        published_scene_surface = PublishedSceneSurfaceService(self.env).build(delivery)
+        delivery.update(published_scene_surface)
         resolved_policy = _dict(policy)
         resolved_delivery = _dict(delivery)
         effective_product_key = _text(resolved_delivery.get("product_key")) or _text(resolved_policy.get("product_key"))
@@ -252,6 +255,8 @@ class EditionReleaseSnapshotService:
                 _dict(resolved_policy.get("business_scene_composition"))
             ),
             "nav": deepcopy(_list(resolved_delivery.get("nav"))),
+            "navigation": deepcopy(_dict(resolved_delivery.get("navigation"))),
+            "scene_shells": deepcopy(_list(resolved_delivery.get("scene_shells"))),
             "capabilities": deepcopy(_list(resolved_delivery.get("capabilities"))),
             "scenes": deepcopy(_list(resolved_delivery.get("scenes"))),
             "scene_version_bindings": declared_scene_bindings,

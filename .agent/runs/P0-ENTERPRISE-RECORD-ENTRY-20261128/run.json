@@ -1,0 +1,175 @@
+{
+  "schema_version": 2,
+  "id": "P0-ENTERPRISE-RECORD-ENTRY-20261128",
+  "branch": "fix/p0-enterprise-record-entry-20261128",
+  "status": "active",
+  "baseline_sha": "92016d60251f94a9048daf7cd8fe834e00f97574",
+  "goal": ".agent/goals/P0-ENTERPRISE-RECORD-ENTRY-20261128.yaml",
+  "record": "docs/ops/iterations/p0_enterprise_record_entry_20261128.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P0-ENTERPRISE-RECORD-ENTRY-20261128.yaml",
+    ".agent/runs/P0-ENTERPRISE-RECORD-ENTRY-20261128/run.json",
+    "addons/smart_core/core/extension_hook_contracts.py",
+    "addons/smart_core/delivery/delivery_engine.py",
+    "addons/smart_core/delivery/native_config_menu_projection.py",
+    "addons/smart_core/delivery/scene_shell_compiler.py",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    "addons/smart_core/tests/test_entry_publication_authority.py",
+    "addons/smart_core/tests/test_scene_shell_compiler.py",
+    "addons/smart_construction_scene/__init__.py",
+    "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_core/__init__.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+    "addons/smart_construction_core/tests/test_role_surface_project_member.py",
+    "addons/smart_construction_core/tests/test_user_feedback_business_views.py",
+    "addons/smart_construction_scene/scene_registry.py",
+    "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+    "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+    "addons/smart_core/core/delivery_menu_defaults.py",
+    "addons/smart_core/core/platform_minimum_nav_contract.py",
+    "addons/smart_core/core/system_init_payload_builder.py",
+    "addons/smart_core/delivery/edition_release_snapshot_service.py",
+    "addons/smart_core/delivery/effective_delivery_inputs.py",
+    "addons/smart_core/delivery/effective_delivery_service.py",
+    "addons/smart_core/delivery/final_menu_navigation_service.py",
+    "addons/smart_core/delivery/menu_service.py",
+    "addons/smart_core/delivery/navigation_contract_compiler.py",
+    "addons/smart_core/delivery/published_scene_surface_service.py",
+    "addons/smart_core/delivery/release_runtime_user_probe_service.py",
+    "addons/smart_core/handlers/business_config_surface.py",
+    "addons/smart_core/model/ui_menu_config_policy.py",
+    "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+    "addons/smart_core/tests/test_intent_smoke.py",
+    "addons/smart_core/tests/test_platform_admin_duty_contract.py",
+    "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    "addons/smart_core/tests/test_system_init_payload_builder_semantics.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/p0_enterprise_record_entry_20261128.md",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no persistent data or deployment write"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Affected scene projection and enterprise initialization contract tests"
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The producer change must be integrated separately from frontend PR 1019"
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "release full audit",
+      "reason": "No deployment or release is requested by this batch"
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "The frontend must consume the explicit record_entry produced by this backend contract."
+    }
+  },
+  "checks": {
+    "scene_action_supply": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "inputs": [
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_scene/scene_registry.py",
+        "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_core/delivery/final_menu_navigation_service.py",
+        "addons/smart_core/delivery/published_scene_surface_service.py",
+        "addons/smart_core/delivery/release_runtime_user_probe_service.py"
+      ],
+      "kind": "offline"
+    },
+    "entry_publication_authority": {
+      "target": "verify.product.entry_publication.unit",
+      "inputs": [
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_core/tests/test_entry_publication_authority.py"
+      ],
+      "kind": "offline"
+    },
+    "navigation_delivery": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "inputs": [
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_core/delivery/published_scene_surface_service.py",
+        "addons/smart_core/delivery/scene_shell_compiler.py",
+        "addons/smart_core/tests/test_entry_publication_authority.py",
+        "addons/smart_core/tests/test_scene_shell_compiler.py"
+      ],
+      "kind": "offline"
+    },
+    "business_config_menu_targets": {
+      "target": "verify.business_config.unit",
+      "inputs": [
+        "addons/smart_core/delivery/native_config_menu_projection.py",
+        "addons/smart_core/model/ui_menu_config_policy.py"
+      ],
+      "kind": "offline"
+    },
+    "extension_hook_contracts": {
+      "target": "verify.extension.hook_contracts.unit",
+      "inputs": [
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_core/core/extension_hook_contracts.py"
+      ],
+      "kind": "offline"
+    },
+    "company_route_scope": {
+      "target": "verify.scene.company_route_scope_cache.orm",
+      "inputs": [
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_scene/scene_registry.py",
+        "addons/smart_construction_scene/tests/test_company_route_scope_cache.py"
+      ],
+      "kind": "runtime"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the P0/P1 producer candidate and publish it as an independent PR; then provide its exact-handoff receipt to the frontend run.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "evidence": {
+    "local_iteration": {
+      "status": "passed",
+      "head": "a3f15a36abd053aee71e511fca5ba7dd1017a90f",
+      "dirty": true,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261128T044614Z-3281662-824149276/receipt.json",
+      "receipt_sha256": "0f97c0e59c5f3d376db94c3106091ff2cf81cef1c692a710f48371348b3c8a0d",
+      "executed_targets": 36,
+      "test_count": 975,
+      "static_checks": 5,
+      "unmapped_paths": 0,
+      "channel_handoff_required": false
+    },
+    "facts_verified": [
+      "enterprise initialization scopes its target to env.company.id",
+      "system.init nav and route authority publish entry_target.record_entry model=res.company for the authenticated current company",
+      "the shared delivery normalizer preserves the formal record_entry while rebuilding compatibility references",
+      "the scene shell compiler preserves the same record_entry on the navigation target, native delegate target and scene shell target",
+      "PublishedSceneSurfaceService is the single sceneization stage used by release freezing and effective delivery",
+      "DeliveryEngine now produces candidate publication entries without compiling scenes",
+      "system.init serializes the precomputed scene navigation and does not invoke the navigation compiler",
+      "navigation clients receive one node-level entry_target and scene-ready clients receive one row-level target",
+      "normal business scene targets without record_id remain unchanged",
+      "the native config action hook is declared under the extension hook contract and passes authority/lifecycle tests",
+      "the hook provider is located in smart_construction_core, which is the extension module actually loaded by the clean runtime"
+    ]
+  }
+}
